@@ -268,6 +268,7 @@ function populateStrategieLists(selected = {}) {
     });
   }
 
+
   openPopup(tache = {}) {
     if (!this.modal || !this.modalElement) { displayError("Ouverture dialogue impossible."); return; }
     const isNewTask = !tache.id;
