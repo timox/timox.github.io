@@ -138,6 +138,11 @@ class KanbanManager {
     this.ignoreNextOnRecords = true;
     setTimeout(() => { this.ignoreNextOnRecords = false; }, 500);
   }
+  function getPrioriteNum(prioriteStr) {
+    // Ex: "Urgent (1)", "Élevé (2)", "Normal (3)", "Faible (4)"
+    const match = /\((\d)\)/.exec(prioriteStr || "");
+    return match ? parseInt(match[1], 10) : 3;
+   }
 
   initFilters() {
     this.populateSelectWithOptions('filter-bureau', this.gristOptions.bureau || []);
@@ -269,7 +274,9 @@ class KanbanManager {
     Array.from(sel.options).forEach(o => {
       const vClean = String(o.value).trim().toLowerCase();
       o.selected = lowerVals.includes(vClean);
-    });
+    });const prioBadge = `<span class="priority-badge priority-${prioNum}">P${prioNum}</span>`;
+
+
   }
 
   refreshKanban() {
@@ -370,8 +377,10 @@ class KanbanManager {
   }
   createTaskElementHTML(record) {
   // Priorité
-  const prio = this.calculerPriorite(record.urgence, record.impact);
-  let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
+ // const prio = this.calculerPriorite(record.urgence, record.impact);
+ // let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
+const prioNum = getPrioriteNum(record.priorite);
+const prioBadge = `<span class="priority-badge priority-${prioNum}">P${prioNum}</span>`;
 
   // Projet avec infobulle stratégie
   let projetTag = '';
