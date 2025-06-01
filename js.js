@@ -393,15 +393,16 @@ class KanbanManager {
       </span>`;
     }
     return `<div class="kanban-item" data-id="${record.id}">
-      <div class="d-flex justify-content-between align-items-center">
-        <div>${prioBadge}</div>
-        <div>
-          ${projetTag}
-          ${delaiIcon}
-        </div>
+    <div class="d-flex justify-content-between align-items-center">
+      <div>${prioBadge}</div>
+      <div>
+        ${projetTag}
+        ${delaiIcon}
       </div>
-      <div class="item-title editable-zone">${record.titre || ''}</div>
-    </div>`;
+    </div>
+    <div class="item-title editable-zone">${record.titre || ''}</div>
+    ${resumeDesc}
+  </div>`;
   }
 
   async saveTask() {
