@@ -369,31 +369,42 @@ class KanbanManager {
     return new Date(dateStr).toLocaleDateString('fr-FR', options);
   }
   createTaskElementHTML(record) {
-    // Résumé description (10 premiers mots, en filigrane)
-    let resumeDesc = '';
-    if (record.description) {
-      const mots = record.description.split(/\s+/).slice(0, 10).join(' ');
-      resumeDesc = `<div class="desc-resume">${mots}${record.description.split(/\s+/).length > 10 ? '…' : ''}</div>`;
-    }
+  // Priorité
+  const prio = this.calculerPriorite(record.urgence, record.impact);
+  let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
 
-    // Priorité unique (calculée)
-    const prio = this.calculerPriorite(record.urgence, record.impact);
-    let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
-    // Tag projet avec tooltip stratégie
-    let projetTag = '';
-    if (record.projet) {
-      const tooltip = this.getStrategieTooltip(record);
-      projetTag = `<span class="badge bg-info text-dark" title="${tooltip.replace(/"/g, '&quot;')}">${record.projet}</span>`;
-    }
-    // Icône délai si présent
-    let delaiIcon = '';
-    if (record.delai) {
-      delaiIcon = `<span class="delai-indicator" title="Date butoir : ${this.formatDelai(record.delai)}">
-        <i class="bi bi-calendar-event"></i>
-      </span>`;
-    }
-    return `<div class="kanban-item" data-id="${record.id}">
-    <div class="d-flex justify-content-between align-items-center">
+  // Projet avec infobulle stratégie
+  let projetTag = '';
+  if (record.projet) {
+    const tooltip = this.getStrategieTooltip(record);
+    projetTag = `<span class="projet-badge" title="${tooltip.replace(/"/g, '&quot;')}">${record.projet}</span>`;
+  }
+
+  // Résumé description
+  let resumeDesc = '';
+  if (record.description) {
+    const mots = record.description.split(/\s+/).slice(0, 10).join(' ');
+    resumeDesc = `<div class="desc-resume">${mots}${record.description.split(/\s+/).length > 10 ? '…' : ''}</div>`;
+  }
+
+  // Personnes (qui)
+  let personnes = '';
+  if (Array.isArray(record.qui) && record.qui.length > 1) {
+    personnes = '<div class="personnes-list">' +
+      record.qui.slice(1).map(q => `<span class="personne-badge">${q}</span>`).join(' ') +
+      '</div>';
+  }
+
+  // Icône délai
+  let delaiIcon = '';
+  if (record.delai) {
+    delaiIcon = `<span class="delai-indicator" title="Date butoir : ${this.formatDelai(record.delai)}">
+      <i class="bi bi-calendar-event"></i>
+    </span>`;
+  }
+
+  return `<div class="kanban-item" data-id="${record.id}">
+    <div class="kanban-item-header">
       <div>${prioBadge}</div>
       <div>
         ${projetTag}
@@ -402,8 +413,10 @@ class KanbanManager {
     </div>
     <div class="item-title editable-zone">${record.titre || ''}</div>
     ${resumeDesc}
+    ${personnes}
   </div>`;
-  }
+}
+
 
   async saveTask() {
     const delaiType = document.getElementById('delai-type') ? document.getElementById('delai-type').value : 'date';
