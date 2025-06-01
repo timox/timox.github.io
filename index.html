@@ -340,106 +340,98 @@
           </h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
         </div>
-        <div class="modal-body">
-          <form id="task-form" novalidate>
-            <input type="hidden" id="popup-id">
-            <div class="row g-3">
-              <div class="col-12">
-                <label for="popup-titre" class="form-label">Titre *</label>
-                <input type="text" class="form-control" id="popup-titre" required>
-                <div class="form-text">Saisissez un titre descriptif pour la tâche</div>
-              </div>
-              <div class="col-12">
-                <label for="popup-description" class="form-label">Description</label>
-                <textarea class="form-control" id="popup-description" rows="3"></textarea>
-              </div>
-              <div class="col-md-6">
-                <label for="popup-statut-text" class="form-label">Statut *</label>
-                <input type="text" class="form-control" id="popup-statut-text" readonly required>
-              </div>
-              <div class="row">
-              <div class="col-12">
-                <label class="form-label">Affectation</label>
-                <div id="affectation-equipes"></div>
-                <div id="affectation-personnes" class="mt-1"></div>
-              </div>
-            </div>
-          <div class="row">
-            <div class="col-md-6">
-              <label for="popup-urgence" class="form-label">Urgence & Impact</label>
-              <div class="input-group">
-                <select class="form-select" id="popup-urgence">
-                  <option value="">-- Urgence --</option>
-                </select>
-                <select class="form-select" id="popup-impact">
-                  <option value="">-- Impact --</option>
-                </select>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Stratégie</label>
-              <div class="input-group">
-                <input type="text" class="form-control" id="popup-strategie-id" placeholder="ID">
-                <input type="text" class="form-control" id="popup-strategie-action" placeholder="Action">
-                <input type="text" class="form-control" id="popup-strategie-objectif" placeholder="Objectif">
-              </div>
+        <div class="modal-dialog modal-xl modal-dialog-centered"> <!-- modal-xl pour largeur -->
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title" id="popup-tache-label">
+        <i class="bi bi-card-checklist me-2"></i>Détails Tâche
+      </h5>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+    </div>
+    <div class="modal-body">
+      <form id="task-form" novalidate>
+        <div class="row g-3">
+          <div class="col-12">
+            <label for="popup-titre" class="form-label">Titre *</label>
+            <input type="text" class="form-control" id="popup-titre" required>
+          </div>
+          <div class="col-12">
+            <label for="popup-description" class="form-label">Description</label>
+            <textarea class="form-control" id="popup-description" rows="3"></textarea>
+          </div>
+          <div class="col-md-4">
+            <label for="popup-statut-text" class="form-label">Statut *</label>
+            <input type="text" class="form-control" id="popup-statut-text" readonly required>
+          </div>
+          <div class="col-md-4">
+            <label for="popup-projet" class="form-label">Projet</label>
+            <div class="input-group">
+              <select class="form-select" id="popup-projet"></select>
+              <input type="text" class="form-control" id="projet-ajout" placeholder="Ajouter projet">
+              <button class="btn btn-outline-secondary" type="button" id="btn-ajout-projet"><i class="bi bi-plus"></i></button>
             </div>
           </div>
-
-                <div class="input-group">
-                  <select class="form-select" id="popup-projet">
-                    <option value="">-- Choisir un projet --</option>
-                  </select>
-                  <input type="text" class="form-control" id="projet-ajout" placeholder="Ajouter projet">
-                  <button class="btn btn-outline-secondary" type="button" id="btn-ajout-projet"><i class="bi bi-plus"></i></button>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label for="popup-urgence" class="form-label">Urgence</label>
-                <select class="form-select" id="popup-urgence">
-                  <option value="">-- Choisir l'urgence --</option>
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label for="popup-impact" class="form-label">Impact</label>
-                <select class="form-select" id="popup-impact">
-                  <option value="">-- Choisir l'impact --</option>
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label for="popup-bureau" class="form-label">Bureaux</label>
-                <select class="form-select" id="popup-bureau" multiple size="4"></select>
-                <div class="form-text">Maintenez Ctrl pour sélectionner plusieurs bureaux</div>
-              </div>
-              <div class="col-md-6">
-                <label for="popup-qui" class="form-label">Responsables</label>
-                <select class="form-select" id="popup-qui" multiple size="4"></select>
-                <div class="form-text">Maintenez Ctrl pour sélectionner plusieurs responsables</div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label"><i class="bi bi-calendar-event me-2"></i>Délai / Date butoir</label>
-                <div class="input-group">
-                  <select class="form-select" id="delai-type" style="max-width: 120px;">
-                    <option value="date">Date fixe</option>
-                    <option value="semaines">Semaines</option>
-                    <option value="mois">Mois</option>
-                  </select>
-                  <input type="text" class="form-control" id="popup-delai" placeholder="Sélectionner..." aria-label="Délai">
-                </div>
-              </div>
+          <div class="col-md-4">
+            <label class="form-label">Stratégie</label>
+            <div class="input-group">
+              <input type="text" class="form-control" id="popup-strategie-id" placeholder="ID">
+              <input type="text" class="form-control" id="popup-strategie-action" placeholder="Action">
+              <input type="text" class="form-control" id="popup-strategie-objectif" placeholder="Objectif">
             </div>
-          </form>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Urgence & Impact</label>
+            <div class="input-group">
+              <select class="form-select" id="popup-urgence">
+                <option value="">-- Urgence --</option>
+              </select>
+              <select class="form-select" id="popup-impact">
+                <option value="">-- Impact --</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label"><i class="bi bi-calendar-event me-2"></i>Délai / Date butoir</label>
+            <div class="input-group">
+              <select class="form-select" id="delai-type" style="max-width: 120px;">
+                <option value="date">Date fixe</option>
+                <option value="semaines">Semaines</option>
+                <option value="mois">Mois</option>
+              </select>
+              <input type="text" class="form-control" id="popup-delai" placeholder="Sélectionner..." aria-label="Délai">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label for="popup-bureau" class="form-label">Bureaux</label>
+            <select class="form-select" id="popup-bureau" multiple size="4"></select>
+            <div class="form-text">Maintenez Ctrl pour sélectionner plusieurs bureaux</div>
+          </div>
+          <div class="col-md-6">
+            <label for="popup-qui" class="form-label">Responsables</label>
+            <select class="form-select" id="popup-qui" multiple size="4"></select>
+            <div class="form-text">Maintenez Ctrl pour sélectionner plusieurs responsables</div>
+          </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-            <i class="bi bi-x-circle me-2"></i>Fermer
-          </button>
-          <button type="button" class="btn btn-primary" id="btn-save-task">
-            <i class="bi bi-check2-circle me-2"></i>Enregistrer
-          </button>
+        <div class="row mt-3">
+          <div class="col-12">
+            <label class="form-label">Affectation</label>
+            <div id="affectation-equipes"></div>
+            <div id="affectation-personnes" class="mt-1"></div>
+          </div>
         </div>
-      </div>
+      </form>
     </div>
+    <div class="modal-footer justify-content-center">
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+        <i class="bi bi-x-circle me-2"></i>Annuler
+      </button>
+      <button type="button" class="btn btn-primary" id="btn-save-task">
+        <i class="bi bi-check2-circle me-2"></i>OK
+      </button>
+    </div>
+  </div>
+</div>
+
   </div>
   <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
