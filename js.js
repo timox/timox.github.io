@@ -161,7 +161,7 @@ function populateStrategieLists(selected = {}) {
   }
 
   // Actions
-  function updateAction() {
+  function updateAction() { 
     const obj = selObj.value;
     const sousObj = document.getElementById('strategie-sous-objectif').value;
     const actions = [...new Set(STRATEGIES.filter(s => s.objectif === obj && s.sous_objectif === sousObj).map(s => s.action))].filter(Boolean).sort();
@@ -175,7 +175,11 @@ function populateStrategieLists(selected = {}) {
 
   updateSousObjectif();
 }
-
+ function getPrioriteNum(prioriteStr) {
+    // Ex: "Urgent (1)", "Élevé (2)", "Normal (3)", "Faible (4)"
+    const match = /\((\d)\)/.exec(prioriteStr || "");
+    return match ? parseInt(match[1], 10) : 3;
+   }
 }
 
   initFilters() {
