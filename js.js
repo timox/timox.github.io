@@ -369,6 +369,13 @@ class KanbanManager {
     return new Date(dateStr).toLocaleDateString('fr-FR', options);
   }
   createTaskElementHTML(record) {
+    // Résumé description (10 premiers mots, en filigrane)
+    let resumeDesc = '';
+    if (record.description) {
+      const mots = record.description.split(/\s+/).slice(0, 10).join(' ');
+      resumeDesc = `<div class="desc-resume">${mots}${record.description.split(/\s+/).length > 10 ? '…' : ''}</div>`;
+    }
+
     // Priorité unique (calculée)
     const prio = this.calculerPriorite(record.urgence, record.impact);
     let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
