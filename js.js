@@ -381,6 +381,12 @@ class KanbanManager {
  // let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
 const prioNum = getPrioriteNum(record.priorite);
 const prioBadge = `<span class="priority-badge priority-${prioNum}">P${prioNum}</span>`;
+const strategieColor = getStrategieColor(record.strategie_objectif);
+const projetTag = `<span class="projet-badge" 
+  style="background:${strategieColor};"
+  title="Objectif: ${record.strategie_objectif||""}\nAction: ${record.strategie_action||""}\nSous-objectif: ${record.strategie_sous_objectif||""}">
+  ${record.projet||""}
+</span>`;
 
   // Projet avec infobulle stratégie
   let projetTag = '';
