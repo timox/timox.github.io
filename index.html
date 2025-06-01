@@ -256,6 +256,15 @@
   margin-right: 0.5em;
   display: inline-block;
 }
+.desc-resume {
+  color: #bbb;
+  font-size: 0.93em;
+  font-style: italic;
+  font-weight: 400;
+  opacity: 0.7;
+  margin-bottom: 0.3em;
+}
+
 
   </style>
 </head>
@@ -355,21 +364,27 @@
                 <div id="affectation-personnes" class="mt-1"></div>
               </div>
             </div>
-
-              <div class="col-md-6">
-                <label for="popup-projet" class="form-label">Projet</label>
-                <div class="col-md-4">
-                <label class="form-label">Stratégie ID</label>
-                <input type="text" class="form-control" id="popup-strategie-id">
+          <div class="row">
+            <div class="col-md-6">
+              <label for="popup-urgence" class="form-label">Urgence & Impact</label>
+              <div class="input-group">
+                <select class="form-select" id="popup-urgence">
+                  <option value="">-- Urgence --</option>
+                </select>
+                <select class="form-select" id="popup-impact">
+                  <option value="">-- Impact --</option>
+                </select>
               </div>
-              <div class="col-md-4">
-                <label class="form-label">Action stratégie</label>
-                <input type="text" class="form-control" id="popup-strategie-action">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Stratégie</label>
+              <div class="input-group">
+                <input type="text" class="form-control" id="popup-strategie-id" placeholder="ID">
+                <input type="text" class="form-control" id="popup-strategie-action" placeholder="Action">
+                <input type="text" class="form-control" id="popup-strategie-objectif" placeholder="Objectif">
               </div>
-              <div class="col-md-4">
-                <label class="form-label">Objectif stratégie</label>
-                <input type="text" class="form-control" id="popup-strategie-objectif">
-              </div>
+            </div>
+          </div>
 
                 <div class="input-group">
                   <select class="form-select" id="popup-projet">
