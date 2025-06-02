@@ -71,32 +71,6 @@ class KanbanManager {
     this.loadStrategiesFromGrist();
   }
   
-// Appelle cette fonction pour charger toutes les stratégies depuis la table Ssir_strategie2
-async function loadStrategiesFromGrist() {
-  try {
-    // Récupère toutes les colonnes utiles de la table Ssir_strategie2
-    const raw = await grist.docApi.fetchTable("Ssir_strategie2");
-    // On suppose que les colonnes sont : id, objectif, sous_objectif, action, responsable, echeance, portee
-    const n = raw.id.length;
-    const STRATEGIES = [];
-    for (let i = 0; i < n; i++) {
-      STRATEGIES.push({
-        id: raw.id[i],
-        objectif: raw.objectif ? raw.objectif[i] : "",
-        sous_objectif: raw.sous_objectif ? raw.sous_objectif[i] : "",
-        action: raw.action ? raw.action[i] : "",
-        responsable: raw.responsable ? raw.responsable[i] : "",
-        echeance: raw.echeance ? raw.echeance[i] : "",
-        portee: raw.portee ? raw.portee[i] : ""
-      });
-    }
-    return STRATEGIES;
-  } catch (error) {
-    displayError("Impossible de charger la table des stratégies : " + error.message);
-    return [];
-  }
-}
-
 
   async waitForGristReady() {
     return new Promise((resolve) => {
