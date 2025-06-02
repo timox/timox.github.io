@@ -482,9 +482,11 @@ const tooltip = this.getStrategieTooltip(record);
 const projetTag = `<span class="projet-badge" 
   style="background:${strategieColor};"
   title="Objectif: ${record.strategie_objectif||""}\nAction: ${record.strategie_action||""}\nSous-objectif: ${record.strategie_sous_objectif||""}">
+  
   ${record.projet||""}
 </span>`;
 
+    
 
 
   // Résumé description
