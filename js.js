@@ -334,8 +334,7 @@ populateStrategieLists(selected = {}) {
       const vClean = String(o.value).trim().toLowerCase();
       o.selected = lowerVals.includes(vClean);
     });
-    const prioNum = this.getPrioriteNum(record.priorite);
-    const prioBadge = `<span class="priority-badge priority-${prioNum}">P${prioNum}</span>`;
+    
   }
 
   refreshKanban() {
