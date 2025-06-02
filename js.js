@@ -441,7 +441,7 @@ const prioNum = getPrioriteNum(record.priorite);
 const prioBadge = `<span class="priority-badge priority-${prioNum}">P${prioNum}</span>`;
 const strategieKey = record.strategie_objectif || record.strategie_action || record.strategie_sous_objectif || "";
 const strategieColor = getStrategieColor(strategieKey);
-
+const tooltip = this.getStrategieTooltip(record);
 const projetTag = `<span class="projet-badge" 
   style="background:${strategieColor};"
   title="Objectif: ${record.strategie_objectif||""}\nAction: ${record.strategie_action||""}\nSous-objectif: ${record.strategie_sous_objectif||""}">
@@ -449,11 +449,11 @@ const projetTag = `<span class="projet-badge"
 </span>`;
 
   // Projet avec infobulle stratégie
-  let projetTag = '';
-  if (record.projet) {
-    const tooltip = this.getStrategieTooltip(record);
-    projetTag = `<span class="projet-badge" title="${tooltip.replace(/"/g, '&quot;')}">${record.projet}</span>`;
-  }
+//  let projetTag = '';
+//  if (record.projet) {
+    
+ //   projetTag = `<span class="projet-badge" title="${tooltip.replace(/"/g, '&quot;')}">${record.projet}</span>`;
+ // }
 
   // Résumé description
   let resumeDesc = '';
