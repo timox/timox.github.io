@@ -24,6 +24,10 @@ const REQUIRED_COLUMNS = [
 ];
 
 let projetsDynamiques = [];
+// --- Modification : Nom de la table Stratégies ---
+const STRATEGIES_TABLE_ID = "Ssir_strategie2"; // Confirmé à partir de griststructure.txt
+// --- Fin Modification ---
+
 
 function displayError(message) {
   console.error("ERREUR:", message);
@@ -121,6 +125,34 @@ async function loadStrategiesFromGrist() {
       this.gristOptions.projet = DEFAULT_PROJETS;
       if (!this.currentRecords) this.currentRecords = [];
     }
+    // Stratégies dynamiques
+            try {
+                console.log(`Chargement table ${STRATEGIES_TABLE_ID}...`);
+                const strategiesData = await grist.docApi.fetchTable(STRATEGIES_TABLE_ID);
+                // --- Modification : Colonnes à extraire de Ssir_strategie2 ---
+                const requiredStratCols = ['id', 'id2', 'objectif', 'sous_objectif', 'action']; // id est Row ID
+                const displayCol = 'id2'; // Colonne à afficher dans le dropdown (confirmé id2)
+                // --- Fin Modification ---
+
+                if (strategiesData && requiredStratCols.every(col => strategiesData.hasOwnProperty(col))) {
+                     this.gristOptions.strategies = strategiesData.id.map((id, index) => {
+                         const stratRecord = {};
+                         requiredStratCols.forEach(col => {
+                             stratRecord[col] = strategiesData[col][index];
+                         });
+                         return stratRecord; // { id: ..., id2: ..., objectif: ..., sous_objectif: ..., action: ... }
+                     }).sort((a, b) => String(a[displayCol] || '').localeCompare(String(b[displayCol] || ''))); // Trier par colonne d'affichage
+
+                     console.log(`Options Stratégies (dynamique): ${this.gristOptions.strategies.length} valeurs chargées.`);
+                } else {
+                    console.warn(`La table ${STRATEGIES_TABLE_ID} ou des colonnes requises (${requiredStratCols.join(', ')}) sont manquantes/vides.`);
+                    this.gristOptions.strategies = [];
+                }
+            } catch (stratError) {
+                console.error(`Erreur chargement table ${STRATEGIES_TABLE_ID}:`, stratError);
+                displayError(`Impossible de charger les stratégies.`);
+                this.gristOptions.strategies = [];
+            }
   }
 
   mapGristRecords(gristData) {
