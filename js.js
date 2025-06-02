@@ -438,10 +438,10 @@ populateStrategieLists(selected = {}) {
   // Priorité
  // const prio = this.calculerPriorite(record.urgence, record.impact);
  // let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
-const prioNum = getPrioriteNum(record.priorite);
+const prioNum = this.getPrioriteNum(record.priorite);
 const prioBadge = `<span class="priority-badge priority-${prioNum}">P${prioNum}</span>`;
 const strategieKey = record.strategie_objectif || record.strategie_action || record.strategie_sous_objectif || "";
-const strategieColor = getStrategieColor(strategieKey);
+const strategieColor = this.getStrategieColor(strategieKey);
 const tooltip = this.getStrategieTooltip(record);
 const projetTag = `<span class="projet-badge" 
   style="background:${strategieColor};"
