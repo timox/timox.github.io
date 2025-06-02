@@ -305,7 +305,7 @@ populateStrategieLists(selected = {}) {
     this.setSelectedOptions('popup-bureau', tache.bureau);
     this.setSelectedOptions('popup-qui', tache.qui);
     //strategies
-    populateStrategieLists({
+    this.populateStrategieLists({
       objectif: tache.strategie_objectif,
       sous_objectif: tache.strategie_sous_objectif,
       action: tache.strategie_action
