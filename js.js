@@ -197,7 +197,7 @@ getStrategieColor(strategieKey) {
   
 populateStrategieLists(selected = {}) {
   // Objectifs
-  const objectifs = [...new Set(STRATEGIES.map(s => s.objectif))].filter(Boolean).sort();
+  const objectifs = [...new Set(this.gristOptions.strategies.map(s => s.objectif))].filter(Boolean).sort();
   const selObj = document.getElementById('strategie-objectif');
   selObj.innerHTML = objectifs.map(obj => `<option value="${obj}">${obj}</option>`).join('');
   if (selected.objectif) selObj.value = selected.objectif;
@@ -205,7 +205,7 @@ populateStrategieLists(selected = {}) {
   // Sous-objectifs
   function updateSousObjectif() {
     const obj = selObj.value;
-    const sousObj = [...new Set(STRATEGIES.filter(s => s.objectif === obj).map(s => s.sous_objectif))].filter(Boolean).sort();
+    const sousObj = [...new Set(this.gristOptions.strategies.filter(s => s.objectif === obj).map(s => s.sous_objectif))].filter(Boolean).sort();
     const selSous = document.getElementById('strategie-sous-objectif');
     selSous.innerHTML = sousObj.map(so => `<option value="${so}">${so}</option>`).join('');
     if (selected.sous_objectif) selSous.value = selected.sous_objectif;
@@ -216,7 +216,7 @@ populateStrategieLists(selected = {}) {
   function updateAction() { 
     const obj = selObj.value;
     const sousObj = document.getElementById('strategie-sous-objectif').value;
-    const actions = [...new Set(STRATEGIES.filter(s => s.objectif === obj && s.sous_objectif === sousObj).map(s => s.action))].filter(Boolean).sort();
+    const actions = [...new Set(this.gristOptions.strategies.filter(s => s.objectif === obj && s.sous_objectif === sousObj).map(s => s.action))].filter(Boolean).sort();
     const selAct = document.getElementById('strategie-action');
     selAct.innerHTML = actions.map(a => `<option value="${a}">${a}</option>`).join('');
     if (selected.action) selAct.value = selected.action;
