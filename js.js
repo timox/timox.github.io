@@ -132,18 +132,35 @@ class KanbanManager {
       this.initFilters();
       this.refreshKanban();
     }).finally(() => { this.isUpdating = false; });
-  }
+  };
 
   signalLocalUpdate() {
     this.ignoreNextOnRecords = true;
     setTimeout(() => { this.ignoreNextOnRecords = false; }, 500);
-  }
-  function getPrioriteNum(prioriteStr) {
+  };
+  
+ getPrioriteNum(prioriteStr) {
     // Ex: "Urgent (1)", "Élevé (2)", "Normal (3)", "Faible (4)"
     const match = /\((\d)\)/.exec(prioriteStr || "");
     return match ? parseInt(match[1], 10) : 3;
-   }
-function populateStrategieLists(selected = {}) {
+   };
+getStrategieColor(strategieKey) {
+  // 
+  const PALETTE = [
+    "#e3fcef", "#e3e6fc", "#fff3cd", "#fce3e3", "#f7d6e6", "#d1e7dd", "#e7eaf6", "#f9e79f", "#f6ddcc", "#d6eaf8"
+  ];
+  if (!strategieKey) return "#f7fafd";
+  // Hash simple basé sur le texte
+  let hash = 0;
+  for (let i = 0; i < strategieKey.length; i++) {
+    hash = strategieKey.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const idx = Math.abs(hash) % PALETTE.length;
+  return PALETTE[idx];
+}
+
+  
+populateStrategieLists(selected = {}) {
   // Objectifs
   const objectifs = [...new Set(STRATEGIES.map(s => s.objectif))].filter(Boolean).sort();
   const selObj = document.getElementById('strategie-objectif');
@@ -175,12 +192,8 @@ function populateStrategieLists(selected = {}) {
 
   updateSousObjectif();
 }
- function getPrioriteNum(prioriteStr) {
-    // Ex: "Urgent (1)", "Élevé (2)", "Normal (3)", "Faible (4)"
-    const match = /\((\d)\)/.exec(prioriteStr || "");
-    return match ? parseInt(match[1], 10) : 3;
-   }
-}
+
+
 
   initFilters() {
     this.populateSelectWithOptions('filter-bureau', this.gristOptions.bureau || []);
@@ -426,7 +439,9 @@ function populateStrategieLists(selected = {}) {
  // let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
 const prioNum = getPrioriteNum(record.priorite);
 const prioBadge = `<span class="priority-badge priority-${prioNum}">P${prioNum}</span>`;
-const strategieColor = getStrategieColor(record.strategie_objectif);
+const strategieKey = record.strategie_objectif || record.strategie_action || record.strategie_sous_objectif || "";
+const strategieColor = getStrategieColor(strategieKey);
+
 const projetTag = `<span class="projet-badge" 
   style="background:${strategieColor};"
   title="Objectif: ${record.strategie_objectif||""}\nAction: ${record.strategie_action||""}\nSous-objectif: ${record.strategie_sous_objectif||""}">
@@ -529,7 +544,7 @@ const projetTag = `<span class="projet-badge"
     document.getElementById('btn-nouvelle-tache').onclick = () => this.openPopup();
   }
 }
-
+ 
 document.addEventListener('DOMContentLoaded', () => {
   new KanbanManager();
 });
