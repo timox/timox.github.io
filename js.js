@@ -132,7 +132,7 @@ class KanbanManager {
       this.initFilters();
       this.refreshKanban();
     }).finally(() => { this.isUpdating = false; });
-  };
+  }
 
   signalLocalUpdate() {
     this.ignoreNextOnRecords = true;
@@ -143,7 +143,8 @@ class KanbanManager {
     // Ex: "Urgent (1)", "Élevé (2)", "Normal (3)", "Faible (4)"
     const match = /\((\d)\)/.exec(prioriteStr || "");
     return match ? parseInt(match[1], 10) : 3;
-   };
+   }
+  
 getStrategieColor(strategieKey) {
   // 
   const PALETTE = [
