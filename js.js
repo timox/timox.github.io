@@ -448,12 +448,7 @@ const projetTag = `<span class="projet-badge"
   ${record.projet||""}
 </span>`;
 
-  // Projet avec infobulle stratégie
-//  let projetTag = '';
-//  if (record.projet) {
-    
- //   projetTag = `<span class="projet-badge" title="${tooltip.replace(/"/g, '&quot;')}">${record.projet}</span>`;
- // }
+
 
   // Résumé description
   let resumeDesc = '';
