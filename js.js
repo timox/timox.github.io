@@ -68,7 +68,7 @@ class KanbanManager {
     this.initFlatpickr();
     this.refreshKanban();
     this.initEventListeners();
-    this.loadStrategiesFromGrist();
+
   }
   
 
