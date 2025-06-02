@@ -178,7 +178,10 @@ class KanbanManager {
     const match = /\((\d)\)/.exec(prioriteStr || "");
     return match ? parseInt(match[1], 10) : 3;
    }
-  
+calculerPriorite(u, i) {
+        const imp = String(i || '').trim().toLowerCase(); const urg = String(u || '').trim().toLowerCase();
+        if (imp === 'critique') return 1; if (imp === 'important') return (urg === 'immédiate' || urg === 'courte') ? 1 : 2; if (imp === 'modéré') return (urg === 'immédiate') ? 2 : 3; if (imp === 'mineur') return 4; return 3;
+    }
 getStrategieColor(strategieKey) {
   // 
   const PALETTE = [
@@ -471,7 +474,7 @@ populateStrategieLists(selected = {}) {
   // Priorité
  // const prio = this.calculerPriorite(record.urgence, record.impact);
  // let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
-const prioNum = this.getPrioriteNum(record.priorite);
+const prioNum = this.calculerPriorite(record.urgence, record.impact);
 const prioBadge = `<span class="priority-badge priority-${prioNum}">P${prioNum}</span>`;
 const strategieKey = record.strategie_objectif || record.strategie_action || record.strategie_sous_objectif || "";
 const strategieColor = this.getStrategieColor(strategieKey);
