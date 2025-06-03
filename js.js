@@ -220,8 +220,8 @@ populateStrategieLists(selected = {}) {
   if (selected.objectif) selObj.value = selected.objectif;
 
 
-  selObj.onchange = updateSousObjectif;
-  document.getElementById('strategie-sous-objectif').onchange = updateAction;
+  selObj.onchange = this.updateSousObjectif;
+  document.getElementById('strategie-sous-objectif').onchange = this.updateAction;
 
   this.updateSousObjectif();
 }
