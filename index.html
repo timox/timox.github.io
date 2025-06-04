@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="grist-disable-source-maps" content="true">
+    <title>Kanban SSIR (v16 - Sortable.js)</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <style>
+        /* --- Style adapté pour Sortable.js --- */
+        body { padding-top: 15px; background-color: #f4f7f6; font-size: 0.95rem; }
+        .container-fluid { padding-left: 25px; padding-right: 25px; }
+        #kanban-container { display: flex; overflow-x: auto; padding-bottom: 15px; margin-top: 15px; min-height: 300px; }
+        .kanban-board { background-color: #e9ecef; border-radius: 5px; margin-right: 15px; flex-shrink: 0; width: 300px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: width 0.3s ease, opacity 0.3s ease, padding 0.3s ease, margin 0.3s ease, border 0.3s ease; display: flex; flex-direction: column; }
+        .kanban-board-header { padding: 10px 15px; font-weight: bold; border-bottom: 1px solid #dee2e6; border-top-left-radius: 5px; border-top-right-radius: 5px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        .kanban-items-container { padding: 0 10px 10px 10px; overflow-y: auto; flex-grow: 1; min-height: 100px; }
+        .kanban-item { background-color: white; padding: 10px 15px; border-radius: 3px; margin: 10px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-left: 5px solid transparent; cursor: grab; font-size: 0.9rem; }
+        .kanban-item:active { cursor: grabbing; }
+        .sortable-ghost { opacity: 0.4; background: #c8ebfb; }
+
+        /* --- Couleurs & Badges --- */
+        .entete-backlog { background-color: #d6dbdf; color: #515a5a; border-left: 5px solid #808b96; }
+        .entete-a-faire { background-color: #cfe2ff; color: #052c65; border-left: 5px solid #0d6efd; } /* P3 Bleu */
+        .entete-en-cours { background-color: #fff3cd; color: #664d03; border-left: 5px solid #ffc107; }
+        .entete-en-attente { background-color: #ffe5d0; color: #84350f; border-left: 5px solid #fd7e14; } /* P2 Orange */
+        .entete-bloque { background-color: #f8d7da; color: #58151c; border-left: 5px solid #dc3545; } /* P1 Rouge */
+        .entete-validation { background-color: #e2d9f3; color: #422570; border-left: 5px solid #6f42c1; }
+        .entete-termine { background-color: #d1e7dd; color: #0f5132; border-left: 5px solid #198754; }
+        .badge { font-size: 0.75rem; padding: 0.3em 0.6em; margin-right: 5px; margin-bottom: 3px; display: inline-block; }
+        .projet { background-color: #6f42c1; color: white; } /* Violet */
+        .qui { background-color: #20c997; color: white; } /* Bleu sarcelle / Teal */
+        .bureau { background-color: #198754; color: white; } /* Vert */
+        .strategie-icon { color: #fd7e14; margin-left: 5px; cursor: help; font-size: 0.8em; vertical-align: middle;}
+
+        /* --- Priorités --- */
+        .priority-1 { border-left: 5px solid #dc3545 !important; } /* Rouge */
+        .priority-2 { border-left: 5px solid #fd7e14 !important; } /* Orange */
+        .priority-3 { border-left: 5px solid #0d6efd !important; } /* Bleu */
+        .priority-4 { border-left: 5px solid #6c757d !important; } /* Gris */
+        .badge-priority { font-weight: bold; margin-right: 5px; font-size: 0.8em; }
+        .badge-priority-1 { background-color: #dc3545; color: white; }
+        .badge-priority-2 { background-color: #fd7e14; color: white; }
+        .badge-priority-3 { background-color: #0d6efd; color: white; }
+        .badge-priority-4 { background-color: #6c757d; color: white; }
+
+        /* --- Structure Carte --- */
+        .task-title { font-weight: bold; color: #343a40; margin-bottom: 5px; display: block; font-size: 1rem; }
+        .kanban-item-content { line-height: 1.4; }
+        .kanban-item-line1 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .kanban-item-prio-cible { display: flex; align-items: center; flex-shrink: 0; margin-right: 5px;}
+        .kanban-item-badges { margin-top: 5px; line-height: 1.6; }
+        .kanban-item-details { margin-top: 8px; font-size: 0.85rem; color: #6c757d; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; }
+        .due-date-indicator { margin-left: 8px; color: #555; cursor: help; font-size: 0.85em; vertical-align: middle; }
+
+        /* --- Modal & Autres --- */
+        /* --- Modification : Modal plus large --- */
+        #popup-tache .modal-dialog { max-width: 950px; /* Élargi */ }
+        #popup-bureau, #popup-qui { min-height: 100px; }
+        #popup-strategie { min-height: 40px; }
+        /* --- Modification : Style pour les détails de stratégie affichés --- */
+        .strategie-detail-display {
+            background-color: #f8f9fa; /* Fond légèrement grisé */
+            border: 1px solid #e9ecef;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            color: #495057;
+            min-height: 38px; /* Aligner avec hauteur input/select */
+            overflow-y: auto; /* Scroll si contenu trop long */
+            max-height: 70px; /* Limiter hauteur */
+            white-space: pre-wrap; /* Respecter retours à la ligne */
+        }
+        /* --- Fin Modification --- */
+        #btn-new-task { margin-bottom: 15px; }
+        .error-message { color: red; font-weight: bold; padding: 10px; border: 1px solid red; background-color: #fdd; margin: 15px; }
+        .custom-context-menu { position: absolute; background-color: white; border: 1px solid #ccc; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); z-index: 1000; padding: 5px 0; min-width: 150px; border-radius: 4px; }
+        .custom-context-menu button { display: block; width: 100%; padding: 8px 15px; border: none; background: none; text-align: left; cursor: pointer; font-size: 0.9rem; }
+        .custom-context-menu button:hover { background-color: #f0f0f0; }
+        .custom-context-menu .delete-option { color: #dc3545; }
+        .custom-context-menu .delete-option:hover { color: white; background-color: #dc3545; }
+        #filters { margin-bottom: 15px; padding: 10px; background-color: #f8f9fa; border-radius: 5px; }
+        #other-options { padding-left: 15px;}
+        .kanban-board.board-hidden { width: 0 !important; padding-left: 0 !important; padding-right: 0 !important; margin-left: -1px !important; margin-right: 0 !important; border: none !important; opacity: 0; overflow: hidden; }
+
+        /* --- Style Tooltips --- */
+        .tooltip-inner { background-color: white; color: #333; border: 1px solid #ccc; padding: 8px 12px; font-size: 0.95rem; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.15); max-width: 300px; }
+        .tooltip.bs-tooltip-top .arrow::before { border-top-color: #ccc; }
+        .tooltip.bs-tooltip-bottom .arrow::before { border-bottom-color: #ccc; }
+        .tooltip.bs-tooltip-left .arrow::before { border-left-color: #ccc; }
+        .tooltip.bs-tooltip-right .arrow::before { border-right-color: #ccc; }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3"> <h1 class="h3">Tableau Kanban SSIR</h1> <button id="btn-new-task" class="btn btn-success"><i class="fas fa-plus"></i> Nouvelle Tâche</button> </div>
+    <div id="error-container"></div>
+
+    <div id="filters" class="form-row align-items-end">
+        <div class="col-md-3 mb-2"> <label for="filter-bureau" class="mb-0"><small>Bureau</small></label> <select id="filter-bureau" class="form-control form-control-sm"> <option value="">Tous</option> </select> </div>
+        <div class="col-md-3 mb-2"> <label for="filter-qui" class="mb-0"><small>Qui</small></label> <select id="filter-qui" class="form-control form-control-sm"> <option value="">Tous</option> </select> </div>
+        <div class="col-md-2 mb-2"> <label for="filter-projet" class="mb-0"><small>Projet</small></label> <select id="filter-projet" class="form-control form-control-sm"> <option value="">Tous</option> </select> </div>
+        <div class="col-md-2 mb-2"> <label for="filter-statut" class="mb-0"><small>Statut</small></label> <select id="filter-statut" class="form-control form-control-sm"> <option value="">Tous</option> </select> </div>
+        <div id="other-options" class="col-md-2 mb-2 form-inline justify-content-end">
+            <div class="form-check"> <input class="form-check-input" type="checkbox" value="" id="toggle-termine" checked> <label class="form-check-label" for="toggle-termine"> <small>Aff. Terminés</small> </label> </div>
+        </div>
+    </div>
+
+    <div id="kanban-container"> <div style="padding: 20px; color: grey;">Chargement du Kanban...</div> </div>
+
+    <div class="modal fade" id="popup-tache" tabindex="-1" role="dialog" aria-labelledby="popupTacheLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document"> <div class="modal-content">
+                <div class="modal-header"> <h5 class="modal-title" id="popupTacheLabel">Détails Tâche</h5> <button type="button" class="close" data-dismiss="modal" aria-label="Close"> <span aria-hidden="true">&times;</span> </button> </div>
+                <div class="modal-body">
+                    <form id="form-tache">
+                        <input type="hidden" id="popup-id">
+                        <div class="form-group"> <label for="popup-titre">Titre</label> <input type="text" class="form-control" id="popup-titre" required> </div>
+                        <div class="form-group"> <label for="popup-description">Description</label> <textarea class="form-control" id="popup-description" rows="3"></textarea> </div>
+                        <div class="row">
+                            <div class="col-md-4"><div class="form-group"> <label>Statut</label> <input type="text" id="popup-statut-text" class="form-control" disabled> </div></div>
+                            <div class="col-md-4"><div class="form-group"> <label for="popup-projet">Projet</label> <select id="popup-projet" class="form-control"></select> </div></div>
+                            <div class="col-md-4"><div class="form-group"> <label for="popup-date-echeance">Date d'échéance (JJ/MM/AA)</label> <input type="text" class="form-control" id="popup-date-echeance" placeholder="JJ/MM/AA"> <small id="date-error" class="form-text text-danger" style="display: none;"></small> </div></div>
+                        </div>
+                         <div class="row">
+                             <div class="col-md-6"><div class="form-group"> <label for="popup-urgence">Urgence</label> <select id="popup-urgence" class="form-control"></select> </div></div>
+                             <div class="col-md-6"><div class="form-group"> <label for="popup-impact">Impact</label> <select id="popup-impact" class="form-control"></select> </div></div>
+                         </div>
+
+                        <hr>
+                        <h5>Stratégie Associée</h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                     <label for="popup-strategie">Choisir Stratégie (ID)</label>
+                                     <select id="popup-strategie" class="form-control"></select>
+                                 </div>
+                            </div>
+                            <div class="col-md-8">
+                                 <div class="form-group">
+                                     <label>Objectif</label>
+                                     <div id="popup-strategie-objectif" class="strategie-detail-display"></div>
+                                 </div>
+                             </div>
+                         </div>
+                         <div class="row">
+                              <div class="col-md-6">
+                                 <div class="form-group">
+                                     <label>Sous-Objectif</label>
+                                     <div id="popup-strategie-sous-objectif" class="strategie-detail-display"></div>
+                                 </div>
+                             </div>
+                             <div class="col-md-6">
+                                 <div class="form-group">
+                                     <label>Action</label>
+                                     <div id="popup-strategie-action" class="strategie-detail-display"></div>
+                                 </div>
+                             </div>
+                         </div>
+                         <hr>
+                         <div class="row">
+                             <div class="col-md-6"><div class="form-group"> <label for="popup-bureau">Bureaux</label> <select id="popup-bureau" multiple class="form-control"></select> </div></div>
+                             <div class="col-md-6"><div class="form-group"> <label for="popup-qui">Responsables</label> <select id="popup-qui" multiple class="form-control"></select> </div></div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button> <button type="button" class="btn btn-primary" id="popup-sauvegarder">Enregistrer</button> </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+ <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+ <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+ <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+ <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+ <script src="kabanssirV9.16.js.txt"></script> <script>
+    $(function () {
+        // Initialiser les tooltips via délégation sur body
+        $('body').tooltip({
+            selector: '[data-toggle="tooltip"]',
+            trigger: 'hover' // Afficher au survol
+        });
+    })
+ </script>
+
+</body>
+</html>
