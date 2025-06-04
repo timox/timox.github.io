@@ -476,7 +476,15 @@
               <button class="btn btn-outline-secondary" type="button" id="btn-ajout-projet"><i class="bi bi-plus"></i></button>
             </div>
           </div>
-          
+          <div class="col-12">
+            <label class="form-label">Stratégie</label>
+            <div class="input-group flex-nowrap" style="gap:0.5em;">
+              <select class="form-select" id="strategie-objectif" size="5" style="min-width:260px;"></select>
+              <select class="form-select" id="strategie-sous-objectif" size="5" style="min-width:260px;"></select>
+              <select class="form-select" id="strategie-action" size="5" style="min-width:260px;"></select>
+            </div>
+          </div>
+
           <div class="col-md-6">
             <label class="form-label">Urgence & Impact</label>
             <div class="input-group">
@@ -509,16 +517,7 @@
             <select class="form-select" id="popup-qui" multiple size="4"></select>
             <div class="form-text">Maintenez Ctrl pour sélectionner plusieurs responsables</div>
           </div>
-          <div class="col-12">
-  <label class="form-label">Stratégie</label>
-  <div class="input-group flex-nowrap" style="gap:0.5em;">
-    <select class="form-select" id="strategie-objectif" size="5" style="min-width:160px;"></select>
-    <select class="form-select" id="strategie-sous-objectif" size="5" style="min-width:160px;"></select>
-    <select class="form-select" id="strategie-action" size="5" style="min-width:160px;"></select>
-  </div>
-</div>
 
-        </div>
         <div class="row mt-3">
           <div class="col-12">
             <label class="form-label">Affectation</label>
@@ -537,9 +536,8 @@
       </button>
     </div>
   </div>
-</div>
-
-  </div>
+        </div>
+      </div>
   <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
