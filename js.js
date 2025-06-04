@@ -459,11 +459,11 @@ class KanbanManager {
       strategie_sous_objectif,
       strategie_action
     };
-    if (!grist.docApi.updateRecords || !grist.docApi.addRecords) {
+    /* if (!grist.docApi.updateRecords || !grist.docApi.addRecords) {
       displayError("grist.docApi.updateRecords/addRecords n'est pas disponible dans ce contexte.");
       return;
     }
-    if (this.currentTaskId) {
+*/    if (this.currentTaskId) {
       await grist.docApi.updateRecords(TABLE_ID, [this.currentTaskId], row);
     } else {
       await grist.docApi.addRecords(TABLE_ID, [row]);
