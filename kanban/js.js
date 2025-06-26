@@ -330,8 +330,7 @@ class KanbanManager {
       `;
     });
     this.kanbanContainer.innerHTML = kanbanHTML;
-    // === CORRECTION 2: Mise à jour de la configuration Sortable ===
-// Dans la méthode refreshKanban(), remplacez la création de Sortable par :
+
 
 // === CORRECTION 2: Mise à jour de la configuration Sortable ===
 // Dans la méthode refreshKanban(), remplacez la création de Sortable par :
@@ -352,33 +351,60 @@ statutsToShow.forEach(statut => {
     this.sortableInstances.push(sortable);
   }
 });
-    Array.from(this.kanbanContainer.querySelectorAll('.kanban-item .editable-zone')).forEach(el => {
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const item = el.closest('.kanban-item');
-        const id = parseInt(item.dataset.id, 10);
-        const tache = this.currentRecords.find(r => r.id === id);
-        if (tache) this.openPopup(tache);
-      });
-    });
+    // === CORRECTION 3: Amélioration de la gestion des événements ===
+// Mise à jour de la partie qui gère les clics sur les éléments éditables
+
+Array.from(this.kanbanContainer.querySelectorAll('.kanban-item .editable-zone')).forEach(el => {
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    e.preventDefault(); // Empêche les conflits
+    const item = el.closest('.kanban-item');
+    const id = parseInt(item.dataset.id, 10);
+    const tache = this.currentRecords.find(r => r.id === id);
+    if (tache) this.openPopup(tache);
+  });
+});
+  //end refresh kansban
   }
 
-  handleDragEnd(evt, statut) {
-    if (!evt.item) return;
-    const id = parseInt(evt.item.dataset.id, 10);
-    const record = this.currentRecords.find(r => r.id === id);
-    if (!record) return;
-    const newStatus = evt.to.dataset.status;
-    if (record.statut !== newStatus) {
-      if (!grist.docApi.updateRecords) {
-        displayError("grist.docApi.updateRecords n'est pas disponible dans ce contexte.");
-        return;
-      }
-      grist.docApi.updateRecords(TABLE_ID, [id], { statut: newStatus }).then(() => {
-        this.signalLocalUpdate();
-      });
-    }
+  // === CORRECTION 4: Amélioration du handleDragEnd ===
+handleDragEnd(evt, targetStatus) {
+  if (!evt.item || !evt.item.dataset) return;
+  
+  const id = parseInt(evt.item.dataset.id, 10);
+  if (isNaN(id)) return;
+  
+  const record = this.currentRecords.find(r => r.id === id);
+  if (!record) return;
+  
+  const newStatus = evt.to.dataset.status;
+  
+  // Ne fait rien si le statut n'a pas changé
+  if (record.statut === newStatus) return;
+  
+  console.log(`Déplacement de la tâche ${id} vers ${newStatus}`);
+  
+  // Vérification de l'API Grist
+  if (!grist.docApi || !grist.docApi.updateRecords) {
+    displayError("L'API Grist n'est pas disponible pour la mise à jour.");
+    return;
   }
+  
+  // Mise à jour dans Grist
+  grist.docApi.updateRecords(TABLE_ID, [id], { statut: newStatus })
+    .then(() => {
+      console.log(`Tâche ${id} mise à jour avec succès`);
+      this.signalLocalUpdate();
+      // Optionnel : rafraîchir l'affichage
+      setTimeout(() => this.refreshKanban(), 100);
+    })
+    .catch(error => {
+      console.error('Erreur lors de la mise à jour:', error);
+      displayError(`Erreur lors du déplacement de la tâche: ${error.message}`);
+      // Recharger pour annuler le déplacement visuel
+      this.refreshKanban();
+    });
+}
 
   calculerPriorite(u, i) {
     const imp = String(i || '').trim().toLowerCase();
