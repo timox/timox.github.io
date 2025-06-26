@@ -330,19 +330,28 @@ class KanbanManager {
       `;
     });
     this.kanbanContainer.innerHTML = kanbanHTML;
-    statutsToShow.forEach(statut => {
-      const boardId = statut.classe;
-      const el = document.getElementById(`items-${boardId}`);
-      if (el) {
-        const sortable = new Sortable(el, {
-          group: 'kanban',
-          animation: 150,
-          handle: '.drag-handle',
-          onEnd: evt => this.handleDragEnd(evt, statut.id)
-        });
-        this.sortableInstances.push(sortable);
-      }
+    // === CORRECTION 2: Mise à jour de la configuration Sortable ===
+// Dans la méthode refreshKanban(), remplacez la création de Sortable par :
+
+// === CORRECTION 2: Mise à jour de la configuration Sortable ===
+// Dans la méthode refreshKanban(), remplacez la création de Sortable par :
+
+statutsToShow.forEach(statut => {
+  const boardId = statut.classe;
+  const el = document.getElementById(`items-${boardId}`);
+  if (el) {
+    const sortable = new Sortable(el, {
+      group: 'kanban',
+      animation: 150,
+      handle: '.drag-handle',  // Utilise la poignée pour le drag
+      ghostClass: 'sortable-ghost',
+      chosenClass: 'sortable-chosen',
+      dragClass: 'sortable-drag',
+      onEnd: evt => this.handleDragEnd(evt, statut.id)
     });
+    this.sortableInstances.push(sortable);
+  }
+});
     Array.from(this.kanbanContainer.querySelectorAll('.kanban-item .editable-zone')).forEach(el => {
       el.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -441,55 +450,8 @@ createTaskElementHTML(record) {
   </div>`;
 }
   
-/*
-  createTaskElementHTML(record) {
-    // Priorité
-    const prio = this.calculerPriorite(record.urgence, record.impact);
-    let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
-    // Projet avec infobulle stratégie
-    let projetTag = '';
-    if (record.projet) {
-      const tooltip = [
-        record.strategie_objectif ? `Objectif: ${record.strategie_objectif}` : '',
-        record.strategie_sous_objectif ? `Sous-objectif: ${record.strategie_sous_objectif}` : '',
-        record.strategie_action ? `Action: ${record.strategie_action}` : ''
-      ].filter(Boolean).join('\n');
-      projetTag = `<span class="badge bg-info text-dark" title="${tooltip.replace(/"/g, '&quot;')}">${record.projet}</span>`;
-    }
-    // Résumé description
-    let resumeDesc = '';
-    if (record.description) {
-      const mots = record.description.split(/\s+/).slice(0, 10).join(' ');
-      resumeDesc = `<div class="desc-resume">${mots}${record.description.split(/\s+/).length > 10 ? '…' : ''}</div>`;
-    }
-    // Personnes
-    let personnes = '';
-    if (Array.isArray(record.qui) && record.qui.length > 1) {
-      personnes = '<div class="personnes-list">' +
-        record.qui.slice(1).map(q => `<span class="personne-badge">${q}</span>`).join(' ') +
-        '</div>';
-    }
-    // Icône délai
-    let delaiIcon = '';
-    if (record.delai) {
-      delaiIcon = `<span class="delai-indicator" title="Date butoir : ${this.formatDelai(record.delai)}">
-        <i class="bi bi-calendar-event"></i>
-      </span>`;
-    }
-    return `<div class="kanban-item" data-id="${record.id}">
-      <div class="kanban-item-header">
-        <div>${prioBadge}</div>
-        <div>
-          ${projetTag}
-          ${delaiIcon}
-        </div>
-      </div>
-      <div class="item-title editable-zone">${record.titre || ''}</div>
-      ${resumeDesc}
-      ${personnes}
-    </div>`;
-  }
-*/
+
+  
   formatDelai(dateStr) {
     const options = { weekday: 'short', day: 'numeric', month: 'short' };
     return new Date(dateStr).toLocaleDateString('fr-FR', options);
