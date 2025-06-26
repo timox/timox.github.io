@@ -510,8 +510,8 @@ createTaskElementHTML(record) {
     document.getElementById('btn-save-task').onclick = () => this.saveTask();
     document.getElementById('btn-nouvelle-tache').onclick = () => this.openPopup();
   }
-})();
-
+} // <-- ferme la classe KanbanManager
+)(); // <-- ferme l'IIFE
 
 document.addEventListener('DOMContentLoaded', () => {
   new KanbanManager();
