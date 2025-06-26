@@ -1,3 +1,4 @@
+// === CORRECTION COMPLÈTE POUR LA GESTION DES DATES ===
 const STATUTS = [
   { id: 'Backlog', libelle: 'Backlog', classe: 'backlog' },
   { id: 'À faire', libelle: 'À faire', classe: 'a-faire' },
@@ -7,6 +8,7 @@ const STATUTS = [
   { id: 'Validation', libelle: 'Validation', classe: 'validation' },
   { id: 'Terminé', libelle: 'Terminé', classe: 'termine' }
 ];
+
 const DEFAULT_BUREAUX = ['Exploit', 'Réseau', 'BDD', 'Chef SSIR'];
 const DEFAULT_RESPONSABLES = ['Alex', 'Timothée', 'Isabelle', 'Chloé', 'Paul', 'Théo', 'Gaël', 'Thomas', 'Elie', 'Landry', 'Presta'];
 const DEFAULT_URGENCES = ['Immédiate', 'Courte', 'Moyenne', 'Longue'];
@@ -17,11 +19,18 @@ const DEFAULT_PROJETS = [
   'conformité systèmes', 'MCO', 'conformité RZO', 'firewall', 'Libriciel', 'intranet-extranet',
   'optimops', 'attestation assurances', 'horoquartz', 'administratif-budget'
 ];
+
 const TABLE_ID = "Ssir_principale_task";
+
+// Colonnes obligatoires
 const REQUIRED_COLUMNS = [
   'id', 'titre', 'description', 'statut', 'bureau', 'qui', 'urgence', 'impact',
-  'projet', 'strategie_objectif', 'strategie_sous_objectif', 'strategie_action', 'notes', 'delai'
+  'projet', 'strategie_objectif', 'strategie_sous_objectif', 'strategie_action', 'notes'
 ];
+
+// Colonnes optionnelles pour les dates
+const OPTIONAL_COLUMNS = ['date_debut', 'date_echeance'];
+
 let projetsDynamiques = [];
 
 function displayError(message) {
@@ -53,6 +62,7 @@ class KanbanManager {
     this.showTermine = true;
     this.sortableInstances = [];
     this.flatpickr = null;
+    this.availableColumns = new Set(); // Pour tracker les colonnes disponibles
     this.init();
   }
 
@@ -61,9 +71,9 @@ class KanbanManager {
     await this.loadGristDataAndOptions();
     this.initFilters();
     this.initModalWithOptions();
-    this.initFlatpickr && this.initFlatpickr();
+    this.initFlatpickr();
     this.refreshKanban();
-    this.initEventListeners && this.initEventListeners();
+    this.initEventListeners();
   }
 
   async waitForGristReady() {
@@ -74,20 +84,33 @@ class KanbanManager {
     });
   }
 
+  // === CORRECTION: Amélioration de loadGristDataAndOptions pour détecter les colonnes disponibles ===
   async loadGristDataAndOptions() {
     try {
       const records = await grist.docApi.fetchTable(TABLE_ID);
+      
+      // Détecter les colonnes disponibles
+      if (records && typeof records === 'object') {
+        this.availableColumns = new Set(Object.keys(records));
+        console.log('Colonnes disponibles:', Array.from(this.availableColumns));
+      }
+      
       this.currentRecords = this.mapGristRecords(records);
       this.gristOptions.statut = DEFAULT_STATUTS;
       this.gristOptions.urgence = DEFAULT_URGENCES;
       this.gristOptions.impact = DEFAULT_IMPACTS;
+      
       const bureaux = this.getUniqueValuesFromData('bureau', true);
       this.gristOptions.bureau = [...new Set([...DEFAULT_BUREAUX, ...bureaux])].sort();
+      
       const responsables = this.getUniqueValuesFromData('qui', true);
       this.gristOptions.qui = [...new Set([...DEFAULT_RESPONSABLES, ...responsables])].sort();
+      
       const projets = this.getUniqueValuesFromData('projet');
       this.gristOptions.projet = [...new Set([...DEFAULT_PROJETS, ...projets, ...projetsDynamiques])].sort();
+      
     } catch (error) {
+      console.error('Erreur lors du chargement des données:', error);
       this.gristOptions.statut = DEFAULT_STATUTS;
       this.gristOptions.urgence = DEFAULT_URGENCES;
       this.gristOptions.impact = DEFAULT_IMPACTS;
@@ -111,17 +134,22 @@ class KanbanManager {
     return Array.from(values).filter(v => v).sort();
   }
 
+  // === CORRECTION: Amélioration de mapGristRecords pour gérer les colonnes optionnelles ===
   mapGristRecords(gristData) {
     const records = [];
     if (!gristData || typeof gristData !== 'object') return [];
+    
     const keys = Object.keys(gristData);
     if (!keys.includes('id') || !Array.isArray(gristData.id)) return [];
+    
     const num = gristData.id.length;
-    const cols = REQUIRED_COLUMNS;
+    
     for (let i = 0; i < num; i++) {
       const rec = {};
       let ok = true;
-      for (const key of cols) {
+      
+      // Traitement des colonnes obligatoires
+      for (const key of REQUIRED_COLUMNS) {
         if (gristData.hasOwnProperty(key) && Array.isArray(gristData[key]) && gristData[key].length > i) {
           const v = gristData[key][i];
           if ((key === 'bureau' || key === 'qui') && Array.isArray(v) && v[0] === 'L') {
@@ -131,36 +159,298 @@ class KanbanManager {
           } else {
             rec[key] = v;
           }
-        } else if (key === 'id') { ok = false; break; }
-        else rec[key] = null;
+        } else if (key === 'id') { 
+          ok = false; 
+          break; 
+        } else {
+          rec[key] = null;
+        }
       }
-      if (ok) { rec.id = parseInt(rec.id, 10); if (!isNaN(rec.id)) records.push(rec); }
+      
+      // Traitement des colonnes optionnelles
+      for (const key of OPTIONAL_COLUMNS) {
+        if (gristData.hasOwnProperty(key) && Array.isArray(gristData[key]) && gristData[key].length > i) {
+          rec[key] = gristData[key][i];
+        } else {
+          rec[key] = null; // Valeur par défaut pour les colonnes optionnelles
+        }
+      }
+      
+      if (ok) { 
+        rec.id = parseInt(rec.id, 10); 
+        if (!isNaN(rec.id)) records.push(rec); 
+      }
     }
     return records;
   }
-// === CORRECTION 6: Amélioration du handleGristUpdate ===
-handleGristUpdate(gristRecords, mappings = null) {
-  if (this.isUpdating) return;
-  if (this.ignoreNextOnRecords) { 
-    this.ignoreNextOnRecords = false; 
-    return; 
+
+  // === CORRECTION: Amélioration de saveTask pour gérer date_debut et date_echeance ===
+  async saveTask() {
+    try {
+      const delaiType = document.getElementById('delai-type') ? document.getElementById('delai-type').value : 'date';
+      let dateEcheance = '';
+      let dateDebut = '';
+      
+      // Gestion de la date d'échéance
+      if (delaiType === 'date') {
+        dateEcheance = this.flatpickr && this.flatpickr.selectedDates[0] ? 
+          this.flatpickr.formatDate(this.flatpickr.selectedDates[0], "Y-m-d") : '';
+      } else if (document.getElementById('popup-delai')) {
+        const qte = parseInt(document.getElementById('popup-delai').value);
+        if (!isNaN(qte) && qte > 0) {
+          const today = new Date();
+          if (delaiType === 'semaines') today.setDate(today.getDate() + qte * 7);
+          else today.setMonth(today.getMonth() + qte);
+          dateEcheance = today.toISOString().slice(0,10);
+        }
+      }
+      
+      // Date de début = aujourd'hui si c'est une nouvelle tâche
+      if (!this.currentTaskId) {
+        dateDebut = new Date().toISOString().slice(0,10);
+      } else {
+        // Conserver la date de début existante pour les tâches modifiées
+        const existingRecord = this.currentRecords.find(r => r.id === this.currentTaskId);
+        dateDebut = existingRecord?.date_debut || '';
+      }
+      
+      const titre = document.getElementById('popup-titre').value;
+      const description = document.getElementById('popup-description').value;
+      const statut = document.getElementById('popup-statut-text').value;
+      const projet = document.getElementById('popup-projet').value;
+      const urgence = document.getElementById('popup-urgence').value;
+      const impact = document.getElementById('popup-impact').value;
+      const bureau = Array.from(document.getElementById('popup-bureau').selectedOptions).map(o => o.value);
+      const qui = Array.from(document.getElementById('popup-qui').selectedOptions).map(o => o.value);
+      
+      // Stratégie
+      const strategie_objectif = document.getElementById('strategie-objectif').value;
+      const strategie_sous_objectif = document.getElementById('strategie-sous-objectif').value;
+      const strategie_action = document.getElementById('strategie-action').value;
+      
+      // Construire l'objet row avec les colonnes de base
+      const row = {
+        titre, 
+        description, 
+        statut, 
+        projet, 
+        urgence, 
+        impact,
+        bureau: ['L', ...bureau],
+        qui: ['L', ...qui],
+        strategie_objectif,
+        strategie_sous_objectif,
+        strategie_action
+      };
+
+      // Ajouter les dates seulement si les colonnes existent
+      if (this.availableColumns.has('date_debut') && dateDebut) {
+        row.date_debut = dateDebut;
+      }
+      
+      if (this.availableColumns.has('date_echeance') && dateEcheance) {
+        row.date_echeance = dateEcheance;
+      }
+
+      if (this.currentTaskId) {
+        // Mise à jour d'un enregistrement existant
+        await grist.docApi.applyUserActions([
+          ['UpdateRecord', TABLE_ID, this.currentTaskId, row]
+        ]);
+        console.log(`Tâche ${this.currentTaskId} mise à jour avec succès`);
+        
+        // Mise à jour immédiate des données locales
+        const recordIndex = this.currentRecords.findIndex(r => r.id === this.currentTaskId);
+        if (recordIndex !== -1) {
+          this.currentRecords[recordIndex] = { ...this.currentRecords[recordIndex], ...row };
+          // Ajouter les dates aux données locales même si pas dans Grist
+          if (dateDebut) this.currentRecords[recordIndex].date_debut = dateDebut;
+          if (dateEcheance) this.currentRecords[recordIndex].date_echeance = dateEcheance;
+        }
+        
+      } else {
+        // Ajout d'un nouvel enregistrement
+        const result = await grist.docApi.applyUserActions([
+          ['AddRecord', TABLE_ID, null, row]
+        ]);
+        console.log('Nouvelle tâche créée avec succès');
+        
+        // Ajouter le nouvel enregistrement aux données locales
+        if (result && result[0] && result[0].id) {
+          const newRecord = { id: result[0].id, ...row };
+          if (dateDebut) newRecord.date_debut = dateDebut;
+          if (dateEcheance) newRecord.date_echeance = dateEcheance;
+          this.currentRecords.push(newRecord);
+        }
+      }
+      
+      this.modal.hide();
+      
+      // Rafraîchir l'affichage immédiatement
+      this.refreshKanban();
+      
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      
+      // Message d'erreur plus informatif
+      let errorMessage = error.message;
+      if (errorMessage.includes("KeyError 'date_debut'") || errorMessage.includes("KeyError 'date_echeance'")) {
+        errorMessage = "Les colonnes de dates (date_debut/date_echeance) n'existent pas dans votre table Grist. Vous pouvez continuer à utiliser l'application, mais les dates ne seront pas sauvegardées.";
+      }
+      
+      displayError(`Erreur lors de la sauvegarde: ${errorMessage}`);
+    }
+  }
+
+  // === CORRECTION: Amélioration de createTaskElementHTML pour afficher les échéances ===
+  createTaskElementHTML(record) {
+    // Priorité
+    const prio = this.calculerPriorite(record.urgence, record.impact);
+    let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
+    
+    // Projet avec infobulle stratégie
+    let projetTag = '';
+    if (record.projet) {
+      const tooltip = [
+        record.strategie_objectif ? `Objectif: ${record.strategie_objectif}` : '',
+        record.strategie_sous_objectif ? `Sous-objectif: ${record.strategie_sous_objectif}` : '',
+        record.strategie_action ? `Action: ${record.strategie_action}` : ''
+      ].filter(Boolean).join('\n');
+      projetTag = `<span class="badge bg-info text-dark" title="${tooltip.replace(/"/g, '&quot;')}">${record.projet}</span>`;
+    }
+    
+    // Résumé description
+    let resumeDesc = '';
+    if (record.description) {
+      const mots = record.description.split(/\s+/).slice(0, 10).join(' ');
+      resumeDesc = `<div class="desc-resume">${mots}${record.description.split(/\s+/).length > 10 ? '…' : ''}</div>`;
+    }
+    
+    // Personnes
+    let personnes = '';
+    if (Array.isArray(record.qui) && record.qui.length > 1) {
+      personnes = '<div class="personnes-list">' +
+        record.qui.slice(1).map(q => `<span class="personne-badge">${q}</span>`).join(' ') +
+        '</div>';
+    }
+    
+    // === AMÉLIORATION: Gestion des dates de début et d'échéance ===
+    let datesElement = '';
+    const hasDateDebut = record.date_debut;
+    const hasDateEcheance = record.date_echeance;
+    
+    if (hasDateDebut || hasDateEcheance) {
+      let dateInfo = [];
+      
+      // Date de début
+      if (hasDateDebut) {
+        const debutFormatted = this.formatDate(record.date_debut);
+        dateInfo.push(`<span class="date-debut" title="Début: ${debutFormatted}">
+          <i class="bi bi-play-circle"></i> ${debutFormatted}
+        </span>`);
+      }
+      
+      // Date d'échéance avec calcul de l'urgence
+      if (hasDateEcheance) {
+        const echeanceDate = new Date(record.date_echeance);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        echeanceDate.setHours(0, 0, 0, 0);
+        
+        const diffTime = echeanceDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        let echeanceClass = 'echeance-ok';
+        let echeanceIcon = 'bi-calendar-check';
+        let echeanceText = '';
+        
+        if (diffDays < 0) {
+          echeanceClass = 'echeance-depassee';
+          echeanceIcon = 'bi-calendar-x';
+          echeanceText = `Dépassé (${Math.abs(diffDays)}j)`;
+        } else if (diffDays === 0) {
+          echeanceClass = 'echeance-aujourd-hui';
+          echeanceIcon = 'bi-calendar-exclamation';
+          echeanceText = "Aujourd'hui";
+        } else if (diffDays <= 3) {
+          echeanceClass = 'echeance-urgent';
+          echeanceIcon = 'bi-calendar-exclamation';
+          echeanceText = `${diffDays}j restant${diffDays > 1 ? 's' : ''}`;
+        } else if (diffDays <= 7) {
+          echeanceClass = 'echeance-bientot';
+          echeanceIcon = 'bi-calendar-week';
+          echeanceText = `${diffDays}j restant${diffDays > 1 ? 's' : ''}`;
+        } else {
+          echeanceText = `J+${diffDays}`;
+        }
+        
+        const echeanceFormatted = this.formatDate(record.date_echeance);
+        dateInfo.push(`<span class="date-echeance ${echeanceClass}" title="Échéance: ${echeanceFormatted}">
+          <i class="bi ${echeanceIcon}"></i> ${echeanceText}
+        </span>`);
+      }
+      
+      if (dateInfo.length > 0) {
+        datesElement = `<div class="dates-container">${dateInfo.join('')}</div>`;
+      }
+    }
+    
+    // Classe CSS additionnelle pour les cartes avec échéance
+    const hasEcheanceClass = hasDateEcheance ? 'has-echeance' : '';
+    const hasDateDebutClass = hasDateDebut ? 'has-debut' : '';
+    
+    // Poignée drag & drop
+    return `<div class="kanban-item ${hasEcheanceClass} ${hasDateDebutClass}" data-id="${record.id}">
+      <div class="drag-handle">
+        <i class="bi bi-grip-vertical"></i>
+      </div>
+      <div class="kanban-item-header">
+        <div>${prioBadge}</div>
+        <div class="item-badges">
+          ${projetTag}
+        </div>
+      </div>
+      <div class="item-title editable-zone">${record.titre || ''}</div>
+      ${resumeDesc}
+      ${datesElement}
+      ${personnes}
+    </div>`;
   }
   
-  console.log('Mise à jour Grist reçue, rechargement des données...');
-  this.isUpdating = true;
-  
-  grist.docApi.fetchTable(TABLE_ID).then(fresh => {
-    this.currentRecords = this.mapGristRecords(fresh);
-    this.initFilters();
-    this.refreshKanban();
-    console.log('Données mises à jour avec succès');
-  }).catch(error => {
-    console.error('Erreur lors du rechargement des données:', error);
-    displayError(`Erreur lors du rechargement: ${error.message}`);
-  }).finally(() => { 
-    this.isUpdating = false; 
-  });
-}
+  formatDate(dateStr) {
+    if (!dateStr) return '';
+    try {
+      const options = { weekday: 'short', day: 'numeric', month: 'short' };
+      return new Date(dateStr).toLocaleDateString('fr-FR', options);
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
+  // === Méthodes de gestion des événements ===
+  handleGristUpdate(gristRecords, mappings = null) {
+    if (this.isUpdating) return;
+    if (this.ignoreNextOnRecords) { 
+      this.ignoreNextOnRecords = false; 
+      return; 
+    }
+    
+    console.log('Mise à jour Grist reçue, rechargement des données...');
+    this.isUpdating = true;
+    
+    grist.docApi.fetchTable(TABLE_ID).then(fresh => {
+      this.currentRecords = this.mapGristRecords(fresh);
+      this.initFilters();
+      this.refreshKanban();
+      console.log('Données mises à jour avec succès');
+    }).catch(error => {
+      console.error('Erreur lors du rechargement des données:', error);
+      displayError(`Erreur lors du rechargement: ${error.message}`);
+    }).finally(() => { 
+      this.isUpdating = false; 
+    });
+  }
+
   signalLocalUpdate() {
     this.ignoreNextOnRecords = true;
     setTimeout(() => { this.ignoreNextOnRecords = false; }, 500);
@@ -181,6 +471,7 @@ handleGristUpdate(gristRecords, mappings = null) {
       this.populateSelectWithOptions('popup-bureau', this.gristOptions.bureau || [], false);
       this.populateSelectWithOptions('popup-qui', this.gristOptions.qui || [], false);
       this.populateSelectWithOptions('popup-projet', this.gristOptions.projet || [], true);
+      
       const btnAjoutProjet = document.getElementById('btn-ajout-projet');
       if (btnAjoutProjet) {
         btnAjoutProjet.onclick = () => {
@@ -217,7 +508,6 @@ handleGristUpdate(gristRecords, mappings = null) {
     });
   }
 
-  // --- STRATEGIE : Extraction et chaînage dynamique ---
   getStratOptionsFromTasks() {
     const set = new Set();
     (this.currentRecords || []).forEach(rec => {
@@ -234,14 +524,12 @@ handleGristUpdate(gristRecords, mappings = null) {
   populateStrategieLists(selected = {}) {
     const STRATEGIES = this.getStratOptionsFromTasks();
 
-    // Objectifs
     const objectifs = [...new Set(STRATEGIES.map(s => s.objectif))].filter(Boolean).sort();
     const selObj = document.getElementById('strategie-objectif');
     if (!selObj) return;
     selObj.innerHTML = objectifs.map(obj => `<option value="${obj}">${obj}</option>`).join('');
     if (selected.objectif) selObj.value = selected.objectif;
 
-    // Sous-objectifs
     function updateSousObjectif() {
       const obj = selObj.value;
       const sousObj = [...new Set(STRATEGIES.filter(s => s.objectif === obj).map(s => s.sous_objectif))].filter(Boolean).sort();
@@ -251,7 +539,6 @@ handleGristUpdate(gristRecords, mappings = null) {
       updateAction();
     }
 
-    // Actions
     function updateAction() {
       const obj = selObj.value;
       const sousObj = document.getElementById('strategie-sous-objectif').value;
@@ -267,42 +554,41 @@ handleGristUpdate(gristRecords, mappings = null) {
     updateSousObjectif();
   }
 
- // === CORRECTION 5: Méthode openPopup améliorée ===
-openPopup(tache = {}) {
-  if (!this.modal || !this.modalElement) return;
-  const isNewTask = !tache.id;
-  this.currentTaskId = tache.id || null;
-  
-  // CORRECTION: Afficher/masquer le bouton supprimer selon le contexte
-  const btnDelete = document.getElementById('btn-delete-task');
-  if (btnDelete) {
-    btnDelete.style.display = isNewTask ? 'none' : 'inline-block';
+  openPopup(tache = {}) {
+    if (!this.modal || !this.modalElement) return;
+    const isNewTask = !tache.id;
+    this.currentTaskId = tache.id || null;
+    
+    const btnDelete = document.getElementById('btn-delete-task');
+    if (btnDelete) {
+      btnDelete.style.display = isNewTask ? 'none' : 'inline-block';
+    }
+    
+    const trySet = (id, value) => { const el = document.getElementById(id); if (el) el.value = value || ""; };
+    trySet('popup-id', tache.id || '');
+    trySet('popup-titre', tache.titre || '');
+    trySet('popup-description', tache.description || '');
+    trySet('popup-statut-text', tache.statut || (isNewTask ? (STATUTS[0]?.id || '') : ''));
+    trySet('popup-projet', tache.projet || '');
+    trySet('popup-urgence', tache.urgence || '');
+    trySet('popup-impact', tache.impact || '');
+    this.setSelectedOptions('popup-bureau', tache.bureau);
+    this.setSelectedOptions('popup-qui', tache.qui);
+    
+    this.populateStrategieLists({
+      objectif: tache.strategie_objectif,
+      sous_objectif: tache.strategie_sous_objectif,
+      action: tache.strategie_action
+    });
+    
+    // Remplir le champ délai avec la date d'échéance
+    const delaiInput = document.getElementById('popup-delai');
+    if (delaiInput && tache.date_echeance) {
+      delaiInput.value = tache.date_echeance;
+    }
+    
+    this.modal.show();
   }
-  
-  const trySet = (id, value) => { const el = document.getElementById(id); if (el) el.value = value || ""; };
-  trySet('popup-id', tache.id || '');
-  trySet('popup-titre', tache.titre || '');
-  trySet('popup-description', tache.description || '');
-  trySet('popup-statut-text', tache.statut || (isNewTask ? (STATUTS[0]?.id || '') : ''));
-  trySet('popup-projet', tache.projet || '');
-  trySet('popup-urgence', tache.urgence || '');
-  trySet('popup-impact', tache.impact || '');
-  this.setSelectedOptions('popup-bureau', tache.bureau);
-  this.setSelectedOptions('popup-qui', tache.qui);
-  
-  // Stratégie : chaînage dynamique
-  this.populateStrategieLists({
-    objectif: tache.strategie_objectif,
-    sous_objectif: tache.strategie_sous_objectif,
-    action: tache.strategie_action
-  });
-  
-  const delaiInput = document.getElementById('popup-delai');
-  if (delaiInput && tache.delai) delaiInput.value = tache.delai;
-  
-  this.modal.show();
-}
-
 
   setSelectedOptions(selectId, valuesWithL) {
     const sel = document.getElementById(selectId);
@@ -333,7 +619,6 @@ openPopup(tache = {}) {
       kanbanHTML += `
         <div id="board-${boardId}" class="kanban-board board-${boardId}${hiddenClass}">
           <div class="kanban-board-header">
-            <span class="board-title">${statut.libelle}</span>
             <span class="board-count">${count}</span>
           </div>
           <div class="kanban-board-body" id="items-${boardId}" data-status="${statut.id}">
@@ -344,7 +629,6 @@ openPopup(tache = {}) {
     });
     this.kanbanContainer.innerHTML = kanbanHTML;
 
-    // Configuration Sortable avec poignée de drag
     statutsToShow.forEach(statut => {
       const boardId = statut.classe;
       const el = document.getElementById(`items-${boardId}`);
@@ -362,7 +646,6 @@ openPopup(tache = {}) {
       }
     });
 
-    // Gestion des clics sur les éléments éditables
     Array.from(this.kanbanContainer.querySelectorAll('.kanban-item .editable-zone')).forEach(el => {
       el.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -375,48 +658,46 @@ openPopup(tache = {}) {
     });
   }
 
-// === CORRECTION 1: Méthode handleDragEnd améliorée ===
-async handleDragEnd(evt, targetStatus) {
-  if (!evt.item || !evt.item.dataset) return;
-  
-  const id = parseInt(evt.item.dataset.id, 10);
-  if (isNaN(id)) return;
-  
-  const record = this.currentRecords.find(r => r.id === id);
-  if (!record) return;
-  
-  const newStatus = evt.to.dataset.status;
-  
-  // Ne fait rien si le statut n'a pas changé
-  if (record.statut === newStatus) return;
-  
-  console.log(`Déplacement de la tâche ${id} vers ${newStatus}`);
-  
-  try {
-    // Utilisation d'applyUserActions pour mettre à jour le statut
-    await grist.docApi.applyUserActions([
-      ['UpdateRecord', TABLE_ID, id, { statut: newStatus }]
-    ]);
+  async handleDragEnd(evt, targetStatus) {
+    if (!evt.item || !evt.item.dataset) return;
     
-    console.log(`Tâche ${id} mise à jour avec succès`);
+    const id = parseInt(evt.item.dataset.id, 10);
+    if (isNaN(id)) return;
     
-    // CORRECTION: Mise à jour immédiate des données locales
-    const recordIndex = this.currentRecords.findIndex(r => r.id === id);
-    if (recordIndex !== -1) {
-      this.currentRecords[recordIndex].statut = newStatus;
+    const record = this.currentRecords.find(r => r.id === id);
+    if (!record) return;
+    
+    const newStatus = evt.to.dataset.status;
+    
+    // Ne fait rien si le statut n'a pas changé
+    if (record.statut === newStatus) return;
+    
+    console.log(`Déplacement de la tâche ${id} vers ${newStatus}`);
+    
+    try {
+      // Utilisation d'applyUserActions pour mettre à jour le statut
+      await grist.docApi.applyUserActions([
+        ['UpdateRecord', TABLE_ID, id, { statut: newStatus }]
+      ]);
+      
+      console.log(`Tâche ${id} mise à jour avec succès`);
+      
+      // Mise à jour immédiate des données locales
+      const recordIndex = this.currentRecords.findIndex(r => r.id === id);
+      if (recordIndex !== -1) {
+        this.currentRecords[recordIndex].statut = newStatus;
+      }
+      
+      // Rafraîchir l'affichage immédiatement
+      this.refreshKanban();
+      
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour:', error);
+      displayError(`Erreur lors du déplacement de la tâche: ${error.message}`);
+      // Recharger pour annuler le déplacement visuel
+      this.refreshKanban();
     }
-    
-    // Rafraîchir l'affichage immédiatement
-    this.refreshKanban();
-    
-  } catch (error) {
-    console.error('Erreur lors de la mise à jour:', error);
-    displayError(`Erreur lors du déplacement de la tâche: ${error.message}`);
-    // Recharger pour annuler le déplacement visuel
-    this.refreshKanban();
   }
-}
-
 
   calculerPriorite(u, i) {
     const imp = String(i || '').trim().toLowerCase();
@@ -428,215 +709,195 @@ async handleDragEnd(evt, targetStatus) {
     return 3;
   }
 
-  createTaskElementHTML(record) {
-    // Priorité
-    const prio = this.calculerPriorite(record.urgence, record.impact);
-    let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
-    
-    // Projet avec infobulle stratégie
-    let projetTag = '';
-    if (record.projet) {
-      const tooltip = [
-        record.strategie_objectif ? `Objectif: ${record.strategie_objectif}` : '',
-        record.strategie_sous_objectif ? `Sous-objectif: ${record.strategie_sous_objectif}` : '',
-        record.strategie_action ? `Action: ${record.strategie_action}` : ''
-      ].filter(Boolean).join('\n');
-      projetTag = `<span class="badge bg-info text-dark" title="${tooltip.replace(/"/g, '&quot;')}">${record.projet}</span>`;
+  async deleteTask(taskId) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette tâche ?')) {
+      return;
     }
     
-    // Résumé description
-    let resumeDesc = '';
-    if (record.description) {
-      const mots = record.description.split(/\s+/).slice(0, 10).join(' ');
-      resumeDesc = `<div class="desc-resume">${mots}${record.description.split(/\s+/).length > 10 ? '…' : ''}</div>`;
-    }
-    
-    // Personnes
-    let personnes = '';
-    if (Array.isArray(record.qui) && record.qui.length > 1) {
-      personnes = '<div class="personnes-list">' +
-        record.qui.slice(1).map(q => `<span class="personne-badge">${q}</span>`).join(' ') +
-        '</div>';
-    }
-    
-    // Icône délai
-    let delaiIcon = '';
-    if (record.delai) {
-      delaiIcon = `<span class="delai-indicator" title="Date butoir : ${this.formatDelai(record.delai)}">
-        <i class="bi bi-calendar-event"></i>
-      </span>`;
-    }
-    
-    // Poignée drag & drop
-    return `<div class="kanban-item" data-id="${record.id}">
-      <div class="drag-handle">
-        <i class="bi bi-grip-vertical"></i>
-      </div>
-      <div class="kanban-item-header">
-        <div>${prioBadge}</div>
-        <div>
-          ${projetTag}
-          ${delaiIcon}
-        </div>
-      </div>
-      <div class="item-title editable-zone">${record.titre || ''}</div>
-      ${resumeDesc}
-      ${personnes}
-    </div>`;
-  }
-  
-  formatDelai(dateStr) {
-    const options = { weekday: 'short', day: 'numeric', month: 'short' };
-    return new Date(dateStr).toLocaleDateString('fr-FR', options);
-  }
-
- // === CORRECTION 2: Méthode saveTask améliorée ===
-async saveTask() {
-  try {
-    const delaiType = document.getElementById('delai-type') ? document.getElementById('delai-type').value : 'date';
-    let delaiValue = '';
-    if (delaiType === 'date') {
-      delaiValue = this.flatpickr && this.flatpickr.selectedDates[0] ? this.flatpickr.formatDate(this.flatpickr.selectedDates[0], "Y-m-d") : '';
-    } else if (document.getElementById('popup-delai')) {
-      const qte = parseInt(document.getElementById('popup-delai').value);
-      if (!isNaN(qte) && qte > 0) {
-        const today = new Date();
-        if (delaiType === 'semaines') today.setDate(today.getDate() + qte * 7);
-        else today.setMonth(today.getMonth() + qte);
-        delaiValue = today.toISOString().slice(0,10);
-      }
-    }
-    
-    const titre = document.getElementById('popup-titre').value;
-    const description = document.getElementById('popup-description').value;
-    const statut = document.getElementById('popup-statut-text').value;
-    const projet = document.getElementById('popup-projet').value;
-    const urgence = document.getElementById('popup-urgence').value;
-    const impact = document.getElementById('popup-impact').value;
-    const bureau = Array.from(document.getElementById('popup-bureau').selectedOptions).map(o => o.value);
-    const qui = Array.from(document.getElementById('popup-qui').selectedOptions).map(o => o.value);
-    
-    // Stratégie
-    const strategie_objectif = document.getElementById('strategie-objectif').value;
-    const strategie_sous_objectif = document.getElementById('strategie-sous-objectif').value;
-    const strategie_action = document.getElementById('strategie-action').value;
-    
-    const row = {
-      titre, 
-      description, 
-      statut, 
-      projet, 
-      urgence, 
-      impact,
-      bureau: ['L', ...bureau],
-      qui: ['L', ...qui],
-      delai: delaiValue,
-      strategie_objectif,
-      strategie_sous_objectif,
-      strategie_action
-    };
-
-    if (this.currentTaskId) {
-      // Mise à jour d'un enregistrement existant
+    try {
       await grist.docApi.applyUserActions([
-        ['UpdateRecord', TABLE_ID, this.currentTaskId, row]
+        ['RemoveRecord', TABLE_ID, taskId]
       ]);
-      console.log(`Tâche ${this.currentTaskId} mise à jour avec succès`);
       
-      // CORRECTION: Mise à jour immédiate des données locales
-      const recordIndex = this.currentRecords.findIndex(r => r.id === this.currentTaskId);
-      if (recordIndex !== -1) {
-        this.currentRecords[recordIndex] = { ...this.currentRecords[recordIndex], ...row };
+      console.log(`Tâche ${taskId} supprimée avec succès`);
+      
+      // Suppression immédiate des données locales
+      this.currentRecords = this.currentRecords.filter(r => r.id !== taskId);
+      
+      // Fermer la modale si elle est ouverte
+      if (this.modal && this.currentTaskId === taskId) {
+        this.modal.hide();
       }
       
-    } else {
-      // Ajout d'un nouvel enregistrement
-      const result = await grist.docApi.applyUserActions([
-        ['AddRecord', TABLE_ID, null, row]
-      ]);
-      console.log('Nouvelle tâche créée avec succès');
+      // Rafraîchir l'affichage immédiatement
+      this.refreshKanban();
       
-      // CORRECTION: Ajouter le nouvel enregistrement aux données locales
-      if (result && result[0] && result[0].id) {
-        const newRecord = { id: result[0].id, ...row };
-        this.currentRecords.push(newRecord);
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      displayError(`Erreur lors de la suppression: ${error.message}`);
+    }
+  }
+
+  initFlatpickr() {
+    const delaiInput = document.getElementById('popup-delai');
+    const delaiType = document.getElementById('delai-type');
+    
+    if (!delaiInput || !delaiType) return;
+    
+    // Initialiser Flatpickr pour les dates
+    this.flatpickr = flatpickr(delaiInput, {
+      locale: 'fr',
+      dateFormat: 'Y-m-d',
+      minDate: 'today',
+      allowInput: true,
+      disableMobile: true
+    });
+    
+    // Gestion du changement de type de délai
+    delaiType.addEventListener('change', () => {
+      const type = delaiType.value;
+      
+      if (type === 'date') {
+        // Mode date : afficher le calendrier
+        delaiInput.placeholder = 'Cliquer pour choisir une date';
+        delaiInput.type = 'text';
+        this.flatpickr.set('mode', 'single');
+        delaiInput.removeAttribute('min');
+        delaiInput.removeAttribute('max');
+      } else {
+        // Mode quantité : champ numérique
+        delaiInput.placeholder = type === 'semaines' ? 'Nombre de semaines' : 'Nombre de mois';
+        delaiInput.type = 'number';
+        delaiInput.min = '1';
+        delaiInput.max = type === 'semaines' ? '52' : '24';
+        this.flatpickr.destroy();
+        this.flatpickr = null;
       }
+      
+      delaiInput.value = '';
+    });
+  }
+
+  initEventListeners() {
+    document.getElementById('btn-save-task').onclick = () => this.saveTask();
+    document.getElementById('btn-nouvelle-tache').onclick = () => this.openPopup();
+    
+    // Gestionnaire pour le bouton supprimer
+    const btnDelete = document.getElementById('btn-delete-task');
+    if (btnDelete) {
+      btnDelete.onclick = () => {
+        if (this.currentTaskId) {
+          this.deleteTask(this.currentTaskId);
+        }
+      };
     }
     
-    this.modal.hide();
+    // Gestion des filtres
+    const filterElements = ['filter-bureau', 'filter-qui', 'filter-projet', 'filter-statut'];
+    filterElements.forEach(filterId => {
+      const filterEl = document.getElementById(filterId);
+      if (filterEl) {
+        filterEl.addEventListener('change', () => this.applyFilters());
+      }
+    });
     
-    // Rafraîchir l'affichage immédiatement
+    // Gestion de la recherche
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+      searchInput.addEventListener('input', () => this.applyFilters());
+    }
+    
+    // Gestion de l'affichage des terminés
+    const showTermineCheckbox = document.getElementById('show-termine');
+    if (showTermineCheckbox) {
+      showTermineCheckbox.addEventListener('change', (e) => {
+        this.showTermine = e.target.checked;
+        this.refreshKanban();
+      });
+    }
+    
+    // Raccourcis clavier
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'n' || e.key === 'N') {
+        if (!e.target.matches('input, textarea')) {
+          e.preventDefault();
+          this.openPopup();
+        }
+      }
+      // Raccourci pour supprimer (Suppr ou Delete)
+      if ((e.key === 'Delete' || e.key === 'Suppr') && this.currentTaskId) {
+        if (!e.target.matches('input, textarea')) {
+          e.preventDefault();
+          this.deleteTask(this.currentTaskId);
+        }
+      }
+      // Focus sur la recherche avec F
+      if (e.key === 'f' || e.key === 'F') {
+        if (!e.target.matches('input, textarea')) {
+          e.preventDefault();
+          const searchInput = document.getElementById('search-input');
+          if (searchInput) searchInput.focus();
+        }
+      }
+    });
+  }
+
+  applyFilters() {
+    // Récupérer les valeurs des filtres
+    this.filters.bureau = document.getElementById('filter-bureau')?.value || '';
+    this.filters.qui = document.getElementById('filter-qui')?.value || '';
+    this.filters.projet = document.getElementById('filter-projet')?.value || '';
+    this.filters.statut = document.getElementById('filter-statut')?.value || '';
+    
+    const searchTerm = document.getElementById('search-input')?.value.toLowerCase() || '';
+    
+    // Filtrer les enregistrements
+    let filteredRecords = this.currentRecords.filter(record => {
+      // Filtre par bureau
+      if (this.filters.bureau && Array.isArray(record.bureau)) {
+        const bureaux = record.bureau.slice(1); // Enlever le 'L'
+        if (!bureaux.includes(this.filters.bureau)) return false;
+      }
+      
+      // Filtre par responsable
+      if (this.filters.qui && Array.isArray(record.qui)) {
+        const responsables = record.qui.slice(1); // Enlever le 'L'
+        if (!responsables.includes(this.filters.qui)) return false;
+      }
+      
+      // Filtre par projet
+      if (this.filters.projet && record.projet !== this.filters.projet) return false;
+      
+      // Filtre par statut
+      if (this.filters.statut && record.statut !== this.filters.statut) return false;
+      
+      // Filtre par recherche textuelle
+      if (searchTerm) {
+        const searchableText = [
+          record.titre || '',
+          record.description || '',
+          record.projet || '',
+          record.strategie_objectif || '',
+          record.strategie_sous_objectif || '',
+          record.strategie_action || ''
+        ].join(' ').toLowerCase();
+        
+        if (!searchableText.includes(searchTerm)) return false;
+      }
+      
+      return true;
+    });
+    
+    // Stocker temporairement les enregistrements filtrés
+    const originalRecords = this.currentRecords;
+    this.currentRecords = filteredRecords;
+    
+    // Rafraîchir l'affichage
     this.refreshKanban();
     
-  } catch (error) {
-    console.error('Erreur lors de la sauvegarde:', error);
-    displayError(`Erreur lors de la sauvegarde: ${error.message}`);
+    // Restaurer les enregistrements originaux
+    this.currentRecords = originalRecords;
   }
-}
-// === CORRECTION 3: Méthode deleteTask améliorée ===
-async deleteTask(taskId) {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer cette tâche ?')) {
-    return;
-  }
-  
-  try {
-    await grist.docApi.applyUserActions([
-      ['RemoveRecord', TABLE_ID, taskId]
-    ]);
-    
-    console.log(`Tâche ${taskId} supprimée avec succès`);
-    
-    // CORRECTION: Suppression immédiate des données locales
-    this.currentRecords = this.currentRecords.filter(r => r.id !== taskId);
-    
-    // Fermer la modale si elle est ouverte
-    if (this.modal && this.currentTaskId === taskId) {
-      this.modal.hide();
-    }
-    
-    // Rafraîchir l'affichage immédiatement
-    this.refreshKanban();
-    
-  } catch (error) {
-    console.error('Erreur lors de la suppression:', error);
-    displayError(`Erreur lors de la suppression: ${error.message}`);
-  }
-}
-
-
-// === CORRECTION 4: Méthode initEventListeners avec bouton supprimer ===
-initEventListeners() {
-  document.getElementById('btn-save-task').onclick = () => this.saveTask();
-  document.getElementById('btn-nouvelle-tache').onclick = () => this.openPopup();
-  
-  // NOUVEAU: Gestionnaire pour le bouton supprimer
-  const btnDelete = document.getElementById('btn-delete-task');
-  if (btnDelete) {
-    btnDelete.onclick = () => {
-      if (this.currentTaskId) {
-        this.deleteTask(this.currentTaskId);
-      }
-    };
-  }
-  
-  // Raccourcis clavier
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'n' || e.key === 'N') {
-      if (!e.target.matches('input, textarea')) {
-        e.preventDefault();
-        this.openPopup();
-      }
-    }
-    // NOUVEAU: Raccourci pour supprimer (Suppr ou Delete)
-    if ((e.key === 'Delete' || e.key === 'Suppr') && this.currentTaskId) {
-      if (!e.target.matches('input, textarea')) {
-        e.preventDefault();
-        this.deleteTask(this.currentTaskId);
-      }
-    }
-  });
-}
-
 }
 
 document.addEventListener('DOMContentLoaded', () => {
