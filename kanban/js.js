@@ -381,6 +381,67 @@ class KanbanManager {
     return 3;
   }
 
+// === CORRECTION 1: Mise à jour de la méthode createTaskElementHTML ===
+// Remplacez cette méthode dans votre classe KanbanManager
+
+createTaskElementHTML(record) {
+  // Priorité
+  const prio = this.calculerPriorite(record.urgence, record.impact);
+  let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
+  
+  // Projet avec infobulle stratégie
+  let projetTag = '';
+  if (record.projet) {
+    const tooltip = [
+      record.strategie_objectif ? `Objectif: ${record.strategie_objectif}` : '',
+      record.strategie_sous_objectif ? `Sous-objectif: ${record.strategie_sous_objectif}` : '',
+      record.strategie_action ? `Action: ${record.strategie_action}` : ''
+    ].filter(Boolean).join('\n');
+    projetTag = `<span class="badge bg-info text-dark" title="${tooltip.replace(/"/g, '&quot;')}">${record.projet}</span>`;
+  }
+  
+  // Résumé description
+  let resumeDesc = '';
+  if (record.description) {
+    const mots = record.description.split(/\s+/).slice(0, 10).join(' ');
+    resumeDesc = `<div class="desc-resume">${mots}${record.description.split(/\s+/).length > 10 ? '…' : ''}</div>`;
+  }
+  
+  // Personnes
+  let personnes = '';
+  if (Array.isArray(record.qui) && record.qui.length > 1) {
+    personnes = '<div class="personnes-list">' +
+      record.qui.slice(1).map(q => `<span class="personne-badge">${q}</span>`).join(' ') +
+      '</div>';
+  }
+  
+  // Icône délai
+  let delaiIcon = '';
+  if (record.delai) {
+    delaiIcon = `<span class="delai-indicator" title="Date butoir : ${this.formatDelai(record.delai)}">
+      <i class="bi bi-calendar-event"></i>
+    </span>`;
+  }
+  
+  // AJOUT DE LA POIGNÉE DRAG & DROP
+  return `<div class="kanban-item" data-id="${record.id}">
+    <div class="drag-handle">
+      <i class="bi bi-grip-vertical"></i>
+    </div>
+    <div class="kanban-item-header">
+      <div>${prioBadge}</div>
+      <div>
+        ${projetTag}
+        ${delaiIcon}
+      </div>
+    </div>
+    <div class="item-title editable-zone">${record.titre || ''}</div>
+    ${resumeDesc}
+    ${personnes}
+  </div>`;
+}
+  
+/*
   createTaskElementHTML(record) {
     // Priorité
     const prio = this.calculerPriorite(record.urgence, record.impact);
@@ -428,7 +489,7 @@ class KanbanManager {
       ${personnes}
     </div>`;
   }
-
+*/
   formatDelai(dateStr) {
     const options = { weekday: 'short', day: 'numeric', month: 'short' };
     return new Date(dateStr).toLocaleDateString('fr-FR', options);
