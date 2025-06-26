@@ -184,25 +184,16 @@ class KanbanManager {
     return records;
   }
 
-  // === CORRECTION: Amélioration de saveTask pour gérer date_debut et date_echeance ===
+  // === CORRECTION: Simplification de saveTask pour les dates ===
   async saveTask() {
     try {
-      const delaiType = document.getElementById('delai-type') ? document.getElementById('delai-type').value : 'date';
       let dateEcheance = '';
       let dateDebut = '';
       
-      // Gestion de la date d'échéance
-      if (delaiType === 'date') {
-        dateEcheance = this.flatpickr && this.flatpickr.selectedDates[0] ? 
-          this.flatpickr.formatDate(this.flatpickr.selectedDates[0], "Y-m-d") : '';
-      } else if (document.getElementById('popup-delai')) {
-        const qte = parseInt(document.getElementById('popup-delai').value);
-        if (!isNaN(qte) && qte > 0) {
-          const today = new Date();
-          if (delaiType === 'semaines') today.setDate(today.getDate() + qte * 7);
-          else today.setMonth(today.getMonth() + qte);
-          dateEcheance = today.toISOString().slice(0,10);
-        }
+      // Gestion simplifiée de la date d'échéance
+      const delaiInput = document.getElementById('popup-delai');
+      if (delaiInput && delaiInput.value.trim()) {
+        dateEcheance = delaiInput.value.trim();
       }
       
       // Date de début = aujourd'hui si c'est une nouvelle tâche
@@ -248,8 +239,9 @@ class KanbanManager {
         row.date_debut = dateDebut;
       }
       
-      if (this.availableColumns.has('date_echeance') && dateEcheance) {
-        row.date_echeance = dateEcheance;
+      if (this.availableColumns.has('date_echeance')) {
+        // Toujours envoyer la date d'échéance, même vide pour permettre la suppression
+        row.date_echeance = dateEcheance || null;
       }
 
       if (this.currentTaskId) {
@@ -263,9 +255,9 @@ class KanbanManager {
         const recordIndex = this.currentRecords.findIndex(r => r.id === this.currentTaskId);
         if (recordIndex !== -1) {
           this.currentRecords[recordIndex] = { ...this.currentRecords[recordIndex], ...row };
-          // Ajouter les dates aux données locales même si pas dans Grist
+          // Mettre à jour les dates aux données locales
           if (dateDebut) this.currentRecords[recordIndex].date_debut = dateDebut;
-          if (dateEcheance) this.currentRecords[recordIndex].date_echeance = dateEcheance;
+          this.currentRecords[recordIndex].date_echeance = dateEcheance || null;
         }
         
       } else {
@@ -279,7 +271,7 @@ class KanbanManager {
         if (result && result[0] && result[0].id) {
           const newRecord = { id: result[0].id, ...row };
           if (dateDebut) newRecord.date_debut = dateDebut;
-          if (dateEcheance) newRecord.date_echeance = dateEcheance;
+          newRecord.date_echeance = dateEcheance || null;
           this.currentRecords.push(newRecord);
         }
       }
@@ -370,17 +362,18 @@ class KanbanManager {
           echeanceText = `Dépassé (${Math.abs(diffDays)}j)`;
         } else if (diffDays === 0) {
           echeanceClass = 'echeance-aujourd-hui';
-          echeanceIcon = 'bi-calendar-exclamation';
+          echeanceIcon = 'bi-calendar-x';
           echeanceText = "Aujourd'hui";
         } else if (diffDays <= 3) {
           echeanceClass = 'echeance-urgent';
-          echeanceIcon = 'bi-calendar-exclamation';
+          echeanceIcon = 'bi-calendar-x';
           echeanceText = `${diffDays}j restant${diffDays > 1 ? 's' : ''}`;
         } else if (diffDays <= 7) {
           echeanceClass = 'echeance-bientot';
-          echeanceIcon = 'bi-calendar-week';
+          echeanceIcon = 'bi-calendar-x';
           echeanceText = `${diffDays}j restant${diffDays > 1 ? 's' : ''}`;
         } else {
+          echeanceIcon = 'bi-calendar-x';
           echeanceText = `J+${diffDays}`;
         }
         
@@ -744,38 +737,19 @@ class KanbanManager {
     
     if (!delaiInput || !delaiType) return;
     
-    // Initialiser Flatpickr pour les dates
+    // Initialiser Flatpickr pour les dates seulement
     this.flatpickr = flatpickr(delaiInput, {
       locale: 'fr',
       dateFormat: 'Y-m-d',
-      minDate: 'today',
       allowInput: true,
-      disableMobile: true
+      disableMobile: true,
+      allowClear: true,
+      placeholder: 'Cliquer pour choisir une date ou laisser vide'
     });
     
-    // Gestion du changement de type de délai
-    delaiType.addEventListener('change', () => {
-      const type = delaiType.value;
-      
-      if (type === 'date') {
-        // Mode date : afficher le calendrier
-        delaiInput.placeholder = 'Cliquer pour choisir une date';
-        delaiInput.type = 'text';
-        this.flatpickr.set('mode', 'single');
-        delaiInput.removeAttribute('min');
-        delaiInput.removeAttribute('max');
-      } else {
-        // Mode quantité : champ numérique
-        delaiInput.placeholder = type === 'semaines' ? 'Nombre de semaines' : 'Nombre de mois';
-        delaiInput.type = 'number';
-        delaiInput.min = '1';
-        delaiInput.max = type === 'semaines' ? '52' : '24';
-        this.flatpickr.destroy();
-        this.flatpickr = null;
-      }
-      
-      delaiInput.value = '';
-    });
+    // Simplifier : toujours en mode date
+    delaiType.style.display = 'none'; // Masquer le sélecteur de type
+    delaiInput.placeholder = 'Cliquer pour choisir une date ou laisser vide';
   }
 
   initEventListeners() {
