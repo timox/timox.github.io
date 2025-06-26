@@ -547,6 +547,36 @@
   color: #1565c0;
   border: 1px solid #bbdefb;
 }
+/* === CSS SIMPLIFIÉ POUR LES DATES === */
+/* À ajouter dans la section <style> de votre index.html */
+
+/* Conteneur des dates */
+.dates-container {
+  margin-top: 0.5em;
+  margin-bottom: 0.3em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+}
+
+/* Styles de base pour les dates */
+.date-debut, .date-echeance {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0.2em 0.5em;
+  border-radius: 0.8em;
+  font-size: 0.85em;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Date de début */
+.date-debut {
+  background: #e3f2fd;
+  color: #1565c0;
+  border: 1px solid #bbdefb;
+}
 
 /* Date d'échéance - SIMPLIFIÉ : toujours icône rouge mais couleurs différentes */
 .date-echeance {
@@ -616,11 +646,12 @@
   border-left: 3px solid #c62828; /* Rouge pour dépassé */
 }
 
-.kanban-item.has-debut {
+.kanban-item.has-debut:not(.has-echeance) {
   position: relative;
 }
 
-.kanban-item.has-debut::before {
+/* Point bleu seulement si on a à la fois début ET échéance */
+.kanban-item.has-debut.has-echeance::before {
   content: '';
   position: absolute;
   top: 8px;
