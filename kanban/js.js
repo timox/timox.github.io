@@ -37,17 +37,7 @@ function displayError(message) {
   const k = document.getElementById('kanban-container');
   if (k && k.innerHTML.includes('Chargement')) k.innerHTML = '';
 }
-(function() {
-    'use strict';
-    
-    // Gestion défensive des erreurs Grist
-    window.onerror = function(msg, url, lineNo, columnNo, error) {
-        if (msg.includes('return not in function')) {
-            console.warn('Erreur Grist contournée:', msg);
-            return true; // Empêche la propagation
-        }
-        return false;
-    };
+
 class KanbanManager {
   constructor() {
     this.kanbanContainer = document.getElementById('kanban-container');
@@ -537,7 +527,7 @@ createTaskElementHTML(record) {
     document.getElementById('btn-nouvelle-tache').onclick = () => this.openPopup();
   }
 } // <-- ferme la classe KanbanManager
-)(); // <-- ferme l'IIFE
+
 
 document.addEventListener('DOMContentLoaded', () => {
   new KanbanManager();
