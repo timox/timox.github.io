@@ -321,80 +321,73 @@ class KanbanManager {
     });
     this.kanbanContainer.innerHTML = kanbanHTML;
 
-
-// === CORRECTION 2: Mise à jour de la configuration Sortable ===
-// Dans la méthode refreshKanban(), remplacez la création de Sortable par :
-
-statutsToShow.forEach(statut => {
-  const boardId = statut.classe;
-  const el = document.getElementById(`items-${boardId}`);
-  if (el) {
-    const sortable = new Sortable(el, {
-      group: 'kanban',
-      animation: 150,
-      handle: '.drag-handle',  // Utilise la poignée pour le drag
-      ghostClass: 'sortable-ghost',
-      chosenClass: 'sortable-chosen',
-      dragClass: 'sortable-drag',
-      onEnd: evt => this.handleDragEnd(evt, statut.id)
+    // Configuration Sortable avec poignée de drag
+    statutsToShow.forEach(statut => {
+      const boardId = statut.classe;
+      const el = document.getElementById(`items-${boardId}`);
+      if (el) {
+        const sortable = new Sortable(el, {
+          group: 'kanban',
+          animation: 150,
+          handle: '.drag-handle',
+          ghostClass: 'sortable-ghost',
+          chosenClass: 'sortable-chosen',
+          dragClass: 'sortable-drag',
+          onEnd: evt => this.handleDragEnd(evt, statut.id)
+        });
+        this.sortableInstances.push(sortable);
+      }
     });
-    this.sortableInstances.push(sortable);
-  }
-});
-    // === CORRECTION 3: Amélioration de la gestion des événements ===
-// Mise à jour de la partie qui gère les clics sur les éléments éditables
 
-Array.from(this.kanbanContainer.querySelectorAll('.kanban-item .editable-zone')).forEach(el => {
-  el.addEventListener('click', (e) => {
-    e.stopPropagation();
-    e.preventDefault(); // Empêche les conflits
-    const item = el.closest('.kanban-item');
-    const id = parseInt(item.dataset.id, 10);
-    const tache = this.currentRecords.find(r => r.id === id);
-    if (tache) this.openPopup(tache);
-  });
-});
-  //end refresh kansban
+    // Gestion des clics sur les éléments éditables
+    Array.from(this.kanbanContainer.querySelectorAll('.kanban-item .editable-zone')).forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const item = el.closest('.kanban-item');
+        const id = parseInt(item.dataset.id, 10);
+        const tache = this.currentRecords.find(r => r.id === id);
+        if (tache) this.openPopup(tache);
+      });
+    });
   }
 
-  // === CORRECTION 4: Amélioration du handleDragEnd ===
-handleDragEnd(evt, targetStatus) {
-  if (!evt.item || !evt.item.dataset) return;
-  
-  const id = parseInt(evt.item.dataset.id, 10);
-  if (isNaN(id)) return;
-  
-  const record = this.currentRecords.find(r => r.id === id);
-  if (!record) return;
-  
-  const newStatus = evt.to.dataset.status;
-  
-  // Ne fait rien si le statut n'a pas changé
-  if (record.statut === newStatus) return;
-  
-  console.log(`Déplacement de la tâche ${id} vers ${newStatus}`);
-  
-  // Vérification de l'API Grist
-  if (!grist.docApi || !grist.docApi.updateRecords) {
-    displayError("L'API Grist n'est pas disponible pour la mise à jour.");
-    return;
-  }
-  
-  // Mise à jour dans Grist
-  grist.docApi.updateRecords(TABLE_ID, [id], { statut: newStatus })
-    .then(() => {
+  // === CORRECTION PRINCIPALE: Utilisation d'applyUserActions pour le drag & drop ===
+  async handleDragEnd(evt, targetStatus) {
+    if (!evt.item || !evt.item.dataset) return;
+    
+    const id = parseInt(evt.item.dataset.id, 10);
+    if (isNaN(id)) return;
+    
+    const record = this.currentRecords.find(r => r.id === id);
+    if (!record) return;
+    
+    const newStatus = evt.to.dataset.status;
+    
+    // Ne fait rien si le statut n'a pas changé
+    if (record.statut === newStatus) return;
+    
+    console.log(`Déplacement de la tâche ${id} vers ${newStatus}`);
+    
+    try {
+      // Utilisation d'applyUserActions pour mettre à jour le statut
+      await grist.docApi.applyUserActions([
+        ['UpdateRecord', TABLE_ID, id, { statut: newStatus }]
+      ]);
+      
       console.log(`Tâche ${id} mise à jour avec succès`);
       this.signalLocalUpdate();
-      // Optionnel : rafraîchir l'affichage
+      
+      // Rafraîchir l'affichage après un court délai
       setTimeout(() => this.refreshKanban(), 100);
-    })
-    .catch(error => {
+      
+    } catch (error) {
       console.error('Erreur lors de la mise à jour:', error);
       displayError(`Erreur lors du déplacement de la tâche: ${error.message}`);
       // Recharger pour annuler le déplacement visuel
       this.refreshKanban();
-    });
-}
+    }
+  }
 
   calculerPriorite(u, i) {
     const imp = String(i || '').trim().toLowerCase();
@@ -406,125 +399,178 @@ handleDragEnd(evt, targetStatus) {
     return 3;
   }
 
-// === CORRECTION 1: Mise à jour de la méthode createTaskElementHTML ===
-// Remplacez cette méthode dans votre classe KanbanManager
-
-createTaskElementHTML(record) {
-  // Priorité
-  const prio = this.calculerPriorite(record.urgence, record.impact);
-  let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
-  
-  // Projet avec infobulle stratégie
-  let projetTag = '';
-  if (record.projet) {
-    const tooltip = [
-      record.strategie_objectif ? `Objectif: ${record.strategie_objectif}` : '',
-      record.strategie_sous_objectif ? `Sous-objectif: ${record.strategie_sous_objectif}` : '',
-      record.strategie_action ? `Action: ${record.strategie_action}` : ''
-    ].filter(Boolean).join('\n');
-    projetTag = `<span class="badge bg-info text-dark" title="${tooltip.replace(/"/g, '&quot;')}">${record.projet}</span>`;
-  }
-  
-  // Résumé description
-  let resumeDesc = '';
-  if (record.description) {
-    const mots = record.description.split(/\s+/).slice(0, 10).join(' ');
-    resumeDesc = `<div class="desc-resume">${mots}${record.description.split(/\s+/).length > 10 ? '…' : ''}</div>`;
-  }
-  
-  // Personnes
-  let personnes = '';
-  if (Array.isArray(record.qui) && record.qui.length > 1) {
-    personnes = '<div class="personnes-list">' +
-      record.qui.slice(1).map(q => `<span class="personne-badge">${q}</span>`).join(' ') +
-      '</div>';
-  }
-  
-  // Icône délai
-  let delaiIcon = '';
-  if (record.delai) {
-    delaiIcon = `<span class="delai-indicator" title="Date butoir : ${this.formatDelai(record.delai)}">
-      <i class="bi bi-calendar-event"></i>
-    </span>`;
-  }
-  
-  // AJOUT DE LA POIGNÉE DRAG & DROP
-  return `<div class="kanban-item" data-id="${record.id}">
-    <div class="drag-handle">
-      <i class="bi bi-grip-vertical"></i>
-    </div>
-    <div class="kanban-item-header">
-      <div>${prioBadge}</div>
-      <div>
-        ${projetTag}
-        ${delaiIcon}
+  createTaskElementHTML(record) {
+    // Priorité
+    const prio = this.calculerPriorite(record.urgence, record.impact);
+    let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
+    
+    // Projet avec infobulle stratégie
+    let projetTag = '';
+    if (record.projet) {
+      const tooltip = [
+        record.strategie_objectif ? `Objectif: ${record.strategie_objectif}` : '',
+        record.strategie_sous_objectif ? `Sous-objectif: ${record.strategie_sous_objectif}` : '',
+        record.strategie_action ? `Action: ${record.strategie_action}` : ''
+      ].filter(Boolean).join('\n');
+      projetTag = `<span class="badge bg-info text-dark" title="${tooltip.replace(/"/g, '&quot;')}">${record.projet}</span>`;
+    }
+    
+    // Résumé description
+    let resumeDesc = '';
+    if (record.description) {
+      const mots = record.description.split(/\s+/).slice(0, 10).join(' ');
+      resumeDesc = `<div class="desc-resume">${mots}${record.description.split(/\s+/).length > 10 ? '…' : ''}</div>`;
+    }
+    
+    // Personnes
+    let personnes = '';
+    if (Array.isArray(record.qui) && record.qui.length > 1) {
+      personnes = '<div class="personnes-list">' +
+        record.qui.slice(1).map(q => `<span class="personne-badge">${q}</span>`).join(' ') +
+        '</div>';
+    }
+    
+    // Icône délai
+    let delaiIcon = '';
+    if (record.delai) {
+      delaiIcon = `<span class="delai-indicator" title="Date butoir : ${this.formatDelai(record.delai)}">
+        <i class="bi bi-calendar-event"></i>
+      </span>`;
+    }
+    
+    // Poignée drag & drop
+    return `<div class="kanban-item" data-id="${record.id}">
+      <div class="drag-handle">
+        <i class="bi bi-grip-vertical"></i>
       </div>
-    </div>
-    <div class="item-title editable-zone">${record.titre || ''}</div>
-    ${resumeDesc}
-    ${personnes}
-  </div>`;
-}
-  
-
+      <div class="kanban-item-header">
+        <div>${prioBadge}</div>
+        <div>
+          ${projetTag}
+          ${delaiIcon}
+        </div>
+      </div>
+      <div class="item-title editable-zone">${record.titre || ''}</div>
+      ${resumeDesc}
+      ${personnes}
+    </div>`;
+  }
   
   formatDelai(dateStr) {
     const options = { weekday: 'short', day: 'numeric', month: 'short' };
     return new Date(dateStr).toLocaleDateString('fr-FR', options);
   }
 
+  // === CORRECTION PRINCIPALE: Utilisation d'applyUserActions pour sauvegarder ===
   async saveTask() {
-    const delaiType = document.getElementById('delai-type') ? document.getElementById('delai-type').value : 'date';
-    let delaiValue = '';
-    if (delaiType === 'date') {
-      delaiValue = this.flatpickr && this.flatpickr.selectedDates[0] ? this.flatpickr.formatDate(this.flatpickr.selectedDates[0], "Y-m-d") : '';
-    } else if (document.getElementById('popup-delai')) {
-      const qte = parseInt(document.getElementById('popup-delai').value);
-      if (!isNaN(qte) && qte > 0) {
-        const today = new Date();
-        if (delaiType === 'semaines') today.setDate(today.getDate() + qte * 7);
-        else today.setMonth(today.getMonth() + qte);
-        delaiValue = today.toISOString().slice(0,10);
+    try {
+      const delaiType = document.getElementById('delai-type') ? document.getElementById('delai-type').value : 'date';
+      let delaiValue = '';
+      if (delaiType === 'date') {
+        delaiValue = this.flatpickr && this.flatpickr.selectedDates[0] ? this.flatpickr.formatDate(this.flatpickr.selectedDates[0], "Y-m-d") : '';
+      } else if (document.getElementById('popup-delai')) {
+        const qte = parseInt(document.getElementById('popup-delai').value);
+        if (!isNaN(qte) && qte > 0) {
+          const today = new Date();
+          if (delaiType === 'semaines') today.setDate(today.getDate() + qte * 7);
+          else today.setMonth(today.getMonth() + qte);
+          delaiValue = today.toISOString().slice(0,10);
+        }
       }
+      
+      const titre = document.getElementById('popup-titre').value;
+      const description = document.getElementById('popup-description').value;
+      const statut = document.getElementById('popup-statut-text').value;
+      const projet = document.getElementById('popup-projet').value;
+      const urgence = document.getElementById('popup-urgence').value;
+      const impact = document.getElementById('popup-impact').value;
+      const bureau = Array.from(document.getElementById('popup-bureau').selectedOptions).map(o => o.value);
+      const qui = Array.from(document.getElementById('popup-qui').selectedOptions).map(o => o.value);
+      
+      // Stratégie
+      const strategie_objectif = document.getElementById('strategie-objectif').value;
+      const strategie_sous_objectif = document.getElementById('strategie-sous-objectif').value;
+      const strategie_action = document.getElementById('strategie-action').value;
+      
+      const row = {
+        titre, 
+        description, 
+        statut, 
+        projet, 
+        urgence, 
+        impact,
+        bureau: ['L', ...bureau],
+        qui: ['L', ...qui],
+        delai: delaiValue,
+        strategie_objectif,
+        strategie_sous_objectif,
+        strategie_action
+      };
+
+      if (this.currentTaskId) {
+        // Mise à jour d'un enregistrement existant
+        await grist.docApi.applyUserActions([
+          ['UpdateRecord', TABLE_ID, this.currentTaskId, row]
+        ]);
+        console.log(`Tâche ${this.currentTaskId} mise à jour avec succès`);
+      } else {
+        // Ajout d'un nouvel enregistrement
+        await grist.docApi.applyUserActions([
+          ['AddRecord', TABLE_ID, null, row]
+        ]);
+        console.log('Nouvelle tâche créée avec succès');
+      }
+      
+      this.signalLocalUpdate();
+      this.modal.hide();
+      
+      // Rafraîchir après un court délai
+      setTimeout(() => this.refreshKanban(), 200);
+      
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      displayError(`Erreur lors de la sauvegarde: ${error.message}`);
     }
-    const titre = document.getElementById('popup-titre').value;
-    const description = document.getElementById('popup-description').value;
-    const statut = document.getElementById('popup-statut-text').value;
-    const projet = document.getElementById('popup-projet').value;
-    const urgence = document.getElementById('popup-urgence').value;
-    const impact = document.getElementById('popup-impact').value;
-    const bureau = Array.from(document.getElementById('popup-bureau').selectedOptions).map(o => o.value);
-    const qui = Array.from(document.getElementById('popup-qui').selectedOptions).map(o => o.value);
-    // Stratégie
-    const strategie_objectif = document.getElementById('strategie-objectif').value;
-    const strategie_sous_objectif = document.getElementById('strategie-sous-objectif').value;
-    const strategie_action = document.getElementById('strategie-action').value;
-    const row = {
-      titre, description, statut, projet, urgence, impact,
-      bureau: ['L', ...bureau],
-      qui: ['L', ...qui],
-      delai: delaiValue,
-      strategie_objectif,
-      strategie_sous_objectif,
-      strategie_action
-    };
- 
-    if (this.currentTaskId) {
-      await grist.docApi.updateRecords(TABLE_ID, [this.currentTaskId], row);
-    } else {
-      await grist.docApi.addRecords(TABLE_ID, [row]);
+  }
+
+  // === MÉTHODE SUPPLÉMENTAIRE: Suppression d'une tâche ===
+  async deleteTask(taskId) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette tâche ?')) {
+      return;
     }
-    this.signalLocalUpdate();
-    this.modal.hide();
-    this.refreshKanban();
+    
+    try {
+      await grist.docApi.applyUserActions([
+        ['RemoveRecord', TABLE_ID, taskId]
+      ]);
+      
+      console.log(`Tâche ${taskId} supprimée avec succès`);
+      this.signalLocalUpdate();
+      
+      // Rafraîchir après un court délai
+      setTimeout(() => this.refreshKanban(), 200);
+      
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      displayError(`Erreur lors de la suppression: ${error.message}`);
+    }
   }
 
   initEventListeners() {
     document.getElementById('btn-save-task').onclick = () => this.saveTask();
     document.getElementById('btn-nouvelle-tache').onclick = () => this.openPopup();
+    
+    // Raccourcis clavier
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'n' || e.key === 'N') {
+        if (!e.target.matches('input, textarea')) {
+          e.preventDefault();
+          this.openPopup();
+        }
+      }
+    });
   }
-} // <-- ferme la classe KanbanManager
-
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   new KanbanManager();
