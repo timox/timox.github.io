@@ -1,4 +1,4 @@
-// === CORRECTION COMPLÈTE POUR LA GESTION DES DATES ===
+// === CODE KANBAN COMPLET ET ORDONNÉ ===
 const STATUTS = [
   { id: 'Backlog', libelle: 'Backlog', classe: 'backlog' },
   { id: 'À faire', libelle: 'À faire', classe: 'a-faire' },
@@ -62,12 +62,12 @@ class KanbanManager {
     this.showTermine = true;
     this.sortableInstances = [];
     this.flatpickr = null;
-    this.availableColumns = new Set(); // Pour tracker les colonnes disponibles
+    this.availableColumns = new Set();
     
-    // NOUVEAU: Modes de vue
+    // Modes de vue
     this.viewMode = 'compact'; // 'compact', 'detailed', 'focus'
-    this.focusColumn = null; // Pour le mode focus
-    this.expandedCards = new Set(); // Cartes dépliées en mode compact
+    this.focusColumn = null;
+    this.expandedCards = new Set();
     
     this.init();
   }
@@ -78,7 +78,7 @@ class KanbanManager {
     this.initFilters();
     this.initModalWithOptions();
     this.initFlatpickr();
-    this.initViewModeControls(); // NOUVEAU
+    this.initViewModeControls();
     this.refreshKanban();
     this.initEventListeners();
   }
@@ -91,7 +91,6 @@ class KanbanManager {
     });
   }
 
-  // === CORRECTION: Amélioration de loadGristDataAndOptions pour détecter les colonnes disponibles ===
   async loadGristDataAndOptions() {
     try {
       const records = await grist.docApi.fetchTable(TABLE_ID);
@@ -128,52 +127,19 @@ class KanbanManager {
     }
   }
 
-  // === NOUVEAU: Initialisation des contrôles de mode de vue ===
-  initViewModeControls() {
-    // Créer les contrôles s'ils n'existent pas
-    const controlsContainer = document.querySelector('.kanban-controls .row');
-    if (!controlsContainer) return;
-    
-    // Ajouter les contrôles de mode de vue
-    const viewModeHTML = `
-      <div class="col-md-3">
-        <div class="btn-group" role="group" aria-label="Mode de vue">
-          <button type="button" class="btn btn-outline-primary btn-sm active" id="view-compact">
-            <i class="bi bi-grid"></i> Compact
-          </button>
-          <button type="button" class="btn btn-outline-primary btn-sm" id="view-detailed">
-            <i class="bi bi-card-text"></i> Détaillé
-          </button>
-          <button type="button" class="btn btn-outline-primary btn-sm" id="view-focus">
-            <i class="bi bi-eye"></i> Focus
-          </button>
-        </div>
-      </div>
-    `;
-    
-    // Insérer avant les filtres
-    controlsContainer.insertAdjacentHTML('afterbegin', viewModeHTML);
-    
-    // Gestionnaires d'événements
-    document.getElementById('view-compact')?.addEventListener('click', () => this.setViewMode('compact'));
-    document.getElementById('view-detailed')?.addEventListener('click', () => this.setViewMode('detailed'));
-    document.getElementById('view-focus')?.addEventListener('click', () => this.setViewMode('focus'));
+  getUniqueValuesFromData(key, isList = false) {
+    const values = new Set();
+    (this.currentRecords || []).forEach(rec => {
+      const v = rec[key];
+      if (isList && Array.isArray(v)) {
+        v.slice(1).forEach(i => i && values.add(String(i).trim()));
+      } else if (!isList && v !== null && typeof v !== 'undefined') {
+        values.add(String(v).trim());
+      }
+    });
+    return Array.from(values).filter(v => v).sort();
   }
 
-  // === NOUVEAU: Gestion des modes de vue ===
-  setViewMode(mode) {
-    this.viewMode = mode;
-    this.expandedCards.clear(); // Reset des cartes dépliées
-    
-    // Mise à jour des boutons actifs
-    document.querySelectorAll('.btn-group button').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(`view-${mode}`)?.classList.add('active');
-    
-    // Mise à jour de l'affichage
-    this.refreshKanban();
-  }
-
-  // === CORRECTION: Amélioration de mapGristRecords pour gérer les colonnes optionnelles ===
   mapGristRecords(gristData) {
     const records = [];
     if (!gristData || typeof gristData !== 'object') return [];
@@ -211,7 +177,7 @@ class KanbanManager {
         if (gristData.hasOwnProperty(key) && Array.isArray(gristData[key]) && gristData[key].length > i) {
           rec[key] = gristData[key][i];
         } else {
-          rec[key] = null; // Valeur par défaut pour les colonnes optionnelles
+          rec[key] = null;
         }
       }
       
@@ -223,135 +189,45 @@ class KanbanManager {
     return records;
   }
 
-  // === CORRECTION: Simplification de saveTask pour les dates ===
-  async saveTask() {
-    try {
-      let dateEcheance = '';
-      let dateDebut = '';
-      
-      // Gestion simplifiée de la date d'échéance
-      const delaiInput = document.getElementById('popup-delai');
-      if (delaiInput && delaiInput.value.trim()) {
-        dateEcheance = delaiInput.value.trim();
-        
-        // Si on a une échéance ET que c'est une nouvelle tâche, définir date de début
-        if (!this.currentTaskId) {
-          dateDebut = new Date().toISOString().slice(0,10);
-        } else {
-          // Pour les tâches existantes, conserver la date de début existante
-          const existingRecord = this.currentRecords.find(r => r.id === this.currentTaskId);
-          dateDebut = existingRecord?.date_debut || '';
-        }
-      } else {
-        // Pas d'échéance = pas de date de début non plus
-        dateEcheance = null;
-        dateDebut = null;
-      }
-      
-      const titre = document.getElementById('popup-titre').value;
-      const description = document.getElementById('popup-description').value;
-      const statut = document.getElementById('popup-statut-text').value;
-      const projet = document.getElementById('popup-projet').value;
-      const urgence = document.getElementById('popup-urgence').value;
-      const impact = document.getElementById('popup-impact').value;
-      const bureau = Array.from(document.getElementById('popup-bureau').selectedOptions).map(o => o.value);
-      const qui = Array.from(document.getElementById('popup-qui').selectedOptions).map(o => o.value);
-      
-      // Stratégie
-      const strategie_objectif = document.getElementById('strategie-objectif').value;
-      const strategie_sous_objectif = document.getElementById('strategie-sous-objectif').value;
-      const strategie_action = document.getElementById('strategie-action').value;
-      
-      // Construire l'objet row avec les colonnes de base
-      const row = {
-        titre, 
-        description, 
-        statut, 
-        projet, 
-        urgence, 
-        impact,
-        bureau: ['L', ...bureau],
-        qui: ['L', ...qui],
-        strategie_objectif,
-        strategie_sous_objectif,
-        strategie_action
-      };
-
-      // Ajouter les dates seulement si les colonnes existent
-      if (this.availableColumns.has('date_debut')) {
-        // Toujours envoyer la date de début, même null pour permettre la suppression
-        row.date_debut = dateDebut;
-      }
-      
-      if (this.availableColumns.has('date_echeance')) {
-        // Toujours envoyer la date d'échéance, même null pour permettre la suppression
-        row.date_echeance = dateEcheance;
-      }
-
-      if (this.currentTaskId) {
-        // Mise à jour d'un enregistrement existant
-        await grist.docApi.applyUserActions([
-          ['UpdateRecord', TABLE_ID, this.currentTaskId, row]
-        ]);
-        console.log(`Tâche ${this.currentTaskId} mise à jour avec succès`);
-        
-        // Mise à jour immédiate des données locales
-        const recordIndex = this.currentRecords.findIndex(r => r.id === this.currentTaskId);
-        if (recordIndex !== -1) {
-          this.currentRecords[recordIndex] = { ...this.currentRecords[recordIndex], ...row };
-          // Mettre à jour les dates aux données locales (même null)
-          this.currentRecords[recordIndex].date_debut = dateDebut;
-          this.currentRecords[recordIndex].date_echeance = dateEcheance;
-        }
-        
-      } else {
-        // Ajout d'un nouvel enregistrement
-        const result = await grist.docApi.applyUserActions([
-          ['AddRecord', TABLE_ID, null, row]
-        ]);
-        console.log('Nouvelle tâche créée avec succès');
-        
-        // Ajouter le nouvel enregistrement aux données locales
-        if (result && result[0] && result[0].id) {
-          const newRecord = { id: result[0].id, ...row };
-          newRecord.date_debut = dateDebut;
-          newRecord.date_echeance = dateEcheance;
-          this.currentRecords.push(newRecord);
-        }
-      }
-      
-      this.modal.hide();
-      
-      // Rafraîchir l'affichage immédiatement
-      this.refreshKanban();
-      
-    } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
-      
-      // Message d'erreur plus informatif
-      let errorMessage = error.message;
-      if (errorMessage.includes("KeyError 'date_debut'") || errorMessage.includes("KeyError 'date_echeance'")) {
-        errorMessage = "Les colonnes de dates (date_debut/date_echeance) n'existent pas dans votre table Grist. Vous pouvez continuer à utiliser l'application, mais les dates ne seront pas sauvegardées.";
-      }
-      
-      displayError(`Erreur lors de la sauvegarde: ${errorMessage}`);
-    }
+  // === GESTION DES MODES DE VUE ===
+  initViewModeControls() {
+    const controlsContainer = document.querySelector('.kanban-controls .row');
+    if (!controlsContainer) return;
+    
+    const viewModeHTML = `
+      <div class="col-md-3">
+        <div class="btn-group" role="group" aria-label="Mode de vue">
+          <button type="button" class="btn btn-outline-primary btn-sm active" id="view-compact">
+            <i class="bi bi-grid"></i> Compact
+          </button>
+          <button type="button" class="btn btn-outline-primary btn-sm" id="view-detailed">
+            <i class="bi bi-card-text"></i> Détaillé
+          </button>
+          <button type="button" class="btn btn-outline-primary btn-sm" id="view-focus">
+            <i class="bi bi-eye"></i> Focus
+          </button>
+        </div>
+      </div>
+    `;
+    
+    controlsContainer.insertAdjacentHTML('afterbegin', viewModeHTML);
+    
+    document.getElementById('view-compact')?.addEventListener('click', () => this.setViewMode('compact'));
+    document.getElementById('view-detailed')?.addEventListener('click', () => this.setViewMode('detailed'));
+    document.getElementById('view-focus')?.addEventListener('click', () => this.setViewMode('focus'));
   }
 
-  getUniqueValuesFromData(key, isList = false) {
-    const values = new Set();
-    (this.currentRecords || []).forEach(rec => {
-      const v = rec[key];
-      if (isList && Array.isArray(v)) {
-        v.slice(1).forEach(i => i && values.add(String(i).trim()));
-      } else if (!isList && v !== null && typeof v !== 'undefined') {
-        values.add(String(v).trim());
-      }
-    });
-    return Array.from(values).filter(v => v).sort();
+  setViewMode(mode) {
+    this.viewMode = mode;
+    this.expandedCards.clear();
+    
+    document.querySelectorAll('.btn-group button').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`view-${mode}`)?.classList.add('active');
+    
+    this.refreshKanban();
   }
 
-  // === NOUVEAU: Création des cartes selon le mode de vue ===
+  // === CRÉATION DES CARTES ===
   createTaskElementHTML(record) {
     const isExpanded = this.expandedCards.has(record.id);
     
@@ -362,13 +238,10 @@ class KanbanManager {
     }
   }
 
-  // === NOUVEAU: Carte compacte ===
   createCompactTaskHTML(record) {
-    // Priorité
     const prio = this.calculerPriorite(record.urgence, record.impact);
     let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
     
-    // Échéance simplifiée
     let echeanceElement = '';
     if (record.date_echeance) {
       const echeanceDate = new Date(record.date_echeance);
@@ -410,13 +283,12 @@ class KanbanManager {
     </div>`;
   }
 
-  // === NOUVEAU: Carte détaillée (version actuelle améliorée) ===
   createDetailedTaskHTML(record) {
-    // Priorité
+    const isExpanded = this.expandedCards.has(record.id);
+    
     const prio = this.calculerPriorite(record.urgence, record.impact);
     let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
     
-    // Projet avec infobulle stratégie
     let projetTag = '';
     if (record.projet) {
       const tooltip = [
@@ -427,14 +299,12 @@ class KanbanManager {
       projetTag = `<span class="badge bg-info text-dark" title="${tooltip.replace(/"/g, '&quot;')}">${record.projet}</span>`;
     }
     
-    // Résumé description
     let resumeDesc = '';
     if (record.description) {
       const mots = record.description.split(/\s+/).slice(0, 10).join(' ');
       resumeDesc = `<div class="desc-resume">${mots}${record.description.split(/\s+/).length > 10 ? '…' : ''}</div>`;
     }
     
-    // Personnes
     let personnes = '';
     if (Array.isArray(record.qui) && record.qui.length > 1) {
       personnes = '<div class="personnes-list">' +
@@ -442,7 +312,6 @@ class KanbanManager {
         '</div>';
     }
     
-    // === AMÉLIORATION: Gestion des dates de début et d'échéance ===
     let datesElement = '';
     const hasDateDebut = record.date_debut;
     const hasDateEcheance = record.date_echeance;
@@ -450,7 +319,6 @@ class KanbanManager {
     if (hasDateDebut || hasDateEcheance) {
       let dateInfo = [];
       
-      // Date de début
       if (hasDateDebut) {
         const debutFormatted = this.formatDate(record.date_debut);
         dateInfo.push(`<span class="date-debut" title="Début: ${debutFormatted}">
@@ -458,7 +326,6 @@ class KanbanManager {
         </span>`);
       }
       
-      // Date d'échéance avec calcul de l'urgence
       if (hasDateEcheance) {
         const echeanceDate = new Date(record.date_echeance);
         const today = new Date();
@@ -469,33 +336,27 @@ class KanbanManager {
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         
         let echeanceClass = 'echeance-ok';
-        let echeanceIcon = 'bi-calendar-check';
         let echeanceText = '';
         
         if (diffDays < 0) {
           echeanceClass = 'echeance-depassee';
-          echeanceIcon = 'bi-calendar-x';
           echeanceText = `Dépassé (${Math.abs(diffDays)}j)`;
         } else if (diffDays === 0) {
           echeanceClass = 'echeance-aujourd-hui';
-          echeanceIcon = 'bi-calendar-x';
           echeanceText = "Aujourd'hui";
         } else if (diffDays <= 3) {
           echeanceClass = 'echeance-urgent';
-          echeanceIcon = 'bi-calendar-x';
           echeanceText = `${diffDays}j restant${diffDays > 1 ? 's' : ''}`;
         } else if (diffDays <= 7) {
           echeanceClass = 'echeance-bientot';
-          echeanceIcon = 'bi-calendar-x';
           echeanceText = `${diffDays}j restant${diffDays > 1 ? 's' : ''}`;
         } else {
-          echeanceIcon = 'bi-calendar-x';
           echeanceText = `J+${diffDays}`;
         }
         
         const echeanceFormatted = this.formatDate(record.date_echeance);
         dateInfo.push(`<span class="date-echeance ${echeanceClass}" title="Échéance: ${echeanceFormatted}">
-          <i class="bi ${echeanceIcon}"></i> ${echeanceText}
+          <i class="bi bi-calendar-x"></i> ${echeanceText}
         </span>`);
       }
       
@@ -504,12 +365,12 @@ class KanbanManager {
       }
     }
     
-    // Classe CSS additionnelle pour les cartes avec échéance
     const hasEcheanceClass = hasDateEcheance ? 'has-echeance' : '';
     const hasDateDebutClass = hasDateDebut ? 'has-debut' : '';
+    const collapseButton = (this.viewMode === 'compact' && isExpanded) ? 
+      `<button class="btn-collapse" title="Réduire"><i class="bi bi-chevron-up"></i></button>` : '';
     
-    // Poignée drag & drop
-    return `<div class="kanban-item ${hasEcheanceClass} ${hasDateDebutClass}" data-id="${record.id}">
+    return `<div class="kanban-item kanban-item-detailed ${hasEcheanceClass} ${hasDateDebutClass}" data-id="${record.id}">
       <div class="drag-handle">
         <i class="bi bi-grip-vertical"></i>
       </div>
@@ -517,6 +378,7 @@ class KanbanManager {
         <div>${prioBadge}</div>
         <div class="item-badges">
           ${projetTag}
+          ${collapseButton}
         </div>
       </div>
       <div class="item-title editable-zone">${record.titre || ''}</div>
@@ -525,7 +387,7 @@ class KanbanManager {
       ${personnes}
     </div>`;
   }
-  
+
   formatDate(dateStr) {
     if (!dateStr) return '';
     try {
@@ -536,7 +398,335 @@ class KanbanManager {
     }
   }
 
-  // === Méthodes de gestion des événements ===
+  // === RENDU DU KANBAN ===
+  refreshKanban() {
+    if (!this.kanbanContainer) return;
+    this.sortableInstances.forEach(s => s.destroy());
+    this.sortableInstances = [];
+    const filteredRecords = this.currentRecords || [];
+    const statutsToShow = this.showTermine ? STATUTS : STATUTS.filter(s => s.id !== 'Terminé');
+    
+    if (this.viewMode === 'focus') {
+      this.renderFocusMode(statutsToShow, filteredRecords);
+    } else {
+      this.renderColumnMode(statutsToShow, filteredRecords);
+    }
+  }
+
+  renderFocusMode(statutsToShow, filteredRecords) {
+    if (!this.focusColumn) {
+      this.focusColumn = statutsToShow[0]?.id || 'Backlog';
+    }
+    
+    const navHTML = `
+      <div class="focus-navigation">
+        ${statutsToShow.map(statut => {
+          const count = filteredRecords.filter(r => r.statut === statut.id).length;
+          const activeClass = this.focusColumn === statut.id ? 'active' : '';
+          return `<button class="btn btn-outline-secondary ${activeClass}" data-status="${statut.id}">
+            ${statut.libelle} <span class="badge bg-secondary">${count}</span>
+          </button>`;
+        }).join('')}
+      </div>
+    `;
+    
+    const activeStatus = statutsToShow.find(s => s.id === this.focusColumn);
+    const boardRecords = filteredRecords.filter(r => r.statut === this.focusColumn);
+    boardRecords.sort((a, b) => a.id - b.id);
+    const itemsHTML = boardRecords.map(record => this.createTaskElementHTML(record)).join('');
+    
+    const columnHTML = `
+      <div class="focus-column">
+        <div class="kanban-board-header">
+          <span class="board-title">${activeStatus?.libelle || ''}</span>
+          <span class="board-count">${boardRecords.length}</span>
+        </div>
+        <div class="kanban-board-body" id="items-focus" data-status="${this.focusColumn}">
+          ${itemsHTML}
+        </div>
+      </div>
+    `;
+    
+    this.kanbanContainer.innerHTML = navHTML + columnHTML;
+    
+    document.querySelectorAll('.focus-navigation button').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        this.focusColumn = e.target.dataset.status;
+        this.refreshKanban();
+      });
+    });
+    
+    const el = document.getElementById('items-focus');
+    if (el) {
+      const sortable = new Sortable(el, {
+        group: 'kanban-focus',
+        animation: 150,
+        handle: '.drag-handle',
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        dragClass: 'sortable-drag',
+        onEnd: evt => this.handleDragEnd(evt, this.focusColumn)
+      });
+      this.sortableInstances.push(sortable);
+    }
+    
+    this.attachCardEventListeners();
+  }
+
+  renderColumnMode(statutsToShow, filteredRecords) {
+    const modeClass = this.viewMode === 'compact' ? 'kanban-compact' : 'kanban-detailed';
+    this.kanbanContainer.className = `kanban-container ${modeClass}`;
+    
+    let kanbanHTML = '';
+    statutsToShow.forEach(statut => {
+      const boardId = statut.classe;
+      const boardRecords = filteredRecords.filter(r => r.statut === statut.id);
+      boardRecords.sort((a, b) => a.id - b.id);
+      const itemsHTML = boardRecords.map(record => this.createTaskElementHTML(record)).join('');
+      const count = boardRecords.length;
+      const isHidden = (count === 0 && statut.id !== 'Terminé' && this.showTermine);
+      const hiddenClass = isHidden ? ' board-hidden' : '';
+      
+      kanbanHTML += `
+        <div id="board-${boardId}" class="kanban-board board-${boardId}${hiddenClass}">
+          <div class="kanban-board-header">
+            <span class="board-title">${statut.libelle}</span>
+            <span class="board-count">${count}</span>
+          </div>
+          <div class="kanban-board-body" id="items-${boardId}" data-status="${statut.id}">
+            ${itemsHTML}
+          </div>
+        </div>
+      `;
+    });
+    this.kanbanContainer.innerHTML = kanbanHTML;
+
+    statutsToShow.forEach(statut => {
+      const boardId = statut.classe;
+      const el = document.getElementById(`items-${boardId}`);
+      if (el) {
+        const sortable = new Sortable(el, {
+          group: 'kanban',
+          animation: 150,
+          handle: '.drag-handle',
+          ghostClass: 'sortable-ghost',
+          chosenClass: 'sortable-chosen',
+          dragClass: 'sortable-drag',
+          onEnd: evt => this.handleDragEnd(evt, statut.id)
+        });
+        this.sortableInstances.push(sortable);
+      }
+    });
+
+    this.attachCardEventListeners();
+  }
+
+  attachCardEventListeners() {
+    Array.from(this.kanbanContainer.querySelectorAll('.kanban-item .editable-zone')).forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const item = el.closest('.kanban-item');
+        const id = parseInt(item.dataset.id, 10);
+        const tache = this.currentRecords.find(r => r.id === id);
+        if (tache) this.openPopup(tache);
+      });
+    });
+    
+    Array.from(this.kanbanContainer.querySelectorAll('.btn-expand')).forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const item = btn.closest('.kanban-item');
+        const id = parseInt(item.dataset.id, 10);
+        this.expandedCards.add(id);
+        this.refreshKanban();
+      });
+    });
+    
+    Array.from(this.kanbanContainer.querySelectorAll('.btn-collapse')).forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const item = btn.closest('.kanban-item');
+        const id = parseInt(item.dataset.id, 10);
+        this.expandedCards.delete(id);
+        this.refreshKanban();
+      });
+    });
+  }
+
+  // === SAUVEGARDE ET GESTION DES DONNÉES ===
+  async saveTask() {
+    try {
+      let dateEcheance = '';
+      let dateDebut = '';
+      
+      const delaiInput = document.getElementById('popup-delai');
+      if (delaiInput && delaiInput.value.trim()) {
+        dateEcheance = delaiInput.value.trim();
+        
+        if (!this.currentTaskId) {
+          dateDebut = new Date().toISOString().slice(0,10);
+        } else {
+          const existingRecord = this.currentRecords.find(r => r.id === this.currentTaskId);
+          dateDebut = existingRecord?.date_debut || '';
+        }
+      } else {
+        dateEcheance = null;
+        dateDebut = null;
+      }
+      
+      const titre = document.getElementById('popup-titre').value;
+      const description = document.getElementById('popup-description').value;
+      const statut = document.getElementById('popup-statut-text').value;
+      const projet = document.getElementById('popup-projet').value;
+      const urgence = document.getElementById('popup-urgence').value;
+      const impact = document.getElementById('popup-impact').value;
+      const bureau = Array.from(document.getElementById('popup-bureau').selectedOptions).map(o => o.value);
+      const qui = Array.from(document.getElementById('popup-qui').selectedOptions).map(o => o.value);
+      
+      const strategie_objectif = document.getElementById('strategie-objectif').value;
+      const strategie_sous_objectif = document.getElementById('strategie-sous-objectif').value;
+      const strategie_action = document.getElementById('strategie-action').value;
+      
+      const row = {
+        titre, 
+        description, 
+        statut, 
+        projet, 
+        urgence, 
+        impact,
+        bureau: ['L', ...bureau],
+        qui: ['L', ...qui],
+        strategie_objectif,
+        strategie_sous_objectif,
+        strategie_action
+      };
+
+      if (this.availableColumns.has('date_debut')) {
+        row.date_debut = dateDebut;
+      }
+      
+      if (this.availableColumns.has('date_echeance')) {
+        row.date_echeance = dateEcheance;
+      }
+
+      if (this.currentTaskId) {
+        await grist.docApi.applyUserActions([
+          ['UpdateRecord', TABLE_ID, this.currentTaskId, row]
+        ]);
+        console.log(`Tâche ${this.currentTaskId} mise à jour avec succès`);
+        
+        const recordIndex = this.currentRecords.findIndex(r => r.id === this.currentTaskId);
+        if (recordIndex !== -1) {
+          this.currentRecords[recordIndex] = { ...this.currentRecords[recordIndex], ...row };
+          this.currentRecords[recordIndex].date_debut = dateDebut;
+          this.currentRecords[recordIndex].date_echeance = dateEcheance;
+        }
+        
+      } else {
+        const result = await grist.docApi.applyUserActions([
+          ['AddRecord', TABLE_ID, null, row]
+        ]);
+        console.log('Nouvelle tâche créée avec succès');
+        
+        if (result && result[0] && result[0].id) {
+          const newRecord = { id: result[0].id, ...row };
+          newRecord.date_debut = dateDebut;
+          newRecord.date_echeance = dateEcheance;
+          this.currentRecords.push(newRecord);
+        }
+      }
+      
+      this.modal.hide();
+      this.refreshKanban();
+      
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      
+      let errorMessage = error.message;
+      if (errorMessage.includes("KeyError 'date_debut'") || errorMessage.includes("KeyError 'date_echeance'")) {
+        errorMessage = "Les colonnes de dates (date_debut/date_echeance) n'existent pas dans votre table Grist. Vous pouvez continuer à utiliser l'application, mais les dates ne seront pas sauvegardées.";
+      }
+      
+      displayError(`Erreur lors de la sauvegarde: ${errorMessage}`);
+    }
+  }
+
+  async handleDragEnd(evt, targetStatus) {
+    if (!evt.item || !evt.item.dataset) return;
+    
+    const id = parseInt(evt.item.dataset.id, 10);
+    if (isNaN(id)) return;
+    
+    const record = this.currentRecords.find(r => r.id === id);
+    if (!record) return;
+    
+    const newStatus = evt.to.dataset.status;
+    
+    if (record.statut === newStatus) return;
+    
+    console.log(`Déplacement de la tâche ${id} vers ${newStatus}`);
+    
+    try {
+      await grist.docApi.applyUserActions([
+        ['UpdateRecord', TABLE_ID, id, { statut: newStatus }]
+      ]);
+      
+      console.log(`Tâche ${id} mise à jour avec succès`);
+      
+      const recordIndex = this.currentRecords.findIndex(r => r.id === id);
+      if (recordIndex !== -1) {
+        this.currentRecords[recordIndex].statut = newStatus;
+      }
+      
+      this.refreshKanban();
+      
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour:', error);
+      displayError(`Erreur lors du déplacement de la tâche: ${error.message}`);
+      this.refreshKanban();
+    }
+  }
+
+  calculerPriorite(u, i) {
+    const imp = String(i || '').trim().toLowerCase();
+    const urg = String(u || '').trim().toLowerCase();
+    if (imp === 'critique') return 1;
+    if (imp === 'important') return (urg === 'immédiate' || urg === 'courte') ? 1 : 2;
+    if (imp === 'modéré') return (urg === 'immédiate') ? 2 : 3;
+    if (imp === 'mineur') return 4;
+    return 3;
+  }
+
+  async deleteTask(taskId) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette tâche ?')) {
+      return;
+    }
+    
+    try {
+      await grist.docApi.applyUserActions([
+        ['RemoveRecord', TABLE_ID, taskId]
+      ]);
+      
+      console.log(`Tâche ${taskId} supprimée avec succès`);
+      
+      this.currentRecords = this.currentRecords.filter(r => r.id !== taskId);
+      
+      if (this.modal && this.currentTaskId === taskId) {
+        this.modal.hide();
+      }
+      
+      this.refreshKanban();
+      
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      displayError(`Erreur lors de la suppression: ${error.message}`);
+    }
+  }
+
+  // === GESTION DES ÉVÉNEMENTS GRIST ===
   handleGristUpdate(gristRecords, mappings = null) {
     if (this.isUpdating) return;
     if (this.ignoreNextOnRecords) { 
@@ -565,6 +755,7 @@ class KanbanManager {
     setTimeout(() => { this.ignoreNextOnRecords = false; }, 500);
   }
 
+  // === INITIALISATION DES COMPOSANTS ===
   initFilters() {
     this.populateSelectWithOptions('filter-bureau', this.gristOptions.bureau || []);
     this.populateSelectWithOptions('filter-qui', this.gristOptions.qui || []);
@@ -690,7 +881,6 @@ class KanbanManager {
       action: tache.strategie_action
     });
     
-    // Remplir le champ délai avec la date d'échéance
     const delaiInput = document.getElementById('popup-delai');
     if (delaiInput && tache.date_echeance) {
       delaiInput.value = tache.date_echeance;
@@ -710,141 +900,12 @@ class KanbanManager {
     });
   }
 
-  refreshKanban() {
-    if (!this.kanbanContainer) return;
-    this.sortableInstances.forEach(s => s.destroy());
-    this.sortableInstances = [];
-    const filteredRecords = this.currentRecords || [];
-    const statutsToShow = this.showTermine ? STATUTS : STATUTS.filter(s => s.id !== 'Terminé');
-    let kanbanHTML = '';
-    statutsToShow.forEach(statut => {
-      const boardId = statut.classe;
-      const boardRecords = filteredRecords.filter(r => r.statut === statut.id);
-      boardRecords.sort((a, b) => a.id - b.id);
-      const itemsHTML = boardRecords.map(record => this.createTaskElementHTML(record)).join('');
-      const count = boardRecords.length;
-      const isHidden = (count === 0 && statut.id !== 'Terminé' && this.showTermine);
-      const hiddenClass = isHidden ? ' board-hidden' : '';
-      kanbanHTML += `
-        <div id="board-${boardId}" class="kanban-board board-${boardId}${hiddenClass}">
-          <div class="kanban-board-header">
-            <span class="board-count">${count}</span>
-          </div>
-          <div class="kanban-board-body" id="items-${boardId}" data-status="${statut.id}">
-            ${itemsHTML}
-          </div>
-        </div>
-      `;
-    });
-    this.kanbanContainer.innerHTML = kanbanHTML;
-
-    statutsToShow.forEach(statut => {
-      const boardId = statut.classe;
-      const el = document.getElementById(`items-${boardId}`);
-      if (el) {
-        const sortable = new Sortable(el, {
-          group: 'kanban',
-          animation: 150,
-          handle: '.drag-handle',
-          ghostClass: 'sortable-ghost',
-          chosenClass: 'sortable-chosen',
-          dragClass: 'sortable-drag',
-          onEnd: evt => this.handleDragEnd(evt, statut.id)
-        });
-        this.sortableInstances.push(sortable);
-      }
-    });
-
-    this.attachCardEventListeners();
-  }
-
-  async handleDragEnd(evt, targetStatus) {
-    if (!evt.item || !evt.item.dataset) return;
-    
-    const id = parseInt(evt.item.dataset.id, 10);
-    if (isNaN(id)) return;
-    
-    const record = this.currentRecords.find(r => r.id === id);
-    if (!record) return;
-    
-    const newStatus = evt.to.dataset.status;
-    
-    // Ne fait rien si le statut n'a pas changé
-    if (record.statut === newStatus) return;
-    
-    console.log(`Déplacement de la tâche ${id} vers ${newStatus}`);
-    
-    try {
-      // Utilisation d'applyUserActions pour mettre à jour le statut
-      await grist.docApi.applyUserActions([
-        ['UpdateRecord', TABLE_ID, id, { statut: newStatus }]
-      ]);
-      
-      console.log(`Tâche ${id} mise à jour avec succès`);
-      
-      // Mise à jour immédiate des données locales
-      const recordIndex = this.currentRecords.findIndex(r => r.id === id);
-      if (recordIndex !== -1) {
-        this.currentRecords[recordIndex].statut = newStatus;
-      }
-      
-      // Rafraîchir l'affichage immédiatement
-      this.refreshKanban();
-      
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour:', error);
-      displayError(`Erreur lors du déplacement de la tâche: ${error.message}`);
-      // Recharger pour annuler le déplacement visuel
-      this.refreshKanban();
-    }
-  }
-
-  calculerPriorite(u, i) {
-    const imp = String(i || '').trim().toLowerCase();
-    const urg = String(u || '').trim().toLowerCase();
-    if (imp === 'critique') return 1;
-    if (imp === 'important') return (urg === 'immédiate' || urg === 'courte') ? 1 : 2;
-    if (imp === 'modéré') return (urg === 'immédiate') ? 2 : 3;
-    if (imp === 'mineur') return 4;
-    return 3;
-  }
-
-  async deleteTask(taskId) {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette tâche ?')) {
-      return;
-    }
-    
-    try {
-      await grist.docApi.applyUserActions([
-        ['RemoveRecord', TABLE_ID, taskId]
-      ]);
-      
-      console.log(`Tâche ${taskId} supprimée avec succès`);
-      
-      // Suppression immédiate des données locales
-      this.currentRecords = this.currentRecords.filter(r => r.id !== taskId);
-      
-      // Fermer la modale si elle est ouverte
-      if (this.modal && this.currentTaskId === taskId) {
-        this.modal.hide();
-      }
-      
-      // Rafraîchir l'affichage immédiatement
-      this.refreshKanban();
-      
-    } catch (error) {
-      console.error('Erreur lors de la suppression:', error);
-      displayError(`Erreur lors de la suppression: ${error.message}`);
-    }
-  }
-
   initFlatpickr() {
     const delaiInput = document.getElementById('popup-delai');
     const delaiType = document.getElementById('delai-type');
     
     if (!delaiInput || !delaiType) return;
     
-    // Initialiser Flatpickr pour les dates seulement
     this.flatpickr = flatpickr(delaiInput, {
       locale: 'fr',
       dateFormat: 'Y-m-d',
@@ -854,8 +915,7 @@ class KanbanManager {
       placeholder: 'Cliquer pour choisir une date ou laisser vide'
     });
     
-    // Simplifier : toujours en mode date
-    delaiType.style.display = 'none'; // Masquer le sélecteur de type
+    delaiType.style.display = 'none';
     delaiInput.placeholder = 'Cliquer pour choisir une date ou laisser vide';
   }
 
@@ -863,7 +923,6 @@ class KanbanManager {
     document.getElementById('btn-save-task').onclick = () => this.saveTask();
     document.getElementById('btn-nouvelle-tache').onclick = () => this.openPopup();
     
-    // Gestionnaire pour le bouton supprimer
     const btnDelete = document.getElementById('btn-delete-task');
     if (btnDelete) {
       btnDelete.onclick = () => {
@@ -873,7 +932,6 @@ class KanbanManager {
       };
     }
     
-    // Gestion des filtres
     const filterElements = ['filter-bureau', 'filter-qui', 'filter-projet', 'filter-statut'];
     filterElements.forEach(filterId => {
       const filterEl = document.getElementById(filterId);
@@ -882,13 +940,11 @@ class KanbanManager {
       }
     });
     
-    // Gestion de la recherche
     const searchInput = document.getElementById('search-input');
     if (searchInput) {
       searchInput.addEventListener('input', () => this.applyFilters());
     }
     
-    // Gestion de l'affichage des terminés
     const showTermineCheckbox = document.getElementById('show-termine');
     if (showTermineCheckbox) {
       showTermineCheckbox.addEventListener('change', (e) => {
@@ -905,14 +961,12 @@ class KanbanManager {
           this.openPopup();
         }
       }
-      // Raccourci pour supprimer (Suppr ou Delete)
       if ((e.key === 'Delete' || e.key === 'Suppr') && this.currentTaskId) {
         if (!e.target.matches('input, textarea')) {
           e.preventDefault();
           this.deleteTask(this.currentTaskId);
         }
       }
-      // Focus sur la recherche avec F
       if (e.key === 'f' || e.key === 'F') {
         if (!e.target.matches('input, textarea')) {
           e.preventDefault();
@@ -920,7 +974,6 @@ class KanbanManager {
           if (searchInput) searchInput.focus();
         }
       }
-      // Raccourcis pour changer de mode de vue
       if (e.key === '1' && !e.target.matches('input, textarea')) {
         e.preventDefault();
         this.setViewMode('compact');
@@ -937,7 +990,6 @@ class KanbanManager {
   }
 
   applyFilters() {
-    // Récupérer les valeurs des filtres
     this.filters.bureau = document.getElementById('filter-bureau')?.value || '';
     this.filters.qui = document.getElementById('filter-qui')?.value || '';
     this.filters.projet = document.getElementById('filter-projet')?.value || '';
@@ -945,27 +997,21 @@ class KanbanManager {
     
     const searchTerm = document.getElementById('search-input')?.value.toLowerCase() || '';
     
-    // Filtrer les enregistrements
     let filteredRecords = this.currentRecords.filter(record => {
-      // Filtre par bureau
       if (this.filters.bureau && Array.isArray(record.bureau)) {
-        const bureaux = record.bureau.slice(1); // Enlever le 'L'
+        const bureaux = record.bureau.slice(1);
         if (!bureaux.includes(this.filters.bureau)) return false;
       }
       
-      // Filtre par responsable
       if (this.filters.qui && Array.isArray(record.qui)) {
-        const responsables = record.qui.slice(1); // Enlever le 'L'
+        const responsables = record.qui.slice(1);
         if (!responsables.includes(this.filters.qui)) return false;
       }
       
-      // Filtre par projet
       if (this.filters.projet && record.projet !== this.filters.projet) return false;
       
-      // Filtre par statut
       if (this.filters.statut && record.statut !== this.filters.statut) return false;
       
-      // Filtre par recherche textuelle
       if (searchTerm) {
         const searchableText = [
           record.titre || '',
@@ -982,239 +1028,11 @@ class KanbanManager {
       return true;
     });
     
-    // Stocker temporairement les enregistrements filtrés
     const originalRecords = this.currentRecords;
     this.currentRecords = filteredRecords;
     
-    // Rafraîchir l'affichage
     this.refreshKanban();
     
-    // Restaurer les enregistrements originaux
-    this.currentRecords = originalRecords;
-  }
-}
-
-
-
-  async handleDragEnd(evt, targetStatus) {
-    if (!evt.item || !evt.item.dataset) return;
-    
-    const id = parseInt(evt.item.dataset.id, 10);
-    if (isNaN(id)) return;
-    
-    const record = this.currentRecords.find(r => r.id === id);
-    if (!record) return;
-    
-    const newStatus = evt.to.dataset.status;
-    
-    // Ne fait rien si le statut n'a pas changé
-    if (record.statut === newStatus) return;
-    
-    console.log(`Déplacement de la tâche ${id} vers ${newStatus}`);
-    
-    try {
-      // Utilisation d'applyUserActions pour mettre à jour le statut
-      await grist.docApi.applyUserActions([
-        ['UpdateRecord', TABLE_ID, id, { statut: newStatus }]
-      ]);
-      
-      console.log(`Tâche ${id} mise à jour avec succès`);
-      
-      // Mise à jour immédiate des données locales
-      const recordIndex = this.currentRecords.findIndex(r => r.id === id);
-      if (recordIndex !== -1) {
-        this.currentRecords[recordIndex].statut = newStatus;
-      }
-      
-      // Rafraîchir l'affichage immédiatement
-      this.refreshKanban();
-      
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour:', error);
-      displayError(`Erreur lors du déplacement de la tâche: ${error.message}`);
-      // Recharger pour annuler le déplacement visuel
-      this.refreshKanban();
-    }
-  }
-
-  calculerPriorite(u, i) {
-    const imp = String(i || '').trim().toLowerCase();
-    const urg = String(u || '').trim().toLowerCase();
-    if (imp === 'critique') return 1;
-    if (imp === 'important') return (urg === 'immédiate' || urg === 'courte') ? 1 : 2;
-    if (imp === 'modéré') return (urg === 'immédiate') ? 2 : 3;
-    if (imp === 'mineur') return 4;
-    return 3;
-  }
-
-  async deleteTask(taskId) {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette tâche ?')) {
-      return;
-    }
-    
-    try {
-      await grist.docApi.applyUserActions([
-        ['RemoveRecord', TABLE_ID, taskId]
-      ]);
-      
-      console.log(`Tâche ${taskId} supprimée avec succès`);
-      
-      // Suppression immédiate des données locales
-      this.currentRecords = this.currentRecords.filter(r => r.id !== taskId);
-      
-      // Fermer la modale si elle est ouverte
-      if (this.modal && this.currentTaskId === taskId) {
-        this.modal.hide();
-      }
-      
-      // Rafraîchir l'affichage immédiatement
-      this.refreshKanban();
-      
-    } catch (error) {
-      console.error('Erreur lors de la suppression:', error);
-      displayError(`Erreur lors de la suppression: ${error.message}`);
-    }
-  }
-
-  initFlatpickr() {
-    const delaiInput = document.getElementById('popup-delai');
-    const delaiType = document.getElementById('delai-type');
-    
-    if (!delaiInput || !delaiType) return;
-    
-    // Initialiser Flatpickr pour les dates seulement
-    this.flatpickr = flatpickr(delaiInput, {
-      locale: 'fr',
-      dateFormat: 'Y-m-d',
-      allowInput: true,
-      disableMobile: true,
-      allowClear: true,
-      placeholder: 'Cliquer pour choisir une date ou laisser vide'
-    });
-    
-    // Simplifier : toujours en mode date
-    delaiType.style.display = 'none'; // Masquer le sélecteur de type
-    delaiInput.placeholder = 'Cliquer pour choisir une date ou laisser vide';
-  }
-
-  initEventListeners() {
-    document.getElementById('btn-save-task').onclick = () => this.saveTask();
-    document.getElementById('btn-nouvelle-tache').onclick = () => this.openPopup();
-    
-    // Gestionnaire pour le bouton supprimer
-    const btnDelete = document.getElementById('btn-delete-task');
-    if (btnDelete) {
-      btnDelete.onclick = () => {
-        if (this.currentTaskId) {
-          this.deleteTask(this.currentTaskId);
-        }
-      };
-    }
-    
-    // Gestion des filtres
-    const filterElements = ['filter-bureau', 'filter-qui', 'filter-projet', 'filter-statut'];
-    filterElements.forEach(filterId => {
-      const filterEl = document.getElementById(filterId);
-      if (filterEl) {
-        filterEl.addEventListener('change', () => this.applyFilters());
-      }
-    });
-    
-    // Gestion de la recherche
-    const searchInput = document.getElementById('search-input');
-    if (searchInput) {
-      searchInput.addEventListener('input', () => this.applyFilters());
-    }
-    
-    // Gestion de l'affichage des terminés
-    const showTermineCheckbox = document.getElementById('show-termine');
-    if (showTermineCheckbox) {
-      showTermineCheckbox.addEventListener('change', (e) => {
-        this.showTermine = e.target.checked;
-        this.refreshKanban();
-      });
-    }
-    
-    // Raccourcis clavier
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'n' || e.key === 'N') {
-        if (!e.target.matches('input, textarea')) {
-          e.preventDefault();
-          this.openPopup();
-        }
-      }
-      // Raccourci pour supprimer (Suppr ou Delete)
-      if ((e.key === 'Delete' || e.key === 'Suppr') && this.currentTaskId) {
-        if (!e.target.matches('input, textarea')) {
-          e.preventDefault();
-          this.deleteTask(this.currentTaskId);
-        }
-      }
-      // Focus sur la recherche avec F
-      if (e.key === 'f' || e.key === 'F') {
-        if (!e.target.matches('input, textarea')) {
-          e.preventDefault();
-          const searchInput = document.getElementById('search-input');
-          if (searchInput) searchInput.focus();
-        }
-      }
-    });
-  }
-
-  applyFilters() {
-    // Récupérer les valeurs des filtres
-    this.filters.bureau = document.getElementById('filter-bureau')?.value || '';
-    this.filters.qui = document.getElementById('filter-qui')?.value || '';
-    this.filters.projet = document.getElementById('filter-projet')?.value || '';
-    this.filters.statut = document.getElementById('filter-statut')?.value || '';
-    
-    const searchTerm = document.getElementById('search-input')?.value.toLowerCase() || '';
-    
-    // Filtrer les enregistrements
-    let filteredRecords = this.currentRecords.filter(record => {
-      // Filtre par bureau
-      if (this.filters.bureau && Array.isArray(record.bureau)) {
-        const bureaux = record.bureau.slice(1); // Enlever le 'L'
-        if (!bureaux.includes(this.filters.bureau)) return false;
-      }
-      
-      // Filtre par responsable
-      if (this.filters.qui && Array.isArray(record.qui)) {
-        const responsables = record.qui.slice(1); // Enlever le 'L'
-        if (!responsables.includes(this.filters.qui)) return false;
-      }
-      
-      // Filtre par projet
-      if (this.filters.projet && record.projet !== this.filters.projet) return false;
-      
-      // Filtre par statut
-      if (this.filters.statut && record.statut !== this.filters.statut) return false;
-      
-      // Filtre par recherche textuelle
-      if (searchTerm) {
-        const searchableText = [
-          record.titre || '',
-          record.description || '',
-          record.projet || '',
-          record.strategie_objectif || '',
-          record.strategie_sous_objectif || '',
-          record.strategie_action || ''
-        ].join(' ').toLowerCase();
-        
-        if (!searchableText.includes(searchTerm)) return false;
-      }
-      
-      return true;
-    });
-    
-    // Stocker temporairement les enregistrements filtrés
-    const originalRecords = this.currentRecords;
-    this.currentRecords = filteredRecords;
-    
-    // Rafraîchir l'affichage
-    this.refreshKanban();
-    
-    // Restaurer les enregistrements originaux
     this.currentRecords = originalRecords;
   }
 }
