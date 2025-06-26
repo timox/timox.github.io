@@ -172,8 +172,17 @@ class KanbanManager {
     // Mise à jour de l'affichage
     this.refreshKanban();
   }
-
-
+    const values = new Set();
+    (this.currentRecords || []).forEach(rec => {
+      const v = rec[key];
+      if (isList && Array.isArray(v)) {
+        v.slice(1).forEach(i => i && values.add(String(i).trim()));
+      } else if (!isList && v !== null && typeof v !== 'undefined') {
+        values.add(String(v).trim());
+      }
+    });
+    return Array.from(values).filter(v => v).sort();
+  }
 
   // === CORRECTION: Amélioration de mapGristRecords pour gérer les colonnes optionnelles ===
   mapGristRecords(gristData) {
@@ -339,7 +348,7 @@ class KanbanManager {
       displayError(`Erreur lors de la sauvegarde: ${errorMessage}`);
     }
   }
-      
+
   getUniqueValuesFromData(key, isList = false) {
     const values = new Set();
     (this.currentRecords || []).forEach(rec => {
@@ -996,9 +1005,7 @@ class KanbanManager {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  new KanbanManager();
-});
+
 
   async handleDragEnd(evt, targetStatus) {
     if (!evt.item || !evt.item.dataset) return;
