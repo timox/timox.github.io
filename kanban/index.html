@@ -70,8 +70,10 @@
 
     /* === Mode Compact === */
     .kanban-container.kanban-compact {
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* Colonnes plus étroites */
+      gap: 0.75rem; /* Espacement réduit */
       height: calc(100vh - 200px);
+      font-size: 0.85rem; /* Police réduite globalement */
     }
 
     .kanban-compact .kanban-board {
@@ -80,11 +82,16 @@
       height: 100%;
     }
 
+    .kanban-compact .kanban-board-header {
+      padding: 0.75rem; /* Padding réduit */
+      font-size: 0.9rem; /* Titre plus petit */
+    }
+
     .kanban-compact .kanban-board-body {
       flex: 1;
       overflow-y: auto;
       scrollbar-width: thin;
-      padding: 1rem;
+      padding: 0.75rem; /* Padding réduit */
     }
 
     .kanban-compact .kanban-board-body::-webkit-scrollbar {
@@ -99,6 +106,32 @@
     .kanban-compact .kanban-board-body::-webkit-scrollbar-thumb {
       background: #c1c1c1;
       border-radius: 6px;
+    }
+
+    /* Cartes plus compactes en mode compact */
+    .kanban-compact .kanban-item-compact {
+      padding: 0.5rem; /* Padding encore plus réduit */
+      margin-bottom: 0.4rem;
+      font-size: 0.8rem; /* Police plus petite */
+    }
+
+    .kanban-compact .compact-header {
+      margin-bottom: 0.3rem;
+    }
+
+    .kanban-compact .compact-title {
+      font-size: 0.8rem; /* Titre plus petit */
+      line-height: 1.2;
+    }
+
+    .kanban-compact .priority-badge {
+      font-size: 0.7rem; /* Badges plus petits */
+      padding: 0.2em 0.6em;
+    }
+
+    .kanban-compact .date-echeance-compact {
+      font-size: 0.65rem; /* Dates plus petites */
+      padding: 0.15rem 0.3rem;
     }
 
     /* === Mode Détaillé === */
@@ -520,19 +553,26 @@
     /* === Mode Focus === */
     .focus-navigation {
       display: flex;
-      gap: 0.5rem;
+      flex-direction: column; /* Navigation verticale pour prendre moins d'espace */
+      gap: 0.3rem;
       margin-bottom: 1rem;
-      padding: 1rem;
+      padding: 0.75rem;
       background: white;
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      flex-wrap: wrap;
+      width: 200px; /* Largeur fixe étroite */
+      flex-shrink: 0; /* Ne pas rétrécir */
     }
 
     .focus-navigation .btn {
-      border-radius: 20px;
-      padding: 0.5rem 1rem;
-      font-size: 0.875rem;
+      border-radius: 6px;
+      padding: 0.4rem 0.75rem;
+      font-size: 0.8rem; /* Police plus petite */
+      text-align: left;
+      justify-content: space-between;
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
     }
 
     .focus-navigation .btn.active {
@@ -542,27 +582,37 @@
     }
 
     .focus-navigation .badge {
-      margin-left: 0.5rem;
-      font-size: 0.7rem;
+      font-size: 0.65rem;
+      padding: 0.2em 0.4em;
+    }
+
+    /* Container pour le mode focus */
+    .focus-container {
+      display: flex;
+      gap: 1rem;
+      height: calc(100vh - 200px);
     }
 
     .focus-column {
       background: white;
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      min-height: 500px;
+      flex: 1; /* Prend le reste de l'espace */
+      display: flex;
+      flex-direction: column;
     }
 
     .focus-column .kanban-board-header {
-      padding: 1.5rem;
+      padding: 1.2rem;
       border-bottom: 2px solid #e9ecef;
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       font-weight: 600;
+      flex-shrink: 0;
     }
 
     .focus-column .kanban-board-body {
       padding: 1rem;
-      max-height: 70vh;
+      flex: 1;
       overflow-y: auto;
     }
 
@@ -641,6 +691,11 @@
         grid-template-columns: 1fr;
         height: calc(100vh - 300px);
       }
+
+      /* Mode compact sur mobile : colonnes encore plus étroites */
+      .kanban-container.kanban-compact {
+        font-size: 0.8rem;
+      }
       
       .compact-header {
         flex-direction: column;
@@ -652,13 +707,29 @@
         text-align: left;
       }
 
+      /* Mode focus sur mobile : navigation horizontale */
+      .focus-container {
+        flex-direction: column;
+        height: calc(100vh - 300px);
+      }
+
       .focus-navigation {
+        flex-direction: row;
+        width: 100%;
         padding: 0.5rem;
+        overflow-x: auto;
+        gap: 0.25rem;
       }
       
       .focus-navigation .btn {
-        font-size: 0.75rem;
-        padding: 0.4rem 0.8rem;
+        font-size: 0.7rem;
+        padding: 0.3rem 0.6rem;
+        flex-shrink: 0;
+        min-width: auto;
+      }
+
+      .focus-column {
+        flex: 1;
       }
     }
 
