@@ -194,15 +194,19 @@ class KanbanManager {
       const delaiInput = document.getElementById('popup-delai');
       if (delaiInput && delaiInput.value.trim()) {
         dateEcheance = delaiInput.value.trim();
-      }
-      
-      // Date de début = aujourd'hui si c'est une nouvelle tâche
-      if (!this.currentTaskId) {
-        dateDebut = new Date().toISOString().slice(0,10);
+        
+        // Si on a une échéance ET que c'est une nouvelle tâche, définir date de début
+        if (!this.currentTaskId) {
+          dateDebut = new Date().toISOString().slice(0,10);
+        } else {
+          // Pour les tâches existantes, conserver la date de début existante
+          const existingRecord = this.currentRecords.find(r => r.id === this.currentTaskId);
+          dateDebut = existingRecord?.date_debut || '';
+        }
       } else {
-        // Conserver la date de début existante pour les tâches modifiées
-        const existingRecord = this.currentRecords.find(r => r.id === this.currentTaskId);
-        dateDebut = existingRecord?.date_debut || '';
+        // Pas d'échéance = pas de date de début non plus
+        dateEcheance = null;
+        dateDebut = null;
       }
       
       const titre = document.getElementById('popup-titre').value;
@@ -235,13 +239,14 @@ class KanbanManager {
       };
 
       // Ajouter les dates seulement si les colonnes existent
-      if (this.availableColumns.has('date_debut') && dateDebut) {
+      if (this.availableColumns.has('date_debut')) {
+        // Toujours envoyer la date de début, même null pour permettre la suppression
         row.date_debut = dateDebut;
       }
       
       if (this.availableColumns.has('date_echeance')) {
-        // Toujours envoyer la date d'échéance, même vide pour permettre la suppression
-        row.date_echeance = dateEcheance || null;
+        // Toujours envoyer la date d'échéance, même null pour permettre la suppression
+        row.date_echeance = dateEcheance;
       }
 
       if (this.currentTaskId) {
@@ -255,9 +260,9 @@ class KanbanManager {
         const recordIndex = this.currentRecords.findIndex(r => r.id === this.currentTaskId);
         if (recordIndex !== -1) {
           this.currentRecords[recordIndex] = { ...this.currentRecords[recordIndex], ...row };
-          // Mettre à jour les dates aux données locales
-          if (dateDebut) this.currentRecords[recordIndex].date_debut = dateDebut;
-          this.currentRecords[recordIndex].date_echeance = dateEcheance || null;
+          // Mettre à jour les dates aux données locales (même null)
+          this.currentRecords[recordIndex].date_debut = dateDebut;
+          this.currentRecords[recordIndex].date_echeance = dateEcheance;
         }
         
       } else {
@@ -270,8 +275,8 @@ class KanbanManager {
         // Ajouter le nouvel enregistrement aux données locales
         if (result && result[0] && result[0].id) {
           const newRecord = { id: result[0].id, ...row };
-          if (dateDebut) newRecord.date_debut = dateDebut;
-          newRecord.date_echeance = dateEcheance || null;
+          newRecord.date_debut = dateDebut;
+          newRecord.date_echeance = dateEcheance;
           this.currentRecords.push(newRecord);
         }
       }
