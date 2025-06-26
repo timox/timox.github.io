@@ -517,6 +517,37 @@
   border: 1px solid #bbdefb;
 }
 
+/* === CSS SIMPLIFIÉ POUR LES DATES === */
+/* À ajouter dans la section <style> de votre index.html */
+
+/* Conteneur des dates */
+.dates-container {
+  margin-top: 0.5em;
+  margin-bottom: 0.3em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+}
+
+/* Styles de base pour les dates */
+.date-debut, .date-echeance {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0.2em 0.5em;
+  border-radius: 0.8em;
+  font-size: 0.85em;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Date de début */
+.date-debut {
+  background: #e3f2fd;
+  color: #1565c0;
+  border: 1px solid #bbdefb;
+}
+
 /* Date d'échéance - SIMPLIFIÉ : toujours icône rouge mais couleurs différentes */
 .date-echeance {
   color: #dc3545; /* Toujours rouge pour l'icône */
