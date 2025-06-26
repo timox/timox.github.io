@@ -369,6 +369,126 @@
 .input-group.mb-2.flex-nowrap {
   gap: 0.5em;
 }
+
+/* === AMÉLIORATIONS CSS POUR LE DRAG & DROP === */
+/* Ajoutez ces styles à votre CSS existant */
+
+/* Amélioration de la poignée de drag */
+.drag-handle {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  cursor: grab;
+  color: #888;
+  z-index: 10; /* Plus élevé pour éviter les conflits */
+  font-size: 1.2em;
+  opacity: 0.7;
+  transition: all 0.2s ease;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.drag-handle:hover {
+  color: #333;
+  opacity: 1;
+  background-color: rgba(0,0,0,0.05);
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Amélioration de la zone éditable */
+.editable-zone {
+  margin-left: 32px; /* Pour ne pas passer sous la poignée */
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.editable-zone:hover {
+  background-color: rgba(0,123,255,0.05);
+}
+
+/* Amélioration des états de drag */
+.kanban-item {
+  position: relative;
+  transition: all 0.2s ease;
+  cursor: default; /* Curseur par défaut, sauf sur la poignée */
+}
+
+.kanban-item.sortable-ghost {
+  opacity: 0.3;
+  background-color: #e9ecef;
+  transform: rotate(0deg);
+}
+
+.kanban-item.sortable-chosen {
+  transform: rotate(2deg);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 1000;
+}
+
+.kanban-item.sortable-drag {
+  transform: rotate(5deg);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+  opacity: 0.9;
+}
+
+/* Amélioration des zones de drop */
+.kanban-board-body {
+  min-height: 200px;
+  transition: background-color 0.2s ease;
+}
+
+.kanban-board-body.sortable-drag-over {
+  background-color: rgba(0,123,255,0.05);
+  border: 2px dashed #007bff;
+  border-radius: 8px;
+}
+
+/* Amélioration visuelle pendant le drag */
+.kanban-container.dragging .kanban-board {
+  transition: all 0.2s ease;
+}
+
+.kanban-container.dragging .kanban-board:hover {
+  background-color: rgba(0,123,255,0.02);
+}
+
+/* Indicateur visuel pour les zones de drop valides */
+.drop-zone-active {
+  background-color: rgba(40, 167, 69, 0.1);
+  border: 2px dashed #28a745;
+}
+
+.drop-zone-invalid {
+  background-color: rgba(220, 53, 69, 0.1);
+  border: 2px dashed #dc3545;
+}
+
+/* Responsive - masquer la poignée sur mobile */
+@media (max-width: 768px) {
+  .drag-handle {
+    display: none;
+  }
+  
+  .editable-zone {
+    margin-left: 0;
+  }
+  
+  .kanban-item {
+    cursor: grab;
+  }
+  
+  .kanban-item:active {
+    cursor: grabbing;
+  }
+}
+
+
+    
     /* Couleurs par niveau hiérarchique */
 .task-card[data-niveau="objectif"] { border-left: 4px solid #e74c3c; }
 .task-card[data-niveau="sous-objectif"] { border-left: 4px solid #f39c12; }
