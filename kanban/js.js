@@ -63,6 +63,12 @@ class KanbanManager {
     this.sortableInstances = [];
     this.flatpickr = null;
     this.availableColumns = new Set(); // Pour tracker les colonnes disponibles
+    
+    // NOUVEAU: Modes de vue
+    this.viewMode = 'compact'; // 'compact', 'detailed', 'focus'
+    this.focusColumn = null; // Pour le mode focus
+    this.expandedCards = new Set(); // Cartes dépliées en mode compact
+    
     this.init();
   }
 
@@ -72,6 +78,7 @@ class KanbanManager {
     this.initFilters();
     this.initModalWithOptions();
     this.initFlatpickr();
+    this.initViewModeControls(); // NOUVEAU
     this.refreshKanban();
     this.initEventListeners();
   }
@@ -121,7 +128,50 @@ class KanbanManager {
     }
   }
 
-  getUniqueValuesFromData(key, isList = false) {
+  // === NOUVEAU: Initialisation des contrôles de mode de vue ===
+  initViewModeControls() {
+    // Créer les contrôles s'ils n'existent pas
+    const controlsContainer = document.querySelector('.kanban-controls .row');
+    if (!controlsContainer) return;
+    
+    // Ajouter les contrôles de mode de vue
+    const viewModeHTML = `
+      <div class="col-md-3">
+        <div class="btn-group" role="group" aria-label="Mode de vue">
+          <button type="button" class="btn btn-outline-primary btn-sm active" id="view-compact">
+            <i class="bi bi-grid"></i> Compact
+          </button>
+          <button type="button" class="btn btn-outline-primary btn-sm" id="view-detailed">
+            <i class="bi bi-card-text"></i> Détaillé
+          </button>
+          <button type="button" class="btn btn-outline-primary btn-sm" id="view-focus">
+            <i class="bi bi-eye"></i> Focus
+          </button>
+        </div>
+      </div>
+    `;
+    
+    // Insérer avant les filtres
+    controlsContainer.insertAdjacentHTML('afterbegin', viewModeHTML);
+    
+    // Gestionnaires d'événements
+    document.getElementById('view-compact')?.addEventListener('click', () => this.setViewMode('compact'));
+    document.getElementById('view-detailed')?.addEventListener('click', () => this.setViewMode('detailed'));
+    document.getElementById('view-focus')?.addEventListener('click', () => this.setViewMode('focus'));
+  }
+
+  // === NOUVEAU: Gestion des modes de vue ===
+  setViewMode(mode) {
+    this.viewMode = mode;
+    this.expandedCards.clear(); // Reset des cartes dépliées
+    
+    // Mise à jour des boutons actifs
+    document.querySelectorAll('.btn-group button').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`view-${mode}`)?.classList.add('active');
+    
+    // Mise à jour de l'affichage
+    this.refreshKanban();
+  }
     const values = new Set();
     (this.currentRecords || []).forEach(rec => {
       const v = rec[key];
@@ -299,8 +349,80 @@ class KanbanManager {
     }
   }
 
-  // === CORRECTION: Amélioration de createTaskElementHTML pour afficher les échéances ===
+  getUniqueValuesFromData(key, isList = false) {
+    const values = new Set();
+    (this.currentRecords || []).forEach(rec => {
+      const v = rec[key];
+      if (isList && Array.isArray(v)) {
+        v.slice(1).forEach(i => i && values.add(String(i).trim()));
+      } else if (!isList && v !== null && typeof v !== 'undefined') {
+        values.add(String(v).trim());
+      }
+    });
+    return Array.from(values).filter(v => v).sort();
+  }
+
+  // === NOUVEAU: Création des cartes selon le mode de vue ===
   createTaskElementHTML(record) {
+    const isExpanded = this.expandedCards.has(record.id);
+    
+    if (this.viewMode === 'compact' && !isExpanded) {
+      return this.createCompactTaskHTML(record);
+    } else {
+      return this.createDetailedTaskHTML(record);
+    }
+  }
+
+  // === NOUVEAU: Carte compacte ===
+  createCompactTaskHTML(record) {
+    // Priorité
+    const prio = this.calculerPriorite(record.urgence, record.impact);
+    let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
+    
+    // Échéance simplifiée
+    let echeanceElement = '';
+    if (record.date_echeance) {
+      const echeanceDate = new Date(record.date_echeance);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      echeanceDate.setHours(0, 0, 0, 0);
+      
+      const diffTime = echeanceDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      let echeanceClass = 'echeance-ok';
+      if (diffDays < 0) echeanceClass = 'echeance-depassee';
+      else if (diffDays === 0) echeanceClass = 'echeance-aujourd-hui';
+      else if (diffDays <= 3) echeanceClass = 'echeance-urgent';
+      else if (diffDays <= 7) echeanceClass = 'echeance-bientot';
+      
+      const echeanceText = diffDays < 0 ? `J${diffDays}` : 
+                          diffDays === 0 ? "Auj." : `J+${diffDays}`;
+      
+      echeanceElement = `<span class="date-echeance-compact ${echeanceClass}">
+        <i class="bi bi-calendar-x"></i> ${echeanceText}
+      </span>`;
+    }
+    
+    const hasEcheanceClass = record.date_echeance ? 'has-echeance' : '';
+    
+    return `<div class="kanban-item kanban-item-compact ${hasEcheanceClass}" data-id="${record.id}">
+      <div class="drag-handle">
+        <i class="bi bi-grip-vertical"></i>
+      </div>
+      <div class="compact-header">
+        <div class="compact-priority">${prioBadge}</div>
+        <div class="compact-echeance">${echeanceElement}</div>
+        <button class="btn-expand" title="Voir détails">
+          <i class="bi bi-chevron-down"></i>
+        </button>
+      </div>
+      <div class="compact-title editable-zone">${record.titre || ''}</div>
+    </div>`;
+  }
+
+  // === NOUVEAU: Carte détaillée (version actuelle améliorée) ===
+  createDetailedTaskHTML(record) {
     // Priorité
     const prio = this.calculerPriorite(record.urgence, record.impact);
     let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
@@ -644,17 +766,248 @@ class KanbanManager {
       }
     });
 
-    Array.from(this.kanbanContainer.querySelectorAll('.kanban-item .editable-zone')).forEach(el => {
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        const item = el.closest('.kanban-item');
-        const id = parseInt(item.dataset.id, 10);
-        const tache = this.currentRecords.find(r => r.id === id);
-        if (tache) this.openPopup(tache);
+    this.attachCardEventListeners();
+  }
+
+  async handleDragEnd(evt, targetStatus) {
+    if (!evt.item || !evt.item.dataset) return;
+    
+    const id = parseInt(evt.item.dataset.id, 10);
+    if (isNaN(id)) return;
+    
+    const record = this.currentRecords.find(r => r.id === id);
+    if (!record) return;
+    
+    const newStatus = evt.to.dataset.status;
+    
+    // Ne fait rien si le statut n'a pas changé
+    if (record.statut === newStatus) return;
+    
+    console.log(`Déplacement de la tâche ${id} vers ${newStatus}`);
+    
+    try {
+      // Utilisation d'applyUserActions pour mettre à jour le statut
+      await grist.docApi.applyUserActions([
+        ['UpdateRecord', TABLE_ID, id, { statut: newStatus }]
+      ]);
+      
+      console.log(`Tâche ${id} mise à jour avec succès`);
+      
+      // Mise à jour immédiate des données locales
+      const recordIndex = this.currentRecords.findIndex(r => r.id === id);
+      if (recordIndex !== -1) {
+        this.currentRecords[recordIndex].statut = newStatus;
+      }
+      
+      // Rafraîchir l'affichage immédiatement
+      this.refreshKanban();
+      
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour:', error);
+      displayError(`Erreur lors du déplacement de la tâche: ${error.message}`);
+      // Recharger pour annuler le déplacement visuel
+      this.refreshKanban();
+    }
+  }
+
+  calculerPriorite(u, i) {
+    const imp = String(i || '').trim().toLowerCase();
+    const urg = String(u || '').trim().toLowerCase();
+    if (imp === 'critique') return 1;
+    if (imp === 'important') return (urg === 'immédiate' || urg === 'courte') ? 1 : 2;
+    if (imp === 'modéré') return (urg === 'immédiate') ? 2 : 3;
+    if (imp === 'mineur') return 4;
+    return 3;
+  }
+
+  async deleteTask(taskId) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette tâche ?')) {
+      return;
+    }
+    
+    try {
+      await grist.docApi.applyUserActions([
+        ['RemoveRecord', TABLE_ID, taskId]
+      ]);
+      
+      console.log(`Tâche ${taskId} supprimée avec succès`);
+      
+      // Suppression immédiate des données locales
+      this.currentRecords = this.currentRecords.filter(r => r.id !== taskId);
+      
+      // Fermer la modale si elle est ouverte
+      if (this.modal && this.currentTaskId === taskId) {
+        this.modal.hide();
+      }
+      
+      // Rafraîchir l'affichage immédiatement
+      this.refreshKanban();
+      
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      displayError(`Erreur lors de la suppression: ${error.message}`);
+    }
+  }
+
+  initFlatpickr() {
+    const delaiInput = document.getElementById('popup-delai');
+    const delaiType = document.getElementById('delai-type');
+    
+    if (!delaiInput || !delaiType) return;
+    
+    // Initialiser Flatpickr pour les dates seulement
+    this.flatpickr = flatpickr(delaiInput, {
+      locale: 'fr',
+      dateFormat: 'Y-m-d',
+      allowInput: true,
+      disableMobile: true,
+      allowClear: true,
+      placeholder: 'Cliquer pour choisir une date ou laisser vide'
+    });
+    
+    // Simplifier : toujours en mode date
+    delaiType.style.display = 'none'; // Masquer le sélecteur de type
+    delaiInput.placeholder = 'Cliquer pour choisir une date ou laisser vide';
+  }
+
+  initEventListeners() {
+    document.getElementById('btn-save-task').onclick = () => this.saveTask();
+    document.getElementById('btn-nouvelle-tache').onclick = () => this.openPopup();
+    
+    // Gestionnaire pour le bouton supprimer
+    const btnDelete = document.getElementById('btn-delete-task');
+    if (btnDelete) {
+      btnDelete.onclick = () => {
+        if (this.currentTaskId) {
+          this.deleteTask(this.currentTaskId);
+        }
+      };
+    }
+    
+    // Gestion des filtres
+    const filterElements = ['filter-bureau', 'filter-qui', 'filter-projet', 'filter-statut'];
+    filterElements.forEach(filterId => {
+      const filterEl = document.getElementById(filterId);
+      if (filterEl) {
+        filterEl.addEventListener('change', () => this.applyFilters());
+      }
+    });
+    
+    // Gestion de la recherche
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+      searchInput.addEventListener('input', () => this.applyFilters());
+    }
+    
+    // Gestion de l'affichage des terminés
+    const showTermineCheckbox = document.getElementById('show-termine');
+    if (showTermineCheckbox) {
+      showTermineCheckbox.addEventListener('change', (e) => {
+        this.showTermine = e.target.checked;
+        this.refreshKanban();
       });
+    }
+    
+    // Raccourcis clavier
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'n' || e.key === 'N') {
+        if (!e.target.matches('input, textarea')) {
+          e.preventDefault();
+          this.openPopup();
+        }
+      }
+      // Raccourci pour supprimer (Suppr ou Delete)
+      if ((e.key === 'Delete' || e.key === 'Suppr') && this.currentTaskId) {
+        if (!e.target.matches('input, textarea')) {
+          e.preventDefault();
+          this.deleteTask(this.currentTaskId);
+        }
+      }
+      // Focus sur la recherche avec F
+      if (e.key === 'f' || e.key === 'F') {
+        if (!e.target.matches('input, textarea')) {
+          e.preventDefault();
+          const searchInput = document.getElementById('search-input');
+          if (searchInput) searchInput.focus();
+        }
+      }
+      // Raccourcis pour changer de mode de vue
+      if (e.key === '1' && !e.target.matches('input, textarea')) {
+        e.preventDefault();
+        this.setViewMode('compact');
+      }
+      if (e.key === '2' && !e.target.matches('input, textarea')) {
+        e.preventDefault();
+        this.setViewMode('detailed');
+      }
+      if (e.key === '3' && !e.target.matches('input, textarea')) {
+        e.preventDefault();
+        this.setViewMode('focus');
+      }
     });
   }
+
+  applyFilters() {
+    // Récupérer les valeurs des filtres
+    this.filters.bureau = document.getElementById('filter-bureau')?.value || '';
+    this.filters.qui = document.getElementById('filter-qui')?.value || '';
+    this.filters.projet = document.getElementById('filter-projet')?.value || '';
+    this.filters.statut = document.getElementById('filter-statut')?.value || '';
+    
+    const searchTerm = document.getElementById('search-input')?.value.toLowerCase() || '';
+    
+    // Filtrer les enregistrements
+    let filteredRecords = this.currentRecords.filter(record => {
+      // Filtre par bureau
+      if (this.filters.bureau && Array.isArray(record.bureau)) {
+        const bureaux = record.bureau.slice(1); // Enlever le 'L'
+        if (!bureaux.includes(this.filters.bureau)) return false;
+      }
+      
+      // Filtre par responsable
+      if (this.filters.qui && Array.isArray(record.qui)) {
+        const responsables = record.qui.slice(1); // Enlever le 'L'
+        if (!responsables.includes(this.filters.qui)) return false;
+      }
+      
+      // Filtre par projet
+      if (this.filters.projet && record.projet !== this.filters.projet) return false;
+      
+      // Filtre par statut
+      if (this.filters.statut && record.statut !== this.filters.statut) return false;
+      
+      // Filtre par recherche textuelle
+      if (searchTerm) {
+        const searchableText = [
+          record.titre || '',
+          record.description || '',
+          record.projet || '',
+          record.strategie_objectif || '',
+          record.strategie_sous_objectif || '',
+          record.strategie_action || ''
+        ].join(' ').toLowerCase();
+        
+        if (!searchableText.includes(searchTerm)) return false;
+      }
+      
+      return true;
+    });
+    
+    // Stocker temporairement les enregistrements filtrés
+    const originalRecords = this.currentRecords;
+    this.currentRecords = filteredRecords;
+    
+    // Rafraîchir l'affichage
+    this.refreshKanban();
+    
+    // Restaurer les enregistrements originaux
+    this.currentRecords = originalRecords;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  new KanbanManager();
+});
 
   async handleDragEnd(evt, targetStatus) {
     if (!evt.item || !evt.item.dataset) return;
