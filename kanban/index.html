@@ -486,7 +486,7 @@
     cursor: grabbing;
   }
 }
-/* === CSS SUPPLÉMENTAIRE POUR LES DATES === */
+/* === CSS SIMPLIFIÉ POUR LES DATES === */
 /* À ajouter dans la section <style> de votre index.html */
 
 /* Conteneur des dates */
@@ -517,29 +517,29 @@
   border: 1px solid #bbdefb;
 }
 
-/* Date d'échéance - états différents */
+/* Date d'échéance - SIMPLIFIÉ : toujours icône rouge mais couleurs différentes */
+.date-echeance {
+  color: #dc3545; /* Toujours rouge pour l'icône */
+}
+
 .date-echeance.echeance-ok {
   background: #e8f5e8;
-  color: #2e7d32;
   border: 1px solid #c8e6c9;
 }
 
 .date-echeance.echeance-bientot {
   background: #fff3e0;
-  color: #ef6c00;
   border: 1px solid #ffcc02;
 }
 
 .date-echeance.echeance-urgent {
   background: #fff3e0;
-  color: #e65100;
   border: 1px solid #ffb74d;
   animation: pulse-orange 2s infinite;
 }
 
 .date-echeance.echeance-aujourd-hui {
   background: #fff8e1;
-  color: #ff8f00;
   border: 1px solid #ffcc02;
   font-weight: bold;
   animation: pulse-yellow 2s infinite;
@@ -547,7 +547,6 @@
 
 .date-echeance.echeance-depassee {
   background: #ffebee;
-  color: #c62828;
   border: 1px solid #ef9a9a;
   font-weight: bold;
   animation: pulse-red 2s infinite;
@@ -602,6 +601,13 @@
   opacity: 0.7;
 }
 
+/* Hover effects */
+.date-debut:hover, .date-echeance:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+}
+
 /* Responsive pour mobile */
 @media (max-width: 768px) {
   .dates-container {
@@ -619,43 +625,23 @@
   font-size: 0.9em;
 }
 
-/* Hover effects */
-.date-debut:hover, .date-echeance:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  transition: all 0.2s ease;
+/* Masquer le sélecteur de type de délai */
+#delai-type {
+  display: none !important;
 }
 
-/* Styles pour les anciennes classes delai (compatibilité) */
-.delai-indicator {
-  padding: 4px 8px;
+/* Améliorer le champ de date */
+#popup-delai {
   border-radius: 6px;
-  font-size: 0.85rem;
-  display: inline-flex;
-  align-items: center;
-  margin-top: 0.5rem;
+  border: 1px solid #ced4da;
+  padding: 0.5rem;
 }
 
-.delai-depasse { 
-  background: #ffe3e3; 
-  color: #dc3545; 
+#popup-delai:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
-.delai-urgent { 
-  background: #fff3cd; 
-  color: #fd7e14; 
-}
-
-.delai-ok { 
-  background: #d4edda; 
-  color: #28a745; 
-}
-
-.delai-bientot {
-  background: #fff3e0;
-  color: #ef6c00;
-}
-    /* Couleurs par niveau hiérarchique */
 .task-card[data-niveau="objectif"] { border-left: 4px solid #e74c3c; }
 .task-card[data-niveau="sous-objectif"] { border-left: 4px solid #f39c12; }
 .task-card[data-niveau="action"] { border-left: 4px solid #27ae60; }
