@@ -732,7 +732,27 @@
         flex: 1;
       }
     }
-
+.item-badges {
+      display: flex;
+      gap: 0.25rem;
+      flex-wrap: wrap;
+    }
+    
+    /* Style personnalisé pour le badge projet */
+    .item-badges .badge.bg-info {
+      background-color: #6f42c1 !important; /* Violet */
+      color: white !important;
+      font-weight: 500;
+      border: 1px solid #5a32a3;
+      box-shadow: 0 1px 3px rgba(111, 66, 193, 0.2);
+    }
+    
+    .item-badges .badge.bg-info:hover {
+      background-color: #5a32a3 !important;
+      border-color: #4e2b8f;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 5px rgba(111, 66, 193, 0.3);
+    }
     /* === Raccourcis clavier === */
     .keyboard-shortcuts {
       position: fixed;
