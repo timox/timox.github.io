@@ -224,6 +224,22 @@
       gap: 0.25rem;
       flex-wrap: wrap;
     }
+    
+    /* Style personnalisé pour le badge projet */
+    .item-badges .badge.bg-info {
+      background-color: #e3f2fd !important; /* Bleu très clair */
+      color: #1565c0 !important; /* Bleu foncé pour le texte */
+      font-weight: 500;
+      border: 1px solid #90caf9;
+      box-shadow: 0 1px 3px rgba(21, 101, 192, 0.1);
+    }
+    
+    .item-badges .badge.bg-info:hover {
+      background-color: #bbdefb !important;
+      border-color: #64b5f6;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 5px rgba(21, 101, 192, 0.2);
+    }
 
     .item-title {
       font-weight: 600;
@@ -623,6 +639,7 @@
       color: var(--kanban-text);
       border-radius: 16px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+      min-height: 80vh; /* Hauteur minimale */
     }
 
     .modal-header {
@@ -632,24 +649,53 @@
       padding: 1.5rem;
     }
 
+    .modal-body {
+      padding: 2rem; /* Plus d'espace */
+      max-height: calc(90vh - 200px); /* Hauteur maximale */
+      overflow-y: auto;
+    }
+
     .modal-footer {
       background: #f8f9fa;
       border-radius: 0 0 16px 16px;
+      padding: 1.25rem 2rem; /* Plus d'espace */
     }
 
     .modal-xl {
-      max-width: 1100px;
+      max-width: 1300px; /* Plus large qu'avant (1100px) */
+    }
+    
+    /* Amélioration de l'espacement des champs */
+    .modal-body .form-label {
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      color: #495057;
+    }
+    
+    .modal-body .form-control,
+    .modal-body .form-select {
+      padding: 0.75rem; /* Plus grand */
+      font-size: 1rem;
+    }
+    
+    .modal-body textarea.form-control {
+      min-height: 120px; /* Plus haut pour la description */
+    }
+    
+    .modal-body .row.g-3 > * {
+      margin-bottom: 1.25rem; /* Plus d'espace entre les lignes */
     }
 
     /* === Stratégie === */
     #strategie-objectif, #strategie-sous-objectif, #strategie-action {
-      min-width: 170px;
-      max-width: 220px;
-      font-size: 1em;
+      min-width: 200px; /* Plus large qu'avant (170px) */
+      max-width: 280px; /* Plus large qu'avant (220px) */
+      font-size: 1rem;
+      padding: 0.5rem;
     }
 
     .input-group.mb-2.flex-nowrap {
-      gap: 0.5em;
+      gap: 0.75em; /* Plus d'espace entre les listes */
     }
 
     /* === Masquer délai-type === */
@@ -733,28 +779,20 @@
       }
     }
 
-    
-   .item-badges {
-      display: flex;
-      gap: 0.25rem;
-      flex-wrap: wrap;
+    /* === Raccourcis clavier === */
+    .keyboard-shortcuts {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 0.5rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      opacity: 0.7;
+      pointer-events: none;
     }
-    
-    /* Style personnalisé pour le badge projet */
-    .item-badges .badge.bg-info {
-      background-color: #e3f2fd !important; /* Bleu très clair */
-      color: #1565c0 !important; /* Bleu foncé pour le texte */
-      font-weight: 500;
-      border: 1px solid #90caf9;
-      box-shadow: 0 1px 3px rgba(21, 101, 192, 0.1);
-    }
-    
-    .item-badges .badge.bg-info:hover {
-      background-color: #bbdefb !important;
-      border-color: #64b5f6;
-      transform: translateY(-1px);
-      box-shadow: 0 2px 5px rgba(21, 101, 192, 0.2);
-    }
+
     .keyboard-shortcuts div {
       margin: 0.2rem 0;
     }
