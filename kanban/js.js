@@ -432,7 +432,13 @@ class KanbanManager {
     
     const activeStatus = statutsToShow.find(s => s.id === this.focusColumn);
     const boardRecords = filteredRecords.filter(r => r.statut === this.focusColumn);
-    boardRecords.sort((a, b) => a.id - b.id);
+    // Tri par priorité puis par ID
+    boardRecords.sort((a, b) => {
+      const prioA = this.calculerPriorite(a.urgence, a.impact);
+      const prioB = this.calculerPriorite(b.urgence, b.impact);
+      if (prioA !== prioB) return prioA - prioB; // P1 avant P2, etc.
+      return a.id - b.id; // Si même priorité, tri par ID
+    });
     const itemsHTML = boardRecords.map(record => this.createTaskElementHTML(record)).join('');
     
     const columnHTML = `
@@ -481,7 +487,13 @@ class KanbanManager {
     statutsToShow.forEach(statut => {
       const boardId = statut.classe;
       const boardRecords = filteredRecords.filter(r => r.statut === statut.id);
-      boardRecords.sort((a, b) => a.id - b.id);
+      // Tri par priorité puis par ID
+      boardRecords.sort((a, b) => {
+        const prioA = this.calculerPriorite(a.urgence, a.impact);
+        const prioB = this.calculerPriorite(b.urgence, b.impact);
+        if (prioA !== prioB) return prioA - prioB; // P1 avant P2, etc.
+        return a.id - b.id; // Si même priorité, tri par ID
+      });
       const itemsHTML = boardRecords.map(record => this.createTaskElementHTML(record)).join('');
       const count = boardRecords.length;
       const isHidden = (count === 0 && statut.id !== 'Terminé' && this.showTermine);
