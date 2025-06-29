@@ -315,7 +315,7 @@ class KanbanManager {
     let datesElement = '';
     const hasDateDebut = record.date_debut;
     const hasDateEcheance = record.date_echeance;
-    
+      
     if (hasDateDebut || hasDateEcheance) {
       let dateInfo = [];
       
