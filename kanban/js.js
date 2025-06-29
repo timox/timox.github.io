@@ -1,992 +1,1042 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <title>Tableau Kanban SSIR</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <style>
-    /* === Variables CSS === */
-    :root {
-      --kanban-bg: #f8f9fa;
-      --kanban-card-bg: #ffffff;
-      --kanban-border: #dee2e6;
-      --kanban-text: #212529;
-      --kanban-text-muted: #6c757d;
-      --kanban-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      --kanban-shadow-hover: 0 4px 8px rgba(0,0,0,0.15);
-      --kanban-border-radius: 8px;
-      --kanban-transition: all 0.2s ease;
-    }
+// === CODE KANBAN COMPLET ET ORDONNÉ ===
+const STATUTS = [
+  { id: 'Backlog', libelle: 'Backlog', classe: 'backlog' },
+  { id: 'À faire', libelle: 'À faire', classe: 'a-faire' },
+  { id: 'En cours', libelle: 'En cours', classe: 'en-cours' },
+  { id: 'En attente', libelle: 'En attente', classe: 'en-attente' },
+  { id: 'Bloqué', libelle: 'Bloqué', classe: 'bloque' },
+  { id: 'Validation', libelle: 'Validation', classe: 'validation' },
+  { id: 'Terminé', libelle: 'Terminé', classe: 'termine' }
+];
 
-    /* === Base === */
-    body {
-      background-color: var(--kanban-bg);
-      color: var(--kanban-text);
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      transition: var(--kanban-transition);
-    }
+const DEFAULT_BUREAUX = ['Exploit', 'Réseau', 'BDD', 'Chef SSIR'];
+const DEFAULT_RESPONSABLES = ['Alex', 'Timothée', 'Isabelle', 'Chloé', 'Paul', 'Théo', 'Gaël', 'Thomas', 'Elie', 'Landry', 'Presta'];
+const DEFAULT_URGENCES = ['Immédiate', 'Courte', 'Moyenne', 'Longue'];
+const DEFAULT_IMPACTS = ['Critique', 'Important', 'Modéré', 'Mineur'];
+const DEFAULT_STATUTS = STATUTS.map(s => s.id);
+const DEFAULT_PROJETS = [
+  'accès distants', 'AD', 'SSI', 'caméras pièton', 'astre finances', 'correspondants', 'autre projet',
+  'conformité systèmes', 'MCO', 'conformité RZO', 'firewall', 'Libriciel', 'intranet-extranet',
+  'optimops', 'attestation assurances', 'horoquartz', 'administratif-budget'
+];
 
-    /* === Header === */
-    .kanban-header {
-      background: var(--kanban-card-bg);
-      border-bottom: 1px solid var(--kanban-border);
-      padding: 1rem 0;
-      margin-bottom: 1rem;
-      box-shadow: var(--kanban-shadow);
-    }
+const TABLE_ID = "Ssir_principale_task";
 
-    /* === Controls === */
-    .kanban-controls {
-      background: var(--kanban-card-bg);
-      border-radius: var(--kanban-border-radius);
-      padding: 1rem;
-      margin-bottom: 1rem;
-      box-shadow: var(--kanban-shadow);
-      border: 1px solid var(--kanban-border);
-    }
+// Colonnes obligatoires
+const REQUIRED_COLUMNS = [
+  'id', 'titre', 'description', 'statut', 'bureau', 'qui', 'urgence', 'impact',
+  'projet', 'strategie_objectif', 'strategie_sous_objectif', 'strategie_action', 'notes'
+];
 
-    /* === Boutons de mode de vue === */
-    .btn-group .btn {
-      font-size: 0.875rem;
-      padding: 0.375rem 0.75rem;
-    }
+// Colonnes optionnelles pour les dates
+const OPTIONAL_COLUMNS = ['date_debut', 'date_echeance'];
 
-    .btn-group .btn.active {
-      background-color: #007bff;
-      border-color: #007bff;
-      color: white;
-    }
+let projetsDynamiques = [];
 
-    /* === Container principal === */
-    .kanban-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 1rem;
-      padding: 0 1rem;
-    }
+function displayError(message) {
+  console.error("ERREUR:", message);
+  const el = document.getElementById('error-container');
+  if (el) {
+    const p = document.createElement('div');
+    p.className = 'alert alert-danger m-3';
+    p.textContent = `Erreur Kanban: ${message}`;
+    el.innerHTML = '';
+    el.appendChild(p);
+  }
+  const k = document.getElementById('kanban-container');
+  if (k && k.innerHTML.includes('Chargement')) k.innerHTML = '';
+}
 
-    /* === Mode Compact === */
-    .kanban-container.kanban-compact {
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* Colonnes plus étroites */
-      gap: 0.75rem; /* Espacement réduit */
-      height: calc(100vh - 200px);
-      font-size: 0.85rem; /* Police réduite globalement */
-    }
-
-    .kanban-compact .kanban-board {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-    }
-
-    .kanban-compact .kanban-board-header {
-      padding: 0.75rem; /* Padding réduit */
-      font-size: 0.9rem; /* Titre plus petit */
-    }
-
-    .kanban-compact .kanban-board-body {
-      flex: 1;
-      overflow-y: auto;
-      scrollbar-width: thin;
-      padding: 0.75rem; /* Padding réduit */
-    }
-
-    .kanban-compact .kanban-board-body::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    .kanban-compact .kanban-board-body::-webkit-scrollbar-track {
-      background: #f1f1f1;
-      border-radius: 6px;
-    }
-
-    .kanban-compact .kanban-board-body::-webkit-scrollbar-thumb {
-      background: #c1c1c1;
-      border-radius: 6px;
-    }
-
-    /* Cartes plus compactes en mode compact */
-    .kanban-compact .kanban-item-compact {
-      padding: 0.5rem; /* Padding encore plus réduit */
-      margin-bottom: 0.4rem;
-      font-size: 0.8rem; /* Police plus petite */
-    }
-
-    .kanban-compact .compact-header {
-      margin-bottom: 0.3rem;
-    }
-
-    .kanban-compact .compact-title {
-      font-size: 0.8rem; /* Titre plus petit */
-      line-height: 1.2;
-    }
-
-    .kanban-compact .priority-badge {
-      font-size: 0.7rem; /* Badges plus petits */
-      padding: 0.2em 0.6em;
-    }
-
-    .kanban-compact .date-echeance-compact {
-      font-size: 0.65rem; /* Dates plus petites */
-      padding: 0.15rem 0.3rem;
-    }
-
-    /* === Mode Détaillé === */
-    .kanban-container.kanban-detailed {
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 0.75rem;
-    }
-
-    .kanban-detailed .kanban-board-header {
-      padding: 0.75rem 1rem;
-      font-size: 0.95rem;
-    }
-
-    .kanban-detailed .kanban-board-body {
-      padding: 0.75rem;
-      max-height: calc(100vh - 200px);
-      overflow-y: auto;
-    }
-
-    /* === Boards === */
-    .kanban-board {
-      background: var(--kanban-card-bg);
-      border-radius: var(--kanban-border-radius);
-      border: 1px solid var(--kanban-border);
-      box-shadow: var(--kanban-shadow);
-      transition: var(--kanban-transition);
-      min-height: 200px;
-    }
-
-    .kanban-board-header {
-      padding: 1rem;
-      border-bottom: 1px solid var(--kanban-border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-weight: 600;
-    }
-
-    .board-title {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .board-count {
-      background: var(--kanban-text-muted);
-      color: var(--kanban-card-bg);
-      border-radius: 50%;
-      width: 24px;
-      height: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.75rem;
-      font-weight: 500;
-    }
-
-    .kanban-board-body {
-      padding: 1rem;
-      min-height: 150px;
-    }
-
-    /* === Cartes === */
-    .kanban-item {
-      background: #f7fafd;
-      border: 1px solid #e0e6ef;
-      border-radius: 10px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-      margin-bottom: 1.2em;
-      padding: 1.1em 1em 0.8em 1em;
-      min-height: 120px;
-      position: relative;
-      transition: box-shadow 0.15s;
-      cursor: default;
-    }
-
-    .kanban-item:hover {
-      box-shadow: 0 4px 16px rgba(0,0,0,0.07);
-    }
-
-    .kanban-item-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 0.7em;
-    }
-
-    .item-badges {
-      display: flex;
-      gap: 0.25rem;
-      flex-wrap: wrap;
-    }
+class KanbanManager {
+  constructor() {
+    this.kanbanContainer = document.getElementById('kanban-container');
+    this.currentRecords = [];
+    this.modalElement = document.getElementById('popup-tache');
+    this.modal = null;
+    this.currentTaskId = null;
+    this.isUpdating = false;
+    this.canEdit = true;
+    this.gristOptions = {};
+    this.ignoreNextOnRecords = false;
+    this.filters = { bureau: '', qui: '', projet: '', statut: '' };
+    this.showTermine = true;
+    this.sortableInstances = [];
+    this.flatpickr = null;
+    this.availableColumns = new Set();
     
-    /* Style personnalisé pour le badge projet */
-    .item-badges .badge.bg-info {
-      background-color: #e3f2fd !important; /* Bleu très clair */
-      color: #1565c0 !important; /* Bleu foncé pour le texte */
-      font-weight: 500;
-      border: 1px solid #90caf9;
-      box-shadow: 0 1px 3px rgba(21, 101, 192, 0.1);
-    }
+    // Modes de vue
+    this.viewMode = 'compact'; // 'compact', 'detailed', 'focus'
+    this.focusColumn = null;
+    this.expandedCards = new Set();
     
-    .item-badges .badge.bg-info:hover {
-      background-color: #bbdefb !important;
-      border-color: #64b5f6;
-      transform: translateY(-1px);
-      box-shadow: 0 2px 5px rgba(21, 101, 192, 0.2);
-    }
-
-    .item-title {
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-      color: var(--kanban-text);
-    }
-
-    /* === Cartes Compactes === */
-    .kanban-item-compact {
-      padding: 0.75rem;
-      margin-bottom: 0.5rem;
-      min-height: auto;
-      background: #ffffff;
-      border: 1px solid #e0e6ef;
-      border-radius: 8px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-      transition: all 0.2s ease;
-    }
-
-    .kanban-item-compact:hover {
-      box-shadow: 0 3px 12px rgba(0,0,0,0.1);
-      transform: translateY(-1px);
-    }
-
-    .compact-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.5rem;
-    }
-
-    .compact-priority {
-      flex-shrink: 0;
-    }
-
-    .compact-echeance {
-      flex-grow: 1;
-      text-align: center;
-    }
-
-    .compact-title {
-      font-weight: 600;
-      font-size: 0.9rem;
-      line-height: 1.3;
-      cursor: pointer;
-      padding: 2px 4px;
-      border-radius: 4px;
-      transition: background-color 0.2s ease;
-    }
-
-    .compact-title:hover {
-      background-color: rgba(0,123,255,0.05);
-    }
-
-    /* === Boutons Expand/Collapse === */
-    .btn-expand, .btn-collapse {
-      background: none;
-      border: none;
-      color: #6c757d;
-      padding: 0.2rem;
-      border-radius: 3px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      font-size: 0.8rem;
-    }
-
-    .btn-expand:hover, .btn-collapse:hover {
-      color: #007bff;
-      background: rgba(0,123,255,0.1);
-    }
-
-    /* === Drag & Drop === */
-    .drag-handle {
-      position: absolute;
-      left: 8px;
-      top: 8px;
-      cursor: grab;
-      color: #888;
-      z-index: 10;
-      font-size: 1.2em;
-      opacity: 0.7;
-      transition: all 0.2s ease;
-      padding: 4px;
-      border-radius: 4px;
-    }
-
-    .drag-handle:hover {
-      color: #333;
-      opacity: 1;
-      background-color: rgba(0,0,0,0.05);
-    }
-
-    .drag-handle:active {
-      cursor: grabbing;
-    }
-
-    .editable-zone {
-      margin-left: 32px;
-      cursor: pointer;
-      padding: 2px 4px;
-      border-radius: 4px;
-      transition: background-color 0.2s ease;
-    }
-
-    .editable-zone:hover {
-      background-color: rgba(0,123,255,0.05);
-    }
-
-    /* === États Sortable === */
-    .kanban-item.sortable-ghost {
-      opacity: 0.3;
-      background-color: #e9ecef;
-      transform: rotate(0deg);
-    }
-
-    .kanban-item.sortable-chosen {
-      transform: rotate(2deg);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      z-index: 1000;
-    }
-
-    .kanban-item.sortable-drag {
-      transform: rotate(5deg);
-      box-shadow: 0 8px 20px rgba(0,0,0,0.25);
-      opacity: 0.9;
-    }
-
-    /* === Priorités === */
-    .priority-badge {
-      font-size: 1em;
-      padding: 0.32em 1.1em;
-      border-radius: 1.2em;
-      font-weight: bold;
-      margin-right: 0.5em;
-      display: inline-block;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-    }
-
-    .priority-badge.priority-1 { background: #dc3545; color: #fff; }
-    .priority-badge.priority-2 { background: #fd7e14; color: #fff; }
-    .priority-badge.priority-3 { background: #ffe066; color: #333; }
-    .priority-badge.priority-4 { background: #f8f9fa; color: #333; border: 1px solid #e0e0e0; }
-
-    /* === Descriptions === */
-    .desc-resume {
-      color: #a5a5a5;
-      font-size: 0.97em;
-      font-style: italic;
-      font-weight: 400;
-      opacity: 0.8;
-      margin-bottom: 0.3em;
-      margin-top: 0.2em;
-    }
-
-    /* === Personnes === */
-    .personnes-list {
-      margin-top: 0.5em;
-    }
-
-    .personne-badge {
-      display: inline-block;
-      background: #d1e7dd;
-      color: #17644e;
-      border-radius: 1em;
-      padding: 0.2em 0.7em;
-      font-size: 0.92em;
-      margin-right: 0.3em;
-      margin-bottom: 0.2em;
-    }
-
-    /* === Dates === */
-    .dates-container {
-      margin-top: 0.5em;
-      margin-bottom: 0.3em;
-      display: flex;
-      flex-direction: column;
-      gap: 0.2em;
-    }
-
-    .date-debut, .date-echeance {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3em;
-      padding: 0.2em 0.5em;
-      border-radius: 0.8em;
-      font-size: 0.85em;
-      font-weight: 500;
-      white-space: nowrap;
-    }
-
-    .date-debut {
-      background: #e3f2fd;
-      color: #1565c0;
-      border: 1px solid #bbdefb;
-    }
-
-    .date-echeance {
-      color: #dc3545;
-    }
-
-    .date-echeance.echeance-ok {
-      background: #e8f5e8;
-      border: 1px solid #c8e6c9;
-    }
-
-    .date-echeance.echeance-bientot {
-      background: #fff3e0;
-      border: 1px solid #ffcc02;
-    }
-
-    .date-echeance.echeance-urgent {
-      background: #fff3e0;
-      border: 1px solid #ffb74d;
-      animation: pulse-orange 2s infinite;
-    }
-
-    .date-echeance.echeance-aujourd-hui {
-      background: #fff8e1;
-      border: 1px solid #ffcc02;
-      font-weight: bold;
-      animation: pulse-yellow 2s infinite;
-    }
-
-    .date-echeance.echeance-depassee {
-      background: #ffebee;
-      border: 1px solid #ef9a9a;
-      font-weight: bold;
-      animation: pulse-red 2s infinite;
-    }
-
-    /* === Dates Compactes === */
-    .date-echeance-compact {
-      font-size: 0.75rem;
-      padding: 0.2rem 0.4rem;
-      border-radius: 0.5rem;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.2rem;
-      color: #dc3545;
-    }
-
-    .date-echeance-compact.echeance-ok {
-      background: #e8f5e8;
-      border: 1px solid #c8e6c9;
-    }
-
-    .date-echeance-compact.echeance-bientot {
-      background: #fff3e0;
-      border: 1px solid #ffcc02;
-    }
-
-    .date-echeance-compact.echeance-urgent {
-      background: #fff3e0;
-      border: 1px solid #ffb74d;
-      animation: pulse-orange 2s infinite;
-    }
-
-    .date-echeance-compact.echeance-aujourd-hui {
-      background: #fff8e1;
-      border: 1px solid #ffcc02;
-      font-weight: bold;
-      animation: pulse-yellow 2s infinite;
-    }
-
-    .date-echeance-compact.echeance-depassee {
-      background: #ffebee;
-      border: 1px solid #ef9a9a;
-      font-weight: bold;
-      animation: pulse-red 2s infinite;
-    }
-
-    /* === Animations === */
-    @keyframes pulse-red {
-      0%, 100% { background: #ffebee; }
-      50% { background: #ffcdd2; }
-    }
-
-    @keyframes pulse-yellow {
-      0%, 100% { background: #fff8e1; }
-      50% { background: #fff3c4; }
-    }
-
-    @keyframes pulse-orange {
-      0%, 100% { background: #fff3e0; }
-      50% { background: #ffe0b2; }
-    }
-
-    /* === Classes spéciales === */
-    .kanban-item.has-echeance {
-      border-left: 3px solid #2e7d32;
-    }
-
-    .kanban-item.has-echeance:has(.echeance-urgent) {
-      border-left: 3px solid #e65100;
-    }
-
-    .kanban-item.has-echeance:has(.echeance-aujourd-hui) {
-      border-left: 3px solid #ff8f00;
-    }
-
-    .kanban-item.has-echeance:has(.echeance-depassee) {
-      border-left: 3px solid #c62828;
-    }
-
-    .kanban-item.has-debut.has-echeance::before {
-      content: '';
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      width: 8px;
-      height: 8px;
-      background: #1565c0;
-      border-radius: 50%;
-      opacity: 0.7;
-    }
-
-    /* === Bordures par statut === */
-    .board-backlog { border-top: 4px solid #6c757d; }
-    .board-a-faire { border-top: 4px solid #0dcaf0; }
-    .board-en-cours { border-top: 4px solid #fd7e14; }
-    .board-en-attente { border-top: 4px solid #ffc107; }
-    .board-bloque { border-top: 4px solid #dc3545; }
-    .board-validation { border-top: 4px solid #6f42c1; }
-    .board-termine { border-top: 4px solid #198754; }
-    .board-hidden { display: none; }
-
-    /* === Mode Focus === */
-    .focus-navigation {
-      display: flex;
-      flex-direction: column; /* Navigation verticale pour prendre moins d'espace */
-      gap: 0.3rem;
-      margin-bottom: 1rem;
-      padding: 0.75rem;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      width: 200px; /* Largeur fixe étroite */
-      flex-shrink: 0; /* Ne pas rétrécir */
-    }
-
-    .focus-navigation .btn {
-      border-radius: 6px;
-      padding: 0.4rem 0.75rem;
-      font-size: 0.8rem; /* Police plus petite */
-      text-align: left;
-      justify-content: space-between;
-      display: flex;
-      align-items: center;
-      white-space: nowrap;
-    }
-
-    .focus-navigation .btn.active {
-      background-color: #007bff;
-      border-color: #007bff;
-      color: white;
-    }
-
-    .focus-navigation .badge {
-      font-size: 0.65rem;
-      padding: 0.2em 0.4em;
-    }
-
-    /* Container pour le mode focus */
-    .focus-container {
-      display: flex;
-      gap: 1rem;
-      height: calc(100vh - 200px);
-    }
-
-    .focus-column {
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      flex: 1; /* Prend le reste de l'espace */
-      display: flex;
-      flex-direction: column;
-    }
-
-    .focus-column .kanban-board-header {
-      padding: 1.2rem;
-      border-bottom: 2px solid #e9ecef;
-      font-size: 1.1rem;
-      font-weight: 600;
-      flex-shrink: 0;
-    }
-
-    .focus-column .kanban-board-body {
-      padding: 1rem;
-      flex: 1;
-      overflow-y: auto;
-    }
-
-    /* === Modal === */
-    .modal-content {
-      background-color: var(--kanban-card-bg);
-      border: 1px solid var(--kanban-border);
-      color: var(--kanban-text);
-      border-radius: 16px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-      min-height: 80vh; /* Hauteur minimale */
-    }
-
-    .modal-header {
-      background: linear-gradient(135deg, #6f42c1, #007bff);
-      color: white;
-      border-radius: 16px 16px 0 0;
-      padding: 1.5rem;
-    }
-
-    .modal-body {
-      padding: 2rem; /* Plus d'espace */
-      max-height: calc(90vh - 200px); /* Hauteur maximale */
-      overflow-y: auto;
-    }
-
-    .modal-footer {
-      background: #f8f9fa;
-      border-radius: 0 0 16px 16px;
-      padding: 1.25rem 2rem; /* Plus d'espace */
-    }
-
-    .modal-xl {
-      max-width: 1300px; /* Plus large qu'avant (1100px) */
-    }
-    
-    /* Amélioration de l'espacement des champs */
-    .modal-body .form-label {
-      font-weight: 600;
-      margin-bottom: 0.75rem;
-      color: #495057;
-    }
-    
-    .modal-body .form-control,
-    .modal-body .form-select {
-      padding: 0.75rem; /* Plus grand */
-      font-size: 1rem;
-    }
-    
-    .modal-body textarea.form-control {
-      min-height: 120px; /* Plus haut pour la description */
-    }
-    
-    .modal-body .row.g-3 > * {
-      margin-bottom: 1.25rem; /* Plus d'espace entre les lignes */
-    }
-
-    /* === Stratégie === */
-    #strategie-objectif, #strategie-sous-objectif, #strategie-action {
-      min-width: 200px; /* Plus large qu'avant (170px) */
-      max-width: 280px; /* Plus large qu'avant (220px) */
-      font-size: 1rem;
-      padding: 0.5rem;
-    }
-
-    .input-group.mb-2.flex-nowrap {
-      gap: 0.75em; /* Plus d'espace entre les listes */
-    }
-
-    /* === Masquer délai-type === */
-    #delai-type {
-      display: none !important;
-    }
-
-    #popup-delai {
-      border-radius: 6px;
-      border: 1px solid #ced4da;
-      padding: 0.5rem;
-    }
-
-    #popup-delai:focus {
-      border-color: #80bdff;
-      box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-    }
-
-    /* === Responsive === */
-    @media (max-width: 768px) {
-      .drag-handle {
-        display: none;
+    this.init();
+  }
+
+  async init() {
+    await this.waitForGristReady();
+    await this.loadGristDataAndOptions();
+    this.initFilters();
+    this.initModalWithOptions();
+    this.initFlatpickr();
+    this.initViewModeControls();
+    this.refreshKanban();
+    this.initEventListeners();
+  }
+
+  async waitForGristReady() {
+    return new Promise((resolve) => {
+      grist.ready({ requiredAccess: 'full' });
+      grist.onRecords(this.handleGristUpdate.bind(this));
+      setTimeout(resolve, 50);
+    });
+  }
+
+  async loadGristDataAndOptions() {
+    try {
+      const records = await grist.docApi.fetchTable(TABLE_ID);
+      
+      // Détecter les colonnes disponibles
+      if (records && typeof records === 'object') {
+        this.availableColumns = new Set(Object.keys(records));
+        console.log('Colonnes disponibles:', Array.from(this.availableColumns));
       }
       
-      .editable-zone {
-        margin-left: 0;
+      this.currentRecords = this.mapGristRecords(records);
+      this.gristOptions.statut = DEFAULT_STATUTS;
+      this.gristOptions.urgence = DEFAULT_URGENCES;
+      this.gristOptions.impact = DEFAULT_IMPACTS;
+      
+      const bureaux = this.getUniqueValuesFromData('bureau', true);
+      this.gristOptions.bureau = [...new Set([...DEFAULT_BUREAUX, ...bureaux])].sort();
+      
+      const responsables = this.getUniqueValuesFromData('qui', true);
+      this.gristOptions.qui = [...new Set([...DEFAULT_RESPONSABLES, ...responsables])].sort();
+      
+      const projets = this.getUniqueValuesFromData('projet');
+      this.gristOptions.projet = [...new Set([...DEFAULT_PROJETS, ...projets, ...projetsDynamiques])].sort();
+      
+    } catch (error) {
+      console.error('Erreur lors du chargement des données:', error);
+      this.gristOptions.statut = DEFAULT_STATUTS;
+      this.gristOptions.urgence = DEFAULT_URGENCES;
+      this.gristOptions.impact = DEFAULT_IMPACTS;
+      this.gristOptions.bureau = DEFAULT_BUREAUX;
+      this.gristOptions.qui = DEFAULT_RESPONSABLES;
+      this.gristOptions.projet = DEFAULT_PROJETS;
+      if (!this.currentRecords) this.currentRecords = [];
+    }
+  }
+
+  getUniqueValuesFromData(key, isList = false) {
+    const values = new Set();
+    (this.currentRecords || []).forEach(rec => {
+      const v = rec[key];
+      if (isList && Array.isArray(v)) {
+        v.slice(1).forEach(i => i && values.add(String(i).trim()));
+      } else if (!isList && v !== null && typeof v !== 'undefined') {
+        values.add(String(v).trim());
+      }
+    });
+    return Array.from(values).filter(v => v).sort();
+  }
+
+  mapGristRecords(gristData) {
+    const records = [];
+    if (!gristData || typeof gristData !== 'object') return [];
+    
+    const keys = Object.keys(gristData);
+    if (!keys.includes('id') || !Array.isArray(gristData.id)) return [];
+    
+    const num = gristData.id.length;
+    
+    for (let i = 0; i < num; i++) {
+      const rec = {};
+      let ok = true;
+      
+      // Traitement des colonnes obligatoires
+      for (const key of REQUIRED_COLUMNS) {
+        if (gristData.hasOwnProperty(key) && Array.isArray(gristData[key]) && gristData[key].length > i) {
+          const v = gristData[key][i];
+          if ((key === 'bureau' || key === 'qui') && Array.isArray(v) && v[0] === 'L') {
+            rec[key] = v;
+          } else if ((key === 'bureau' || key === 'qui') && (!Array.isArray(v) || v[0] !== 'L')) {
+            rec[key] = ['L'];
+          } else {
+            rec[key] = v;
+          }
+        } else if (key === 'id') { 
+          ok = false; 
+          break; 
+        } else {
+          rec[key] = null;
+        }
       }
       
-      .kanban-item {
-        cursor: grab;
+      // Traitement des colonnes optionnelles
+      for (const key of OPTIONAL_COLUMNS) {
+        if (gristData.hasOwnProperty(key) && Array.isArray(gristData[key]) && gristData[key].length > i) {
+          rec[key] = gristData[key][i];
+        } else {
+          rec[key] = null;
+        }
       }
       
-      .kanban-item:active {
-        cursor: grabbing;
-      }
-
-      .kanban-container.kanban-compact,
-      .kanban-container.kanban-detailed {
-        grid-template-columns: 1fr;
-        height: calc(100vh - 300px);
-      }
-
-      /* Mode compact sur mobile : colonnes encore plus étroites */
-      .kanban-container.kanban-compact {
-        font-size: 0.8rem;
-      }
-      
-      .compact-header {
-        flex-direction: column;
-        gap: 0.3rem;
-        align-items: flex-start;
-      }
-      
-      .compact-echeance {
-        text-align: left;
-      }
-
-      /* Mode focus sur mobile : navigation horizontale */
-      .focus-container {
-        flex-direction: column;
-        height: calc(100vh - 300px);
-      }
-
-      .focus-navigation {
-        flex-direction: row;
-        width: 100%;
-        padding: 0.5rem;
-        overflow-x: auto;
-        gap: 0.25rem;
-      }
-      
-      .focus-navigation .btn {
-        font-size: 0.7rem;
-        padding: 0.3rem 0.6rem;
-        flex-shrink: 0;
-        min-width: auto;
-      }
-
-      .focus-column {
-        flex: 1;
+      if (ok) { 
+        rec.id = parseInt(rec.id, 10); 
+        if (!isNaN(rec.id)) records.push(rec); 
       }
     }
+    return records;
+  }
 
-    /* === Raccourcis clavier === */
-    .keyboard-shortcuts {
-      position: fixed;
-      bottom: 1rem;
-      right: 1rem;
-      background: rgba(0,0,0,0.8);
-      color: white;
-      padding: 0.5rem;
-      border-radius: 6px;
-      font-size: 0.75rem;
-      opacity: 0.7;
-      pointer-events: none;
-    }
-
-    .keyboard-shortcuts div {
-      margin: 0.2rem 0;
-    }
-
-    .keyboard-shortcuts kbd {
-      background: #333;
-      padding: 0.1rem 0.3rem;
-      border-radius: 3px;
-      margin-right: 0.3rem;
-    }
-  </style>
-</head>
-<body>
-  <div class="container-fluid">
-    <!-- Header -->
-    <div class="kanban-header">
-      <div class="container-fluid">
-        <div class="row align-items-center">
-          <div class="col">
-            <h1 class="h3 mb-0">
-              <i class="bi bi-kanban me-2"></i>
-              Tableau Kanban SSIR
-            </h1>
-          </div>
-          <div class="col-auto">
-            <button type="button" class="btn btn-primary" id="btn-nouvelle-tache" aria-label="Créer une nouvelle tâche">
-              <i class="bi bi-plus-lg me-2"></i>Nouvelle Tâche
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Controls -->
-    <div class="container-fluid">
-      <div class="kanban-controls">
-        <div class="row g-3 align-items-center">
-          <!-- SPACE RÉSERVÉ POUR LES BOUTONS DE MODE - Sera injecté par JS -->
-          <div class="col-md-3">
-            <input type="text" class="form-control" id="search-input" placeholder="Rechercher..." aria-label="Rechercher des tâches">
-          </div>
-          <div class="col-md-2">
-            <select class="form-select" id="filter-bureau" aria-label="Filtrer par bureau"></select>
-          </div>
-          <div class="col-md-2">
-            <select class="form-select" id="filter-qui" aria-label="Filtrer par responsable"></select>
-          </div>
-          <div class="col-md-2">
-            <select class="form-select" id="filter-projet" aria-label="Filtrer par projet"></select>
-          </div>
-          <div class="col-md-2">
-            <select class="form-select" id="filter-statut" aria-label="Filtrer par statut"></select>
-          </div>
-          <div class="col-md-1">
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" id="show-termine" checked>
-              <label class="form-check-label" for="show-termine">Terminés</label>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Error Container -->
-    <div id="error-container" role="alert" aria-live="polite"></div>
-
-    <!-- Loading Spinner -->
-    <div class="loading-spinner" id="loading-spinner" style="display:none;">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Chargement...</span>
-      </div>
-      <p class="mt-2">Chargement du Kanban...</p>
-    </div>
-
-    <!-- Kanban Container -->
-    <div class="container-fluid">
-      <div id="kanban-container" class="kanban-container" role="main" aria-label="Tableau Kanban"></div>
-    </div>
-
-    <!-- Keyboard Shortcuts -->
-    <div class="keyboard-shortcuts">
-      <div><kbd>N</kbd> Nouvelle tâche</div>
-      <div><kbd>F</kbd> Focus recherche</div>
-      <div><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> Modes de vue</div>
-    </div>
-  </div>
-
-  <!-- Modal -->
-  <div class="modal fade" id="popup-tache" tabindex="-1" aria-labelledby="popup-tache-label" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="popup-tache-label">
-            <i class="bi bi-card-checklist me-2"></i>Détails Tâche
-          </h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
-        </div>
-        <div class="modal-body">
-          <form id="task-form" novalidate>
-            <div class="row g-3">
-              <div class="col-12">
-                <label for="popup-titre" class="form-label">Titre *</label>
-                <input type="text" class="form-control" id="popup-titre" required>
-              </div>
-              <div class="col-12">
-                <label for="popup-description" class="form-label">Description</label>
-                <textarea class="form-control" id="popup-description" rows="3"></textarea>
-              </div>
-              <div class="col-md-4">
-                <label for="popup-statut-text" class="form-label">Statut *</label>
-                <input type="text" class="form-control" id="popup-statut-text" readonly required>
-              </div>
-              <div class="col-md-4">
-                <label for="popup-projet" class="form-label">Projet</label>
-                <div class="input-group">
-                  <select class="form-select" id="popup-projet"></select>
-                  <input type="text" class="form-control" id="projet-ajout" placeholder="Ajouter projet">
-                  <button class="btn btn-outline-secondary" type="button" id="btn-ajout-projet"><i class="bi bi-plus"></i></button>
-                </div>
-              </div>
-              <div class="col-12">
-                <label class="form-label">Stratégie</label>
-                <div class="input-group flex-nowrap" style="gap:0.5em;">
-                  <select class="form-select" id="strategie-objectif" size="5" style="min-width:260px;"></select>
-                  <select class="form-select" id="strategie-sous-objectif" size="5" style="min-width:260px;"></select>
-                  <select class="form-select" id="strategie-action" size="5" style="min-width:260px;"></select>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Urgence & Impact</label>
-                <div class="input-group">
-                  <select class="form-select" id="popup-urgence">
-                    <option value="">-- Urgence --</option>
-                  </select>
-                  <select class="form-select" id="popup-impact">
-                    <option value="">-- Impact --</option>
-                  </select>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label"><i class="bi bi-calendar-event me-2"></i>Délai / Date butoir</label>
-                <div class="input-group">
-                  <select class="form-select" id="delai-type" style="max-width: 120px;">
-                    <option value="date">Date fixe</option>
-                    <option value="semaines">Semaines</option>
-                    <option value="mois">Mois</option>
-                  </select>
-                  <input type="text" class="form-control" id="popup-delai" placeholder="Sélectionner..." aria-label="Délai">
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label for="popup-bureau" class="form-label">Bureaux</label>
-                <select class="form-select" id="popup-bureau" multiple size="4"></select>
-                <div class="form-text">Maintenez Ctrl pour sélectionner plusieurs bureaux</div>
-              </div>
-              <div class="col-md-6">
-                <label for="popup-qui" class="form-label">Responsables</label>
-                <select class="form-select" id="popup-qui" multiple size="4"></select>
-                <div class="form-text">Maintenez Ctrl pour sélectionner plusieurs responsables</div>
-              </div>
-              <div class="row mt-3">
-                <div class="col-12">
-                  <label class="form-label">Affectation</label>
-                  <div id="affectation-equipes"></div>
-                  <div id="affectation-personnes" class="mt-1"></div>
-                </div>
-              </div>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <!-- Bouton supprimer à gauche -->
-          <button type="button" class="btn btn-danger me-auto" id="btn-delete-task" style="display: none;">
-            <i class="bi bi-trash me-2"></i>Supprimer
+  // === GESTION DES MODES DE VUE ===
+  initViewModeControls() {
+    const controlsContainer = document.querySelector('.kanban-controls .row');
+    if (!controlsContainer) return;
+    
+    const viewModeHTML = `
+      <div class="col-md-3">
+        <div class="btn-group" role="group" aria-label="Mode de vue">
+          <button type="button" class="btn btn-outline-primary btn-sm active" id="view-compact">
+            <i class="bi bi-grid"></i> Compact
           </button>
-          
-          <!-- Boutons de contrôle à droite -->
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-            <i class="bi bi-x-circle me-2"></i>Annuler
+          <button type="button" class="btn btn-outline-primary btn-sm" id="view-detailed">
+            <i class="bi bi-card-text"></i> Détaillé
           </button>
-          <button type="button" class="btn btn-primary" id="btn-save-task">
-            <i class="bi bi-check2-circle me-2"></i>Sauvegarder
+          <button type="button" class="btn btn-outline-primary btn-sm" id="view-focus">
+            <i class="bi bi-eye"></i> Focus
           </button>
         </div>
       </div>
-    </div>
-  </div>
-  
-  <!-- Scripts -->
-  <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/fr.js"></script>
-  <script src="js.js"></script>
-</body>
-</html>
+    `;
+    
+    controlsContainer.insertAdjacentHTML('afterbegin', viewModeHTML);
+    
+    document.getElementById('view-compact')?.addEventListener('click', () => this.setViewMode('compact'));
+    document.getElementById('view-detailed')?.addEventListener('click', () => this.setViewMode('detailed'));
+    document.getElementById('view-focus')?.addEventListener('click', () => this.setViewMode('focus'));
+  }
+
+  setViewMode(mode) {
+    this.viewMode = mode;
+    this.expandedCards.clear();
+    
+    document.querySelectorAll('.btn-group button').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`view-${mode}`)?.classList.add('active');
+    
+    this.refreshKanban();
+  }
+
+  // === CRÉATION DES CARTES ===
+  createTaskElementHTML(record) {
+    const isExpanded = this.expandedCards.has(record.id);
+    
+    if (this.viewMode === 'compact' && !isExpanded) {
+      return this.createCompactTaskHTML(record);
+    } else {
+      return this.createDetailedTaskHTML(record);
+    }
+  }
+
+  createCompactTaskHTML(record) {
+    const prio = this.calculerPriorite(record.urgence, record.impact);
+    let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
+    
+    let echeanceElement = '';
+    if (record.date_echeance) {
+      const echeanceDate = new Date(record.date_echeance);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      echeanceDate.setHours(0, 0, 0, 0);
+      
+      const diffTime = echeanceDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      let echeanceClass = 'echeance-ok';
+      if (diffDays < 0) echeanceClass = 'echeance-depassee';
+      else if (diffDays === 0) echeanceClass = 'echeance-aujourd-hui';
+      else if (diffDays <= 3) echeanceClass = 'echeance-urgent';
+      else if (diffDays <= 7) echeanceClass = 'echeance-bientot';
+      
+      const echeanceText = diffDays < 0 ? `J${diffDays}` : 
+                          diffDays === 0 ? "Auj." : `J+${diffDays}`;
+      
+      echeanceElement = `<span class="date-echeance-compact ${echeanceClass}">
+        <i class="bi bi-calendar-x"></i> ${echeanceText}
+      </span>`;
+    }
+    
+    const hasEcheanceClass = record.date_echeance ? 'has-echeance' : '';
+    
+    return `<div class="kanban-item kanban-item-compact ${hasEcheanceClass}" data-id="${record.id}">
+      <div class="drag-handle">
+        <i class="bi bi-grip-vertical"></i>
+      </div>
+      <div class="compact-header">
+        <div class="compact-priority">${prioBadge}</div>
+        <div class="compact-echeance">${echeanceElement}</div>
+        <button class="btn-expand" title="Voir détails">
+          <i class="bi bi-chevron-down"></i>
+        </button>
+      </div>
+      <div class="compact-title editable-zone">${record.titre || ''}</div>
+    </div>`;
+  }
+
+  createDetailedTaskHTML(record) {
+    const isExpanded = this.expandedCards.has(record.id);
+    
+    const prio = this.calculerPriorite(record.urgence, record.impact);
+    let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
+    
+    let projetTag = '';
+    if (record.projet) {
+      const tooltip = [
+        record.strategie_objectif ? `Objectif: ${record.strategie_objectif}` : '',
+        record.strategie_sous_objectif ? `Sous-objectif: ${record.strategie_sous_objectif}` : '',
+        record.strategie_action ? `Action: ${record.strategie_action}` : ''
+      ].filter(Boolean).join('\n');
+      projetTag = `<span class="badge bg-info text-dark" title="${tooltip.replace(/"/g, '&quot;')}">${record.projet}</span>`;
+    }
+    
+    let resumeDesc = '';
+    if (record.description) {
+      const mots = record.description.split(/\s+/).slice(0, 10).join(' ');
+      resumeDesc = `<div class="desc-resume">${mots}${record.description.split(/\s+/).length > 10 ? '…' : ''}</div>`;
+    }
+    
+    let personnes = '';
+    if (Array.isArray(record.qui) && record.qui.length > 1) {
+      personnes = '<div class="personnes-list">' +
+        record.qui.slice(1).map(q => `<span class="personne-badge">${q}</span>`).join(' ') +
+        '</div>';
+    }
+    
+    let datesElement = '';
+    const hasDateDebut = record.date_debut;
+    const hasDateEcheance = record.date_echeance;
+    
+    if (hasDateDebut || hasDateEcheance) {
+      let dateInfo = [];
+      
+      if (hasDateDebut) {
+        const debutFormatted = this.formatDate(record.date_debut);
+        dateInfo.push(`<span class="date-debut" title="Début: ${debutFormatted}">
+          <i class="bi bi-play-circle"></i> ${debutFormatted}
+        </span>`);
+      }
+      
+      if (hasDateEcheance) {
+        const echeanceDate = new Date(record.date_echeance);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        echeanceDate.setHours(0, 0, 0, 0);
+        
+        const diffTime = echeanceDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        let echeanceClass = 'echeance-ok';
+        let echeanceText = '';
+        
+        if (diffDays < 0) {
+          echeanceClass = 'echeance-depassee';
+          echeanceText = `Dépassé (${Math.abs(diffDays)}j)`;
+        } else if (diffDays === 0) {
+          echeanceClass = 'echeance-aujourd-hui';
+          echeanceText = "Aujourd'hui";
+        } else if (diffDays <= 3) {
+          echeanceClass = 'echeance-urgent';
+          echeanceText = `${diffDays}j restant${diffDays > 1 ? 's' : ''}`;
+        } else if (diffDays <= 7) {
+          echeanceClass = 'echeance-bientot';
+          echeanceText = `${diffDays}j restant${diffDays > 1 ? 's' : ''}`;
+        } else {
+          echeanceText = `J+${diffDays}`;
+        }
+        
+        const echeanceFormatted = this.formatDate(record.date_echeance);
+        dateInfo.push(`<span class="date-echeance ${echeanceClass}" title="Échéance: ${echeanceFormatted}">
+          <i class="bi bi-calendar-x"></i> ${echeanceText}
+        </span>`);
+      }
+      
+      if (dateInfo.length > 0) {
+        datesElement = `<div class="dates-container">${dateInfo.join('')}</div>`;
+      }
+    }
+    
+    const hasEcheanceClass = hasDateEcheance ? 'has-echeance' : '';
+    const hasDateDebutClass = hasDateDebut ? 'has-debut' : '';
+    const collapseButton = (this.viewMode === 'compact' && isExpanded) ? 
+      `<button class="btn-collapse" title="Réduire"><i class="bi bi-chevron-up"></i></button>` : '';
+    
+    return `<div class="kanban-item kanban-item-detailed ${hasEcheanceClass} ${hasDateDebutClass}" data-id="${record.id}">
+      <div class="drag-handle">
+        <i class="bi bi-grip-vertical"></i>
+      </div>
+      <div class="kanban-item-header">
+        <div>${prioBadge}</div>
+        <div class="item-badges">
+          ${projetTag}
+          ${collapseButton}
+        </div>
+      </div>
+      <div class="item-title editable-zone">${record.titre || ''}</div>
+      ${resumeDesc}
+      ${datesElement}
+      ${personnes}
+    </div>`;
+  }
+
+  formatDate(dateStr) {
+    if (!dateStr) return '';
+    try {
+      const options = { weekday: 'short', day: 'numeric', month: 'short' };
+      return new Date(dateStr).toLocaleDateString('fr-FR', options);
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
+  // === RENDU DU KANBAN ===
+  refreshKanban() {
+    if (!this.kanbanContainer) return;
+    this.sortableInstances.forEach(s => s.destroy());
+    this.sortableInstances = [];
+    const filteredRecords = this.currentRecords || [];
+    const statutsToShow = this.showTermine ? STATUTS : STATUTS.filter(s => s.id !== 'Terminé');
+    
+    if (this.viewMode === 'focus') {
+      this.renderFocusMode(statutsToShow, filteredRecords);
+    } else {
+      this.renderColumnMode(statutsToShow, filteredRecords);
+    }
+  }
+
+  renderFocusMode(statutsToShow, filteredRecords) {
+    if (!this.focusColumn) {
+      this.focusColumn = statutsToShow[0]?.id || 'Backlog';
+    }
+    
+    const navHTML = `
+      <div class="focus-navigation">
+        ${statutsToShow.map(statut => {
+          const count = filteredRecords.filter(r => r.statut === statut.id).length;
+          const activeClass = this.focusColumn === statut.id ? 'active' : '';
+          return `<button class="btn btn-outline-secondary ${activeClass}" data-status="${statut.id}">
+            ${statut.libelle} <span class="badge bg-secondary">${count}</span>
+          </button>`;
+        }).join('')}
+      </div>
+    `;
+    
+    const activeStatus = statutsToShow.find(s => s.id === this.focusColumn);
+    const boardRecords = filteredRecords.filter(r => r.statut === this.focusColumn);
+    boardRecords.sort((a, b) => a.id - b.id);
+    const itemsHTML = boardRecords.map(record => this.createTaskElementHTML(record)).join('');
+    
+    const columnHTML = `
+      <div class="focus-column">
+        <div class="kanban-board-header">
+          <span class="board-title">${activeStatus?.libelle || ''}</span>
+          <span class="board-count">${boardRecords.length}</span>
+        </div>
+        <div class="kanban-board-body" id="items-focus" data-status="${this.focusColumn}">
+          ${itemsHTML}
+        </div>
+      </div>
+    `;
+    
+    this.kanbanContainer.innerHTML = navHTML + columnHTML;
+    
+    document.querySelectorAll('.focus-navigation button').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        this.focusColumn = e.target.dataset.status;
+        this.refreshKanban();
+      });
+    });
+    
+    const el = document.getElementById('items-focus');
+    if (el) {
+      const sortable = new Sortable(el, {
+        group: 'kanban-focus',
+        animation: 150,
+        handle: '.drag-handle',
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        dragClass: 'sortable-drag',
+        onEnd: evt => this.handleDragEnd(evt, this.focusColumn)
+      });
+      this.sortableInstances.push(sortable);
+    }
+    
+    this.attachCardEventListeners();
+  }
+
+  renderColumnMode(statutsToShow, filteredRecords) {
+    const modeClass = this.viewMode === 'compact' ? 'kanban-compact' : 'kanban-detailed';
+    this.kanbanContainer.className = `kanban-container ${modeClass}`;
+    
+    let kanbanHTML = '';
+    statutsToShow.forEach(statut => {
+      const boardId = statut.classe;
+      const boardRecords = filteredRecords.filter(r => r.statut === statut.id);
+      boardRecords.sort((a, b) => a.id - b.id);
+      const itemsHTML = boardRecords.map(record => this.createTaskElementHTML(record)).join('');
+      const count = boardRecords.length;
+      const isHidden = (count === 0 && statut.id !== 'Terminé' && this.showTermine);
+      const hiddenClass = isHidden ? ' board-hidden' : '';
+      
+      kanbanHTML += `
+        <div id="board-${boardId}" class="kanban-board board-${boardId}${hiddenClass}">
+          <div class="kanban-board-header">
+            <span class="board-title">${statut.libelle}</span>
+            <span class="board-count">${count}</span>
+          </div>
+          <div class="kanban-board-body" id="items-${boardId}" data-status="${statut.id}">
+            ${itemsHTML}
+          </div>
+        </div>
+      `;
+    });
+    this.kanbanContainer.innerHTML = kanbanHTML;
+
+    statutsToShow.forEach(statut => {
+      const boardId = statut.classe;
+      const el = document.getElementById(`items-${boardId}`);
+      if (el) {
+        const sortable = new Sortable(el, {
+          group: 'kanban',
+          animation: 150,
+          handle: '.drag-handle',
+          ghostClass: 'sortable-ghost',
+          chosenClass: 'sortable-chosen',
+          dragClass: 'sortable-drag',
+          onEnd: evt => this.handleDragEnd(evt, statut.id)
+        });
+        this.sortableInstances.push(sortable);
+      }
+    });
+
+    this.attachCardEventListeners();
+  }
+
+  attachCardEventListeners() {
+    Array.from(this.kanbanContainer.querySelectorAll('.kanban-item .editable-zone')).forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const item = el.closest('.kanban-item');
+        const id = parseInt(item.dataset.id, 10);
+        const tache = this.currentRecords.find(r => r.id === id);
+        if (tache) this.openPopup(tache);
+      });
+    });
+    
+    Array.from(this.kanbanContainer.querySelectorAll('.btn-expand')).forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const item = btn.closest('.kanban-item');
+        const id = parseInt(item.dataset.id, 10);
+        this.expandedCards.add(id);
+        this.refreshKanban();
+      });
+    });
+    
+    Array.from(this.kanbanContainer.querySelectorAll('.btn-collapse')).forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const item = btn.closest('.kanban-item');
+        const id = parseInt(item.dataset.id, 10);
+        this.expandedCards.delete(id);
+        this.refreshKanban();
+      });
+    });
+  }
+
+  // === SAUVEGARDE ET GESTION DES DONNÉES ===
+  async saveTask() {
+    try {
+      let dateEcheance = '';
+      let dateDebut = '';
+      
+      const delaiInput = document.getElementById('popup-delai');
+      if (delaiInput && delaiInput.value.trim()) {
+        dateEcheance = delaiInput.value.trim();
+        
+        if (!this.currentTaskId) {
+          dateDebut = new Date().toISOString().slice(0,10);
+        } else {
+          const existingRecord = this.currentRecords.find(r => r.id === this.currentTaskId);
+          dateDebut = existingRecord?.date_debut || '';
+        }
+      } else {
+        dateEcheance = null;
+        dateDebut = null;
+      }
+      
+      const titre = document.getElementById('popup-titre').value;
+      const description = document.getElementById('popup-description').value;
+      const statut = document.getElementById('popup-statut-text').value;
+      const projet = document.getElementById('popup-projet').value;
+      const urgence = document.getElementById('popup-urgence').value;
+      const impact = document.getElementById('popup-impact').value;
+      const bureau = Array.from(document.getElementById('popup-bureau').selectedOptions).map(o => o.value);
+      const qui = Array.from(document.getElementById('popup-qui').selectedOptions).map(o => o.value);
+      
+      const strategie_objectif = document.getElementById('strategie-objectif').value;
+      const strategie_sous_objectif = document.getElementById('strategie-sous-objectif').value;
+      const strategie_action = document.getElementById('strategie-action').value;
+      
+      const row = {
+        titre, 
+        description, 
+        statut, 
+        projet, 
+        urgence, 
+        impact,
+        bureau: ['L', ...bureau],
+        qui: ['L', ...qui],
+        strategie_objectif,
+        strategie_sous_objectif,
+        strategie_action
+      };
+
+      if (this.availableColumns.has('date_debut')) {
+        row.date_debut = dateDebut;
+      }
+      
+      if (this.availableColumns.has('date_echeance')) {
+        row.date_echeance = dateEcheance;
+      }
+
+      if (this.currentTaskId) {
+        await grist.docApi.applyUserActions([
+          ['UpdateRecord', TABLE_ID, this.currentTaskId, row]
+        ]);
+        console.log(`Tâche ${this.currentTaskId} mise à jour avec succès`);
+        
+        const recordIndex = this.currentRecords.findIndex(r => r.id === this.currentTaskId);
+        if (recordIndex !== -1) {
+          this.currentRecords[recordIndex] = { ...this.currentRecords[recordIndex], ...row };
+          this.currentRecords[recordIndex].date_debut = dateDebut;
+          this.currentRecords[recordIndex].date_echeance = dateEcheance;
+        }
+        
+      } else {
+        const result = await grist.docApi.applyUserActions([
+          ['AddRecord', TABLE_ID, null, row]
+        ]);
+        console.log('Nouvelle tâche créée avec succès');
+        
+        if (result && result[0] && result[0].id) {
+          const newRecord = { id: result[0].id, ...row };
+          newRecord.date_debut = dateDebut;
+          newRecord.date_echeance = dateEcheance;
+          this.currentRecords.push(newRecord);
+        }
+      }
+      
+      this.modal.hide();
+      this.refreshKanban();
+      
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      
+      let errorMessage = error.message;
+      if (errorMessage.includes("KeyError 'date_debut'") || errorMessage.includes("KeyError 'date_echeance'")) {
+        errorMessage = "Les colonnes de dates (date_debut/date_echeance) n'existent pas dans votre table Grist. Vous pouvez continuer à utiliser l'application, mais les dates ne seront pas sauvegardées.";
+      }
+      
+      displayError(`Erreur lors de la sauvegarde: ${errorMessage}`);
+    }
+  }
+
+  async handleDragEnd(evt, targetStatus) {
+    if (!evt.item || !evt.item.dataset) return;
+    
+    const id = parseInt(evt.item.dataset.id, 10);
+    if (isNaN(id)) return;
+    
+    const record = this.currentRecords.find(r => r.id === id);
+    if (!record) return;
+    
+    const newStatus = evt.to.dataset.status;
+    
+    if (record.statut === newStatus) return;
+    
+    console.log(`Déplacement de la tâche ${id} vers ${newStatus}`);
+    
+    try {
+      await grist.docApi.applyUserActions([
+        ['UpdateRecord', TABLE_ID, id, { statut: newStatus }]
+      ]);
+      
+      console.log(`Tâche ${id} mise à jour avec succès`);
+      
+      const recordIndex = this.currentRecords.findIndex(r => r.id === id);
+      if (recordIndex !== -1) {
+        this.currentRecords[recordIndex].statut = newStatus;
+      }
+      
+      this.refreshKanban();
+      
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour:', error);
+      displayError(`Erreur lors du déplacement de la tâche: ${error.message}`);
+      this.refreshKanban();
+    }
+  }
+
+  calculerPriorite(u, i) {
+    const imp = String(i || '').trim().toLowerCase();
+    const urg = String(u || '').trim().toLowerCase();
+    if (imp === 'critique') return 1;
+    if (imp === 'important') return (urg === 'immédiate' || urg === 'courte') ? 1 : 2;
+    if (imp === 'modéré') return (urg === 'immédiate') ? 2 : 3;
+    if (imp === 'mineur') return 4;
+    return 3;
+  }
+
+  async deleteTask(taskId) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette tâche ?')) {
+      return;
+    }
+    
+    try {
+      await grist.docApi.applyUserActions([
+        ['RemoveRecord', TABLE_ID, taskId]
+      ]);
+      
+      console.log(`Tâche ${taskId} supprimée avec succès`);
+      
+      this.currentRecords = this.currentRecords.filter(r => r.id !== taskId);
+      
+      if (this.modal && this.currentTaskId === taskId) {
+        this.modal.hide();
+      }
+      
+      this.refreshKanban();
+      
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      displayError(`Erreur lors de la suppression: ${error.message}`);
+    }
+  }
+
+  // === GESTION DES ÉVÉNEMENTS GRIST ===
+  handleGristUpdate(gristRecords, mappings = null) {
+    if (this.isUpdating) return;
+    if (this.ignoreNextOnRecords) { 
+      this.ignoreNextOnRecords = false; 
+      return; 
+    }
+    
+    console.log('Mise à jour Grist reçue, rechargement des données...');
+    this.isUpdating = true;
+    
+    grist.docApi.fetchTable(TABLE_ID).then(fresh => {
+      this.currentRecords = this.mapGristRecords(fresh);
+      this.initFilters();
+      this.refreshKanban();
+      console.log('Données mises à jour avec succès');
+    }).catch(error => {
+      console.error('Erreur lors du rechargement des données:', error);
+      displayError(`Erreur lors du rechargement: ${error.message}`);
+    }).finally(() => { 
+      this.isUpdating = false; 
+    });
+  }
+
+  signalLocalUpdate() {
+    this.ignoreNextOnRecords = true;
+    setTimeout(() => { this.ignoreNextOnRecords = false; }, 500);
+  }
+
+  // === INITIALISATION DES COMPOSANTS ===
+  initFilters() {
+    this.populateSelectWithOptions('filter-bureau', this.gristOptions.bureau || []);
+    this.populateSelectWithOptions('filter-qui', this.gristOptions.qui || []);
+    this.populateSelectWithOptions('filter-projet', this.gristOptions.projet || []);
+    this.populateSelectWithOptions('filter-statut', DEFAULT_STATUTS);
+  }
+
+  initModalWithOptions() {
+    if (this.modalElement) {
+      this.modal = new bootstrap.Modal(this.modalElement, { backdrop: 'static', keyboard: false });
+      this.populateSelectWithOptions('popup-urgence', this.gristOptions.urgence || [], true);
+      this.populateSelectWithOptions('popup-impact', this.gristOptions.impact || [], true);
+      this.populateSelectWithOptions('popup-bureau', this.gristOptions.bureau || [], false);
+      this.populateSelectWithOptions('popup-qui', this.gristOptions.qui || [], false);
+      this.populateSelectWithOptions('popup-projet', this.gristOptions.projet || [], true);
+      
+      const btnAjoutProjet = document.getElementById('btn-ajout-projet');
+      if (btnAjoutProjet) {
+        btnAjoutProjet.onclick = () => {
+          const champ = document.getElementById('projet-ajout');
+          const val = champ.value.trim();
+          if(val && !this.gristOptions.projet.includes(val) && !projetsDynamiques.includes(val)) {
+            projetsDynamiques.push(val);
+            this.populateSelectWithOptions('popup-projet', [...this.gristOptions.projet, ...projetsDynamiques], true);
+            champ.value = '';
+          }
+        };
+      }
+    }
+  }
+
+  populateSelectWithOptions(selectId, options, addEmptyOption = true) {
+    const sel = document.getElementById(selectId);
+    if (!sel) return;
+    sel.innerHTML = '';
+    if (!Array.isArray(options)) return;
+    if (addEmptyOption && !sel.multiple) {
+      const opt = document.createElement('option');
+      opt.value = "";
+      opt.text = selectId.startsWith('filter-') ? "Tous" : "-- Choisir --";
+      sel.appendChild(opt);
+    }
+    options.forEach(v => {
+      if (v !== null && typeof v !== 'undefined') {
+        const o = document.createElement('option');
+        o.value = v;
+        o.text = v;
+        sel.appendChild(o);
+      }
+    });
+  }
+
+  getStratOptionsFromTasks() {
+    const set = new Set();
+    (this.currentRecords || []).forEach(rec => {
+      const obj = rec.strategie_objectif || "";
+      const sous = rec.strategie_sous_objectif || "";
+      const act = rec.strategie_action || "";
+      if (obj || sous || act) {
+        set.add(JSON.stringify({objectif: obj, sous_objectif: sous, action: act}));
+      }
+    });
+    return Array.from(set).map(s => JSON.parse(s));
+  }
+
+  populateStrategieLists(selected = {}) {
+    const STRATEGIES = this.getStratOptionsFromTasks();
+
+    const objectifs = [...new Set(STRATEGIES.map(s => s.objectif))].filter(Boolean).sort();
+    const selObj = document.getElementById('strategie-objectif');
+    if (!selObj) return;
+    selObj.innerHTML = objectifs.map(obj => `<option value="${obj}">${obj}</option>`).join('');
+    if (selected.objectif) selObj.value = selected.objectif;
+
+    function updateSousObjectif() {
+      const obj = selObj.value;
+      const sousObj = [...new Set(STRATEGIES.filter(s => s.objectif === obj).map(s => s.sous_objectif))].filter(Boolean).sort();
+      const selSous = document.getElementById('strategie-sous-objectif');
+      selSous.innerHTML = sousObj.map(so => `<option value="${so}">${so}</option>`).join('');
+      if (selected.sous_objectif) selSous.value = selected.sous_objectif;
+      updateAction();
+    }
+
+    function updateAction() {
+      const obj = selObj.value;
+      const sousObj = document.getElementById('strategie-sous-objectif').value;
+      const actions = [...new Set(STRATEGIES.filter(s => s.objectif === obj && s.sous_objectif === sousObj).map(s => s.action))].filter(Boolean).sort();
+      const selAct = document.getElementById('strategie-action');
+      selAct.innerHTML = actions.map(a => `<option value="${a}">${a}</option>`).join('');
+      if (selected.action) selAct.value = selected.action;
+    }
+
+    selObj.onchange = updateSousObjectif;
+    document.getElementById('strategie-sous-objectif').onchange = updateAction;
+
+    updateSousObjectif();
+  }
+
+  openPopup(tache = {}) {
+    if (!this.modal || !this.modalElement) return;
+    const isNewTask = !tache.id;
+    this.currentTaskId = tache.id || null;
+    
+    const btnDelete = document.getElementById('btn-delete-task');
+    if (btnDelete) {
+      btnDelete.style.display = isNewTask ? 'none' : 'inline-block';
+    }
+    
+    const trySet = (id, value) => { const el = document.getElementById(id); if (el) el.value = value || ""; };
+    trySet('popup-id', tache.id || '');
+    trySet('popup-titre', tache.titre || '');
+    trySet('popup-description', tache.description || '');
+    trySet('popup-statut-text', tache.statut || (isNewTask ? (STATUTS[0]?.id || '') : ''));
+    trySet('popup-projet', tache.projet || '');
+    trySet('popup-urgence', tache.urgence || '');
+    trySet('popup-impact', tache.impact || '');
+    this.setSelectedOptions('popup-bureau', tache.bureau);
+    this.setSelectedOptions('popup-qui', tache.qui);
+    
+    this.populateStrategieLists({
+      objectif: tache.strategie_objectif,
+      sous_objectif: tache.strategie_sous_objectif,
+      action: tache.strategie_action
+    });
+    
+    const delaiInput = document.getElementById('popup-delai');
+    if (delaiInput && tache.date_echeance) {
+      delaiInput.value = tache.date_echeance;
+    }
+    
+    this.modal.show();
+  }
+
+  setSelectedOptions(selectId, valuesWithL) {
+    const sel = document.getElementById(selectId);
+    if (!sel) return;
+    const values = Array.isArray(valuesWithL) && valuesWithL[0] === 'L' ? valuesWithL.slice(1) : [];
+    const lowerVals = values.map(v => String(v).trim().toLowerCase());
+    Array.from(sel.options).forEach(o => {
+      const vClean = String(o.value).trim().toLowerCase();
+      o.selected = lowerVals.includes(vClean);
+    });
+  }
+
+  initFlatpickr() {
+    const delaiInput = document.getElementById('popup-delai');
+    const delaiType = document.getElementById('delai-type');
+    
+    if (!delaiInput || !delaiType) return;
+    
+    this.flatpickr = flatpickr(delaiInput, {
+      locale: 'fr',
+      dateFormat: 'Y-m-d',
+      allowInput: true,
+      disableMobile: true,
+      allowClear: true,
+      placeholder: 'Cliquer pour choisir une date ou laisser vide'
+    });
+    
+    delaiType.style.display = 'none';
+    delaiInput.placeholder = 'Cliquer pour choisir une date ou laisser vide';
+  }
+
+  initEventListeners() {
+    document.getElementById('btn-save-task').onclick = () => this.saveTask();
+    document.getElementById('btn-nouvelle-tache').onclick = () => this.openPopup();
+    
+    const btnDelete = document.getElementById('btn-delete-task');
+    if (btnDelete) {
+      btnDelete.onclick = () => {
+        if (this.currentTaskId) {
+          this.deleteTask(this.currentTaskId);
+        }
+      };
+    }
+    
+    const filterElements = ['filter-bureau', 'filter-qui', 'filter-projet', 'filter-statut'];
+    filterElements.forEach(filterId => {
+      const filterEl = document.getElementById(filterId);
+      if (filterEl) {
+        filterEl.addEventListener('change', () => this.applyFilters());
+      }
+    });
+    
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+      searchInput.addEventListener('input', () => this.applyFilters());
+    }
+    
+    const showTermineCheckbox = document.getElementById('show-termine');
+    if (showTermineCheckbox) {
+      showTermineCheckbox.addEventListener('change', (e) => {
+        this.showTermine = e.target.checked;
+        this.refreshKanban();
+      });
+    }
+    
+    // Raccourcis clavier
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'n' || e.key === 'N') {
+        if (!e.target.matches('input, textarea')) {
+          e.preventDefault();
+          this.openPopup();
+        }
+      }
+      if ((e.key === 'Delete' || e.key === 'Suppr') && this.currentTaskId) {
+        if (!e.target.matches('input, textarea')) {
+          e.preventDefault();
+          this.deleteTask(this.currentTaskId);
+        }
+      }
+      if (e.key === 'f' || e.key === 'F') {
+        if (!e.target.matches('input, textarea')) {
+          e.preventDefault();
+          const searchInput = document.getElementById('search-input');
+          if (searchInput) searchInput.focus();
+        }
+      }
+      if (e.key === '1' && !e.target.matches('input, textarea')) {
+        e.preventDefault();
+        this.setViewMode('compact');
+      }
+      if (e.key === '2' && !e.target.matches('input, textarea')) {
+        e.preventDefault();
+        this.setViewMode('detailed');
+      }
+      if (e.key === '3' && !e.target.matches('input, textarea')) {
+        e.preventDefault();
+        this.setViewMode('focus');
+      }
+    });
+  }
+
+  applyFilters() {
+    this.filters.bureau = document.getElementById('filter-bureau')?.value || '';
+    this.filters.qui = document.getElementById('filter-qui')?.value || '';
+    this.filters.projet = document.getElementById('filter-projet')?.value || '';
+    this.filters.statut = document.getElementById('filter-statut')?.value || '';
+    
+    const searchTerm = document.getElementById('search-input')?.value.toLowerCase() || '';
+    
+    let filteredRecords = this.currentRecords.filter(record => {
+      if (this.filters.bureau && Array.isArray(record.bureau)) {
+        const bureaux = record.bureau.slice(1);
+        if (!bureaux.includes(this.filters.bureau)) return false;
+      }
+      
+      if (this.filters.qui && Array.isArray(record.qui)) {
+        const responsables = record.qui.slice(1);
+        if (!responsables.includes(this.filters.qui)) return false;
+      }
+      
+      if (this.filters.projet && record.projet !== this.filters.projet) return false;
+      
+      if (this.filters.statut && record.statut !== this.filters.statut) return false;
+      
+      if (searchTerm) {
+        const searchableText = [
+          record.titre || '',
+          record.description || '',
+          record.projet || '',
+          record.strategie_objectif || '',
+          record.strategie_sous_objectif || '',
+          record.strategie_action || ''
+        ].join(' ').toLowerCase();
+        
+        if (!searchableText.includes(searchTerm)) return false;
+      }
+      
+      return true;
+    });
+    
+    const originalRecords = this.currentRecords;
+    this.currentRecords = filteredRecords;
+    
+    this.refreshKanban();
+    
+    this.currentRecords = originalRecords;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  new KanbanManager();
+});
