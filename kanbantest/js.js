@@ -471,7 +471,7 @@ exportSingleTaskHistory(taskId) {
   }
 }
 // === SYSTÈME D'HISTORIQUE AUTOMATIQUE DES DESCRIPTIONS ===
-/ === NOUVELLES MÉTHODES POUR L'HISTORIQUE DES DESCRIPTIONS ===
+// === NOUVELLES MÉTHODES POUR L'HISTORIQUE DES DESCRIPTIONS ===
 
   // Ajouter un horodatage à la description
   addTimestampToDescription(currentDescription, newContent, userName = null) {
