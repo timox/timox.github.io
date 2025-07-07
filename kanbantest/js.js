@@ -312,6 +312,164 @@ class KanbanManager {
     
     this.refreshKanban();
   }
+ //hist
+  howTaskHistory(taskId) {
+  const task = this.currentRecords.find(r => r.id === taskId);
+  if (!task) {
+    console.error('Tâche non trouvée:', taskId);
+    return;
+  }
+  
+  // Afficher dans la console (pour debug)
+  this.logTaskHistory(task);
+  
+  // Afficher dans la modal
+  this.openHistoryModal(task);
+}
+
+logTaskHistory(task) {
+  if (!task.historique_statuts) {
+    console.log('Pas d\'historique disponible pour cette tâche');
+    return;
+  }
+  
+  try {
+    const historyData = JSON.parse(task.historique_statuts);
+    console.log('=== HISTORIQUE DE LA TÂCHE ===');
+    console.log(`Tâche: ${task.titre}`);
+    console.log('Statuts:');
+    
+    historyData.historique.forEach((entry, index) => {
+      const duration = entry.duree_minutes ? 
+        `${Math.floor(entry.duree_minutes / 60)}h ${entry.duree_minutes % 60}m` : 
+        'En cours...';
+      
+      console.log(`${index + 1}. ${entry.statut}`);
+      console.log(`   Du: ${new Date(entry.date_entree).toLocaleString('fr-FR')}`);
+      console.log(`   Au: ${entry.date_sortie ? new Date(entry.date_sortie).toLocaleString('fr-FR') : 'En cours'}`);
+      console.log(`   Durée: ${duration}`);
+      if (entry.note) console.log(`   Note: ${entry.note}`);
+      console.log('');
+    });
+    
+  } catch (e) {
+    console.error('Erreur lors de l\'affichage de l\'historique:', e);
+  }
+}
+
+openHistoryModal(task) {
+  if (!task.historique_statuts) {
+    alert('Pas d\'historique disponible pour cette tâche');
+    return;
+  }
+  
+  try {
+    const historyData = JSON.parse(task.historique_statuts);
+    const history = historyData.historique || [];
+    
+    // Mettre à jour le titre
+    document.getElementById('history-modal-label').innerHTML = 
+      `<i class="bi bi-clock-history me-2"></i>Historique : ${task.titre}`;
+    
+    // Calculer les statistiques
+    const totalDuration = history.reduce((sum, entry) => sum + (entry.duree_minutes || 0), 0);
+    const totalDays = Math.round(totalDuration / (60 * 24) * 10) / 10;
+    const avgDuration = history.length > 0 ? Math.round(totalDuration / history.length) : 0;
+    
+    const statsHTML = `
+      <div class="row">
+        <div class="col-md-3">
+          <div class="stat-item">
+            <div class="stat-value">${history.length}</div>
+            <div class="stat-label">Étapes</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stat-item">
+            <div class="stat-value">${totalDays}j</div>
+            <div class="stat-label">Durée totale</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stat-item">
+            <div class="stat-value">${Math.round(avgDuration/60)}h</div>
+            <div class="stat-label">Moy. par étape</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stat-item">
+            <div class="stat-value">${task.statut}</div>
+            <div class="stat-label">Statut actuel</div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Créer la timeline
+    let timelineHTML = '';
+    history.forEach((entry, index) => {
+      const isCurrentStatus = index === history.length - 1 && !entry.date_sortie;
+      const duration = entry.duree_minutes ? 
+        `${Math.floor(entry.duree_minutes / 60)}h ${entry.duree_minutes % 60}m` : 
+        'En cours...';
+      
+      timelineHTML += `
+        <div class="timeline-entry ${isCurrentStatus ? 'current' : ''}">
+          <div class="timeline-status">${entry.statut}</div>
+          <div class="timeline-dates">
+            Du ${new Date(entry.date_entree).toLocaleString('fr-FR')}
+            ${entry.date_sortie ? `au ${new Date(entry.date_sortie).toLocaleString('fr-FR')}` : '(en cours)'}
+          </div>
+          <div class="timeline-duration">Durée: ${duration}</div>
+          ${entry.note ? `<div class="timeline-note"><i class="bi bi-info-circle me-1"></i>${entry.note}</div>` : ''}
+        </div>
+      `;
+    });
+    
+    document.getElementById('history-stats').innerHTML = statsHTML;
+    document.getElementById('history-timeline').innerHTML = timelineHTML;
+    
+    // Stocker l'ID de la tâche pour l'export
+    document.getElementById('btn-export-task-history').dataset.taskId = task.id;
+    
+    // Afficher la modal
+    new bootstrap.Modal(document.getElementById('history-modal')).show();
+    
+  } catch (e) {
+    console.error('Erreur lors de l\'ouverture de la modal:', e);
+    alert('Erreur lors de l\'affichage de l\'historique');
+  }
+}
+
+// 5. EXPORT DES DONNÉES POUR GANTT
+exportSingleTaskHistory(taskId) {
+  const task = this.currentRecords.find(r => r.id === taskId);
+  if (!task || !task.historique_statuts) return;
+  
+  try {
+    const historyData = JSON.parse(task.historique_statuts);
+    const history = historyData.historique || [];
+    
+    let csv = 'Tâche,Statut,Date_Début,Date_Fin,Durée_Minutes,Durée_Heures,Note\n';
+    
+    history.forEach(entry => {
+      const dureeHeures = entry.duree_minutes ? (entry.duree_minutes / 60).toFixed(1) : '';
+      csv += `"${task.titre}","${entry.statut}","${entry.date_entree}","${entry.date_sortie || ''}",${entry.duree_minutes || ''},${dureeHeures},"${entry.note || ''}"\n`;
+    });
+    
+    // Télécharger
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `historique_tache_${taskId}_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    
+  } catch (e) {
+    console.error('Erreur export:', e);
+  }
+}
 
   // === CRÉATION DES CARTES ===
   createTaskElementHTML(record) {
@@ -1157,6 +1315,21 @@ async handleDragEnd(evt, targetStatus) {
         }
       };
     }
+
+
+   document.addEventListener('click', (e) => {
+  if (e.target.closest('.btn-history')) {
+    e.stopPropagation();
+    const taskId = parseInt(e.target.closest('.btn-history').dataset.taskId);
+    if (taskId) this.showTaskHistory(taskId);
+  }
+});
+
+// Event listener pour l'export depuis la modal
+document.getElementById('btn-export-task-history')?.addEventListener('click', (e) => {
+  const taskId = parseInt(e.target.dataset.taskId);
+  if (taskId) this.exportSingleTaskHistory(taskId);
+});
     
     const filterElements = ['filter-bureau', 'filter-qui', 'filter-projet', 'filter-statut'];
     filterElements.forEach(filterId => {
