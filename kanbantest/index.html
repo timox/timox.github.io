@@ -804,6 +804,140 @@
       border-radius: 3px;
       margin-right: 0.3rem;
     }
+    /* === Bouton Historique === */
+.btn-history {
+  background: #e3f2fd;
+  color: #1976d2;
+  border: 1px solid #90caf9;
+  border-radius: 12px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.btn-history:hover {
+  background: #bbdefb;
+  border-color: #64b5f6;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(25, 118, 210, 0.2);
+}
+
+/* === Modal Historique === */
+.history-modal .modal-dialog {
+  max-width: 900px;
+}
+
+.history-timeline {
+  position: relative;
+  padding-left: 2rem;
+}
+
+.history-timeline::before {
+  content: '';
+  position: absolute;
+  left: 0.75rem;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #dee2e6;
+}
+
+.timeline-entry {
+  position: relative;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.timeline-entry::before {
+  content: '';
+  position: absolute;
+  left: -2.25rem;
+  top: 1rem;
+  width: 12px;
+  height: 12px;
+  background: #007bff;
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 0 0 2px #007bff;
+}
+
+.timeline-entry.current::before {
+  background: #28a745;
+  box-shadow: 0 0 0 2px #28a745;
+}
+
+.timeline-status {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+.timeline-dates {
+  color: #6c757d;
+  font-size: 0.9rem;
+  margin-bottom: 0.3rem;
+}
+
+.timeline-duration {
+  color: #007bff;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 0.3rem;
+}
+
+.timeline-note {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 4px;
+  padding: 0.5rem;
+  font-size: 0.85rem;
+  font-style: italic;
+  margin-top: 0.5rem;
+}
+
+/* === Bouton Export === */
+.btn-export-history {
+  background: #28a745;
+  border-color: #28a745;
+}
+
+.btn-export-history:hover {
+  background: #218838;
+  border-color: #1e7e34;
+}
+
+/* === Statistiques === */
+.history-stats {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 0.5rem;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #007bff;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
   </style>
 </head>
 <body>
