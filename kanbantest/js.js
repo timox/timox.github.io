@@ -1695,7 +1695,6 @@ displayDescriptionHistory(tache) {
     return;
   }
   
-  const formattedHistory = formatDescriptionForDisplay(tache.description);
   
   historyContainer.innerHTML = `
     <div class="card">
