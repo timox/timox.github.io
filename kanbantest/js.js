@@ -1674,7 +1674,8 @@ async handleDragEnd(evt, targetStatus) {
     });
   }
 
-// 6. FONCTION POUR AFFICHER L'HISTORIQUE DES DESCRIPTIONS
+// 6. FONCTION POUR AFFICHER L'HISTORIQUE DES DESCRIPTION
+/*
 displayDescriptionHistory(tache) {
   // Créer ou mettre à jour la zone d'historique des descriptions
   let historyContainer = document.getElementById('description-history');
@@ -1714,7 +1715,7 @@ displayDescriptionHistory(tache) {
     </div>
   `;
 }
-
+*/
 //
   setSelectedOptions(selectId, valuesWithL) {
     const sel = document.getElementById(selectId);
