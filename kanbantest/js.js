@@ -368,111 +368,129 @@ class KanbanManager {
       <div class="compact-title editable-zone">${record.titre || ''}</div>
     </div>`;
   }
-
-  createDetailedTaskHTML(record) {
-    const isExpanded = this.expandedCards.has(record.id);
-    
-    const prio = this.calculerPriorite(record.urgence, record.impact);
-    let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
-    
-    let projetTag = '';
-    if (record.projet) {
-      const tooltip = [
-        record.strategie_objectif ? `Objectif: ${record.strategie_objectif}` : '',
-        record.strategie_sous_objectif ? `Sous-objectif: ${record.strategie_sous_objectif}` : '',
-        record.strategie_action ? `Action: ${record.strategie_action}` : ''
-      ].filter(Boolean).join('\n');
-      projetTag = `<span class="badge bg-info text-dark" title="${tooltip.replace(/"/g, '&quot;')}">${record.projet}</span>`;
-    }
-    
-    let resumeDesc = '';
-    if (record.description) {
-      const mots = record.description.split(/\s+/).slice(0, 10).join(' ');
-      resumeDesc = `<div class="desc-resume">${mots}${record.description.split(/\s+/).length > 10 ? '…' : ''}</div>`;
-    }
-    
-    let personnes = '';
-    if (Array.isArray(record.qui) && record.qui.length > 1) {
-      personnes = '<div class="personnes-list">' +
-        record.qui.slice(1).map(q => `<span class="personne-badge">${q}</span>`).join(' ') +
-        '</div>';
-    }
-    
-    let datesElement = '';
-    const hasDateDebut = record.date_debut;
-    const hasDateEcheance = record.date_echeance;
-    
-    if (hasDateDebut || hasDateEcheance) {
-      let dateInfo = [];
-      
-      if (hasDateDebut) {
-        const debutFormatted = this.formatDate(record.date_debut);
-        dateInfo.push(`<span class="date-debut" title="Début: ${debutFormatted}">
-          <i class="bi bi-play-circle"></i> ${debutFormatted}
-        </span>`);
+  //
+createDetailedTaskHTML(record) {
+  const isExpanded = this.expandedCards.has(record.id);
+  
+  const prio = this.calculerPriorite(record.urgence, record.impact);
+  let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
+  
+  // NOUVEAU : Bouton historique
+  let historyButton = '';
+  if (record.historique_statuts) {
+    try {
+      const historyData = JSON.parse(record.historique_statuts);
+      const historyCount = historyData.historique ? historyData.historique.length : 0;
+      if (historyCount > 1) {
+        historyButton = `<button class="btn-history" title="Voir l'historique (${historyCount} étapes)" data-task-id="${record.id}">
+          <i class="bi bi-clock-history"></i> ${historyCount}
+        </button>`;
       }
-      
-      if (hasDateEcheance) {
-        const echeanceDate = new Date(record.date_echeance);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        echeanceDate.setHours(0, 0, 0, 0);
-        
-        const diffTime = echeanceDate.getTime() - today.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        let echeanceClass = 'echeance-ok';
-        let echeanceText = '';
-        
-        if (diffDays < 0) {
-          echeanceClass = 'echeance-depassee';
-          echeanceText = `Dépassé (${Math.abs(diffDays)}j)`;
-        } else if (diffDays === 0) {
-          echeanceClass = 'echeance-aujourd-hui';
-          echeanceText = "Aujourd'hui";
-        } else if (diffDays <= 3) {
-          echeanceClass = 'echeance-urgent';
-          echeanceText = `${diffDays}j restant${diffDays > 1 ? 's' : ''}`;
-        } else if (diffDays <= 7) {
-          echeanceClass = 'echeance-bientot';
-          echeanceText = `${diffDays}j restant${diffDays > 1 ? 's' : ''}`;
-        } else {
-          echeanceText = `J+${diffDays}`;
-        }
-        
-        const echeanceFormatted = this.formatDate(record.date_echeance);
-        dateInfo.push(`<span class="date-echeance ${echeanceClass}" title="Échéance: ${echeanceFormatted}">
-          <i class="bi bi-calendar-x"></i> ${echeanceText}
-        </span>`);
-      }
-      
-      if (dateInfo.length > 0) {
-        datesElement = `<div class="dates-container">${dateInfo.join('')}</div>`;
-      }
+    } catch (e) {
+      // Ignore les erreurs de parsing
     }
-    
-    const hasEcheanceClass = hasDateEcheance ? 'has-echeance' : '';
-    const hasDateDebutClass = hasDateDebut ? 'has-debut' : '';
-    const collapseButton = (this.viewMode === 'compact' && isExpanded) ? 
-      `<button class="btn-collapse" title="Réduire"><i class="bi bi-chevron-up"></i></button>` : '';
-    
-    return `<div class="kanban-item kanban-item-detailed ${hasEcheanceClass} ${hasDateDebutClass}" data-id="${record.id}">
-      <div class="drag-handle">
-        <i class="bi bi-grip-vertical"></i>
-      </div>
-      <div class="kanban-item-header">
-        <div>${prioBadge}</div>
-        <div class="item-badges">
-          ${projetTag}
-          ${collapseButton}
-        </div>
-      </div>
-      <div class="item-title editable-zone">${record.titre || ''}</div>
-      ${resumeDesc}
-      ${datesElement}
-      ${personnes}
-    </div>`;
   }
+  
+  let projetTag = '';
+  if (record.projet) {
+    const tooltip = [
+      record.strategie_objectif ? `Objectif: ${record.strategie_objectif}` : '',
+      record.strategie_sous_objectif ? `Sous-objectif: ${record.strategie_sous_objectif}` : '',
+      record.strategie_action ? `Action: ${record.strategie_action}` : ''
+    ].filter(Boolean).join('\n');
+    projetTag = `<span class="badge bg-info text-dark" title="${tooltip.replace(/"/g, '&quot;')}">${record.projet}</span>`;
+  }
+  
+  let resumeDesc = '';
+  if (record.description) {
+    const mots = record.description.split(/\s+/).slice(0, 10).join(' ');
+    resumeDesc = `<div class="desc-resume">${mots}${record.description.split(/\s+/).length > 10 ? '…' : ''}</div>`;
+  }
+  
+  let personnes = '';
+  if (Array.isArray(record.qui) && record.qui.length > 1) {
+    personnes = '<div class="personnes-list">' +
+      record.qui.slice(1).map(q => `<span class="personne-badge">${q}</span>`).join(' ') +
+      '</div>';
+  }
+  
+  let datesElement = '';
+  const hasDateDebut = record.date_debut;
+  const hasDateEcheance = record.date_echeance;
+  
+  if (hasDateDebut || hasDateEcheance) {
+    let dateInfo = [];
+    
+    if (hasDateDebut) {
+      const debutFormatted = this.formatDate(record.date_debut);
+      dateInfo.push(`<span class="date-debut" title="Début: ${debutFormatted}">
+        <i class="bi bi-play-circle"></i> ${debutFormatted}
+      </span>`);
+    }
+    
+    if (hasDateEcheance) {
+      const echeanceDate = new Date(record.date_echeance);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      echeanceDate.setHours(0, 0, 0, 0);
+      
+      const diffTime = echeanceDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      let echeanceClass = 'echeance-ok';
+      let echeanceText = '';
+      
+      if (diffDays < 0) {
+        echeanceClass = 'echeance-depassee';
+        echeanceText = `Dépassé (${Math.abs(diffDays)}j)`;
+      } else if (diffDays === 0) {
+        echeanceClass = 'echeance-aujourd-hui';
+        echeanceText = "Aujourd'hui";
+      } else if (diffDays <= 3) {
+        echeanceClass = 'echeance-urgent';
+        echeanceText = `${diffDays}j restant${diffDays > 1 ? 's' : ''}`;
+      } else if (diffDays <= 7) {
+        echeanceClass = 'echeance-bientot';
+        echeanceText = `${diffDays}j restant${diffDays > 1 ? 's' : ''}`;
+      } else {
+        echeanceText = `J+${diffDays}`;
+      }
+      
+      const echeanceFormatted = this.formatDate(record.date_echeance);
+      dateInfo.push(`<span class="date-echeance ${echeanceClass}" title="Échéance: ${echeanceFormatted}">
+        <i class="bi bi-calendar-x"></i> ${echeanceText}
+      </span>`);
+    }
+    
+    if (dateInfo.length > 0) {
+      datesElement = `<div class="dates-container">${dateInfo.join('')}</div>`;
+    }
+  }
+  
+  const hasEcheanceClass = hasDateEcheance ? 'has-echeance' : '';
+  const hasDateDebutClass = hasDateDebut ? 'has-debut' : '';
+  const collapseButton = (this.viewMode === 'compact' && isExpanded) ? 
+    `<button class="btn-collapse" title="Réduire"><i class="bi bi-chevron-up"></i></button>` : '';
+  
+  return `<div class="kanban-item kanban-item-detailed ${hasEcheanceClass} ${hasDateDebutClass}" data-id="${record.id}">
+    <div class="drag-handle">
+      <i class="bi bi-grip-vertical"></i>
+    </div>
+    <div class="kanban-item-header">
+      <div>${prioBadge}</div>
+      <div class="item-badges">
+        ${projetTag}
+        ${historyButton}
+        ${collapseButton}
+      </div>
+    </div>
+    <div class="item-title editable-zone">${record.titre || ''}</div>
+    ${resumeDesc}
+    ${datesElement}
+    ${personnes}
+  </div>`;
+}
+
 
   formatDate(dateStr) {
     if (!dateStr) return '';
