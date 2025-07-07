@@ -470,7 +470,104 @@ exportSingleTaskHistory(taskId) {
     console.error('Erreur export:', e);
   }
 }
+// === SYSTÈME D'HISTORIQUE AUTOMATIQUE DES DESCRIPTIONS ===
 
+// 1. FONCTION POUR AJOUTER UN HORODATAGE À LA DESCRIPTION
+function addTimestampToDescription(currentDescription, newContent, userName = null) {
+  const now = new Date();
+  const timestamp = now.toLocaleString('fr-FR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  
+  const user = userName ? ` (${userName})` : '';
+  const separator = '---';
+  
+  // Si pas de nouvelle description, retourner l'ancienne
+  if (!newContent || newContent.trim() === '') {
+    return currentDescription || '';
+  }
+  
+  // Si pas d'ancienne description, créer la première entrée
+  if (!currentDescription || currentDescription.trim() === '') {
+    return `[${timestamp}${user}]\n${newContent.trim()}`;
+  }
+  
+  // Vérifier si on modifie vraiment le contenu
+  const lines = currentDescription.split('\n');
+  const lastContentIndex = lines.findIndex(line => line.startsWith('[') && line.includes(']'));
+  
+  if (lastContentIndex >= 0) {
+    // Extraire le dernier contenu (après le dernier timestamp)
+    const lastContent = lines.slice(lastContentIndex + 1)
+      .join('\n')
+      .replace(/^---\s*$/gm, '') // Enlever les séparateurs
+      .trim();
+    
+    // Si le contenu n'a pas changé, ne pas ajouter d'entrée
+    if (lastContent === newContent.trim()) {
+      return currentDescription;
+    }
+  }
+  
+  // Ajouter la nouvelle entrée avec séparateur
+  return `[${timestamp}${user}]\n${newContent.trim()}\n\n${separator}\n\n${currentDescription}`;
+}
+
+// 2. FONCTION POUR FORMATER L'AFFICHAGE DE LA DESCRIPTION
+function formatDescriptionForDisplay(description) {
+  if (!description) return '';
+  
+  // Diviser en sections par les timestamps
+  const sections = description.split(/\n\s*---\s*\n/);
+  
+  return sections.map((section, index) => {
+    const lines = section.trim().split('\n');
+    const timestampLine = lines.find(line => line.match(/^\[.*\]$/));
+    
+    if (timestampLine) {
+      const content = lines.slice(1).join('\n').trim();
+      const isLatest = index === 0;
+      
+      return `
+        <div class="description-entry ${isLatest ? 'latest' : 'historical'}">
+          <div class="description-timestamp">${timestampLine}</div>
+          <div class="description-content">${content}</div>
+        </div>
+      `;
+    } else {
+      // Ancienne description sans timestamp
+      return `
+        <div class="description-entry legacy">
+          <div class="description-content">${section}</div>
+        </div>
+      `;
+    }
+  }).join('');
+}
+
+// 3. FONCTION POUR EXTRAIRE SEULEMENT LA DERNIÈRE DESCRIPTION
+function getLatestDescription(description) {
+  if (!description) return '';
+  
+  const lines = description.split('\n');
+  const firstTimestampIndex = lines.findIndex(line => line.match(/^\[.*\]$/));
+  
+  if (firstTimestampIndex >= 0) {
+    // Trouver la fin de cette section (avant le prochain séparateur)
+    const separatorIndex = lines.findIndex((line, index) => 
+      index > firstTimestampIndex && line.trim() === '---'
+    );
+    
+    const endIndex = separatorIndex >= 0 ? separatorIndex : lines.length;
+    return lines.slice(firstTimestampIndex + 1, endIndex).join('\n').trim();
+  }
+  
+  return description; // Ancienne description sans timestamp
+}
   // === CRÉATION DES CARTES ===
   createTaskElementHTML(record) {
     const isExpanded = this.expandedCards.has(record.id);
@@ -831,102 +928,154 @@ createDetailedTaskHTML(record) {
   }
 
   // === SAUVEGARDE ET GESTION DES DONNÉES ===
-  async saveTask() {
-    try {
-      let dateEcheance = '';
-      let dateDebut = '';
+  // 4. MODIFICATION DE LA FONCTION saveTask
+async saveTask() {
+  try {
+    let dateEcheance = '';
+    let dateDebut = '';
+    
+    const delaiInput = document.getElementById('popup-delai');
+    if (delaiInput && delaiInput.value.trim()) {
+      dateEcheance = delaiInput.value.trim();
       
-      const delaiInput = document.getElementById('popup-delai');
-      if (delaiInput && delaiInput.value.trim()) {
-        dateEcheance = delaiInput.value.trim();
-        
-        if (!this.currentTaskId) {
-          dateDebut = new Date().toISOString().slice(0,10);
-        } else {
-          const existingRecord = this.currentRecords.find(r => r.id === this.currentTaskId);
-          dateDebut = existingRecord?.date_debut || '';
-        }
+      if (!this.currentTaskId) {
+        dateDebut = new Date().toISOString().slice(0,10);
       } else {
-        dateEcheance = null;
-        dateDebut = null;
+        const existingRecord = this.currentRecords.find(r => r.id === this.currentTaskId);
+        dateDebut = existingRecord?.date_debut || '';
       }
-      
-      const titre = document.getElementById('popup-titre').value;
-      const description = document.getElementById('popup-description').value;
-      const statut = document.getElementById('popup-statut-text').value;
-      const projet = document.getElementById('popup-projet').value;
-      const urgence = document.getElementById('popup-urgence').value;
-      const impact = document.getElementById('popup-impact').value;
-      const bureau = Array.from(document.getElementById('popup-bureau').selectedOptions).map(o => o.value);
-      const qui = Array.from(document.getElementById('popup-qui').selectedOptions).map(o => o.value);
-      
-      const strategie_objectif = document.getElementById('strategie-objectif').value;
-      const strategie_sous_objectif = document.getElementById('strategie-sous-objectif').value;
-      const strategie_action = document.getElementById('strategie-action').value;
-      
-      const row = {
-        titre, 
-        description, 
-        statut, 
-        projet, 
-        urgence, 
-        impact,
-        bureau: ['L', ...bureau],
-        qui: ['L', ...qui],
-        strategie_objectif,
-        strategie_sous_objectif,
-        strategie_action
-      };
-
-      if (this.availableColumns.has('date_debut')) {
-        row.date_debut = dateDebut;
-      }
-      
-      if (this.availableColumns.has('date_echeance')) {
-        row.date_echeance = dateEcheance;
-      }
-
-      if (this.currentTaskId) {
-        await grist.docApi.applyUserActions([
-          ['UpdateRecord', TABLE_ID, this.currentTaskId, row]
-        ]);
-        console.log(`Tâche ${this.currentTaskId} mise à jour avec succès`);
-        
-        const recordIndex = this.currentRecords.findIndex(r => r.id === this.currentTaskId);
-        if (recordIndex !== -1) {
-          this.currentRecords[recordIndex] = { ...this.currentRecords[recordIndex], ...row };
-          this.currentRecords[recordIndex].date_debut = dateDebut;
-          this.currentRecords[recordIndex].date_echeance = dateEcheance;
-        }
-        
-      } else {
-        const result = await grist.docApi.applyUserActions([
-          ['AddRecord', TABLE_ID, null, row]
-        ]);
-        console.log('Nouvelle tâche créée avec succès');
-        
-        if (result && result[0] && result[0].id) {
-          const newRecord = { id: result[0].id, ...row };
-          newRecord.date_debut = dateDebut;
-          newRecord.date_echeance = dateEcheance;
-          this.currentRecords.push(newRecord);
-        }
-      }
-      
-      this.modal.hide();
-      this.refreshKanban();
-      
-    } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
-      
-      let errorMessage = error.message;
-      if (errorMessage.includes("KeyError 'date_debut'") || errorMessage.includes("KeyError 'date_echeance'")) {
-        errorMessage = "Les colonnes de dates (date_debut/date_echeance) n'existent pas dans votre table Grist. Vous pouvez continuer à utiliser l'application, mais les dates ne seront pas sauvegardées.";
-      }
-      
-      displayError(`Erreur lors de la sauvegarde: ${errorMessage}`);
+    } else {
+      dateEcheance = null;
+      dateDebut = null;
     }
+    
+    const titre = document.getElementById('popup-titre').value;
+    const newDescription = document.getElementById('popup-description').value;
+    const statut = document.getElementById('popup-statut-text').value;
+    const projet = document.getElementById('popup-projet').value;
+    const urgence = document.getElementById('popup-urgence').value;
+    const impact = document.getElementById('popup-impact').value;
+    const bureau = Array.from(document.getElementById('popup-bureau').selectedOptions).map(o => o.value);
+    const qui = Array.from(document.getElementById('popup-qui').selectedOptions).map(o => o.value);
+    
+    const strategie_objectif = document.getElementById('strategie-objectif').value;
+    const strategie_sous_objectif = document.getElementById('strategie-sous-objectif').value;
+    const strategie_action = document.getElementById('strategie-action').value;
+    
+    // NOUVEAU : Gestion de l'historique de description
+    let finalDescription = newDescription;
+    
+    if (this.currentTaskId) {
+      // Modification d'une tâche existante
+      const existingRecord = this.currentRecords.find(r => r.id === this.currentTaskId);
+      const currentDescription = existingRecord?.description || '';
+      
+      // Obtenir l'utilisateur actuel (si disponible)
+      let currentUser = null;
+      try {
+        const userInfo = await grist.docApi.getDocInfo();
+        currentUser = userInfo?.user?.name || userInfo?.user?.email || null;
+      } catch (e) {
+        console.log('Info utilisateur non disponible');
+      }
+      
+      // Ajouter l'horodatage si la description a changé
+      finalDescription = addTimestampToDescription(currentDescription, newDescription, currentUser);
+      
+      console.log('Description mise à jour:', {
+        avant: currentDescription,
+        nouveau: newDescription,
+        final: finalDescription
+      });
+      
+    } else {
+      // Nouvelle tâche - ajouter un timestamp si il y a une description
+      if (newDescription && newDescription.trim()) {
+        let currentUser = null;
+        try {
+          const userInfo = await grist.docApi.getDocInfo();
+          currentUser = userInfo?.user?.name || userInfo?.user?.email || null;
+        } catch (e) {
+          // Ignore
+        }
+        
+        const now = new Date().toLocaleString('fr-FR', {
+          year: 'numeric',
+          month: '2-digit', 
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
+        const user = currentUser ? ` (${currentUser})` : '';
+        finalDescription = `[${now}${user}]\n${newDescription.trim()}`;
+      }
+    }
+    
+    const row = {
+      titre, 
+      description: finalDescription, 
+      statut, 
+      projet, 
+      urgence, 
+      impact,
+      bureau: ['L', ...bureau],
+      qui: ['L', ...qui],
+      strategie_objectif,
+      strategie_sous_objectif,
+      strategie_action
+    };
+
+    if (this.availableColumns.has('date_debut')) {
+      row.date_debut = dateDebut;
+    }
+    
+    if (this.availableColumns.has('date_echeance')) {
+      row.date_echeance = dateEcheance;
+    }
+
+    if (this.currentTaskId) {
+      await grist.docApi.applyUserActions([
+        ['UpdateRecord', TABLE_ID, this.currentTaskId, row]
+      ]);
+      console.log(`Tâche ${this.currentTaskId} mise à jour avec succès`);
+      
+      const recordIndex = this.currentRecords.findIndex(r => r.id === this.currentTaskId);
+      if (recordIndex !== -1) {
+        this.currentRecords[recordIndex] = { ...this.currentRecords[recordIndex], ...row };
+        this.currentRecords[recordIndex].date_debut = dateDebut;
+        this.currentRecords[recordIndex].date_echeance = dateEcheance;
+      }
+      
+    } else {
+      const result = await grist.docApi.applyUserActions([
+        ['AddRecord', TABLE_ID, null, row]
+      ]);
+      console.log('Nouvelle tâche créée avec succès');
+      
+      if (result && result[0] && result[0].id) {
+        const newRecord = { id: result[0].id, ...row };
+        newRecord.date_debut = dateDebut;
+        newRecord.date_echeance = dateEcheance;
+        this.currentRecords.push(newRecord);
+      }
+    }
+    
+    this.modal.hide();
+    this.refreshKanban();
+    
+  } catch (error) {
+    console.error('Erreur lors de la sauvegarde:', error);
+    
+    let errorMessage = error.message;
+    if (errorMessage.includes("KeyError 'date_debut'") || errorMessage.includes("KeyError 'date_echeance'")) {
+      errorMessage = "Les colonnes de dates (date_debut/date_echeance) n'existent pas dans votre table Grist. Vous pouvez continuer à utiliser l'application, mais les dates ne seront pas sauvegardées.";
+    }
+    
+    displayError(`Erreur lors de la sauvegarde: ${errorMessage}`);
   }
+}
+
 //
 showTaskHistory(taskId) {
   const task = this.currentRecords.find(r => r.id === taskId);
@@ -1318,41 +1467,91 @@ async handleDragEnd(evt, targetStatus) {
     updateSousObjectif();
   }
 
-  openPopup(tache = {}) {
-    if (!this.modal || !this.modalElement) return;
-    const isNewTask = !tache.id;
-    this.currentTaskId = tache.id || null;
-    
-    const btnDelete = document.getElementById('btn-delete-task');
-    if (btnDelete) {
-      btnDelete.style.display = isNewTask ? 'none' : 'inline-block';
-    }
-    
-    const trySet = (id, value) => { const el = document.getElementById(id); if (el) el.value = value || ""; };
-    trySet('popup-id', tache.id || '');
-    trySet('popup-titre', tache.titre || '');
-    trySet('popup-description', tache.description || '');
-    trySet('popup-statut-text', tache.statut || (isNewTask ? (STATUTS[0]?.id || '') : ''));
-    trySet('popup-projet', tache.projet || '');
-    trySet('popup-urgence', tache.urgence || '');
-    trySet('popup-impact', tache.impact || '');
-    this.setSelectedOptions('popup-bureau', tache.bureau);
-    this.setSelectedOptions('popup-qui', tache.qui);
-    
-    this.populateStrategieLists({
-      objectif: tache.strategie_objectif,
-      sous_objectif: tache.strategie_sous_objectif,
-      action: tache.strategie_action
-    });
-    
-    const delaiInput = document.getElementById('popup-delai');
-    if (delaiInput && tache.date_echeance) {
-      delaiInput.value = tache.date_echeance;
-    }
-    
-    this.modal.show();
+  // 5. MODIFICATION DE openPopup POUR AFFICHER SEULEMENT LA DERNIÈRE DESCRIPTION
+openPopup(tache = {}) {
+  if (!this.modal || !this.modalElement) return;
+  const isNewTask = !tache.id;
+  this.currentTaskId = tache.id || null;
+  
+  const btnDelete = document.getElementById('btn-delete-task');
+  if (btnDelete) {
+    btnDelete.style.display = isNewTask ? 'none' : 'inline-block';
   }
+  
+  const trySet = (id, value) => { const el = document.getElementById(id); if (el) el.value = value || ""; };
+  trySet('popup-id', tache.id || '');
+  trySet('popup-titre', tache.titre || '');
+  
+  // NOUVEAU : Afficher seulement la dernière description dans le champ d'édition
+  const latestDescription = getLatestDescription(tache.description || '');
+  trySet('popup-description', latestDescription);
+  
+  trySet('popup-statut-text', tache.statut || (isNewTask ? (STATUTS[0]?.id || '') : ''));
+  trySet('popup-projet', tache.projet || '');
+  trySet('popup-urgence', tache.urgence || '');
+  trySet('popup-impact', tache.impact || '');
+  this.setSelectedOptions('popup-bureau', tache.bureau);
+  this.setSelectedOptions('popup-qui', tache.qui);
+  
+  this.populateStrategieLists({
+    objectif: tache.strategie_objectif,
+    sous_objectif: tache.strategie_sous_objectif,
+    action: tache.strategie_action
+  });
+  
+  const delaiInput = document.getElementById('popup-delai');
+  if (delaiInput && tache.date_echeance) {
+    delaiInput.value = tache.date_echeance;
+  }
+  
+  // NOUVEAU : Afficher l'historique complet des descriptions sous le champ
+  this.displayDescriptionHistory(tache);
+  
+  this.modal.show();
+}
+/ 6. FONCTION POUR AFFICHER L'HISTORIQUE DES DESCRIPTIONS
+displayDescriptionHistory(tache) {
+  // Créer ou mettre à jour la zone d'historique des descriptions
+  let historyContainer = document.getElementById('description-history');
+  
+  if (!historyContainer) {
+    // Créer le conteneur s'il n'existe pas
+    const descriptionField = document.getElementById('popup-description');
+    historyContainer = document.createElement('div');
+    historyContainer.id = 'description-history';
+    historyContainer.className = 'description-history mt-2';
+    
+    // Insérer après le champ description
+    descriptionField.parentNode.insertBefore(historyContainer, descriptionField.nextSibling);
+  }
+  
+  if (!tache.description) {
+    historyContainer.innerHTML = '';
+    return;
+  }
+  
+  const formattedHistory = formatDescriptionForDisplay(tache.description);
+  
+  historyContainer.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <h6 class="mb-0">
+          <i class="bi bi-clock-history me-2"></i>Historique des modifications
+          <button class="btn btn-sm btn-outline-secondary float-end" type="button" data-bs-toggle="collapse" data-bs-target="#description-history-content">
+            <i class="bi bi-chevron-down"></i>
+          </button>
+        </h6>
+      </div>
+      <div class="collapse" id="description-history-content">
+        <div class="card-body description-history-content">
+          ${formattedHistory}
+        </div>
+      </div>
+    </div>
+  `;
+}
 
+//
   setSelectedOptions(selectId, valuesWithL) {
     const sel = document.getElementById(selectId);
     if (!sel) return;
