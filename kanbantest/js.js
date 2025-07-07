@@ -22,16 +22,102 @@ const DEFAULT_PROJETS = [
 
 const TABLE_ID = "Ssir_principale_task";
 
-// Colonnes obligatoires
+// 
+const HISTORY_COLUMNS = ['historique_statuts', 'date_derniere_maj', 'statut_precedent'];
+
+// 
 const REQUIRED_COLUMNS = [
   'id', 'titre', 'description', 'statut', 'bureau', 'qui', 'urgence', 'impact',
-  'projet', 'strategie_objectif', 'strategie_sous_objectif', 'strategie_action', 'notes'
+  'projet', 'strategie_objectif', 'strategie_sous_objectif', 'strategie_action', 'notes',
+  // NOUVELLES COLONNES POUR L'HISTORIQUE
+  'historique_statuts', 'date_derniere_maj', 'statut_precedent'
 ];
 
 // Colonnes optionnelles pour les dates
 const OPTIONAL_COLUMNS = ['date_debut', 'date_echeance'];
 
 let projetsDynamiques = [];
+//fonction utilitaires
+function updateStatusHistory(record, newStatus, userId = null) {
+  const now = new Date().toISOString();
+  
+  try {
+    let historyData;
+    if (record.historique_statuts) {
+      historyData = JSON.parse(record.historique_statuts);
+    } else {
+      // Première utilisation : créer l'historique
+      historyData = {
+        historique: [],
+        version: 1
+      };
+      
+      // Ajouter le statut précédent si il existe
+      if (record.statut) {
+        const estimatedStartDate = record.date_creation || 
+                                 record.date_debut || 
+                                 new Date(Date.now() - 24*60*60*1000).toISOString();
+        
+        historyData.historique.push({
+          statut: record.statut,
+          date_entree: estimatedStartDate,
+          date_sortie: now,
+          duree_minutes: Math.round((new Date(now) - new Date(estimatedStartDate)) / (1000 * 60)),
+          utilisateur: userId,
+          note: "Reconstitué automatiquement"
+        });
+      }
+    }
+    
+    // Fermer le statut actuel s'il existe
+    if (historyData.historique.length > 0) {
+      const dernierStatut = historyData.historique[historyData.historique.length - 1];
+      if (dernierStatut.date_sortie === null) {
+        dernierStatut.date_sortie = now;
+        dernierStatut.duree_minutes = Math.round(
+          (new Date(now) - new Date(dernierStatut.date_entree)) / (1000 * 60)
+        );
+      }
+    }
+    
+    // Ajouter le nouveau statut
+    historyData.historique.push({
+      statut: newStatus,
+      date_entree: now,
+      date_sortie: null,
+      duree_minutes: null,
+      utilisateur: userId
+    });
+    
+    return {
+      historique_statuts: JSON.stringify(historyData),
+      date_derniere_maj: now,
+      statut_precedent: record.statut
+    };
+    
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de l\'historique:', error);
+    
+    // Fallback simple
+    const fallbackHistory = {
+      historique: [{
+        statut: newStatus,
+        date_entree: now,
+        date_sortie: null,
+        duree_minutes: null,
+        utilisateur: userId,
+        note: "Historique reconstruit après erreur"
+      }],
+      version: 1
+    };
+    
+    return {
+      historique_statuts: JSON.stringify(fallbackHistory),
+      date_derniere_maj: now,
+      statut_precedent: record.statut || 'Inconnu'
+    };
+  }
+}
 
 function displayError(message) {
   console.error("ERREUR:", message);
@@ -665,28 +751,132 @@ class KanbanManager {
       displayError(`Erreur lors de la sauvegarde: ${errorMessage}`);
     }
   }
+//
+showTaskHistory(taskId) {
+  const task = this.currentRecords.find(r => r.id === taskId);
+  if (!task || !task.historique_statuts) {
+    console.log('Pas d\'historique disponible pour cette tâche');
+    return;
+  }
+  
+  try {
+    const historyData = JSON.parse(task.historique_statuts);
+    console.log('=== HISTORIQUE DE LA TÂCHE ===');
+    console.log(`Tâche: ${task.titre}`);
+    console.log('Statuts:');
+    
+    historyData.historique.forEach((entry, index) => {
+      const duration = entry.duree_minutes ? 
+        `${Math.floor(entry.duree_minutes / 60)}h ${entry.duree_minutes % 60}m` : 
+        'En cours...';
+      
+      console.log(`${index + 1}. ${entry.statut}`);
+      console.log(`   Du: ${new Date(entry.date_entree).toLocaleString('fr-FR')}`);
+      console.log(`   Au: ${entry.date_sortie ? new Date(entry.date_sortie).toLocaleString('fr-FR') : 'En cours'}`);
+      console.log(`   Durée: ${duration}`);
+      if (entry.note) console.log(`   Note: ${entry.note}`);
+      console.log('');
+    });
+    
+  } catch (e) {
+    console.error('Erreur lors de l\'affichage de l\'historique:', e);
+  }
+}
+//
+exportHistoryData() {
+  const exportData = this.currentRecords.map(task => {
+    let history = [];
+    try {
+      if (task.historique_statuts) {
+        const historyData = JSON.parse(task.historique_statuts);
+        history = historyData.historique || [];
+      }
+    } catch (e) {
+      console.warn(`Erreur parsing historique tâche ${task.id}:`, e);
+    }
+    
+    return {
+      id: task.id,
+      titre: task.titre,
+      projet: task.projet,
+      statut_actuel: task.statut,
+      historique: history,
+      duree_totale_minutes: history.reduce((total, entry) => {
+        return total + (entry.duree_minutes || 0);
+      }, 0)
+    };
+  }).filter(task => task.historique.length > 0);
+  
+  console.log('Données d\'historique:', exportData);
+  
+  // Créer un CSV simple
+  let csv = 'ID,Titre,Projet,Statut,Historique_Statut,Date_Entree,Date_Sortie,Duree_Minutes\n';
+  
+  exportData.forEach(task => {
+    task.historique.forEach(entry => {
+      csv += `${task.id},"${task.titre}","${task.projet}","${task.statut_actuel}","${entry.statut}","${entry.date_entree}","${entry.date_sortie || ''}",${entry.duree_minutes || ''}\n`;
+    });
+  });
+  
+  // Télécharger le CSV
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `historique_kanban_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  window.URL.revokeObjectURL(url);
+}
 
-  async handleDragEnd(evt, targetStatus) {
-    if (!evt.item || !evt.item.dataset) return;
+//
+async handleDragEnd(evt, targetStatus) {
+  if (!evt.item || !evt.item.dataset) return;
+  
+  const id = parseInt(evt.item.dataset.id, 10);
+  if (isNaN(id)) return;
+  
+  const record = this.currentRecords.find(r => r.id === id);
+  if (!record) return;
+  
+  const newStatus = evt.to.dataset.status;
+  
+  if (record.statut === newStatus) return;
+  
+  console.log(`Déplacement de la tâche ${id} de "${record.statut}" vers "${newStatus}"`);
+  
+  try {
+    // NOUVEAU : Préparer les données avec historique
+    const historyUpdate = updateStatusHistory(record, newStatus, null);
+    const updateData = {
+      statut: newStatus,
+      ...historyUpdate
+    };
     
-    const id = parseInt(evt.item.dataset.id, 10);
-    if (isNaN(id)) return;
+    await grist.docApi.applyUserActions([
+      ['UpdateRecord', TABLE_ID, id, updateData]
+    ]);
     
-    const record = this.currentRecords.find(r => r.id === id);
-    if (!record) return;
+    console.log(`Tâche ${id} mise à jour avec historique`);
     
-    const newStatus = evt.to.dataset.status;
+    // Mettre à jour localement
+    const recordIndex = this.currentRecords.findIndex(r => r.id === id);
+    if (recordIndex !== -1) {
+      this.currentRecords[recordIndex] = { 
+        ...this.currentRecords[recordIndex], 
+        ...updateData 
+      };
+    }
     
-    if (record.statut === newStatus) return;
+    this.refreshKanban();
     
-    console.log(`Déplacement de la tâche ${id} vers ${newStatus}`);
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour avec historique:', error);
     
+    // Fallback vers l'ancienne méthode si les colonnes n'existent pas
     try {
       await grist.docApi.applyUserActions([
         ['UpdateRecord', TABLE_ID, id, { statut: newStatus }]
       ]);
-      
-      console.log(`Tâche ${id} mise à jour avec succès`);
       
       const recordIndex = this.currentRecords.findIndex(r => r.id === id);
       if (recordIndex !== -1) {
@@ -694,13 +884,16 @@ class KanbanManager {
       }
       
       this.refreshKanban();
+      console.log('Fallback réussi - historique non sauvegardé');
       
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour:', error);
-      displayError(`Erreur lors du déplacement de la tâche: ${error.message}`);
+    } catch (fallbackError) {
+      console.error('Erreur même en fallback:', fallbackError);
+      displayError(`Erreur lors du déplacement de la tâche: ${fallbackError.message}`);
       this.refreshKanban();
     }
   }
+}
+
 
   calculerPriorite(u, i) {
     const imp = String(i || '').trim().toLowerCase();
@@ -934,7 +1127,10 @@ class KanbanManager {
   initEventListeners() {
     document.getElementById('btn-save-task').onclick = () => this.saveTask();
     document.getElementById('btn-nouvelle-tache').onclick = () => this.openPopup();
-    
+    const btnExportHistory = document.getElementById('btn-export-history');
+    if (btnExportHistory) {
+      btnExportHistory.onclick = () => this.exportHistoryData();
+    }
     const btnDelete = document.getElementById('btn-delete-task');
     if (btnDelete) {
       btnDelete.onclick = () => {
