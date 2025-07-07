@@ -471,103 +471,200 @@ exportSingleTaskHistory(taskId) {
   }
 }
 // === SYSTÈME D'HISTORIQUE AUTOMATIQUE DES DESCRIPTIONS ===
+/ === NOUVELLES MÉTHODES POUR L'HISTORIQUE DES DESCRIPTIONS ===
 
-// 1. FONCTION POUR AJOUTER UN HORODATAGE À LA DESCRIPTION
-function addTimestampToDescription(currentDescription, newContent, userName = null) {
-  const now = new Date();
-  const timestamp = now.toLocaleString('fr-FR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-  
-  const user = userName ? ` (${userName})` : '';
-  const separator = '---';
-  
-  // Si pas de nouvelle description, retourner l'ancienne
-  if (!newContent || newContent.trim() === '') {
-    return currentDescription || '';
-  }
-  
-  // Si pas d'ancienne description, créer la première entrée
-  if (!currentDescription || currentDescription.trim() === '') {
-    return `[${timestamp}${user}]\n${newContent.trim()}`;
-  }
-  
-  // Vérifier si on modifie vraiment le contenu
-  const lines = currentDescription.split('\n');
-  const lastContentIndex = lines.findIndex(line => line.startsWith('[') && line.includes(']'));
-  
-  if (lastContentIndex >= 0) {
-    // Extraire le dernier contenu (après le dernier timestamp)
-    const lastContent = lines.slice(lastContentIndex + 1)
-      .join('\n')
-      .replace(/^---\s*$/gm, '') // Enlever les séparateurs
-      .trim();
+  // Ajouter un horodatage à la description
+  addTimestampToDescription(currentDescription, newContent, userName = null) {
+    const now = new Date();
+    const timestamp = now.toLocaleString('fr-FR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
     
-    // Si le contenu n'a pas changé, ne pas ajouter d'entrée
-    if (lastContent === newContent.trim()) {
-      return currentDescription;
+    const user = userName ? ` (${userName})` : '';
+    const separator = '---';
+    
+    // Si pas de nouvelle description, retourner l'ancienne
+    if (!newContent || newContent.trim() === '') {
+      return currentDescription || '';
     }
-  }
-  
-  // Ajouter la nouvelle entrée avec séparateur
-  return `[${timestamp}${user}]\n${newContent.trim()}\n\n${separator}\n\n${currentDescription}`;
-}
-
-// 2. FONCTION POUR FORMATER L'AFFICHAGE DE LA DESCRIPTION
-function formatDescriptionForDisplay(description) {
-  if (!description) return '';
-  
-  // Diviser en sections par les timestamps
-  const sections = description.split(/\n\s*---\s*\n/);
-  
-  return sections.map((section, index) => {
-    const lines = section.trim().split('\n');
-    const timestampLine = lines.find(line => line.match(/^\[.*\]$/));
     
-    if (timestampLine) {
-      const content = lines.slice(1).join('\n').trim();
-      const isLatest = index === 0;
+    // Si pas d'ancienne description, créer la première entrée
+    if (!currentDescription || currentDescription.trim() === '') {
+      return `[${timestamp}${user}]\n${newContent.trim()}`;
+    }
+    
+    // Vérifier si on modifie vraiment le contenu
+    const lines = currentDescription.split('\n');
+    const lastContentIndex = lines.findIndex(line => line.startsWith('[') && line.includes(']'));
+    
+    if (lastContentIndex >= 0) {
+      // Extraire le dernier contenu (après le dernier timestamp)
+      const lastContent = lines.slice(lastContentIndex + 1)
+        .join('\n')
+        .replace(/^---\s*$/gm, '') // Enlever les séparateurs
+        .trim();
       
-      return `
-        <div class="description-entry ${isLatest ? 'latest' : 'historical'}">
-          <div class="description-timestamp">${timestampLine}</div>
-          <div class="description-content">${content}</div>
-        </div>
-      `;
-    } else {
-      // Ancienne description sans timestamp
-      return `
-        <div class="description-entry legacy">
-          <div class="description-content">${section}</div>
-        </div>
-      `;
+      // Si le contenu n'a pas changé, ne pas ajouter d'entrée
+      if (lastContent === newContent.trim()) {
+        return currentDescription;
+      }
     }
-  }).join('');
-}
-
-// 3. FONCTION POUR EXTRAIRE SEULEMENT LA DERNIÈRE DESCRIPTION
-function getLatestDescription(description) {
-  if (!description) return '';
-  
-  const lines = description.split('\n');
-  const firstTimestampIndex = lines.findIndex(line => line.match(/^\[.*\]$/));
-  
-  if (firstTimestampIndex >= 0) {
-    // Trouver la fin de cette section (avant le prochain séparateur)
-    const separatorIndex = lines.findIndex((line, index) => 
-      index > firstTimestampIndex && line.trim() === '---'
-    );
     
-    const endIndex = separatorIndex >= 0 ? separatorIndex : lines.length;
-    return lines.slice(firstTimestampIndex + 1, endIndex).join('\n').trim();
+    // Ajouter la nouvelle entrée avec séparateur
+    return `[${timestamp}${user}]\n${newContent.trim()}\n\n${separator}\n\n${currentDescription}`;
   }
-  
-  return description; // Ancienne description sans timestamp
-}
+
+  // Formater l'affichage de la description
+  formatDescriptionForDisplay(description) {
+    if (!description) return '';
+    
+    // Diviser en sections par les timestamps
+    const sections = description.split(/\n\s*---\s*\n/);
+    
+    return sections.map((section, index) => {
+      const lines = section.trim().split('\n');
+      const timestampLine = lines.find(line => line.match(/^\[.*\]$/));
+      
+      if (timestampLine) {
+        const content = lines.slice(1).join('\n').trim();
+        const isLatest = index === 0;
+        
+        return `
+          <div class="description-entry ${isLatest ? 'latest' : 'historical'}">
+            <div class="description-timestamp">${timestampLine}</div>
+            <div class="description-content">${content}</div>
+          </div>
+        `;
+      } else {
+        // Ancienne description sans timestamp
+        return `
+          <div class="description-entry legacy">
+            <div class="description-content">${section}</div>
+          </div>
+        `;
+      }
+    }).join('');
+  }
+
+  // Extraire seulement la dernière description
+  getLatestDescription(description) {
+    if (!description) return '';
+    
+    const lines = description.split('\n');
+    const firstTimestampIndex = lines.findIndex(line => line.match(/^\[.*\]$/));
+    
+    if (firstTimestampIndex >= 0) {
+      // Trouver la fin de cette section (avant le prochain séparateur)
+      const separatorIndex = lines.findIndex((line, index) => 
+        index > firstTimestampIndex && line.trim() === '---'
+      );
+      
+      const endIndex = separatorIndex >= 0 ? separatorIndex : lines.length;
+      return lines.slice(firstTimestampIndex + 1, endIndex).join('\n').trim();
+    }
+    
+    return description; // Ancienne description sans timestamp
+  }
+
+  // Afficher l'historique des descriptions dans la modal
+  displayDescriptionHistory(tache) {
+    // Créer ou mettre à jour la zone d'historique des descriptions
+    let historyContainer = document.getElementById('description-history');
+    
+    if (!historyContainer) {
+      // Créer le conteneur s'il n'existe pas
+      const descriptionField = document.getElementById('popup-description');
+      historyContainer = document.createElement('div');
+      historyContainer.id = 'description-history';
+      historyContainer.className = 'description-history mt-2';
+      
+      // Insérer après le champ description
+      descriptionField.parentNode.insertBefore(historyContainer, descriptionField.nextSibling);
+    }
+    
+    if (!tache.description) {
+      historyContainer.innerHTML = '';
+      return;
+    }
+    
+    const formattedHistory = this.formatDescriptionForDisplay(tache.description);
+    
+    historyContainer.innerHTML = `
+      <div class="card">
+        <div class="card-header">
+          <h6 class="mb-0">
+            <i class="bi bi-clock-history me-2"></i>Historique des modifications
+            <button class="btn btn-sm btn-outline-secondary float-end" type="button" data-bs-toggle="collapse" data-bs-target="#description-history-content">
+              <i class="bi bi-chevron-down"></i>
+            </button>
+          </h6>
+        </div>
+        <div class="collapse" id="description-history-content">
+          <div class="card-body description-history-content">
+            ${formattedHistory}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Extraire les commentaires par statut
+  getCommentsPerStatus(task) {
+    if (!task.description || !task.historique_statuts) return {};
+    
+    try {
+      const historyData = JSON.parse(task.historique_statuts);
+      const statusHistory = historyData.historique || [];
+      
+      // Extraire les commentaires avec leurs timestamps
+      const sections = task.description.split(/\n\s*---\s*\n/);
+      const comments = {};
+      
+      sections.forEach(section => {
+        const lines = section.trim().split('\n');
+        const timestampLine = lines.find(line => line.match(/^\[.*\]$/));
+        
+        if (timestampLine) {
+          const content = lines.slice(1).join('\n').trim();
+          const dateMatch = timestampLine.match(/\[([\d\/\s:]+)/);
+          
+          if (dateMatch) {
+            const commentDate = new Date(dateMatch[1].replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$2-$1'));
+            
+            // Trouver le statut correspondant à cette date
+            const correspondingStatus = statusHistory.find(status => {
+              const entryDate = new Date(status.date_entree);
+              const exitDate = status.date_sortie ? new Date(status.date_sortie) : new Date();
+              return commentDate >= entryDate && commentDate <= exitDate;
+            });
+            
+            const statusName = correspondingStatus?.statut || 'Inconnu';
+            
+            if (!comments[statusName]) {
+              comments[statusName] = [];
+            }
+            
+            comments[statusName].push({
+              date: commentDate,
+              content: content,
+              timestamp: timestampLine
+            });
+          }
+        }
+      });
+      
+      return comments;
+      
+    } catch (e) {
+      console.error('Erreur extraction commentaires:', e);
+      return {};
+    }
+  }
+
   // === CRÉATION DES CARTES ===
   createTaskElementHTML(record) {
     const isExpanded = this.expandedCards.has(record.id);
