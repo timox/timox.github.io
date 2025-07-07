@@ -1025,153 +1025,153 @@ createDetailedTaskHTML(record) {
   }
 
   // === SAUVEGARDE ET GESTION DES DONNÉES ===
-  // 4. MODIFICATION DE LA FONCTION saveTask
-async saveTask() {
-  try {
-    let dateEcheance = '';
-    let dateDebut = '';
-    
-    const delaiInput = document.getElementById('popup-delai');
-    if (delaiInput && delaiInput.value.trim()) {
-      dateEcheance = delaiInput.value.trim();
+// === MODIFICATION DE saveTask() EXISTANTE ===
+  async saveTask() {
+    try {
+      let dateEcheance = '';
+      let dateDebut = '';
       
-      if (!this.currentTaskId) {
-        dateDebut = new Date().toISOString().slice(0,10);
+      const delaiInput = document.getElementById('popup-delai');
+      if (delaiInput && delaiInput.value.trim()) {
+        dateEcheance = delaiInput.value.trim();
+        
+        if (!this.currentTaskId) {
+          dateDebut = new Date().toISOString().slice(0,10);
+        } else {
+          const existingRecord = this.currentRecords.find(r => r.id === this.currentTaskId);
+          dateDebut = existingRecord?.date_debut || '';
+        }
       } else {
+        dateEcheance = null;
+        dateDebut = null;
+      }
+      
+      const titre = document.getElementById('popup-titre').value;
+      const newDescription = document.getElementById('popup-description').value;
+      const statut = document.getElementById('popup-statut-text').value;
+      const projet = document.getElementById('popup-projet').value;
+      const urgence = document.getElementById('popup-urgence').value;
+      const impact = document.getElementById('popup-impact').value;
+      const bureau = Array.from(document.getElementById('popup-bureau').selectedOptions).map(o => o.value);
+      const qui = Array.from(document.getElementById('popup-qui').selectedOptions).map(o => o.value);
+      
+      const strategie_objectif = document.getElementById('strategie-objectif').value;
+      const strategie_sous_objectif = document.getElementById('strategie-sous-objectif').value;
+      const strategie_action = document.getElementById('strategie-action').value;
+      
+      // NOUVEAU : Gestion de l'historique de description
+      let finalDescription = newDescription;
+      
+      if (this.currentTaskId) {
+        // Modification d'une tâche existante
         const existingRecord = this.currentRecords.find(r => r.id === this.currentTaskId);
-        dateDebut = existingRecord?.date_debut || '';
-      }
-    } else {
-      dateEcheance = null;
-      dateDebut = null;
-    }
-    
-    const titre = document.getElementById('popup-titre').value;
-    const newDescription = document.getElementById('popup-description').value;
-    const statut = document.getElementById('popup-statut-text').value;
-    const projet = document.getElementById('popup-projet').value;
-    const urgence = document.getElementById('popup-urgence').value;
-    const impact = document.getElementById('popup-impact').value;
-    const bureau = Array.from(document.getElementById('popup-bureau').selectedOptions).map(o => o.value);
-    const qui = Array.from(document.getElementById('popup-qui').selectedOptions).map(o => o.value);
-    
-    const strategie_objectif = document.getElementById('strategie-objectif').value;
-    const strategie_sous_objectif = document.getElementById('strategie-sous-objectif').value;
-    const strategie_action = document.getElementById('strategie-action').value;
-    
-    // NOUVEAU : Gestion de l'historique de description
-    let finalDescription = newDescription;
-    
-    if (this.currentTaskId) {
-      // Modification d'une tâche existante
-      const existingRecord = this.currentRecords.find(r => r.id === this.currentTaskId);
-      const currentDescription = existingRecord?.description || '';
-      
-      // Obtenir l'utilisateur actuel (si disponible)
-      let currentUser = null;
-      try {
-        const userInfo = await grist.docApi.getDocInfo();
-        currentUser = userInfo?.user?.name || userInfo?.user?.email || null;
-      } catch (e) {
-        console.log('Info utilisateur non disponible');
-      }
-      
-      // Ajouter l'horodatage si la description a changé
-      finalDescription = addTimestampToDescription(currentDescription, newDescription, currentUser);
-      
-      console.log('Description mise à jour:', {
-        avant: currentDescription,
-        nouveau: newDescription,
-        final: finalDescription
-      });
-      
-    } else {
-      // Nouvelle tâche - ajouter un timestamp si il y a une description
-      if (newDescription && newDescription.trim()) {
+        const currentDescription = existingRecord?.description || '';
+        
+        // Obtenir l'utilisateur actuel (si disponible)
         let currentUser = null;
         try {
           const userInfo = await grist.docApi.getDocInfo();
           currentUser = userInfo?.user?.name || userInfo?.user?.email || null;
         } catch (e) {
-          // Ignore
+          console.log('Info utilisateur non disponible');
         }
         
-        const now = new Date().toLocaleString('fr-FR', {
-          year: 'numeric',
-          month: '2-digit', 
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit'
+        // Ajouter l'horodatage si la description a changé
+        finalDescription = this.addTimestampToDescription(currentDescription, newDescription, currentUser);
+        
+        console.log('Description mise à jour:', {
+          avant: currentDescription,
+          nouveau: newDescription,
+          final: finalDescription
         });
         
-        const user = currentUser ? ` (${currentUser})` : '';
-        finalDescription = `[${now}${user}]\n${newDescription.trim()}`;
+      } else {
+        // Nouvelle tâche - ajouter un timestamp si il y a une description
+        if (newDescription && newDescription.trim()) {
+          let currentUser = null;
+          try {
+            const userInfo = await grist.docApi.getDocInfo();
+            currentUser = userInfo?.user?.name || userInfo?.user?.email || null;
+          } catch (e) {
+            // Ignore
+          }
+          
+          const now = new Date().toLocaleString('fr-FR', {
+            year: 'numeric',
+            month: '2-digit', 
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          
+          const user = currentUser ? ` (${currentUser})` : '';
+          finalDescription = `[${now}${user}]\n${newDescription.trim()}`;
+        }
       }
-    }
-    
-    const row = {
-      titre, 
-      description: finalDescription, 
-      statut, 
-      projet, 
-      urgence, 
-      impact,
-      bureau: ['L', ...bureau],
-      qui: ['L', ...qui],
-      strategie_objectif,
-      strategie_sous_objectif,
-      strategie_action
-    };
+      
+      const row = {
+        titre, 
+        description: finalDescription, 
+        statut, 
+        projet, 
+        urgence, 
+        impact,
+        bureau: ['L', ...bureau],
+        qui: ['L', ...qui],
+        strategie_objectif,
+        strategie_sous_objectif,
+        strategie_action
+      };
 
-    if (this.availableColumns.has('date_debut')) {
-      row.date_debut = dateDebut;
-    }
-    
-    if (this.availableColumns.has('date_echeance')) {
-      row.date_echeance = dateEcheance;
-    }
+      if (this.availableColumns.has('date_debut')) {
+        row.date_debut = dateDebut;
+      }
+      
+      if (this.availableColumns.has('date_echeance')) {
+        row.date_echeance = dateEcheance;
+      }
 
-    if (this.currentTaskId) {
-      await grist.docApi.applyUserActions([
-        ['UpdateRecord', TABLE_ID, this.currentTaskId, row]
-      ]);
-      console.log(`Tâche ${this.currentTaskId} mise à jour avec succès`);
-      
-      const recordIndex = this.currentRecords.findIndex(r => r.id === this.currentTaskId);
-      if (recordIndex !== -1) {
-        this.currentRecords[recordIndex] = { ...this.currentRecords[recordIndex], ...row };
-        this.currentRecords[recordIndex].date_debut = dateDebut;
-        this.currentRecords[recordIndex].date_echeance = dateEcheance;
+      if (this.currentTaskId) {
+        await grist.docApi.applyUserActions([
+          ['UpdateRecord', TABLE_ID, this.currentTaskId, row]
+        ]);
+        console.log(`Tâche ${this.currentTaskId} mise à jour avec succès`);
+        
+        const recordIndex = this.currentRecords.findIndex(r => r.id === this.currentTaskId);
+        if (recordIndex !== -1) {
+          this.currentRecords[recordIndex] = { ...this.currentRecords[recordIndex], ...row };
+          this.currentRecords[recordIndex].date_debut = dateDebut;
+          this.currentRecords[recordIndex].date_echeance = dateEcheance;
+        }
+        
+      } else {
+        const result = await grist.docApi.applyUserActions([
+          ['AddRecord', TABLE_ID, null, row]
+        ]);
+        console.log('Nouvelle tâche créée avec succès');
+        
+        if (result && result[0] && result[0].id) {
+          const newRecord = { id: result[0].id, ...row };
+          newRecord.date_debut = dateDebut;
+          newRecord.date_echeance = dateEcheance;
+          this.currentRecords.push(newRecord);
+        }
       }
       
-    } else {
-      const result = await grist.docApi.applyUserActions([
-        ['AddRecord', TABLE_ID, null, row]
-      ]);
-      console.log('Nouvelle tâche créée avec succès');
+      this.modal.hide();
+      this.refreshKanban();
       
-      if (result && result[0] && result[0].id) {
-        const newRecord = { id: result[0].id, ...row };
-        newRecord.date_debut = dateDebut;
-        newRecord.date_echeance = dateEcheance;
-        this.currentRecords.push(newRecord);
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      
+      let errorMessage = error.message;
+      if (errorMessage.includes("KeyError 'date_debut'") || errorMessage.includes("KeyError 'date_echeance'")) {
+        errorMessage = "Les colonnes de dates (date_debut/date_echeance) n'existent pas dans votre table Grist. Vous pouvez continuer à utiliser l'application, mais les dates ne seront pas sauvegardées.";
       }
+      
+      displayError(`Erreur lors de la sauvegarde: ${errorMessage}`);
     }
-    
-    this.modal.hide();
-    this.refreshKanban();
-    
-  } catch (error) {
-    console.error('Erreur lors de la sauvegarde:', error);
-    
-    let errorMessage = error.message;
-    if (errorMessage.includes("KeyError 'date_debut'") || errorMessage.includes("KeyError 'date_echeance'")) {
-      errorMessage = "Les colonnes de dates (date_debut/date_echeance) n'existent pas dans votre table Grist. Vous pouvez continuer à utiliser l'application, mais les dates ne seront pas sauvegardées.";
-    }
-    
-    displayError(`Erreur lors de la sauvegarde: ${errorMessage}`);
   }
-}
 
 //
 showTaskHistory(taskId) {
@@ -1565,47 +1565,115 @@ async handleDragEnd(evt, targetStatus) {
   }
 
   // 5. MODIFICATION DE openPopup POUR AFFICHER SEULEMENT LA DERNIÈRE DESCRIPTION
-openPopup(tache = {}) {
-  if (!this.modal || !this.modalElement) return;
-  const isNewTask = !tache.id;
-  this.currentTaskId = tache.id || null;
-  
-  const btnDelete = document.getElementById('btn-delete-task');
-  if (btnDelete) {
-    btnDelete.style.display = isNewTask ? 'none' : 'inline-block';
+  openPopup(tache = {}) {
+    if (!this.modal || !this.modalElement) return;
+    const isNewTask = !tache.id;
+    this.currentTaskId = tache.id || null;
+    
+    const btnDelete = document.getElementById('btn-delete-task');
+    if (btnDelete) {
+      btnDelete.style.display = isNewTask ? 'none' : 'inline-block';
+    }
+    
+    const trySet = (id, value) => { const el = document.getElementById(id); if (el) el.value = value || ""; };
+    trySet('popup-id', tache.id || '');
+    trySet('popup-titre', tache.titre || '');
+    
+    // NOUVEAU : Afficher seulement la dernière description dans le champ d'édition
+    const latestDescription = this.getLatestDescription(tache.description || '');
+    trySet('popup-description', latestDescription);
+    
+    trySet('popup-statut-text', tache.statut || (isNewTask ? (STATUTS[0]?.id || '') : ''));
+    trySet('popup-projet', tache.projet || '');
+    trySet('popup-urgence', tache.urgence || '');
+    trySet('popup-impact', tache.impact || '');
+    this.setSelectedOptions('popup-bureau', tache.bureau);
+    this.setSelectedOptions('popup-qui', tache.qui);
+    
+    this.populateStrategieLists({
+      objectif: tache.strategie_objectif,
+      sous_objectif: tache.strategie_sous_objectif,
+      action: tache.strategie_action
+    });
+    
+    const delaiInput = document.getElementById('popup-delai');
+    if (delaiInput && tache.date_echeance) {
+      delaiInput.value = tache.date_echeance;
+    }
+    
+    // NOUVEAU : Afficher l'historique complet des descriptions sous le champ
+    this.displayDescriptionHistory(tache);
+    
+    this.modal.show();
   }
-  
-  const trySet = (id, value) => { const el = document.getElementById(id); if (el) el.value = value || ""; };
-  trySet('popup-id', tache.id || '');
-  trySet('popup-titre', tache.titre || '');
-  
-  // NOUVEAU : Afficher seulement la dernière description dans le champ d'édition
-  const latestDescription = getLatestDescription(tache.description || '');
-  trySet('popup-description', latestDescription);
-  
-  trySet('popup-statut-text', tache.statut || (isNewTask ? (STATUTS[0]?.id || '') : ''));
-  trySet('popup-projet', tache.projet || '');
-  trySet('popup-urgence', tache.urgence || '');
-  trySet('popup-impact', tache.impact || '');
-  this.setSelectedOptions('popup-bureau', tache.bureau);
-  this.setSelectedOptions('popup-qui', tache.qui);
-  
-  this.populateStrategieLists({
-    objectif: tache.strategie_objectif,
-    sous_objectif: tache.strategie_sous_objectif,
-    action: tache.strategie_action
-  });
-  
-  const delaiInput = document.getElementById('popup-delai');
-  if (delaiInput && tache.date_echeance) {
-    delaiInput.value = tache.date_echeance;
+
+  // === NOUVELLE MÉTHODE POUR EXPORTER L'HISTORIQUE COMPLET ===
+  exportTaskWithCommentsHistory(taskId) {
+    const task = this.currentRecords.find(r => r.id === taskId);
+    if (!task) return;
+    
+    const comments = this.getCommentsPerStatus(task);
+    
+    let csv = 'Tâche_ID,Tâche_Titre,Statut,Date_Commentaire,Auteur,Commentaire\n';
+    
+    Object.keys(comments).forEach(status => {
+      comments[status].forEach(comment => {
+        const titre = (task.titre || '').replace(/"/g, '""');
+        const contenu = comment.content.replace(/"/g, '""');
+        const auteur = comment.timestamp.match(/\((.*?)\)/) ? comment.timestamp.match(/\((.*?)\)/)[1] : '';
+        
+        csv += `${task.id},"${titre}","${status}","${comment.date.toISOString()}","${auteur}","${contenu}"\n`;
+      });
+    });
+    
+    // Télécharger
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `historique_commentaires_tache_${taskId}_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
   }
-  
-  // NOUVEAU : Afficher l'historique complet des descriptions sous le champ
-  this.displayDescriptionHistory(tache);
-  
-  this.modal.show();
-}
+
+  // === MÉTHODE POUR AFFICHER UN RAPPORT COMPLET ===
+  showTaskCompleteReport(taskId) {
+    const task = this.currentRecords.find(r => r.id === taskId);
+    if (!task) return;
+    
+    console.log('=== RAPPORT COMPLET DE LA TÂCHE ===');
+    console.log(`ID: ${task.id}`);
+    console.log(`Titre: ${task.titre}`);
+    console.log(`Statut actuel: ${task.statut}`);
+    
+    // Historique des statuts
+    if (task.historique_statuts) {
+      try {
+        const historyData = JSON.parse(task.historique_statuts);
+        console.log('\n--- HISTORIQUE DES STATUTS ---');
+        historyData.historique.forEach((entry, index) => {
+          const duration = entry.duree_minutes ? 
+            `${Math.floor(entry.duree_minutes / 60)}h ${entry.duree_minutes % 60}m` : 
+            'En cours...';
+          console.log(`${index + 1}. ${entry.statut} (${duration})`);
+        });
+      } catch (e) {
+        console.log('Erreur parsing historique statuts');
+      }
+    }
+    
+    // Commentaires par statut
+    const comments = this.getCommentsPerStatus(task);
+    console.log('\n--- COMMENTAIRES PAR STATUT ---');
+    Object.keys(comments).forEach(status => {
+      console.log(`\n${status}:`);
+      comments[status].forEach(comment => {
+        console.log(`  ${comment.timestamp}`);
+        console.log(`  ${comment.content}`);
+      });
+    });
+  }
+
 / 6. FONCTION POUR AFFICHER L'HISTORIQUE DES DESCRIPTIONS
 displayDescriptionHistory(tache) {
   // Créer ou mettre à jour la zone d'historique des descriptions
