@@ -937,7 +937,71 @@
   font-size: 0.85rem;
   color: #6c757d;
 }
+/* === Historique des descriptions === */
+.description-history {
+  max-height: 300px;
+  overflow-y: auto;
+}
 
+.description-entry {
+  border-left: 3px solid #dee2e6;
+  padding-left: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+}
+
+.description-entry.latest {
+  border-left-color: #28a745;
+  background: #f8fff9;
+  padding: 0.75rem;
+  border-radius: 0.25rem;
+}
+
+.description-entry.historical {
+  border-left-color: #6c757d;
+  opacity: 0.8;
+}
+
+.description-entry.legacy {
+  border-left-color: #ffc107;
+  background: #fffef8;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.description-timestamp {
+  font-size: 0.85rem;
+  color: #6c757d;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.description-entry.latest .description-timestamp {
+  color: #155724;
+}
+
+.description-content {
+  white-space: pre-wrap;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.description-history-content {
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+/* === Amélioration du champ description === */
+#popup-description {
+  min-height: 100px;
+}
+
+.description-help {
+  font-size: 0.8rem;
+  color: #6c757d;
+  font-style: italic;
+  margin-top: 0.25rem;
+}
   </style>
 </head>
 <body>
@@ -1039,6 +1103,17 @@
                 <label for="popup-description" class="form-label">Description</label>
                 <textarea class="form-control" id="popup-description" rows="3"></textarea>
               </div>
+              <div class="col-12">
+  <label for="popup-description" class="form-label">
+    Description / Commentaires
+    <small class="text-muted">(Un horodatage sera automatiquement ajouté)</small>
+  </label>
+  <textarea class="form-control" id="popup-description" rows="4" 
+            placeholder="Décrivez la tâche, les blocages, les actions réalisées..."></textarea>
+  <div class="description-help">
+    💡 Tip: Chaque modification sera automatiquement horodatée pour garder un historique des commentaires
+  </div>
+</div>
               <div class="col-md-4">
                 <label for="popup-statut-text" class="form-label">Statut *</label>
                 <input type="text" class="form-control" id="popup-statut-text" readonly required>
