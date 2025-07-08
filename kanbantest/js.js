@@ -274,7 +274,91 @@ class KanbanManager {
     }
     return records;
   }
+    
+  // Nouvelle méthode pour normaliser les dates
+  normalizeDate(dateValue) {
+    if (!dateValue) return null;
+    
+    // Si c'est déjà une chaîne de date au bon format, la retourner
+    if (typeof dateValue === 'string' && dateValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return dateValue;
+    }
+    
+    // Si c'est un timestamp (nombre) ou une chaîne qui ressemble à un timestamp
+    if (typeof dateValue === 'number' || (typeof dateValue === 'string' && !isNaN(dateValue))) {
+      const timestamp = typeof dateValue === 'string' ? parseFloat(dateValue) : dateValue;
+      
+      // Vérifier si c'est un timestamp en millisecondes ou en secondes
+      let date;
+      if (timestamp > 1000000000000) {
+        // Timestamp en millisecondes
+        date = new Date(timestamp);
+      } else if (timestamp > 1000000000) {
+        // Timestamp en secondes
+        date = new Date(timestamp * 1000);
+      } else {
+        // Probablement des jours depuis une époque (ex: Excel)
+        date = new Date((timestamp - 25569) * 86400 * 1000);
+      }
+      
+      // Vérifier que la date est valide
+      if (!isNaN(date.getTime())) {
+        return date.toISOString().slice(0, 10); // Format YYYY-MM-DD
+      }
+    }
+    
+    // Si c'est une chaîne de date dans un autre format
+    if (typeof dateValue === 'string') {
+      try {
+        const date = new Date(dateValue);
+        if (!isNaN(date.getTime())) {
+          return date.toISOString().slice(0, 10);
+        }
+      } catch (e) {
+        console.warn('Format de date non reconnu:', dateValue);
+      }
+    }
+    
+    console.warn('Date non convertible:', dateValue, typeof dateValue);
+    return null;
+  }
 
+  // Méthode pour formater une date pour l'affichage (existante mais améliorée)
+  formatDate(dateValue) {
+    const normalizedDate = this.normalizeDate(dateValue);
+    if (!normalizedDate) return '';
+    
+    try {
+      const options = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' };
+      return new Date(normalizedDate).toLocaleDateString('fr-FR', options);
+    } catch (e) {
+      return normalizedDate; // Fallback vers la date ISO
+    }
+  }
+
+  // Méthode pour préparer une date pour Grist (nouveau)
+  prepareDateForGrist(dateString) {
+    if (!dateString || dateString.trim() === '') {
+      return null;
+    }
+    
+    // Si c'est déjà au format ISO, le garder
+    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return dateString;
+    }
+    
+    // Sinon, essayer de le convertir
+    try {
+      const date = new Date(dateString);
+      if (!isNaN(date.getTime())) {
+        return date.toISOString().slice(0, 10);
+      }
+    } catch (e) {
+      console.warn('Impossible de convertir la date:', dateString);
+    }
+    
+    return null;
+  }
   // === GESTION DES MODES DE VUE ===
   initViewModeControls() {
     const controlsContainer = document.querySelector('.kanban-controls .row');
@@ -721,128 +805,153 @@ exportSingleTaskHistory(taskId) {
     </div>`;
   }
   //
-createDetailedTaskHTML(record) {
-  const isExpanded = this.expandedCards.has(record.id);
-  
-  const prio = this.calculerPriorite(record.urgence, record.impact);
-  let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
-  
-  // NOUVEAU : Bouton historique
-  let historyButton = '';
-  if (record.historique_statuts) {
-    try {
-      const historyData = JSON.parse(record.historique_statuts);
-      const historyCount = historyData.historique ? historyData.historique.length : 0;
-      if (historyCount > 1) {
-        historyButton = `<button class="btn-history" title="Voir l'historique (${historyCount} étapes)" data-task-id="${record.id}">
-          <i class="bi bi-clock-history"></i> ${historyCount}
-        </button>`;
+// === MODIFICATION DE createDetailedTaskHTML POUR L'AFFICHAGE DES DATES ===
+  createDetailedTaskHTML(record) {
+    const isExpanded = this.expandedCards.has(record.id);
+    
+    const prio = this.calculerPriorite(record.urgence, record.impact);
+    let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
+    
+    // Bouton historique
+    let historyButton = '';
+    if (record.historique_statuts) {
+      try {
+        const historyData = JSON.parse(record.historique_statuts);
+        const historyCount = historyData.historique ? historyData.historique.length : 0;
+        if (historyCount > 1) {
+          historyButton = `<button class="btn-history" title="Voir l'historique (${historyCount} étapes)" data-task-id="${record.id}">
+            <i class="bi bi-clock-history"></i> ${historyCount}
+          </button>`;
+        }
+      } catch (e) {
+        // Ignore les erreurs de parsing
       }
-    } catch (e) {
-      // Ignore les erreurs de parsing
-    }
-  }
-  
-  let projetTag = '';
-  if (record.projet) {
-    const tooltip = [
-      record.strategie_objectif ? `Objectif: ${record.strategie_objectif}` : '',
-      record.strategie_sous_objectif ? `Sous-objectif: ${record.strategie_sous_objectif}` : '',
-      record.strategie_action ? `Action: ${record.strategie_action}` : ''
-    ].filter(Boolean).join('\n');
-    projetTag = `<span class="badge bg-info text-dark" title="${tooltip.replace(/"/g, '&quot;')}">${record.projet}</span>`;
-  }
-  
-  let resumeDesc = '';
-  if (record.description) {
-    const mots = record.description.split(/\s+/).slice(0, 10).join(' ');
-    resumeDesc = `<div class="desc-resume">${mots}${record.description.split(/\s+/).length > 10 ? '…' : ''}</div>`;
-  }
-  
-  let personnes = '';
-  if (Array.isArray(record.qui) && record.qui.length > 1) {
-    personnes = '<div class="personnes-list">' +
-      record.qui.slice(1).map(q => `<span class="personne-badge">${q}</span>`).join(' ') +
-      '</div>';
-  }
-  
-  let datesElement = '';
-  const hasDateDebut = record.date_debut;
-  const hasDateEcheance = record.date_echeance;
-  
-  if (hasDateDebut || hasDateEcheance) {
-    let dateInfo = [];
-    
-    if (hasDateDebut) {
-      const debutFormatted = this.formatDate(record.date_debut);
-      dateInfo.push(`<span class="date-debut" title="Début: ${debutFormatted}">
-        <i class="bi bi-play-circle"></i> ${debutFormatted}
-      </span>`);
     }
     
-    if (hasDateEcheance) {
-      const echeanceDate = new Date(record.date_echeance);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      echeanceDate.setHours(0, 0, 0, 0);
+    let projetTag = '';
+    if (record.projet) {
+      const tooltip = [
+        record.strategie_objectif ? `Objectif: ${record.strategie_objectif}` : '',
+        record.strategie_sous_objectif ? `Sous-objectif: ${record.strategie_sous_objectif}` : '',
+        record.strategie_action ? `Action: ${record.strategie_action}` : ''
+      ].filter(Boolean).join('\n');
+      projetTag = `<span class="badge bg-info text-dark" title="${tooltip.replace(/"/g, '&quot;')}">${record.projet}</span>`;
+    }
+    
+    let resumeDesc = '';
+    if (record.description) {
+      // Extraire seulement la dernière description pour l'aperçu
+      const latestDesc = this.getLatestDescription(record.description);
+      const mots = latestDesc.split(/\s+/).slice(0, 10).join(' ');
+      resumeDesc = `<div class="desc-resume">${mots}${latestDesc.split(/\s+/).length > 10 ? '…' : ''}</div>`;
+    }
+    
+    let personnes = '';
+    if (Array.isArray(record.qui) && record.qui.length > 1) {
+      personnes = '<div class="personnes-list">' +
+        record.qui.slice(1).map(q => `<span class="personne-badge">${q}</span>`).join(' ') +
+        '</div>';
+    }
+    
+    let datesElement = '';
+    
+    // NOUVEAU : Gestion correcte des dates pour l'affichage
+    const dateDebut = this.normalizeDate(record.date_debut);
+    const dateEcheance = this.normalizeDate(record.date_echeance);
+    
+    if (dateDebut || dateEcheance) {
+      let dateInfo = [];
       
-      const diffTime = echeanceDate.getTime() - today.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
-      let echeanceClass = 'echeance-ok';
-      let echeanceText = '';
-      
-      if (diffDays < 0) {
-        echeanceClass = 'echeance-depassee';
-        echeanceText = `Dépassé (${Math.abs(diffDays)}j)`;
-      } else if (diffDays === 0) {
-        echeanceClass = 'echeance-aujourd-hui';
-        echeanceText = "Aujourd'hui";
-      } else if (diffDays <= 3) {
-        echeanceClass = 'echeance-urgent';
-        echeanceText = `${diffDays}j restant${diffDays > 1 ? 's' : ''}`;
-      } else if (diffDays <= 7) {
-        echeanceClass = 'echeance-bientot';
-        echeanceText = `${diffDays}j restant${diffDays > 1 ? 's' : ''}`;
-      } else {
-        echeanceText = `J+${diffDays}`;
+      if (dateDebut) {
+        const debutFormatted = this.formatDate(dateDebut);
+        dateInfo.push(`<span class="date-debut" title="Début: ${debutFormatted}">
+          <i class="bi bi-play-circle"></i> ${debutFormatted}
+        </span>`);
       }
       
-      const echeanceFormatted = this.formatDate(record.date_echeance);
-      dateInfo.push(`<span class="date-echeance ${echeanceClass}" title="Échéance: ${echeanceFormatted}">
-        <i class="bi bi-calendar-x"></i> ${echeanceText}
-      </span>`);
+      if (dateEcheance) {
+        const echeanceDate = new Date(dateEcheance);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        echeanceDate.setHours(0, 0, 0, 0);
+        
+        const diffTime = echeanceDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        let echeanceClass = 'echeance-ok';
+        let echeanceText = '';
+        
+        if (diffDays < 0) {
+          echeanceClass = 'echeance-depassee';
+          echeanceText = `Dépassé (${Math.abs(diffDays)}j)`;
+        } else if (diffDays === 0) {
+          echeanceClass = 'echeance-aujourd-hui';
+          echeanceText = "Aujourd'hui";
+        } else if (diffDays <= 3) {
+          echeanceClass = 'echeance-urgent';
+          echeanceText = `${diffDays}j restant${diffDays > 1 ? 's' : ''}`;
+        } else if (diffDays <= 7) {
+          echeanceClass = 'echeance-bientot';
+          echeanceText = `${diffDays}j restant${diffDays > 1 ? 's' : ''}`;
+        } else {
+          echeanceText = `J+${diffDays}`;
+        }
+        
+        const echeanceFormatted = this.formatDate(dateEcheance);
+        dateInfo.push(`<span class="date-echeance ${echeanceClass}" title="Échéance: ${echeanceFormatted}">
+          <i class="bi bi-calendar-x"></i> ${echeanceText}
+        </span>`);
+      }
+      
+      if (dateInfo.length > 0) {
+        datesElement = `<div class="dates-container">${dateInfo.join('')}</div>`;
+      }
     }
     
-    if (dateInfo.length > 0) {
-      datesElement = `<div class="dates-container">${dateInfo.join('')}</div>`;
-    }
-  }
-  
-  const hasEcheanceClass = hasDateEcheance ? 'has-echeance' : '';
-  const hasDateDebutClass = hasDateDebut ? 'has-debut' : '';
-  const collapseButton = (this.viewMode === 'compact' && isExpanded) ? 
-    `<button class="btn-collapse" title="Réduire"><i class="bi bi-chevron-up"></i></button>` : '';
-  
-  return `<div class="kanban-item kanban-item-detailed ${hasEcheanceClass} ${hasDateDebutClass}" data-id="${record.id}">
-    <div class="drag-handle">
-      <i class="bi bi-grip-vertical"></i>
-    </div>
-    <div class="kanban-item-header">
-      <div>${prioBadge}</div>
-      <div class="item-badges">
-        ${projetTag}
-        ${historyButton}
-        ${collapseButton}
+    const hasEcheanceClass = dateEcheance ? 'has-echeance' : '';
+    const hasDateDebutClass = dateDebut ? 'has-debut' : '';
+    const collapseButton = (this.viewMode === 'compact' && isExpanded) ? 
+      `<button class="btn-collapse" title="Réduire"><i class="bi bi-chevron-up"></i></button>` : '';
+    
+    return `<div class="kanban-item kanban-item-detailed ${hasEcheanceClass} ${hasDateDebutClass}" data-id="${record.id}">
+      <div class="drag-handle">
+        <i class="bi bi-grip-vertical"></i>
       </div>
-    </div>
-    <div class="item-title editable-zone">${record.titre || ''}</div>
-    ${resumeDesc}
-    ${datesElement}
-    ${personnes}
-  </div>`;
+      <div class="kanban-item-header">
+        <div>${prioBadge}</div>
+        <div class="item-badges">
+          ${projetTag}
+          ${historyButton}
+          ${collapseButton}
+        </div>
+      </div>
+      <div class="item-title editable-zone">${record.titre || ''}</div>
+      ${resumeDesc}
+      ${datesElement}
+      ${personnes}
+    </div>`;
+  }
+
+  // === FONCTION DE DEBUG POUR LES DATES ===
+  debugDates(taskId) {
+    const task = this.currentRecords.find(r => r.id === taskId);
+    if (!task) {
+      console.log('Tâche non trouvée');
+      return;
+    }
+    
+    console.log('=== DEBUG DATES ===');
+    console.log('Tâche:', task.titre);
+    console.log('date_debut original:', task.date_debut, typeof task.date_debut);
+    console.log('date_echeance original:', task.date_echeance, typeof task.date_echeance);
+    console.log('date_debut normalisé:', this.normalizeDate(task.date_debut));
+    console.log('date_echeance normalisé:', this.normalizeDate(task.date_echeance));
+    console.log('date_debut formaté:', this.formatDate(task.date_debut));
+    console.log('date_echeance formaté:', this.formatDate(task.date_echeance));
+  }
 }
 
+// === INSTRUCTIONS ===
 
   formatDate(dateStr) {
     if (!dateStr) return '';
@@ -1025,25 +1134,78 @@ createDetailedTaskHTML(record) {
   }
 
   // === SAUVEGARDE ET GESTION DES DONNÉES ===
-// === MODIFICATION DE saveTask() EXISTANTE ===
+// === MODIFICATION DE openPopup POUR GÉRER LES DATES ===
+  openPopup(tache = {}) {
+    if (!this.modal || !this.modalElement) return;
+    const isNewTask = !tache.id;
+    this.currentTaskId = tache.id || null;
+    
+    const btnDelete = document.getElementById('btn-delete-task');
+    if (btnDelete) {
+      btnDelete.style.display = isNewTask ? 'none' : 'inline-block';
+    }
+    
+    const trySet = (id, value) => { const el = document.getElementById(id); if (el) el.value = value || ""; };
+    trySet('popup-id', tache.id || '');
+    trySet('popup-titre', tache.titre || '');
+    
+    // Afficher seulement la dernière description dans le champ d'édition
+    const latestDescription = this.getLatestDescription(tache.description || '');
+    trySet('popup-description', latestDescription);
+    
+    trySet('popup-statut-text', tache.statut || (isNewTask ? (STATUTS[0]?.id || '') : ''));
+    trySet('popup-projet', tache.projet || '');
+    trySet('popup-urgence', tache.urgence || '');
+    trySet('popup-impact', tache.impact || '');
+    this.setSelectedOptions('popup-bureau', tache.bureau);
+    this.setSelectedOptions('popup-qui', tache.qui);
+    
+    this.populateStrategieLists({
+      objectif: tache.strategie_objectif,
+      sous_objectif: tache.strategie_sous_objectif,
+      action: tache.strategie_action
+    });
+    
+    // NOUVEAU : Gestion correcte des dates
+    const delaiInput = document.getElementById('popup-delai');
+    if (delaiInput) {
+      const normalizedDate = this.normalizeDate(tache.date_echeance);
+      delaiInput.value = normalizedDate || '';
+      
+      // Debug pour voir la conversion
+      if (tache.date_echeance) {
+        console.log('Date échéance:', {
+          original: tache.date_echeance,
+          type: typeof tache.date_echeance,
+          normalized: normalizedDate
+        });
+      }
+    }
+    
+    // Afficher l'historique complet des descriptions sous le champ
+    this.displayDescriptionHistory(tache);
+    
+    this.modal.show();
+  }
+
+  // === MODIFICATION DE saveTask POUR GÉRER LES DATES ===
   async saveTask() {
     try {
-      let dateEcheance = '';
-      let dateDebut = '';
+      let dateEcheance = null;
+      let dateDebut = null;
       
       const delaiInput = document.getElementById('popup-delai');
       if (delaiInput && delaiInput.value.trim()) {
-        dateEcheance = delaiInput.value.trim();
+        // Préparer la date pour Grist
+        dateEcheance = this.prepareDateForGrist(delaiInput.value.trim());
         
         if (!this.currentTaskId) {
           dateDebut = new Date().toISOString().slice(0,10);
         } else {
           const existingRecord = this.currentRecords.find(r => r.id === this.currentTaskId);
-          dateDebut = existingRecord?.date_debut || '';
+          const existingDateDebut = existingRecord?.date_debut;
+          dateDebut = existingDateDebut ? this.normalizeDate(existingDateDebut) : null;
         }
-      } else {
-        dateEcheance = null;
-        dateDebut = null;
       }
       
       const titre = document.getElementById('popup-titre').value;
@@ -1059,15 +1221,13 @@ createDetailedTaskHTML(record) {
       const strategie_sous_objectif = document.getElementById('strategie-sous-objectif').value;
       const strategie_action = document.getElementById('strategie-action').value;
       
-      // NOUVEAU : Gestion de l'historique de description
+      // Gestion de l'historique de description
       let finalDescription = newDescription;
       
       if (this.currentTaskId) {
-        // Modification d'une tâche existante
         const existingRecord = this.currentRecords.find(r => r.id === this.currentTaskId);
         const currentDescription = existingRecord?.description || '';
         
-        // Obtenir l'utilisateur actuel (si disponible)
         let currentUser = null;
         try {
           const userInfo = await grist.docApi.getDocInfo();
@@ -1076,17 +1236,9 @@ createDetailedTaskHTML(record) {
           console.log('Info utilisateur non disponible');
         }
         
-        // Ajouter l'horodatage si la description a changé
         finalDescription = this.addTimestampToDescription(currentDescription, newDescription, currentUser);
         
-        console.log('Description mise à jour:', {
-          avant: currentDescription,
-          nouveau: newDescription,
-          final: finalDescription
-        });
-        
       } else {
-        // Nouvelle tâche - ajouter un timestamp si il y a une description
         if (newDescription && newDescription.trim()) {
           let currentUser = null;
           try {
@@ -1123,13 +1275,16 @@ createDetailedTaskHTML(record) {
         strategie_action
       };
 
-      if (this.availableColumns.has('date_debut')) {
+      // NOUVEAU : Gestion conditionnelle des dates
+      if (this.availableColumns.has('date_debut') && dateDebut !== null) {
         row.date_debut = dateDebut;
       }
       
-      if (this.availableColumns.has('date_echeance')) {
+      if (this.availableColumns.has('date_echeance') && dateEcheance !== null) {
         row.date_echeance = dateEcheance;
       }
+
+      console.log('Données à sauvegarder:', row);
 
       if (this.currentTaskId) {
         await grist.docApi.applyUserActions([
@@ -1140,8 +1295,6 @@ createDetailedTaskHTML(record) {
         const recordIndex = this.currentRecords.findIndex(r => r.id === this.currentTaskId);
         if (recordIndex !== -1) {
           this.currentRecords[recordIndex] = { ...this.currentRecords[recordIndex], ...row };
-          this.currentRecords[recordIndex].date_debut = dateDebut;
-          this.currentRecords[recordIndex].date_echeance = dateEcheance;
         }
         
       } else {
@@ -1152,8 +1305,6 @@ createDetailedTaskHTML(record) {
         
         if (result && result[0] && result[0].id) {
           const newRecord = { id: result[0].id, ...row };
-          newRecord.date_debut = dateDebut;
-          newRecord.date_echeance = dateEcheance;
           this.currentRecords.push(newRecord);
         }
       }
@@ -1163,13 +1314,7 @@ createDetailedTaskHTML(record) {
       
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
-      
-      let errorMessage = error.message;
-      if (errorMessage.includes("KeyError 'date_debut'") || errorMessage.includes("KeyError 'date_echeance'")) {
-        errorMessage = "Les colonnes de dates (date_debut/date_echeance) n'existent pas dans votre table Grist. Vous pouvez continuer à utiliser l'application, mais les dates ne seront pas sauvegardées.";
-      }
-      
-      displayError(`Erreur lors de la sauvegarde: ${errorMessage}`);
+      displayError(`Erreur lors de la sauvegarde: ${error.message}`);
     }
   }
 
