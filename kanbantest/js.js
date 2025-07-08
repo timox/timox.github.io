@@ -1206,7 +1206,7 @@ exportSingleTaskHistory(taskId) {
     console.log('date_debut formaté:', this.formatDate(task.date_debut));
     console.log('date_echeance formaté:', this.formatDate(task.date_echeance));
   }
-}
+
 
 // === INSTRUCTIONS ===
 
