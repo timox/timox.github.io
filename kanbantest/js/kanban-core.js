@@ -11,15 +11,12 @@ const STATUTS = [
   { id: 'Terminé', libelle: 'Terminé', classe: 'termine' }
 ];
 
-const DEFAULT_BUREAUX = ['Exploit', 'Réseau', 'BDD', 'Chef SSIR'];
-const DEFAULT_RESPONSABLES = ['Alex', 'Timothée', 'Isabelle', 'Chloé', 'Paul', 'Théo', 'Gaël', 'Thomas', 'Elie', 'Landry', 'Presta'];
+const DEFAULT_BUREAUX = ['Exploit', 'Réseau', 'BDD', 'Chef SSIR', 'SIG','NEXSIS-RRF','COMSIC'];
+const DEFAULT_RESPONSABLES = ['Alex', 'Timothée', 'Isabelle', 'Chloé', 'Paul', 'Théo', 'Gaël', 'Thomas', 'Elie', 'Landry', 'Presta','Yvon','Clarisse','Hervé'];
 const DEFAULT_URGENCES = ['Immédiate', 'Courte', 'Moyenne', 'Longue'];
 const DEFAULT_IMPACTS = ['Critique', 'Important', 'Modéré', 'Mineur'];
 const DEFAULT_STATUTS = STATUTS.map(s => s.id);
 const DEFAULT_PROJETS = [
-  'accès distants', 'AD', 'SSI', 'caméras pièton', 'astre finances', 'correspondants', 'autre projet',
-  'conformité systèmes', 'MCO', 'conformité RZO', 'firewall', 'Libriciel', 'intranet-extranet',
-  'optimops', 'attestation assurances', 'horoquartz', 'administratif-budget'
 ];
 
 const TABLE_ID = "Ssir_principale_task";
