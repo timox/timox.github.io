@@ -2182,8 +2182,7 @@ displayDescriptionHistory(tache) {
         }
       }
     });
-  }
-}
+
 
    document.addEventListener('click', (e) => {
   if (e.target.closest('.btn-history')) {
