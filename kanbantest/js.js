@@ -9,8 +9,8 @@ const STATUTS = [
   { id: 'Terminé', libelle: 'Terminé', classe: 'termine' }
 ];
 
-const DEFAULT_BUREAUX = ['Exploit', 'Réseau', 'BDD', 'Chef SSIR'];
-const DEFAULT_RESPONSABLES = ['Alex', 'Timothée', 'Isabelle', 'Chloé', 'Paul', 'Théo', 'Gaël', 'Thomas', 'Elie', 'Landry', 'Presta'];
+const DEFAULT_BUREAUX = ['Exploit', 'Réseau', 'BDD', 'Chef SSIR','NEXSIS-RRF','SIG','COMSIC','Chef SIG','Chef GSSI' ];
+const DEFAULT_RESPONSABLES = ['Alex', 'Timothée', 'Isabelle', 'Chloé', 'Paul', 'Théo', 'Gaël', 'Thomas', 'Elie', 'Landry', 'Presta','Clarisse','Hervé', 'Yvon'];
 const DEFAULT_URGENCES = ['Immédiate', 'Courte', 'Moyenne', 'Longue'];
 const DEFAULT_IMPACTS = ['Critique', 'Important', 'Modéré', 'Mineur'];
 const DEFAULT_STATUTS = STATUTS.map(s => s.id);
