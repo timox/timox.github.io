@@ -1158,6 +1158,255 @@ const commentsCSS = `
   line-height: 1.5;
   color: #495057;
 }   
+
+/* === Champs stratégie plus larges === */
+#strategie-objectif, 
+#strategie-sous-objectif, 
+#strategie-action {
+  min-width: 320px !important; /* Encore plus large */
+  max-width: 400px !important; /* Encore plus large */
+  font-size: 0.95rem !important;
+  padding: 0.8rem !important;
+  min-height: 140px !important; /* Plus haut pour voir plus d'options */
+  border: 1px solid #ced4da !important;
+  border-radius: 6px !important;
+}
+
+.input-group.mb-2.flex-nowrap {
+  gap: 1.2rem !important; /* Plus d'espace entre les listes */
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+}
+
+/* === Corrections Modal Historique === */
+.history-modal .modal-dialog {
+  max-width: 1100px !important; /* Encore plus large */
+}
+
+.history-timeline {
+  padding-left: 3rem !important; /* Plus d'espace pour éviter que le contenu soit "mangé" */
+  margin-top: 1rem !important;
+}
+
+.history-timeline::before {
+  left: 1rem !important; /* Décalé vers la droite */
+  width: 3px !important; /* Ligne plus épaisse */
+  background: linear-gradient(to bottom, #007bff, #28a745) !important;
+  border-radius: 2px !important;
+}
+
+.timeline-entry {
+  padding: 1.5rem !important;
+  margin-bottom: 1.5rem !important;
+  border-radius: 12px !important;
+  width: calc(100% - 1rem) !important; /* Laisse de l'espace à droite */
+  margin-left: 0.5rem !important; /* Décalage pour éviter le chevauchement */
+  box-shadow: 0 3px 6px rgba(0,0,0,0.08) !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.timeline-entry:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 5px 12px rgba(0,0,0,0.12) !important;
+}
+
+.timeline-entry::before {
+  left: -2.8rem !important; /* Ajusté pour la nouvelle position */
+  top: 1.5rem !important;
+  width: 16px !important;
+  height: 16px !important;
+  border: 4px solid white !important;
+  box-shadow: 0 0 0 3px #007bff !important;
+  z-index: 2 !important;
+}
+
+.timeline-entry.current::before {
+  background: #28a745 !important;
+  box-shadow: 0 0 0 3px #28a745 !important;
+  animation: pulse 2s infinite !important;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 3px #28a745; }
+  50% { box-shadow: 0 0 0 6px rgba(40, 167, 69, 0.4); }
+  100% { box-shadow: 0 0 0 3px #28a745; }
+}
+
+.timeline-status {
+  font-weight: 700 !important;
+  margin-bottom: 0.8rem !important;
+  font-size: 1.2rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+.timeline-dates {
+  font-size: 0.95rem !important;
+  margin-bottom: 0.6rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+.timeline-duration {
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  margin-bottom: 0.8rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+.timeline-note {
+  padding: 0.8rem !important;
+  border-radius: 6px !important;
+  margin-top: 0.8rem !important;
+  border-left: 4px solid #ffc107 !important;
+}
+
+/* === Commentaires dans la timeline === */
+.timeline-comments {
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef) !important;
+  border: 1px solid #dee2e6 !important;
+  border-radius: 8px !important;
+  padding: 1rem !important;
+  margin-top: 1rem !important;
+}
+
+.timeline-comments-title {
+  font-weight: 600 !important;
+  margin-bottom: 0.8rem !important;
+  font-size: 0.95rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+.timeline-comment {
+  background: white !important;
+  border-left: 4px solid #007bff !important;
+  padding: 0.8rem !important;
+  margin-bottom: 0.8rem !important;
+  border-radius: 0 6px 6px 0 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+}
+
+.timeline-comment:last-child {
+  margin-bottom: 0 !important;
+}
+
+.comment-timestamp {
+  font-size: 0.85rem !important;
+  margin-bottom: 0.4rem !important;
+}
+
+.comment-content {
+  white-space: pre-wrap !important;
+  line-height: 1.5 !important;
+  font-size: 0.9rem !important;
+}
+
+/* === Statistiques améliorées === */
+.history-stats {
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef) !important;
+  border-radius: 12px !important;
+  padding: 1.5rem !important;
+  margin-bottom: 2rem !important;
+  border: 1px solid #dee2e6 !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+}
+
+.stat-item {
+  padding: 1rem !important;
+}
+
+.stat-value {
+  font-size: 2rem !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+}
+
+.stat-label {
+  font-size: 0.9rem !important;
+  margin-top: 0.5rem !important;
+}
+
+/* === Tous les commentaires === */
+.all-comments-container {
+  max-height: 500px !important;
+  overflow-y: auto !important;
+  padding-right: 0.5rem !important;
+}
+
+.comment-item {
+  background: white !important;
+  border: 1px solid #e9ecef !important;
+  border-radius: 8px !important;
+  padding: 1.2rem !important;
+  margin-bottom: 1rem !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+}
+
+.comment-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 0.8rem !important;
+  padding-bottom: 0.8rem !important;
+  border-bottom: 1px solid #f1f3f4 !important;
+}
+
+.comment-status {
+  font-size: 0.85rem !important;
+  padding: 0.3rem 0.8rem !important;
+}
+
+.comment-timestamp {
+  font-size: 0.85rem !important;
+}
+
+/* === Responsive pour les champs stratégie === */
+@media (max-width: 1400px) {
+  #strategie-objectif, 
+  #strategie-sous-objectif, 
+  #strategie-action {
+    min-width: 280px !important;
+    max-width: 320px !important;
+  }
+}
+
+@media (max-width: 1200px) {
+  #strategie-objectif, 
+  #strategie-sous-objectif, 
+  #strategie-action {
+    min-width: 240px !important;
+    max-width: 280px !important;
+  }
+}
+
+@media (max-width: 992px) {
+  .input-group.mb-2.flex-nowrap {
+    flex-direction: column !important;
+    gap: 1rem !important;
+  }
+  
+  #strategie-objectif, 
+  #strategie-sous-objectif, 
+  #strategie-action {
+    min-width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  .history-timeline {
+    padding-left: 2rem !important;
+  }
+  
+  .timeline-entry {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+}
   </style>
 </head>
 <body>
@@ -1349,7 +1598,7 @@ const commentsCSS = `
       </div>
     </div>
   </div>
-<!-- Modal Historique Améliorée -->
+<!-- Modal Historique Complète -->
 <div class="modal fade history-modal" id="history-modal" tabindex="-1" aria-labelledby="history-modal-label" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content">
@@ -1367,7 +1616,7 @@ const commentsCSS = `
         <button type="button" class="btn btn-info" id="btn-show-comments-only">
           <i class="bi bi-chat-square-text me-2"></i>Voir tous les commentaires
         </button>
-        <button type="button" class="btn btn-success btn-export-history" id="btn-export-task-history">
+        <button type="button" class="btn btn-success" id="btn-export-task-history">
           <i class="bi bi-download me-2"></i>Exporter cette tâche
         </button>
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
