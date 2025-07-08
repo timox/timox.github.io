@@ -1002,6 +1002,172 @@
   font-style: italic;
   margin-top: 0.25rem;
 }
+/* === Timeline Unifiée === */
+.timeline-entry {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  padding-left: 0;
+}
+
+.timeline-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+  position: relative;
+  z-index: 2;
+}
+
+.timeline-status .timeline-icon {
+  background: #007bff;
+  color: white;
+  border: 3px solid white;
+  box-shadow: 0 0 0 2px #007bff;
+}
+
+.timeline-status.current .timeline-icon {
+  background: #28a745;
+  box-shadow: 0 0 0 2px #28a745;
+  animation: pulse-green 2s infinite;
+}
+
+.timeline-comment .timeline-icon {
+  background: #6c757d;
+  color: white;
+  border: 3px solid white;
+  box-shadow: 0 0 0 2px #6c757d;
+}
+
+.timeline-content {
+  flex: 1;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  position: relative;
+}
+
+.timeline-content::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 15px;
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-right: 8px solid #e9ecef;
+}
+
+.timeline-content::after {
+  content: '';
+  position: absolute;
+  left: -7px;
+  top: 15px;
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-right: 8px solid white;
+}
+
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.timeline-title {
+  font-weight: 600;
+  color: #495057;
+}
+
+.timeline-date {
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+.timeline-meta {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.timeline-duration {
+  color: #007bff;
+  font-weight: 500;
+}
+
+.timeline-user {
+  color: #6c757d;
+}
+
+.timeline-status-badge {
+  background: #e9ecef;
+  color: #495057;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.timeline-comment-content {
+  background: #f8f9fa;
+  border-left: 3px solid #6c757d;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+  border-radius: 0 4px 4px 0;
+  white-space: pre-wrap;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.timeline-note {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 4px;
+  padding: 0.5rem;
+  font-size: 0.85rem;
+  font-style: italic;
+  margin-top: 0.5rem;
+}
+
+/* === Ligne de connexion entre les éléments === */
+.history-timeline::before {
+  content: '';
+  position: absolute;
+  left: 20px;
+  top: 40px;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, #dee2e6 0%, #dee2e6 100%);
+  z-index: 1;
+}
+
+.history-timeline {
+  position: relative;
+  padding-left: 0;
+}
+
+/* === Animation pour le statut actuel === */
+@keyframes pulse-green {
+  0%, 100% { 
+    box-shadow: 0 0 0 2px #28a745, 0 0 0 4px rgba(40, 167, 69, 0.3); 
+  }
+  50% { 
+    box-shadow: 0 0 0 2px #28a745, 0 0 0 8px rgba(40, 167, 69, 0.1); 
+  }
+}
+    
   </style>
 </head>
 <body>
