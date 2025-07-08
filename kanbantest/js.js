@@ -15,9 +15,7 @@ const DEFAULT_URGENCES = ['Immédiate', 'Courte', 'Moyenne', 'Longue'];
 const DEFAULT_IMPACTS = ['Critique', 'Important', 'Modéré', 'Mineur'];
 const DEFAULT_STATUTS = STATUTS.map(s => s.id);
 const DEFAULT_PROJETS = [
-  'accès distants', 'AD', 'SSI', 'caméras pièton', 'astre finances', 'correspondants', 'autre projet',
-  'conformité systèmes', 'MCO', 'conformité RZO', 'firewall', 'Libriciel', 'intranet-extranet',
-  'optimops', 'attestation assurances', 'horoquartz', 'administratif-budget'
+  
 ];
 
 const TABLE_ID = "Ssir_principale_task";
