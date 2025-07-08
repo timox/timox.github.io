@@ -2152,10 +2152,7 @@ displayDescriptionHistory(tache) {
   initEventListeners() {
     document.getElementById('btn-save-task').onclick = () => this.saveTask();
     document.getElementById('btn-nouvelle-tache').onclick = () => this.openPopup();
-    const btnExportHistory = document.getElementById('btn-export-history');
-    if (btnExportHistory) {
-      btnExportHistory.onclick = () => this.exportHistoryData();
-    }
+    
     const btnDelete = document.getElementById('btn-delete-task');
     if (btnDelete) {
       btnDelete.onclick = () => {
