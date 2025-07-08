@@ -616,99 +616,120 @@ logTaskHistory(task) {
   }
 }
 
- // === MODIFICATION DE openHistoryModal POUR UTILISER LA TIMELINE UNIFIÉE ===
-  openHistoryModal(task) {
-    if (!task.historique_statuts && !task.description) {
-      alert('Pas d\'historique disponible pour cette tâche');
-      return;
-    }
+// 2. MÉTHODE AMÉLIORÉE POUR openHistoryModal AVEC COMMENTAIRES
+openHistoryModal(task) {
+  if (!task.historique_statuts) {
+    alert('Pas d\'historique disponible pour cette tâche');
+    return;
+  }
+  
+  try {
+    const historyData = JSON.parse(task.historique_statuts);
+    const history = historyData.historique || [];
     
-    try {
-      // Construire la timeline unifiée
-      const unifiedTimeline = this.buildUnifiedTimeline(task);
-      
-      // Mettre à jour le titre
-      document.getElementById('history-modal-label').innerHTML = 
-        `<i class="bi bi-clock-history me-2"></i>Historique : ${task.titre}`;
-      
-      // Calculer les statistiques
-      const statusEntries = unifiedTimeline.filter(item => item.type === 'status');
-      const commentEntries = unifiedTimeline.filter(item => item.type === 'comment');
-      
-      const totalDuration = statusEntries.reduce((sum, entry) => {
-        return sum + (entry.data.duree_minutes || 0);
-      }, 0);
-      
-      const totalDays = Math.round(totalDuration / (60 * 24) * 10) / 10;
-      const avgDuration = statusEntries.length > 0 ? Math.round(totalDuration / statusEntries.length) : 0;
-      
-      // Calculer la durée totale écoulée
-      const firstEntry = unifiedTimeline[0];
-      const lastEntry = unifiedTimeline[unifiedTimeline.length - 1];
-      let totalElapsed = 0;
-      
-      if (firstEntry && lastEntry) {
-        totalElapsed = Math.round((lastEntry.date - firstEntry.date) / (1000 * 60 * 60 * 24) * 10) / 10;
-      }
-      
-      const statsHTML = `
-        <div class="row">
-          <div class="col-md-2">
-            <div class="stat-item">
-              <div class="stat-value">${statusEntries.length}</div>
-              <div class="stat-label">Statuts</div>
-            </div>
-          </div>
-          <div class="col-md-2">
-            <div class="stat-item">
-              <div class="stat-value">${commentEntries.length}</div>
-              <div class="stat-label">Commentaires</div>
-            </div>
-          </div>
-          <div class="col-md-2">
-            <div class="stat-item">
-              <div class="stat-value">${totalDays}j</div>
-              <div class="stat-label">Temps actif</div>
-            </div>
-          </div>
-          <div class="col-md-2">
-            <div class="stat-item">
-              <div class="stat-value">${totalElapsed}j</div>
-              <div class="stat-label">Durée totale</div>
-            </div>
-          </div>
-          <div class="col-md-2">
-            <div class="stat-item">
-              <div class="stat-value">${Math.round(avgDuration/60)}h</div>
-              <div class="stat-label">Moy. par étape</div>
-            </div>
-          </div>
-          <div class="col-md-2">
-            <div class="stat-item">
-              <div class="stat-value">${task.statut}</div>
-              <div class="stat-label">Statut actuel</div>
-            </div>
+    // Mettre à jour le titre
+    document.getElementById('history-modal-label').innerHTML = 
+      `<i class="bi bi-clock-history me-2"></i>Historique : ${task.titre}`;
+    
+    // Calculer les statistiques
+    const totalDuration = history.reduce((sum, entry) => sum + (entry.duree_minutes || 0), 0);
+    const totalDays = Math.round(totalDuration / (60 * 24) * 10) / 10;
+    const avgDuration = history.length > 0 ? Math.round(totalDuration / history.length) : 0;
+    
+    const statsHTML = `
+      <div class="row">
+        <div class="col-md-3">
+          <div class="stat-item">
+            <div class="stat-value">${history.length}</div>
+            <div class="stat-label">Étapes</div>
           </div>
         </div>
+        <div class="col-md-3">
+          <div class="stat-item">
+            <div class="stat-value">${totalDays}j</div>
+            <div class="stat-label">Durée totale</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stat-item">
+            <div class="stat-value">${Math.round(avgDuration/60)}h</div>
+            <div class="stat-label">Moy. par étape</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stat-item">
+            <div class="stat-value">${task.statut}</div>
+            <div class="stat-label">Statut actuel</div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // NOUVEAU : Récupérer les commentaires par statut
+    const commentsByStatus = this.getCommentsPerStatus(task);
+    
+    // Créer la timeline avec commentaires
+    let timelineHTML = '';
+    history.forEach((entry, index) => {
+      const isCurrentStatus = index === history.length - 1 && !entry.date_sortie;
+      const duration = entry.duree_minutes ? 
+        `${Math.floor(entry.duree_minutes / 60)}h ${entry.duree_minutes % 60}m` : 
+        'En cours...';
+      
+      // Récupérer les commentaires pour ce statut
+      const statusComments = commentsByStatus[entry.statut] || [];
+      
+      let commentsHTML = '';
+      if (statusComments.length > 0) {
+        commentsHTML = `
+          <div class="timeline-comments">
+            <div class="timeline-comments-title">
+              <i class="bi bi-chat-text me-1"></i>Commentaires (${statusComments.length})
+            </div>
+            ${statusComments.map(comment => `
+              <div class="timeline-comment">
+                <div class="comment-timestamp">${comment.timestamp}</div>
+                <div class="comment-content">${comment.content}</div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+      
+      timelineHTML += `
+        <div class="timeline-entry ${isCurrentStatus ? 'current' : ''}">
+          <div class="timeline-status">
+            ${entry.statut}
+            ${isCurrentStatus ? '<span class="badge bg-success ms-2">En cours</span>' : ''}
+          </div>
+          <div class="timeline-dates">
+            <i class="bi bi-calendar-event me-1"></i>
+            Du ${new Date(entry.date_entree).toLocaleString('fr-FR')}
+            ${entry.date_sortie ? `au ${new Date(entry.date_sortie).toLocaleString('fr-FR')}` : '(en cours)'}
+          </div>
+          <div class="timeline-duration">
+            <i class="bi bi-stopwatch me-1"></i>Durée: ${duration}
+          </div>
+          ${entry.note ? `<div class="timeline-note"><i class="bi bi-info-circle me-1"></i>${entry.note}</div>` : ''}
+          ${commentsHTML}
+        </div>
       `;
-      
-      // Générer la timeline unifiée
-      const timelineHTML = this.generateUnifiedTimelineHTML(unifiedTimeline);
-      
-      document.getElementById('history-stats').innerHTML = statsHTML;
-      document.getElementById('history-timeline').innerHTML = timelineHTML;
-      
-      // Stocker l'ID de la tâche pour l'export
-      document.getElementById('btn-export-task-history').dataset.taskId = task.id;
-      
-      // Afficher la modal
-      new bootstrap.Modal(document.getElementById('history-modal')).show();
-      
-    } catch (e) {
-      console.error('Erreur lors de l\'ouverture de la modal:', e);
-      alert('Erreur lors de l\'affichage de l\'historique');
-    }
+    });
+    
+    document.getElementById('history-stats').innerHTML = statsHTML;
+    document.getElementById('history-timeline').innerHTML = timelineHTML;
+    
+    // Stocker l'ID de la tâche pour l'export
+    document.getElementById('btn-export-task-history').dataset.taskId = task.id;
+    
+    // Afficher la modal
+    new bootstrap.Modal(document.getElementById('history-modal')).show();
+    
+  } catch (e) {
+    console.error('Erreur lors de l\'ouverture de la modal:', e);
+    alert('Erreur lors de l\'affichage de l\'historique');
   }
+}
 
   // === NOUVELLE MÉTHODE D'EXPORT AVEC TIMELINE UNIFIÉE ===
   exportUnifiedTimeline(taskId) {
@@ -951,58 +972,91 @@ exportSingleTaskHistory(taskId) {
     `;
   }
 
-  // Extraire les commentaires par statut
-  getCommentsPerStatus(task) {
-    if (!task.description || !task.historique_statuts) return {};
+ // 3. AMÉLIORATION DE getCommentsPerStatus POUR MEILLEURE ASSOCIATION
+getCommentsPerStatus(task) {
+  if (!task.description || !task.historique_statuts) return {};
+  
+  try {
+    const historyData = JSON.parse(task.historique_statuts);
+    const statusHistory = historyData.historique || [];
     
-    try {
-      const historyData = JSON.parse(task.historique_statuts);
-      const statusHistory = historyData.historique || [];
+    // Extraire les commentaires avec leurs timestamps
+    const sections = task.description.split(/\n\s*---\s*\n/);
+    const comments = {};
+    
+    sections.forEach(section => {
+      const lines = section.trim().split('\n');
+      const timestampLine = lines.find(line => line.match(/^\[.*\]$/));
       
-      // Extraire les commentaires avec leurs timestamps
-      const sections = task.description.split(/\n\s*---\s*\n/);
-      const comments = {};
-      
-      sections.forEach(section => {
-        const lines = section.trim().split('\n');
-        const timestampLine = lines.find(line => line.match(/^\[.*\]$/));
+      if (timestampLine) {
+        const content = lines.slice(1).join('\n').trim();
         
-        if (timestampLine) {
-          const content = lines.slice(1).join('\n').trim();
-          const dateMatch = timestampLine.match(/\[([\d\/\s:]+)/);
+        // Extraire la date du timestamp
+        const dateMatch = timestampLine.match(/\[(\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2})/);
+        
+        if (dateMatch && content) {
+          // Convertir la date française en objet Date
+          const [datePart, timePart] = dateMatch[1].split(' ');
+          const [day, month, year] = datePart.split('/');
+          const commentDate = new Date(`${year}-${month}-${day}T${timePart}:00`);
           
-          if (dateMatch) {
-            const commentDate = new Date(dateMatch[1].replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$2-$1'));
+          // Trouver le statut correspondant à cette date
+          let correspondingStatus = null;
+          
+          for (let i = 0; i < statusHistory.length; i++) {
+            const status = statusHistory[i];
+            const entryDate = new Date(status.date_entree);
+            const exitDate = status.date_sortie ? new Date(status.date_sortie) : new Date();
             
-            // Trouver le statut correspondant à cette date
-            const correspondingStatus = statusHistory.find(status => {
-              const entryDate = new Date(status.date_entree);
-              const exitDate = status.date_sortie ? new Date(status.date_sortie) : new Date();
-              return commentDate >= entryDate && commentDate <= exitDate;
-            });
+            // Ajouter une marge de tolérance de 1 minute
+            const marginBefore = new Date(entryDate.getTime() - 60000);
+            const marginAfter = new Date(exitDate.getTime() + 60000);
             
-            const statusName = correspondingStatus?.statut || 'Inconnu';
-            
-            if (!comments[statusName]) {
-              comments[statusName] = [];
+            if (commentDate >= marginBefore && commentDate <= marginAfter) {
+              correspondingStatus = status;
+              break;
             }
-            
-            comments[statusName].push({
-              date: commentDate,
-              content: content,
-              timestamp: timestampLine
+          }
+          
+          // Si pas de correspondance exacte, associer au statut le plus proche temporellement
+          if (!correspondingStatus && statusHistory.length > 0) {
+            correspondingStatus = statusHistory.reduce((closest, status) => {
+              const statusDate = new Date(status.date_entree);
+              const closestDate = new Date(closest.date_entree);
+              
+              return Math.abs(commentDate - statusDate) < Math.abs(commentDate - closestDate) 
+                ? status : closest;
             });
           }
+          
+          const statusName = correspondingStatus?.statut || 'Non classé';
+          
+          if (!comments[statusName]) {
+            comments[statusName] = [];
+          }
+          
+          comments[statusName].push({
+            date: commentDate,
+            content: content,
+            timestamp: timestampLine
+          });
         }
-      });
-      
-      return comments;
-      
-    } catch (e) {
-      console.error('Erreur extraction commentaires:', e);
-      return {};
-    }
+      }
+    });
+    
+    // Trier les commentaires par date dans chaque statut
+    Object.keys(comments).forEach(status => {
+      comments[status].sort((a, b) => b.date - a.date); // Plus récent d'abord
+    });
+    
+    return comments;
+    
+  } catch (e) {
+    console.error('Erreur extraction commentaires:', e);
+    return {};
   }
+}
+
 
   // === CRÉATION DES CARTES ===
   createTaskElementHTML(record) {
