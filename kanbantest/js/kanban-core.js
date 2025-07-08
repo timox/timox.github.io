@@ -213,27 +213,36 @@ async getCurrentGristUser() {
       
       if (userName) {
         console.log('✅ Nom utilisateur trouvé:', userName);
-        return userName;
+        this.currentUser=username;
+        return this.currentUser;
       }
     }
     
     // Essayer d'autres propriétés possibles
     if (userInfo?.metadata?.updatedBy) {
       console.log('✅ Nom trouvé dans metadata:', userInfo.metadata.updatedBy);
-      return userInfo.metadata.updatedBy;
+      this.currentUser=userInfo.metadata.updatedBy;
+      return this.currentUser;
+      
     }
     
     if (userInfo?.owner) {
       console.log('✅ Nom trouvé dans owner:', userInfo.owner);
+      
       return userInfo.owner;
+       this.currentUser=userInfo.owner;
+      return this.currentUser;
     }
     
     console.log('❌ Aucun nom d\'utilisateur trouvé');
-    return null;
+    this.currentUser=null;
+    return this.currentUser;
+    
     
   } catch (error) {
     console.log('❌ Erreur API getDocInfo:', error.message);
-    return null;
+    this.currentUser=null;
+    return this.currentUser;
   }
 }
 
