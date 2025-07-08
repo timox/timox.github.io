@@ -378,7 +378,7 @@ class KanbanManager {
     
     return timeline;
   }
- // 5. NOUVELLE FONCTION POUR AFFICHER TOUS LES COMMENTAIRES
+ // === 4. MÉTHODE showAllComments VÉRIFIÉE ===
 showAllComments(taskId) {
   const task = this.currentRecords.find(r => r.id === taskId);
   if (!task || !task.description) {
@@ -402,6 +402,11 @@ showAllComments(taskId) {
   // Trier par date (plus récent d'abord)
   allComments.sort((a, b) => b.date - a.date);
   
+  if (allComments.length === 0) {
+    alert('Aucun commentaire trouvé pour cette tâche');
+    return;
+  }
+  
   let commentsHTML = '<div class="all-comments-container">';
   
   allComments.forEach(comment => {
@@ -418,18 +423,32 @@ showAllComments(taskId) {
   
   commentsHTML += '</div>';
   
+  // Sauvegarder le contenu original
+  const timelineElement = document.getElementById('history-timeline');
+  if (!timelineElement) return;
+  
+  const originalContent = timelineElement.innerHTML;
+  
   // Remplacer le contenu de la timeline temporairement
-  const originalContent = document.getElementById('history-timeline').innerHTML;
-  document.getElementById('history-timeline').innerHTML = `
-    <div class="text-center mb-3">
+  timelineElement.innerHTML = `
+    <div class="text-center mb-4">
       <h6><i class="bi bi-chat-square-text me-2"></i>Tous les commentaires (${allComments.length})</h6>
-      <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('history-timeline').innerHTML = \`${originalContent.replace(/`/g, '\\`')}\`">
+      <button class="btn btn-sm btn-outline-secondary" id="btn-back-to-timeline">
         <i class="bi bi-arrow-left me-1"></i>Retour à la timeline
       </button>
     </div>
     ${commentsHTML}
   `;
+  
+  // Ajouter l'event listener pour le retour
+  const backBtn = document.getElementById('btn-back-to-timeline');
+  if (backBtn) {
+    backBtn.addEventListener('click', () => {
+      timelineElement.innerHTML = originalContent;
+    });
+  }
 }
+
 
   // === NOUVELLE MÉTHODE POUR GÉNÉRER HTML DE LA TIMELINE UNIFIÉE ===
   generateUnifiedTimelineHTML(timeline) {
@@ -668,7 +687,7 @@ logTaskHistory(task) {
   }
 }
 
-// 2. MÉTHODE AMÉLIORÉE POUR openHistoryModal AVEC COMMENTAIRES
+// === 2. MÉTHODE openHistoryModal VÉRIFIÉE ===
 openHistoryModal(task) {
   if (!task.historique_statuts) {
     alert('Pas d\'historique disponible pour cette tâche');
@@ -680,8 +699,10 @@ openHistoryModal(task) {
     const history = historyData.historique || [];
     
     // Mettre à jour le titre
-    document.getElementById('history-modal-label').innerHTML = 
-      `<i class="bi bi-clock-history me-2"></i>Historique : ${task.titre}`;
+    const modalLabel = document.getElementById('history-modal-label');
+    if (modalLabel) {
+      modalLabel.innerHTML = `<i class="bi bi-clock-history me-2"></i>Historique : ${task.titre}`;
+    }
     
     // Calculer les statistiques
     const totalDuration = history.reduce((sum, entry) => sum + (entry.duree_minutes || 0), 0);
@@ -717,7 +738,7 @@ openHistoryModal(task) {
       </div>
     `;
     
-    // NOUVEAU : Récupérer les commentaires par statut
+    // Récupérer les commentaires par statut
     const commentsByStatus = this.getCommentsPerStatus(task);
     
     // Créer la timeline avec commentaires
@@ -736,7 +757,8 @@ openHistoryModal(task) {
         commentsHTML = `
           <div class="timeline-comments">
             <div class="timeline-comments-title">
-              <i class="bi bi-chat-text me-1"></i>Commentaires (${statusComments.length})
+              <i class="bi bi-chat-text"></i>
+              Commentaires (${statusComments.length})
             </div>
             ${statusComments.map(comment => `
               <div class="timeline-comment">
@@ -755,12 +777,13 @@ openHistoryModal(task) {
             ${isCurrentStatus ? '<span class="badge bg-success ms-2">En cours</span>' : ''}
           </div>
           <div class="timeline-dates">
-            <i class="bi bi-calendar-event me-1"></i>
+            <i class="bi bi-calendar-event"></i>
             Du ${new Date(entry.date_entree).toLocaleString('fr-FR')}
             ${entry.date_sortie ? `au ${new Date(entry.date_sortie).toLocaleString('fr-FR')}` : '(en cours)'}
           </div>
           <div class="timeline-duration">
-            <i class="bi bi-stopwatch me-1"></i>Durée: ${duration}
+            <i class="bi bi-stopwatch"></i>
+            Durée: ${duration}
           </div>
           ${entry.note ? `<div class="timeline-note"><i class="bi bi-info-circle me-1"></i>${entry.note}</div>` : ''}
           ${commentsHTML}
@@ -768,14 +791,29 @@ openHistoryModal(task) {
       `;
     });
     
-    document.getElementById('history-stats').innerHTML = statsHTML;
-    document.getElementById('history-timeline').innerHTML = timelineHTML;
+    // Injecter le contenu
+    const statsElement = document.getElementById('history-stats');
+    const timelineElement = document.getElementById('history-timeline');
+    
+    if (statsElement) {
+      statsElement.innerHTML = statsHTML;
+    }
+    
+    if (timelineElement) {
+      timelineElement.innerHTML = timelineHTML;
+    }
     
     // Stocker l'ID de la tâche pour l'export
-    document.getElementById('btn-export-task-history').dataset.taskId = task.id;
+    const exportBtn = document.getElementById('btn-export-task-history');
+    if (exportBtn) {
+      exportBtn.dataset.taskId = task.id;
+    }
     
     // Afficher la modal
-    new bootstrap.Modal(document.getElementById('history-modal')).show();
+    const modalElement = document.getElementById('history-modal');
+    if (modalElement) {
+      new bootstrap.Modal(modalElement).show();
+    }
     
   } catch (e) {
     console.error('Erreur lors de l\'ouverture de la modal:', e);
@@ -1024,7 +1062,7 @@ exportSingleTaskHistory(taskId) {
     `;
   }
 
- // 3. AMÉLIORATION DE getCommentsPerStatus POUR MEILLEURE ASSOCIATION
+// === 3. MÉTHODE getCommentsPerStatus VÉRIFIÉE ===
 getCommentsPerStatus(task) {
   if (!task.description || !task.historique_statuts) return {};
   
@@ -1043,7 +1081,7 @@ getCommentsPerStatus(task) {
       if (timestampLine) {
         const content = lines.slice(1).join('\n').trim();
         
-        // Extraire la date du timestamp
+        // Extraire la date du timestamp [DD/MM/YYYY HH:MM (user)]
         const dateMatch = timestampLine.match(/\[(\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2})/);
         
         if (dateMatch && content) {
@@ -1051,6 +1089,11 @@ getCommentsPerStatus(task) {
           const [datePart, timePart] = dateMatch[1].split(' ');
           const [day, month, year] = datePart.split('/');
           const commentDate = new Date(`${year}-${month}-${day}T${timePart}:00`);
+          
+          if (isNaN(commentDate.getTime())) {
+            console.warn('Date invalide:', dateMatch[1]);
+            return;
+          }
           
           // Trouver le statut correspondant à cette date
           let correspondingStatus = null;
@@ -1060,9 +1103,9 @@ getCommentsPerStatus(task) {
             const entryDate = new Date(status.date_entree);
             const exitDate = status.date_sortie ? new Date(status.date_sortie) : new Date();
             
-            // Ajouter une marge de tolérance de 1 minute
-            const marginBefore = new Date(entryDate.getTime() - 60000);
-            const marginAfter = new Date(exitDate.getTime() + 60000);
+            // Ajouter une marge de tolérance de 5 minutes
+            const marginBefore = new Date(entryDate.getTime() - 5 * 60000);
+            const marginAfter = new Date(exitDate.getTime() + 5 * 60000);
             
             if (commentDate >= marginBefore && commentDate <= marginAfter) {
               correspondingStatus = status;
@@ -1096,9 +1139,9 @@ getCommentsPerStatus(task) {
       }
     });
     
-    // Trier les commentaires par date dans chaque statut
+    // Trier les commentaires par date dans chaque statut (plus récent d'abord)
     Object.keys(comments).forEach(status => {
-      comments[status].sort((a, b) => b.date - a.date); // Plus récent d'abord
+      comments[status].sort((a, b) => b.date - a.date);
     });
     
     return comments;
@@ -2318,6 +2361,42 @@ displayDescriptionHistory(tache) {
         this.refreshKanban();
       });
     }
+    // Event listener pour les boutons historique des cartes
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.btn-history')) {
+    e.stopPropagation();
+    const taskId = parseInt(e.target.closest('.btn-history').dataset.taskId);
+    if (taskId && !isNaN(taskId)) {
+      this.showTaskHistory(taskId);
+    }
+  }
+});
+
+// Event listener pour l'export depuis la modal
+const exportBtn = document.getElementById('btn-export-task-history');
+if (exportBtn) {
+  exportBtn.addEventListener('click', (e) => {
+    const taskId = parseInt(e.target.dataset.taskId);
+    if (taskId && !isNaN(taskId)) {
+      this.exportSingleTaskHistory(taskId);
+    }
+  });
+}
+
+// Event listener pour le bouton "voir tous les commentaires"
+const commentsBtn = document.getElementById('btn-show-comments-only');
+if (commentsBtn) {
+  commentsBtn.addEventListener('click', (e) => {
+    const exportBtn = document.getElementById('btn-export-task-history');
+    if (exportBtn && exportBtn.dataset.taskId) {
+      const taskId = parseInt(exportBtn.dataset.taskId);
+      if (taskId && !isNaN(taskId)) {
+        this.showAllComments(taskId);
+      }
+    }
+  });
+}
+
     
     // Raccourcis clavier
     document.addEventListener('keydown', (e) => {
