@@ -378,6 +378,58 @@ class KanbanManager {
     
     return timeline;
   }
+ // 5. NOUVELLE FONCTION POUR AFFICHER TOUS LES COMMENTAIRES
+showAllComments(taskId) {
+  const task = this.currentRecords.find(r => r.id === taskId);
+  if (!task || !task.description) {
+    alert('Pas de commentaires pour cette tâche');
+    return;
+  }
+  
+  const comments = this.getCommentsPerStatus(task);
+  const allComments = [];
+  
+  // Rassembler tous les commentaires
+  Object.keys(comments).forEach(status => {
+    comments[status].forEach(comment => {
+      allComments.push({
+        ...comment,
+        status: status
+      });
+    });
+  });
+  
+  // Trier par date (plus récent d'abord)
+  allComments.sort((a, b) => b.date - a.date);
+  
+  let commentsHTML = '<div class="all-comments-container">';
+  
+  allComments.forEach(comment => {
+    commentsHTML += `
+      <div class="comment-item">
+        <div class="comment-header">
+          <span class="comment-status badge bg-primary">${comment.status}</span>
+          <span class="comment-timestamp">${comment.timestamp}</span>
+        </div>
+        <div class="comment-content">${comment.content}</div>
+      </div>
+    `;
+  });
+  
+  commentsHTML += '</div>';
+  
+  // Remplacer le contenu de la timeline temporairement
+  const originalContent = document.getElementById('history-timeline').innerHTML;
+  document.getElementById('history-timeline').innerHTML = `
+    <div class="text-center mb-3">
+      <h6><i class="bi bi-chat-square-text me-2"></i>Tous les commentaires (${allComments.length})</h6>
+      <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('history-timeline').innerHTML = \`${originalContent.replace(/`/g, '\\`')}\`">
+        <i class="bi bi-arrow-left me-1"></i>Retour à la timeline
+      </button>
+    </div>
+    ${commentsHTML}
+  `;
+}
 
   // === NOUVELLE MÉTHODE POUR GÉNÉRER HTML DE LA TIMELINE UNIFIÉE ===
   generateUnifiedTimelineHTML(timeline) {
@@ -2204,7 +2256,10 @@ displayDescriptionHistory(tache) {
   initEventListeners() {
     document.getElementById('btn-save-task').onclick = () => this.saveTask();
     document.getElementById('btn-nouvelle-tache').onclick = () => this.openPopup();
-    
+    document.getElementById('btn-show-comments-only')?.addEventListener('click', (e) => {
+  const taskId = parseInt(document.getElementById('btn-export-task-history').dataset.taskId);
+  if (taskId) this.showAllComments(taskId);
+});
     const btnDelete = document.getElementById('btn-delete-task');
     if (btnDelete) {
       btnDelete.onclick = () => {
