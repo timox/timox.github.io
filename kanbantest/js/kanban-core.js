@@ -138,53 +138,6 @@ function updateStatusHistory(record, newStatus, userId = null) {
     };
   }
 }
-// === FONCTION POUR RÉCUPÉRER LE NOM D'UTILISATEUR GRIST ===
-async function getCurrentGristUser() {
-  try {
-    console.log('🔍 Récupération utilisateur Grist...');
-    
-    // Essayer d'obtenir les infos utilisateur via l'API
-    const userInfo = await grist.docApi.getDocInfo();
-    console.log('Info Grist reçue:', userInfo);
-    
-    // Chercher le nom d'utilisateur dans différentes propriétés possibles
-    const user = userInfo?.user || userInfo?.users?.[0] || null;
-    
-    if (user) {
-      console.log('Objet utilisateur trouvé:', user);
-      
-      // Priorité : name > displayName > email > id
-      const userName = user.name || 
-                      user.displayName || 
-                      user.email || 
-                      user.id || 
-                      null;
-      
-      if (userName) {
-        console.log('✅ Nom utilisateur trouvé:', userName);
-        return userName;
-      }
-    }
-    
-    // Essayer d'autres propriétés possibles
-    if (userInfo?.metadata?.updatedBy) {
-      console.log('✅ Nom trouvé dans metadata:', userInfo.metadata.updatedBy);
-      return userInfo.metadata.updatedBy;
-    }
-    
-    if (userInfo?.owner) {
-      console.log('✅ Nom trouvé dans owner:', userInfo.owner);
-      return userInfo.owner;
-    }
-    
-    console.log('❌ Aucun nom d\'utilisateur trouvé');
-    return null;
-    
-  } catch (error) {
-    console.log('❌ Erreur API getDocInfo:', error.message);
-    return null;
-  }
-}
 
 
 // === CLASSE PRINCIPALE KANBAN ===
@@ -235,6 +188,56 @@ class KanbanManager {
     });
   }
 
+
+ // === FONCTION POUR RÉCUPÉRER LE NOM D'UTILISATEUR GRIST ===
+async getCurrentGristUser() {
+  try {
+    console.log('🔍 Récupération utilisateur Grist...');
+    
+    // Essayer d'obtenir les infos utilisateur via l'API
+    const userInfo = await grist.docApi.getDocInfo();
+    console.log('Info Grist reçue:', userInfo);
+    
+    // Chercher le nom d'utilisateur dans différentes propriétés possibles
+    const user = userInfo?.user || userInfo?.users?.[0] || null;
+    
+    if (user) {
+      console.log('Objet utilisateur trouvé:', user);
+      
+      // Priorité : name > displayName > email > id
+      const userName = user.name || 
+                      user.displayName || 
+                      user.email || 
+                      user.id || 
+                      null;
+      
+      if (userName) {
+        console.log('✅ Nom utilisateur trouvé:', userName);
+        return userName;
+      }
+    }
+    
+    // Essayer d'autres propriétés possibles
+    if (userInfo?.metadata?.updatedBy) {
+      console.log('✅ Nom trouvé dans metadata:', userInfo.metadata.updatedBy);
+      return userInfo.metadata.updatedBy;
+    }
+    
+    if (userInfo?.owner) {
+      console.log('✅ Nom trouvé dans owner:', userInfo.owner);
+      return userInfo.owner;
+    }
+    
+    console.log('❌ Aucun nom d\'utilisateur trouvé');
+    return null;
+    
+  } catch (error) {
+    console.log('❌ Erreur API getDocInfo:', error.message);
+    return null;
+  }
+}
+
+  
 
   async initializeUser() {
   if (this.userInitialized) return this.currentUser;
@@ -1314,7 +1317,7 @@ class KanbanManager {
       const strategie_action = document.getElementById('strategie-action').value;
       
       let finalDescription = newDescription;
-          let finalDescription = newDescription;
+    
     
     if (this.currentTaskId) {
       const existingRecord = this.currentRecords.find(r => r.id === this.currentTaskId);
