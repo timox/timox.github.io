@@ -35,6 +35,26 @@ const OPTIONAL_COLUMNS = ['date_debut', 'date_echeance'];
 let projetsDynamiques = [];
 
 // === FONCTIONS UTILITAIRES ===
+// === FONCTION DE DEBUG SIMPLE ===
+async function debugGristUser() {
+  console.log('=== TEST UTILISATEUR GRIST ===');
+  
+  const userName = await getCurrentGristUser();
+  
+  if (userName) {
+    console.log('🎉 Succès ! Nom d\'utilisateur:', userName);
+    console.log('📝 Les commentaires apparaîtront comme:');
+    console.log(`[${new Date().toLocaleString('fr-FR')} (${userName})]`);
+  } else {
+    console.log('⚠️ Aucun nom d\'utilisateur Grist disponible');
+    console.log('📝 Les commentaires apparaîtront comme:');
+    console.log(`[${new Date().toLocaleString('fr-FR')}]`);
+  }
+  
+  return userName;
+}
+
+
 function displayError(message) {
   console.error("ERREUR:", message);
   const el = document.getElementById('error-container');
@@ -121,6 +141,54 @@ function updateStatusHistory(record, newStatus, userId = null) {
     };
   }
 }
+// === FONCTION POUR RÉCUPÉRER LE NOM D'UTILISATEUR GRIST ===
+async function getCurrentGristUser() {
+  try {
+    console.log('🔍 Récupération utilisateur Grist...');
+    
+    // Essayer d'obtenir les infos utilisateur via l'API
+    const userInfo = await grist.docApi.getDocInfo();
+    console.log('Info Grist reçue:', userInfo);
+    
+    // Chercher le nom d'utilisateur dans différentes propriétés possibles
+    const user = userInfo?.user || userInfo?.users?.[0] || null;
+    
+    if (user) {
+      console.log('Objet utilisateur trouvé:', user);
+      
+      // Priorité : name > displayName > email > id
+      const userName = user.name || 
+                      user.displayName || 
+                      user.email || 
+                      user.id || 
+                      null;
+      
+      if (userName) {
+        console.log('✅ Nom utilisateur trouvé:', userName);
+        return userName;
+      }
+    }
+    
+    // Essayer d'autres propriétés possibles
+    if (userInfo?.metadata?.updatedBy) {
+      console.log('✅ Nom trouvé dans metadata:', userInfo.metadata.updatedBy);
+      return userInfo.metadata.updatedBy;
+    }
+    
+    if (userInfo?.owner) {
+      console.log('✅ Nom trouvé dans owner:', userInfo.owner);
+      return userInfo.owner;
+    }
+    
+    console.log('❌ Aucun nom d\'utilisateur trouvé');
+    return null;
+    
+  } catch (error) {
+    console.log('❌ Erreur API getDocInfo:', error.message);
+    return null;
+  }
+}
+
 
 // === CLASSE PRINCIPALE KANBAN ===
 class KanbanManager {
@@ -144,20 +212,23 @@ class KanbanManager {
     this.viewMode = 'compact';
     this.focusColumn = null;
     this.expandedCards = new Set();
-    
+    //user
+    this.currentUser = null;           // NOUVEAU
+    this.userInitialized = false;      // NOUVEAU
     this.init();
   }
 
   async init() {
-    await this.waitForGristReady();
-    await this.loadGristDataAndOptions();
-    this.initFilters();
-    this.initModalWithOptions();
-    this.initFlatpickr();
-    this.initViewModeControls();
-    this.refreshKanban();
-    this.initEventListeners();
-  }
+  await this.waitForGristReady();
+  await this.initializeUser();        // NOUVEAU : après Grist ready
+  await this.loadGristDataAndOptions();
+  this.initFilters();
+  this.initModalWithOptions();
+  this.initFlatpickr();
+  this.initViewModeControls();
+  this.refreshKanban();
+  this.initEventListeners();
+}
 
   async waitForGristReady() {
     return new Promise((resolve) => {
@@ -166,6 +237,23 @@ class KanbanManager {
       setTimeout(resolve, 50);
     });
   }
+
+
+  async initializeUser() {
+  if (this.userInitialized) return this.currentUser;
+  
+  console.log('Initialisation de l\'utilisateur Grist...');
+  this.currentUser = await getCurrentGristUser();
+  this.userInitialized = true;
+  
+  if (this.currentUser) {
+    console.log('✅ Utilisateur Grist initialisé:', this.currentUser);
+  } else {
+    console.log('⚠️ Pas de nom d\'utilisateur Grist disponible');
+  }
+  
+  return this.currentUser;
+}
 
   async loadGristDataAndOptions() {
     try {
@@ -335,43 +423,45 @@ class KanbanManager {
   }
 
   // === GESTION DES COMMENTAIRES ===
-  addTimestampToDescription(currentDescription, newContent, userName = null) {
-    const now = new Date();
-    const timestamp = now.toLocaleString('fr-FR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-    
-    const user = userName ? ` (${userName})` : '';
-    const separator = '---';
-    
-    if (!newContent || newContent.trim() === '') {
-      return currentDescription || '';
-    }
-    
-    if (!currentDescription || currentDescription.trim() === '') {
-      return `[${timestamp}${user}]\n${newContent.trim()}`;
-    }
-    
-    const lines = currentDescription.split('\n');
-    const lastContentIndex = lines.findIndex(line => line.startsWith('[') && line.includes(']'));
-    
-    if (lastContentIndex >= 0) {
-      const lastContent = lines.slice(lastContentIndex + 1)
-        .join('\n')
-        .replace(/^---\s*$/gm, '')
-        .trim();
-      
-      if (lastContent === newContent.trim()) {
-        return currentDescription;
-      }
-    }
-    
-    return `[${timestamp}${user}]\n${newContent.trim()}\n\n${separator}\n\n${currentDescription}`;
+ addTimestampToDescription(currentDescription, newContent, userName = null) {
+  const now = new Date();
+  const timestamp = now.toLocaleString('fr-FR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  
+  // Utiliser l'utilisateur Grist s'il est disponible
+  const user = userName || this.currentUser;
+  const userSuffix = user ? ` (${user})` : '';
+  const separator = '---';
+  
+  if (!newContent || newContent.trim() === '') {
+    return currentDescription || '';
   }
+  
+  if (!currentDescription || currentDescription.trim() === '') {
+    return `[${timestamp}${userSuffix}]\n${newContent.trim()}`;
+  }
+  
+  const lines = currentDescription.split('\n');
+  const lastContentIndex = lines.findIndex(line => line.startsWith('[') && line.includes(']'));
+  
+  if (lastContentIndex >= 0) {
+    const lastContent = lines.slice(lastContentIndex + 1)
+      .join('\n')
+      .replace(/^---\s*$/gm, '')
+      .trim();
+    
+    if (lastContent === newContent.trim()) {
+      return currentDescription;
+    }
+  }
+  
+  return `[${timestamp}${userSuffix}]\n${newContent.trim()}\n\n${separator}\n\n${currentDescription}`;
+}
 
   getLatestDescription(description) {
     if (!description) return '';
@@ -1227,21 +1317,29 @@ class KanbanManager {
       const strategie_action = document.getElementById('strategie-action').value;
       
       let finalDescription = newDescription;
+          let finalDescription = newDescription;
+    
+    if (this.currentTaskId) {
+      const existingRecord = this.currentRecords.find(r => r.id === this.currentTaskId);
+      const currentDescription = existingRecord?.description || '';
       
-      if (this.currentTaskId) {
-        const existingRecord = this.currentRecords.find(r => r.id === this.currentTaskId);
-        const currentDescription = existingRecord?.description || '';
+      // Utiliser l'utilisateur Grist initialisé
+      finalDescription = this.addTimestampToDescription(currentDescription, newDescription, this.currentUser);
+      
+    } else {
+      if (newDescription && newDescription.trim()) {
+        const now = new Date().toLocaleString('fr-FR', {
+          year: 'numeric',
+          month: '2-digit', 
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
         
-        let currentUser = null;
-        try {
-          const userInfo = await grist.docApi.getDocInfo();
-          currentUser = userInfo?.user?.name || userInfo?.user?.email || null;
-        } catch (e) {
-          console.log('Info utilisateur non disponible');
-        }
-        
-        finalDescription = this.addTimestampToDescription(currentDescription, newDescription, currentUser);
-        
+        const userSuffix = this.currentUser ? ` (${this.currentUser})` : '';
+        finalDescription = `[${now}${userSuffix}]\n${newDescription.trim()}`;
+      }
+    }
       } else {
         if (newDescription && newDescription.trim()) {
           let currentUser = null;
@@ -1345,10 +1443,11 @@ class KanbanManager {
         console.log('Info utilisateur non disponible');
       }
       
-      const historyUpdate = updateStatusHistory(record, newStatus, currentUser);
-      const updateData = {
-        statut: newStatus,
-        ...historyUpdate
+          // Utiliser l'utilisateur Grist déjà initialisé
+    const historyUpdate = updateStatusHistory(record, newStatus, this.currentUser);
+    const updateData = {
+      statut: newStatus,
+      ...historyUpdate
       };
       
       await grist.docApi.applyUserActions([
