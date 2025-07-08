@@ -1325,21 +1325,7 @@ async getCurrentGristUser() {
       
       // Utiliser l'utilisateur Grist initialisé
       finalDescription = this.addTimestampToDescription(currentDescription, newDescription, this.currentUser);
-      
-    } else {
-      if (newDescription && newDescription.trim()) {
-        const now = new Date().toLocaleString('fr-FR', {
-          year: 'numeric',
-          month: '2-digit', 
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-        
-        const userSuffix = this.currentUser ? ` (${this.currentUser})` : '';
-        finalDescription = `[${now}${userSuffix}]\n${newDescription.trim()}`;
-      }
-    }
+  
       } else {
         if (newDescription && newDescription.trim()) {
           let currentUser = null;
