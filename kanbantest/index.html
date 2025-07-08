@@ -826,14 +826,15 @@
   box-shadow: 0 2px 4px rgba(25, 118, 210, 0.2);
 }
 
-/* === Modal Historique === */
+/* === Modal Historique - Correction affichage === */
 .history-modal .modal-dialog {
-  max-width: 900px;
+  max-width: 1000px; /* Plus large */
 }
 
 .history-timeline {
   position: relative;
   padding-left: 2rem;
+  width: 100%; /* Force la largeur complète */
 }
 
 .history-timeline::before {
@@ -851,16 +852,18 @@
   background: white;
   border: 1px solid #e9ecef;
   border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1rem;
+  padding: 1.2rem;
+  margin-bottom: 1.2rem;
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  width: 100%; /* Force la largeur complète */
+  box-sizing: border-box;
 }
 
 .timeline-entry::before {
   content: '';
   position: absolute;
   left: -2.25rem;
-  top: 1rem;
+  top: 1.2rem;
   width: 12px;
   height: 12px;
   background: #007bff;
@@ -877,30 +880,140 @@
 .timeline-status {
   font-weight: 600;
   color: #495057;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.6rem;
+  font-size: 1.1rem;
 }
 
 .timeline-dates {
   color: #6c757d;
   font-size: 0.9rem;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.4rem;
 }
 
 .timeline-duration {
   color: #007bff;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 500;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.6rem;
 }
 
 .timeline-note {
   background: #fff3cd;
   border: 1px solid #ffeaa7;
   border-radius: 4px;
-  padding: 0.5rem;
-  font-size: 0.85rem;
+  padding: 0.6rem;
+  font-size: 0.9rem;
   font-style: italic;
-  margin-top: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+/* === Commentaires dans la timeline === */
+.timeline-comments {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 0.8rem;
+  margin-top: 0.8rem;
+}
+
+.timeline-comments-title {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.timeline-comment {
+  background: white;
+  border-left: 3px solid #007bff;
+  padding: 0.6rem;
+  margin-bottom: 0.5rem;
+  border-radius: 0 4px 4px 0;
+}
+
+.timeline-comment:last-child {
+  margin-bottom: 0;
+}
+
+.comment-timestamp {
+  font-size: 0.8rem;
+  color: #6c757d;
+  font-weight: 500;
+  margin-bottom: 0.3rem;
+}
+
+.comment-content {
+  white-space: pre-wrap;
+  line-height: 1.4;
+  color: #495057;
+}
+
+/* === Statistiques améliorées === */
+.history-stats {
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border-radius: 12px;
+  padding: 1.2rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid #dee2e6;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 0.8rem;
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #007bff;
+  display: block;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: #6c757d;
+  font-weight: 500;
+  margin-top: 0.3rem;
+}
+
+/* === Champs stratégie plus larges === */
+#strategie-objectif, 
+#strategie-sous-objectif, 
+#strategie-action {
+  min-width: 280px !important; /* Plus large qu'avant */
+  max-width: 350px !important; /* Plus large qu'avant */
+  font-size: 0.9rem;
+  padding: 0.6rem;
+  min-height: 120px; /* Plus haut pour voir plus d'options */
+}
+
+.input-group.mb-2.flex-nowrap {
+  gap: 1rem; /* Plus d'espace entre les listes */
+  justify-content: space-between;
+}
+
+/* === Responsive pour les champs stratégie === */
+@media (max-width: 1200px) {
+  #strategie-objectif, 
+  #strategie-sous-objectif, 
+  #strategie-action {
+    min-width: 240px !important;
+    max-width: 280px !important;
+  }
+}
+
+@media (max-width: 992px) {
+  .input-group.mb-2.flex-nowrap {
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+  
+  #strategie-objectif, 
+  #strategie-sous-objectif, 
+  #strategie-action {
+    min-width: 100% !important;
+    max-width: 100% !important;
+  }
 }
 
 /* === Bouton Export === */
@@ -914,29 +1027,7 @@
   border-color: #1e7e34;
 }
 
-/* === Statistiques === */
-.history-stats {
-  background: #f8f9fa;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-}
 
-.stat-item {
-  text-align: center;
-  padding: 0.5rem;
-}
-
-.stat-value {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #007bff;
-}
-
-.stat-label {
-  font-size: 0.85rem;
-  color: #6c757d;
-}
 /* === Historique des descriptions === */
 .description-history {
   max-height: 300px;
@@ -1001,144 +1092,6 @@
   color: #6c757d;
   font-style: italic;
   margin-top: 0.25rem;
-}
-/* === Timeline Unifiée === */
-.timeline-entry {
-  position: relative;
-  display: flex;
-  align-items: flex-start;
-  margin-bottom: 1.5rem;
-  padding-left: 0;
-}
-
-.timeline-icon {
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 1rem;
-  position: relative;
-  z-index: 2;
-}
-
-.timeline-status .timeline-icon {
-  background: #007bff;
-  color: white;
-  border: 3px solid white;
-  box-shadow: 0 0 0 2px #007bff;
-}
-
-.timeline-status.current .timeline-icon {
-  background: #28a745;
-  box-shadow: 0 0 0 2px #28a745;
-  animation: pulse-green 2s infinite;
-}
-
-.timeline-comment .timeline-icon {
-  background: #6c757d;
-  color: white;
-  border: 3px solid white;
-  box-shadow: 0 0 0 2px #6c757d;
-}
-
-.timeline-content {
-  flex: 1;
-  background: white;
-  border: 1px solid #e9ecef;
-  border-radius: 8px;
-  padding: 1rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  position: relative;
-}
-
-.timeline-content::before {
-  content: '';
-  position: absolute;
-  left: -8px;
-  top: 15px;
-  width: 0;
-  height: 0;
-  border-top: 8px solid transparent;
-  border-bottom: 8px solid transparent;
-  border-right: 8px solid #e9ecef;
-}
-
-.timeline-content::after {
-  content: '';
-  position: absolute;
-  left: -7px;
-  top: 15px;
-  width: 0;
-  height: 0;
-  border-top: 8px solid transparent;
-  border-bottom: 8px solid transparent;
-  border-right: 8px solid white;
-}
-
-.timeline-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
-}
-
-.timeline-title {
-  font-weight: 600;
-  color: #495057;
-}
-
-.timeline-date {
-  font-size: 0.85rem;
-  color: #6c757d;
-}
-
-.timeline-meta {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 0.5rem;
-  font-size: 0.85rem;
-}
-
-.timeline-duration {
-  color: #007bff;
-  font-weight: 500;
-}
-
-.timeline-user {
-  color: #6c757d;
-}
-
-.timeline-status-badge {
-  background: #e9ecef;
-  color: #495057;
-  padding: 0.2rem 0.5rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.timeline-comment-content {
-  background: #f8f9fa;
-  border-left: 3px solid #6c757d;
-  padding: 0.75rem;
-  margin-top: 0.5rem;
-  border-radius: 0 4px 4px 0;
-  white-space: pre-wrap;
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
-
-.timeline-note {
-  background: #fff3cd;
-  border: 1px solid #ffeaa7;
-  border-radius: 4px;
-  padding: 0.5rem;
-  font-size: 0.85rem;
-  font-style: italic;
-  margin-top: 0.5rem;
 }
 
 /* === Ligne de connexion entre les éléments === */
