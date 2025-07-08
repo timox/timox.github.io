@@ -153,8 +153,9 @@ class KanbanManager {
 
   async init() {
   await this.waitForGristReady();
-  await this.initializeUser();        // NOUVEAU : après Grist ready
+  
   await this.loadGristDataAndOptions();
+  await this.initializeUser();        // NOUVEAU : après Grist ready
   this.initFilters();
   this.initModalWithOptions();
   this.initFlatpickr();
@@ -252,7 +253,7 @@ async getCurrentGristUser() {
   if (this.userInitialized) return this.currentUser;
   
   console.log('Initialisation de l\'utilisateur Grist...');
-  this.currentUser = await getCurrentGristUser();
+  this.currentUser = await this.getCurrentGristUser();
   this.userInitialized = true;
   
   if (this.currentUser) {
