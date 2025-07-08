@@ -274,7 +274,184 @@ class KanbanManager {
     }
     return records;
   }
+  // === NOUVELLE MÉTHODE POUR CRÉER UNE TIMELINE UNIFIÉE ===
+  buildUnifiedTimeline(task) {
+    const timeline = [];
     
+    // 1. Extraire l'historique des statuts
+    if (task.historique_statuts) {
+      try {
+        const historyData = JSON.parse(task.historique_statuts);
+        const statusHistory = historyData.historique || [];
+        
+        statusHistory.forEach(entry => {
+          timeline.push({
+            type: 'status',
+            date: new Date(entry.date_entree),
+            statut: entry.statut,
+            data: entry,
+            sortKey: new Date(entry.date_entree).getTime()
+          });
+        });
+      } catch (e) {
+        console.warn('Erreur parsing historique statuts:', e);
+      }
+    }
+    
+    // 2. Extraire les commentaires de la description
+    if (task.description) {
+      const sections = task.description.split(/\n\s*---\s*\n/);
+      
+      sections.forEach(section => {
+        const lines = section.trim().split('\n');
+        const timestampLine = lines.find(line => line.match(/^\[.*\]$/));
+        
+        if (timestampLine) {
+          const content = lines.slice(1).join('\n').trim();
+          
+          // Parser la date du timestamp
+          const dateMatch = timestampLine.match(/\[([^)]+)(?:\s*\([^)]*\))?\]/);
+          if (dateMatch) {
+            let commentDate;
+            
+            try {
+              // Format français : DD/MM/YYYY HH:MM
+              const dateStr = dateMatch[1].trim();
+              if (dateStr.match(/^\d{2}\/\d{2}\/\d{4}/)) {
+                const [datePart, timePart] = dateStr.split(' ');
+                const [day, month, year] = datePart.split('/');
+                const timeStr = timePart || '00:00';
+                commentDate = new Date(`${year}-${month}-${day}T${timeStr}:00`);
+              } else {
+                commentDate = new Date(dateStr);
+              }
+              
+              if (!isNaN(commentDate.getTime())) {
+                // Extraire l'auteur du timestamp
+                const authorMatch = timestampLine.match(/\(([^)]+)\)/);
+                const author = authorMatch ? authorMatch[1] : null;
+                
+                timeline.push({
+                  type: 'comment',
+                  date: commentDate,
+                  content: content,
+                  author: author,
+                  timestamp: timestampLine,
+                  sortKey: commentDate.getTime()
+                });
+              }
+            } catch (e) {
+              console.warn('Erreur parsing date commentaire:', dateMatch[1], e);
+            }
+          }
+        }
+      });
+    }
+    
+    // 3. Trier par date
+    timeline.sort((a, b) => a.sortKey - b.sortKey);
+    
+    // 4. Associer les commentaires aux statuts
+    timeline.forEach((item, index) => {
+      if (item.type === 'comment') {
+        // Trouver le statut actif au moment du commentaire
+        let activeStatus = null;
+        
+        for (let i = index - 1; i >= 0; i--) {
+          if (timeline[i].type === 'status') {
+            activeStatus = timeline[i].statut;
+            break;
+          }
+        }
+        
+        // Si pas trouvé dans le passé, chercher dans le futur
+        if (!activeStatus) {
+          for (let i = index + 1; i < timeline.length; i++) {
+            if (timeline[i].type === 'status') {
+              activeStatus = timeline[i].statut;
+              break;
+            }
+          }
+        }
+        
+        item.relatedStatus = activeStatus || 'Inconnu';
+      }
+    });
+    
+    return timeline;
+  }
+
+  // === NOUVELLE MÉTHODE POUR GÉNÉRER HTML DE LA TIMELINE UNIFIÉE ===
+  generateUnifiedTimelineHTML(timeline) {
+    if (!timeline || timeline.length === 0) {
+      return '<div class="text-muted">Aucun historique disponible</div>';
+    }
+    
+    let html = '';
+    
+    timeline.forEach((item, index) => {
+      const isLast = index === timeline.length - 1;
+      const dateStr = item.date.toLocaleString('fr-FR', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      if (item.type === 'status') {
+        // Entrée de changement de statut
+        const duration = item.data.duree_minutes ? 
+          `${Math.floor(item.data.duree_minutes / 60)}h ${item.data.duree_minutes % 60}m` : 
+          'En cours...';
+        
+        const isCurrentStatus = !item.data.date_sortie;
+        
+        html += `
+          <div class="timeline-entry timeline-status ${isCurrentStatus ? 'current' : ''}">
+            <div class="timeline-icon status-icon">
+              <i class="bi bi-arrow-right-circle"></i>
+            </div>
+            <div class="timeline-content">
+              <div class="timeline-header">
+                <span class="timeline-title">Passage en "${item.statut}"</span>
+                <span class="timeline-date">${dateStr}</span>
+              </div>
+              <div class="timeline-meta">
+                <span class="timeline-duration">Durée: ${duration}</span>
+                ${item.data.utilisateur ? `<span class="timeline-user">Par: ${item.data.utilisateur}</span>` : ''}
+              </div>
+              ${item.data.note ? `<div class="timeline-note">${item.data.note}</div>` : ''}
+            </div>
+          </div>
+        `;
+        
+      } else if (item.type === 'comment') {
+        // Entrée de commentaire
+        html += `
+          <div class="timeline-entry timeline-comment">
+            <div class="timeline-icon comment-icon">
+              <i class="bi bi-chat-dots"></i>
+            </div>
+            <div class="timeline-content">
+              <div class="timeline-header">
+                <span class="timeline-title">Commentaire</span>
+                <span class="timeline-date">${dateStr}</span>
+              </div>
+              <div class="timeline-meta">
+                <span class="timeline-status-badge">${item.relatedStatus}</span>
+                ${item.author ? `<span class="timeline-user">Par: ${item.author}</span>` : ''}
+              </div>
+              <div class="timeline-comment-content">${item.content}</div>
+            </div>
+          </div>
+        `;
+      }
+    });
+    
+    return html;
+  }
   // Nouvelle méthode pour normaliser les dates
   normalizeDate(dateValue) {
     if (!dateValue) return null;
@@ -441,89 +618,169 @@ logTaskHistory(task) {
   }
 }
 
-openHistoryModal(task) {
-  if (!task.historique_statuts) {
-    alert('Pas d\'historique disponible pour cette tâche');
-    return;
-  }
-  
-  try {
-    const historyData = JSON.parse(task.historique_statuts);
-    const history = historyData.historique || [];
+ // === MODIFICATION DE openHistoryModal POUR UTILISER LA TIMELINE UNIFIÉE ===
+  openHistoryModal(task) {
+    if (!task.historique_statuts && !task.description) {
+      alert('Pas d\'historique disponible pour cette tâche');
+      return;
+    }
     
-    // Mettre à jour le titre
-    document.getElementById('history-modal-label').innerHTML = 
-      `<i class="bi bi-clock-history me-2"></i>Historique : ${task.titre}`;
-    
-    // Calculer les statistiques
-    const totalDuration = history.reduce((sum, entry) => sum + (entry.duree_minutes || 0), 0);
-    const totalDays = Math.round(totalDuration / (60 * 24) * 10) / 10;
-    const avgDuration = history.length > 0 ? Math.round(totalDuration / history.length) : 0;
-    
-    const statsHTML = `
-      <div class="row">
-        <div class="col-md-3">
-          <div class="stat-item">
-            <div class="stat-value">${history.length}</div>
-            <div class="stat-label">Étapes</div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="stat-item">
-            <div class="stat-value">${totalDays}j</div>
-            <div class="stat-label">Durée totale</div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="stat-item">
-            <div class="stat-value">${Math.round(avgDuration/60)}h</div>
-            <div class="stat-label">Moy. par étape</div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="stat-item">
-            <div class="stat-value">${task.statut}</div>
-            <div class="stat-label">Statut actuel</div>
-          </div>
-        </div>
-      </div>
-    `;
-    
-    // Créer la timeline
-    let timelineHTML = '';
-    history.forEach((entry, index) => {
-      const isCurrentStatus = index === history.length - 1 && !entry.date_sortie;
-      const duration = entry.duree_minutes ? 
-        `${Math.floor(entry.duree_minutes / 60)}h ${entry.duree_minutes % 60}m` : 
-        'En cours...';
+    try {
+      // Construire la timeline unifiée
+      const unifiedTimeline = this.buildUnifiedTimeline(task);
       
-      timelineHTML += `
-        <div class="timeline-entry ${isCurrentStatus ? 'current' : ''}">
-          <div class="timeline-status">${entry.statut}</div>
-          <div class="timeline-dates">
-            Du ${new Date(entry.date_entree).toLocaleString('fr-FR')}
-            ${entry.date_sortie ? `au ${new Date(entry.date_sortie).toLocaleString('fr-FR')}` : '(en cours)'}
+      // Mettre à jour le titre
+      document.getElementById('history-modal-label').innerHTML = 
+        `<i class="bi bi-clock-history me-2"></i>Historique : ${task.titre}`;
+      
+      // Calculer les statistiques
+      const statusEntries = unifiedTimeline.filter(item => item.type === 'status');
+      const commentEntries = unifiedTimeline.filter(item => item.type === 'comment');
+      
+      const totalDuration = statusEntries.reduce((sum, entry) => {
+        return sum + (entry.data.duree_minutes || 0);
+      }, 0);
+      
+      const totalDays = Math.round(totalDuration / (60 * 24) * 10) / 10;
+      const avgDuration = statusEntries.length > 0 ? Math.round(totalDuration / statusEntries.length) : 0;
+      
+      // Calculer la durée totale écoulée
+      const firstEntry = unifiedTimeline[0];
+      const lastEntry = unifiedTimeline[unifiedTimeline.length - 1];
+      let totalElapsed = 0;
+      
+      if (firstEntry && lastEntry) {
+        totalElapsed = Math.round((lastEntry.date - firstEntry.date) / (1000 * 60 * 60 * 24) * 10) / 10;
+      }
+      
+      const statsHTML = `
+        <div class="row">
+          <div class="col-md-2">
+            <div class="stat-item">
+              <div class="stat-value">${statusEntries.length}</div>
+              <div class="stat-label">Statuts</div>
+            </div>
           </div>
-          <div class="timeline-duration">Durée: ${duration}</div>
-          ${entry.note ? `<div class="timeline-note"><i class="bi bi-info-circle me-1"></i>${entry.note}</div>` : ''}
+          <div class="col-md-2">
+            <div class="stat-item">
+              <div class="stat-value">${commentEntries.length}</div>
+              <div class="stat-label">Commentaires</div>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="stat-item">
+              <div class="stat-value">${totalDays}j</div>
+              <div class="stat-label">Temps actif</div>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="stat-item">
+              <div class="stat-value">${totalElapsed}j</div>
+              <div class="stat-label">Durée totale</div>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="stat-item">
+              <div class="stat-value">${Math.round(avgDuration/60)}h</div>
+              <div class="stat-label">Moy. par étape</div>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="stat-item">
+              <div class="stat-value">${task.statut}</div>
+              <div class="stat-label">Statut actuel</div>
+            </div>
+          </div>
         </div>
       `;
+      
+      // Générer la timeline unifiée
+      const timelineHTML = this.generateUnifiedTimelineHTML(unifiedTimeline);
+      
+      document.getElementById('history-stats').innerHTML = statsHTML;
+      document.getElementById('history-timeline').innerHTML = timelineHTML;
+      
+      // Stocker l'ID de la tâche pour l'export
+      document.getElementById('btn-export-task-history').dataset.taskId = task.id;
+      
+      // Afficher la modal
+      new bootstrap.Modal(document.getElementById('history-modal')).show();
+      
+    } catch (e) {
+      console.error('Erreur lors de l\'ouverture de la modal:', e);
+      alert('Erreur lors de l\'affichage de l\'historique');
+    }
+  }
+
+  // === NOUVELLE MÉTHODE D'EXPORT AVEC TIMELINE UNIFIÉE ===
+  exportUnifiedTimeline(taskId) {
+    const task = this.currentRecords.find(r => r.id === taskId);
+    if (!task) return;
+    
+    const timeline = this.buildUnifiedTimeline(task);
+    
+    let csv = 'Tâche_ID,Tâche_Titre,Type,Date,Statut,Contenu,Auteur,Durée_Minutes\n';
+    
+    timeline.forEach(entry => {
+      const titre = (task.titre || '').replace(/"/g, '""');
+      const dateStr = entry.date.toISOString();
+      const type = entry.type === 'status' ? 'Changement_Statut' : 'Commentaire';
+      
+      if (entry.type === 'status') {
+        csv += `${task.id},"${titre}","${type}","${dateStr}","${entry.statut}","","${entry.data.utilisateur || ''}",${entry.data.duree_minutes || ''}\n`;
+      } else {
+        const contenu = entry.content.replace(/"/g, '""');
+        csv += `${task.id},"${titre}","${type}","${dateStr}","${entry.relatedStatus}","${contenu}","${entry.author || ''}",""\n`;
+      }
     });
     
-    document.getElementById('history-stats').innerHTML = statsHTML;
-    document.getElementById('history-timeline').innerHTML = timelineHTML;
-    
-    // Stocker l'ID de la tâche pour l'export
-    document.getElementById('btn-export-task-history').dataset.taskId = task.id;
-    
-    // Afficher la modal
-    new bootstrap.Modal(document.getElementById('history-modal')).show();
-    
-  } catch (e) {
-    console.error('Erreur lors de l\'ouverture de la modal:', e);
-    alert('Erreur lors de l\'affichage de l\'historique');
+    // Télécharger
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `timeline_complete_tache_${taskId}_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
   }
-}
+
+  // === MÉTHODE POUR AFFICHER LA TIMELINE DANS LA CONSOLE ===
+  showUnifiedTimeline(taskId) {
+    const task = this.currentRecords.find(r => r.id === taskId);
+    if (!task) {
+      console.error('Tâche non trouvée:', taskId);
+      return;
+    }
+    
+    const timeline = this.buildUnifiedTimeline(task);
+    
+    console.log('=== TIMELINE UNIFIÉE ===');
+    console.log(`Tâche: ${task.titre}`);
+    console.log('');
+    
+    timeline.forEach((entry, index) => {
+      const dateStr = entry.date.toLocaleString('fr-FR');
+      
+      if (entry.type === 'status') {
+        const duration = entry.data.duree_minutes ? 
+          ` (${Math.floor(entry.data.duree_minutes / 60)}h ${entry.data.duree_minutes % 60}m)` : 
+          ' (en cours)';
+        
+        console.log(`${index + 1}. 🔄 STATUT: ${entry.statut}${duration}`);
+        console.log(`   📅 ${dateStr}`);
+        if (entry.data.utilisateur) console.log(`   👤 ${entry.data.utilisateur}`);
+        if (entry.data.note) console.log(`   📝 ${entry.data.note}`);
+        
+      } else {
+        console.log(`${index + 1}. 💬 COMMENTAIRE (${entry.relatedStatus})`);
+        console.log(`   📅 ${dateStr}`);
+        if (entry.author) console.log(`   👤 ${entry.author}`);
+        console.log(`   📝 ${entry.content}`);
+      }
+      console.log('');
+    });
+  }
+
 
 // 5. EXPORT DES DONNÉES POUR GANTT
 exportSingleTaskHistory(taskId) {
@@ -1907,7 +2164,26 @@ displayDescriptionHistory(tache) {
         }
       };
     }
-
+   // Event listener pour l'export depuis la modal (MODIFIÉ)
+    document.getElementById('btn-export-task-history')?.addEventListener('click', (e) => {
+      const taskId = parseInt(e.target.dataset.taskId);
+      if (taskId) {
+        // Proposer le choix entre export simple et timeline unifiée
+        const choice = confirm(
+          'Export de l\'historique:\n\n' +
+          'OK = Timeline complète (statuts + commentaires)\n' +
+          'Annuler = Export simple statuts uniquement'
+        );
+        
+        if (choice) {
+          this.exportUnifiedTimeline(taskId);
+        } else {
+          this.exportSingleTaskHistory(taskId);
+        }
+      }
+    });
+  }
+}
 
    document.addEventListener('click', (e) => {
   if (e.target.closest('.btn-history')) {
@@ -1917,11 +2193,7 @@ displayDescriptionHistory(tache) {
   }
 });
 
-// Event listener pour l'export depuis la modal
-document.getElementById('btn-export-task-history')?.addEventListener('click', (e) => {
-  const taskId = parseInt(e.target.dataset.taskId);
-  if (taskId) this.exportSingleTaskHistory(taskId);
-});
+
     
     const filterElements = ['filter-bureau', 'filter-qui', 'filter-projet', 'filter-statut'];
     filterElements.forEach(filterId => {
