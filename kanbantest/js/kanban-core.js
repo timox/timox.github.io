@@ -173,7 +173,7 @@ class KanbanManager {
  async debugGristUser() {
   console.log('=== TEST UTILISATEUR GRIST ===');
   
-  const userName = await getCurrentGristUser();
+  const userName = this.currentuser;
   
   if (userName) {
     console.log('🎉 Succès ! Nom d\'utilisateur:', userName);
