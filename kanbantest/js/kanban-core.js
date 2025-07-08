@@ -33,23 +33,6 @@ let projetsDynamiques = [];
 
 // === FONCTIONS UTILITAIRES ===
 // === FONCTION DE DEBUG SIMPLE ===
-async function debugGristUser() {
-  console.log('=== TEST UTILISATEUR GRIST ===');
-  
-  const userName = await getCurrentGristUser();
-  
-  if (userName) {
-    console.log('🎉 Succès ! Nom d\'utilisateur:', userName);
-    console.log('📝 Les commentaires apparaîtront comme:');
-    console.log(`[${new Date().toLocaleString('fr-FR')} (${userName})]`);
-  } else {
-    console.log('⚠️ Aucun nom d\'utilisateur Grist disponible');
-    console.log('📝 Les commentaires apparaîtront comme:');
-    console.log(`[${new Date().toLocaleString('fr-FR')}]`);
-  }
-  
-  return userName;
-}
 
 
 function displayError(message) {
@@ -187,6 +170,23 @@ class KanbanManager {
       setTimeout(resolve, 50);
     });
   }
+ async debugGristUser() {
+  console.log('=== TEST UTILISATEUR GRIST ===');
+  
+  const userName = await getCurrentGristUser();
+  
+  if (userName) {
+    console.log('🎉 Succès ! Nom d\'utilisateur:', userName);
+    console.log('📝 Les commentaires apparaîtront comme:');
+    console.log(`[${new Date().toLocaleString('fr-FR')} (${userName})]`);
+  } else {
+    console.log('⚠️ Aucun nom d\'utilisateur Grist disponible');
+    console.log('📝 Les commentaires apparaîtront comme:');
+    console.log(`[${new Date().toLocaleString('fr-FR')}]`);
+  }
+  
+  return userName;
+}
 
 
  // === FONCTION POUR RÉCUPÉRER LE NOM D'UTILISATEUR GRIST ===
