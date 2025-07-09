@@ -152,11 +152,27 @@
                 </div>
               </div>
               <div class="col-md-6">
-                <label class="form-label"><i class="bi bi-calendar-event me-2"></i>Délai / Date butoir</label>
-                <div class="input-group">
-                  <input type="text" class="form-control" id="popup-delai" placeholder="Cliquer pour choisir une date ou laisser vide" aria-label="Délai">
-                </div>
-              </div>
+  <label class="form-label">
+    <i class="bi bi-calendar-event me-2"></i>Date butoir
+    <small class="text-muted ms-2">(Optionnelle)</small>
+  </label>
+  <div class="input-group">
+    <input type="text" class="form-control" id="popup-delai" 
+           placeholder="Cliquer pour choisir une date..." 
+           aria-label="Date butoir" readonly>
+    <button class="btn btn-outline-secondary" type="button" id="btn-clear-date" 
+            title="Supprimer la date" style="display: none;">
+      <i class="bi bi-x-lg"></i>
+    </button>
+    <button class="btn btn-outline-primary" type="button" id="btn-pick-date" 
+            title="Choisir une date">
+      <i class="bi bi-calendar3"></i>
+    </button>
+  </div>
+  <div class="form-text">
+    <span id="date-status" class="text-muted">Aucune date définie</span>
+  </div>
+</div>
               <div class="col-md-6">
                 <label for="popup-bureau" class="form-label">Bureaux</label>
                 <select class="form-select" id="popup-bureau" multiple size="4"></select>
