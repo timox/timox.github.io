@@ -33,7 +33,7 @@ let projetsDynamiques = [];
 
 // === FONCTIONS UTILITAIRES ===
 
-function generateBureauBadges(bureauList, isCompact = false) {
+generateBureauBadges(bureauList, isCompact = false) {
   if (!Array.isArray(bureauList) || bureauList.length <= 1) {
     return ''; // Pas de bureaux ou format incorrect
   }
@@ -1141,7 +1141,7 @@ createDetailedTaskHTML(record) {
     ${personnes}
   </div>`;
 }
-function filterByBureau(bureauName) {
+filterByBureau(bureauName) {
   if (!window.kanbanManager) return;
   
   const filterSelect = document.getElementById('filter-bureau');
