@@ -1265,8 +1265,6 @@ class KanbanManager {
     this.modal.show();
   }
 
-  // === CORRECTION DE LA MÉTHODE openHistoryModal ===
-  
   openHistoryModal(task) {
     if (!task.historique_statuts) {
       alert('Pas d\'historique disponible pour cette tâche');
@@ -1320,167 +1318,6 @@ class KanbanManager {
       let timelineHTML = '';
       history.forEach((entry, index) => {
         const isCurrentStatus = index === history.length - 1 && !entry.date_sortie;
-        const duration = entry.duree_minutes ? 
-          `${Math.floor(entry.duree_minutes / 60)}h ${entry.duree_minutes % 60}m` : 
-          'En cours...';
-        
-        const statusComments = commentsByStatus[entry.statut] || [];
-        
-        let commentsHTML = '';
-        if (statusComments.length > 0) {
-          commentsHTML = `
-            <div class="timeline-comments">
-              <div class="timeline-comments-title">
-                <i class="bi bi-chat-text"></i>
-                Commentaires (${statusComments.length})
-              </div>
-              ${statusComments.map(comment => `
-                <div class="timeline-comment">
-                  <div class="comment-timestamp">${comment.timestamp}</div>
-                  <div class="comment-content">${comment.content}</div>
-                </div>
-              `).join('')}
-            </div>
-          `;
-        }
-        
-        timelineHTML += `
-          <div class="timeline-entry ${isCurrentStatus ? 'current' : ''}">
-            <div class="timeline-status">
-              ${entry.statut}
-              ${isCurrentStatus ? '<span class="badge bg-success ms-2">En cours</span>' : ''}
-            </div>
-            <div class="timeline-dates">
-              <i class="bi bi-calendar-event"></i>
-              Du ${new Date(entry.date_entree).toLocaleString('fr-FR')}
-              ${entry.date_sortie ? `au ${new Date(entry.date_sortie).toLocaleString('fr-FR')}` : '(en cours)'}
-            </div>
-            <div class="timeline-duration">
-              <i class="bi bi-stopwatch"></i>
-              Durée: ${duration}
-            </div>
-            ${entry.note ? `<div class="timeline-note"><i class="bi bi-info-circle me-1"></i>${entry.note}</div>` : ''}
-            ${commentsHTML}
-          </div>
-        `;
-      });
-      
-      const statsElement = document.getElementById('history-stats');
-      const timelineElement = document.getElementById('history-timeline');
-      
-      if (statsElement) {
-        statsElement.innerHTML = statsHTML;
-      }
-      
-      if (timelineElement) {
-        timelineElement.innerHTML = timelineHTML;
-      }
-      
-      const exportBtn = document.getElementById('btn-export-task-history');
-      if (exportBtn) {
-        exportBtn.dataset.taskId = task.id;
-      }
-      
-      const modalElement = document.getElementById('history-modal');
-      if (modalElement) {
-        new bootstrap.Modal(modalElement).show();
-      }
-      
-    } catch (e) {
-      console.error('Erreur lors de l\'ouverture de la modal:', e);
-      alert('Erreur lors de l\'affichage de l\'historique');
-    }
-  }
-
-  showAllComments(taskId) {
-    const task = this.currentRecords.find(r => r.id === taskId);
-    if (!task || !task.description) {
-      alert('Pas de commentaires pour cette tâche');
-      return;
-    }
-    
-    const comments = this.getCommentsPerStatus(task);
-    const allComments = [];
-    
-    Object.keys(comments).forEach(status => {
-      comments[status].forEach(comment => {
-        allComments.push({
-          ...comment,
-          status: status
-        });
-      });
-    });
-    
-    allComments.sort((a, b) => b.date - a.date);
-    
-    if (allComments.length === 0) {
-      alert('Aucun commentaire trouvé pour cette tâche');
-      return;
-    }
-    
-    let commentsHTML = '<div class="all-comments-container">';
-    
-    allComments.forEach(comment => {
-      commentsHTML += `
-        <div class="comment-item">
-          <div class="comment-header">
-            <span class="comment-status badge bg-primary">${comment.status}</span>
-            <span class="comment-timestamp">${comment.timestamp}</span>
-          </div>
-          <div class="comment-content">${comment.content}</div>
-        </div>
-      `;
-    });
-    
-    commentsHTML += '</div>';
-    
-    const timelineElement = document.getElementById('history-timeline');
-    if (!timelineElement) return;
-    
-    const originalContent = timelineElement.innerHTML;
-    
-    timelineElement.innerHTML = `
-      <div class="text-center mb-4">
-        <h6><i class="bi bi-chat-square-text me-2"></i>Tous les commentaires (${allComments.length})</h6>
-        <button class="btn btn-sm btn-outline-secondary" id="btn-back-to-timeline">
-          <i class="bi bi-arrow-left me-1"></i>Retour à la timeline
-        </button>
-      </div>
-      ${commentsHTML}
-    `;
-    
-    const backBtn = document.getElementById('btn-back-to-timeline');
-    if (backBtn) {
-      backBtn.addEventListener('click', () => {
-        timelineElement.innerHTML = originalContent;
-      });
-    }
-  }
-
-  showTaskHistory(taskId) {
-    const task = this.currentRecords.find(r => r.id === taskId);
-    if (!task) {
-      console.error('Tâche non trouvée:', taskId);
-      return;
-    }
-    
-    this.logTaskHistory(task);
-    this.openHistoryModal(task);
-  }
-
-  logTaskHistory(task) {
-    if (!task.historique_statuts) {
-      console.log('Pas d\'historique disponible pour cette tâche');
-      return;
-    }
-    
-    try {
-      const historyData = JSON.parse(task.historique_statuts);
-      console.log('=== HISTORIQUE DE LA TÂCHE ===');
-      console.log(`Tâche: ${task.titre}`);
-      console.log('Statuts:');
-      
-      historyData.historique.forEach((entry, index) => {
         const duration = entry.duree_minutes ? 
           `${Math.floor(entry.duree_minutes / 60)}h ${entry.duree_minutes % 60}m` : 
           'En cours...';
@@ -2352,7 +2189,8 @@ function showBureauStats() {
     this.logTaskHistory(task);
     this.openHistoryModal(task);
   }
-logTaskHistory(task) {
+
+  logTaskHistory(task) {
     if (!task.historique_statuts) {
       console.log('Pas d\'historique disponible pour cette tâche');
       return;
