@@ -1008,20 +1008,8 @@ createCompactTaskHTML(record) {
   
   const hasEcheanceClass = record.date_echeance ? 'has-echeance' : '';
   
-  return `<div class="kanban-item kanban-item-compact ${hasEcheanceClass}" data-id="${record.id}">
-    <div class="drag-handle">
-      <i class="bi bi-grip-vertical"></i>
-    </div>
-    ${bureauBadges}
-    <div class="compact-header">
-      <div class="compact-priority">${prioBadge}</div>
-      <div class="compact-echeance">${echeanceElement}</div>
-      <button class="btn-expand" title="Voir détails">
-        <i class="bi bi-chevron-down"></i>
-      </button>
-    </div>
-    <div class="compact-title editable-zone">${record.titre || ''}</div>
-  </div>`;
+  return `<div class="kanban-item kanban-item-compact ${hasEcheanceClass}" data-id="${record.id}"><div class="drag-handle"><i class="bi bi-grip-vertical"></i></div>${bureauBadges}<div class="compact-header"><div class="compact-priority">${prioBadge}</div><div class="compact-echeance">${echeanceElement}</div>      <button class="btn-expand" title="Voir détails">        <i class="bi bi-chevron-down"></i>      </button>    </div>    <div class="compact-title editable-zone">${record.titre || ''}</div>  </div>`;
+  
 }
     
 
