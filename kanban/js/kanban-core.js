@@ -1015,7 +1015,7 @@ createCompactTaskHTML(record) {
 
 
   // 4. MODIFICATION DE createDetailedTaskHTML
-function createDetailedTaskHTML(record) {
+createDetailedTaskHTML(record) {
   const isExpanded = this.expandedCards.has(record.id);
   
   const prio = this.calculerPriorite(record.urgence, record.impact);
