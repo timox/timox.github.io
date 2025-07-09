@@ -49,6 +49,187 @@ function displayError(message) {
   if (k && k.innerHTML.includes('Chargement')) k.innerHTML = '';
 }
 
+//classe pickmanager pour les dates
+class DatePickerManager {
+  constructor(kanbanManager) {
+    this.kanban = kanbanManager;
+    this.dateInput = null;
+    this.clearBtn = null;
+    this.pickBtn = null;
+    this.statusDiv = null;
+    this.flatpickrInstance = null;
+    
+    this.init();
+  }
+  
+  init() {
+    this.dateInput = document.getElementById('popup-delai');
+    this.clearBtn = document.getElementById('btn-clear-date');
+    this.pickBtn = document.getElementById('btn-pick-date');
+    this.statusDiv = document.getElementById('date-status');
+    
+    if (!this.dateInput) return;
+    
+    this.setupFlatpickr();
+    this.setupEventListeners();
+    this.updateDisplay();
+  }
+  
+  setupFlatpickr() {
+    if (this.flatpickrInstance) {
+      this.flatpickrInstance.destroy();
+    }
+    
+    this.flatpickrInstance = flatpickr(this.dateInput, {
+      locale: 'fr',
+      dateFormat: 'Y-m-d',
+      allowInput: false,
+      disableMobile: true,
+      minDate: 'today',
+      position: 'below',
+      onChange: (selectedDates, dateStr) => {
+        this.onDateChange(dateStr);
+      },
+      onOpen: () => {
+        this.pickBtn?.classList.add('active');
+      },
+      onClose: () => {
+        this.pickBtn?.classList.remove('active');
+      }
+    });
+  }
+  
+  setupEventListeners() {
+    // Bouton de sélection de date
+    this.pickBtn?.addEventListener('click', () => {
+      this.flatpickrInstance.open();
+    });
+    
+    // Bouton de suppression
+    this.clearBtn?.addEventListener('click', () => {
+      this.clearDate();
+    });
+    
+    // Clic sur le champ
+    this.dateInput?.addEventListener('click', () => {
+      this.flatpickrInstance.open();
+    });
+    
+    // Empêcher la saisie manuelle
+    this.dateInput?.addEventListener('keydown', (e) => {
+      e.preventDefault();
+    });
+  }
+  
+  onDateChange(dateStr) {
+    if (dateStr) {
+      this.dateInput.value = dateStr;
+      this.updateDisplay(dateStr);
+    }
+  }
+  
+  clearDate() {
+    this.dateInput.value = '';
+    this.flatpickrInstance.clear();
+    this.updateDisplay();
+  }
+  
+  setDate(dateStr) {
+    if (dateStr) {
+      this.dateInput.value = dateStr;
+      this.flatpickrInstance.setDate(dateStr, false);
+      this.updateDisplay(dateStr);
+    } else {
+      this.clearDate();
+    }
+  }
+  
+  updateDisplay(dateStr = null) {
+    const currentDate = dateStr || this.dateInput?.value || '';
+    
+    if (!this.dateInput || !this.statusDiv) return;
+    
+    if (currentDate) {
+      // Il y a une date
+      this.dateInput.classList.add('has-date');
+      this.statusDiv.classList.add('has-date');
+      this.clearBtn.style.display = 'block';
+      
+      // Calculer le délai
+      const targetDate = new Date(currentDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      targetDate.setHours(0, 0, 0, 0);
+      
+      const diffTime = targetDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      // Formater la date
+      const formattedDate = targetDate.toLocaleDateString('fr-FR', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      // Déterminer le statut et le message
+      let statusClass = 'ok';
+      let statusText = '';
+      let countdownClass = 'ok';
+      
+      if (diffDays < 0) {
+        statusClass = 'urgent';
+        countdownClass = 'urgent';
+        statusText = `Dépassé de ${Math.abs(diffDays)} jour${Math.abs(diffDays) > 1 ? 's' : ''}`;
+      } else if (diffDays === 0) {
+        statusClass = 'urgent';
+        countdownClass = 'urgent';
+        statusText = "Aujourd'hui !";
+      } else if (diffDays <= 3) {
+        statusClass = 'urgent';
+        countdownClass = 'urgent';
+        statusText = `Dans ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
+      } else if (diffDays <= 7) {
+        statusClass = 'soon';
+        countdownClass = 'soon';
+        statusText = `Dans ${diffDays} jours`;
+      } else {
+        statusText = `Dans ${diffDays} jours`;
+      }
+      
+      this.statusDiv.innerHTML = `
+        <div class="date-info">
+          <i class="bi bi-calendar-check"></i>
+          <span>${formattedDate}</span>
+          <span class="date-countdown ${countdownClass}">${statusText}</span>
+        </div>
+      `;
+      
+    } else {
+      // Pas de date
+      this.dateInput.classList.remove('has-date');
+      this.statusDiv.classList.remove('has-date');
+      this.clearBtn.style.display = 'none';
+      
+      this.statusDiv.innerHTML = `
+        <i class="bi bi-calendar-x text-muted"></i>
+        <span>Aucune date butoir définie</span>
+      `;
+    }
+  }
+  
+  getDate() {
+    return this.dateInput?.value || null;
+  }
+  
+  destroy() {
+    if (this.flatpickrInstance) {
+      this.flatpickrInstance.destroy();
+      this.flatpickrInstance = null;
+    }
+  }
+}
+
 
 // === CLASSE PRINCIPALE KANBAN ===
 class KanbanManager {
@@ -67,6 +248,7 @@ class KanbanManager {
     this.USER_ACTIONS_TABLE = "User_Actions";
     this.sortableInstances = [];
     this.flatpickr = null;
+    this.datePickerManager = null;
     this.availableColumns = new Set();
     
     // Modes de vue
@@ -1094,19 +1276,19 @@ updateStatusHistory(record, newStatus) {
       action: tache.strategie_action
     });
     
-    const delaiInput = document.getElementById('popup-delai');
-    if (delaiInput) {
-      const normalizedDate = this.normalizeDate(tache.date_echeance);
-      delaiInput.value = normalizedDate || '';
-      
-      if (tache.date_echeance) {
-        console.log('Date échéance:', {
-          original: tache.date_echeance,
-          type: typeof tache.date_echeance,
-          normalized: normalizedDate
-        });
-      }
-    }
+    // Gérer la date d'échéance avec le nouveau gestionnaire
+if (this.datePickerManager) {
+  const normalizedDate = this.normalizeDate(tache.date_echeance);
+  this.datePickerManager.setDate(normalizedDate);
+  
+  if (tache.date_echeance) {
+    console.log('Date échéance:', {
+      original: tache.date_echeance,
+      type: typeof tache.date_echeance,
+      normalized: normalizedDate
+    });
+  }
+}
     
     this.displayDescriptionHistory(tache);
     this.modal.show();
@@ -1342,7 +1524,39 @@ updateStatusHistory(record, newStatus) {
       console.error('Erreur lors de l\'affichage de l\'historique:', e);
     }
   }
+clearAllDates() {
+  if (confirm('Supprimer toutes les dates butoir de toutes les tâches ?')) {
+    this.currentRecords.forEach(async (record) => {
+      if (record.date_echeance) {
+        try {
+          await grist.docApi.applyUserActions([
+            ['UpdateRecord', TABLE_ID, record.id, { date_echeance: null }]
+          ]);
+          console.log(`Date supprimée pour tâche ${record.id}`);
+        } catch (error) {
+          console.error(`Erreur suppression date tâche ${record.id}:`, error);
+        }
+      }
+    });
+    
+    setTimeout(() => {
+      this.refreshKanban();
+    }, 1000);
+  }
+}
 
+// Fonction pour définir des dates par lot
+bulkSetDates() {
+  const days = prompt('Définir une échéance dans combien de jours pour toutes les tâches sélectionnées ?');
+  if (days && !isNaN(days)) {
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + parseInt(days));
+    const dateStr = futureDate.toISOString().slice(0, 10);
+    
+    console.log(`Date calculée: ${dateStr} (dans ${days} jours)`);
+    // Logique pour appliquer à des tâches sélectionnées
+  }
+}
   // === SAUVEGARDE ET GESTION DES DONNÉES ===
  // === 4. REMPLACEZ VOTRE saveTask PAR CELLE-CI ===
 async saveTask() {
@@ -1354,9 +1568,10 @@ async saveTask() {
     let dateEcheance = null;
     let dateDebut = null;
     
-    const delaiInput = document.getElementById('popup-delai');
-    if (delaiInput && delaiInput.value.trim()) {
-      dateEcheance = this.prepareDateForGrist ? this.prepareDateForGrist(delaiInput.value.trim()) : delaiInput.value.trim();
+    const dateFromPicker = this.datePickerManager ? this.datePickerManager.getDate() : null;
+if (dateFromPicker && dateFromPicker.trim()) {
+  dateEcheance = this.prepareDateForGrist ? this.prepareDateForGrist(dateFromPicker.trim()) : dateFromPicker.trim();
+
       
       if (!this.currentTaskId) {
         dateDebut = new Date().toISOString().slice(0,10);
@@ -1863,21 +2078,15 @@ async handleDragEnd(evt, targetStatus) {
     });
   }
 
-  initFlatpickr() {
-    const delaiInput = document.getElementById('popup-delai');
-    
-    if (!delaiInput) return;
-    
-    this.flatpickr = flatpickr(delaiInput, {
-      locale: 'fr',
-      dateFormat: 'Y-m-d',
-      allowInput: true,
-      disableMobile: true,
-      allowClear: true,
-      placeholder: 'Cliquer pour choisir une date ou laisser vide'
-    });
+initFlatpickr() {
+  // Détruire l'ancien gestionnaire s'il existe
+  if (this.datePickerManager) {
+    this.datePickerManager.destroy();
   }
-
+  
+  // Créer le nouveau gestionnaire
+  this.datePickerManager = new DatePickerManager(this);
+}
   initEventListeners() {
     document.getElementById('btn-save-task')?.addEventListener('click', () => this.saveTask());
     document.getElementById('btn-nouvelle-tache')?.addEventListener('click', () => this.openPopup());
