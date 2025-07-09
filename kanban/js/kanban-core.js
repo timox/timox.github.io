@@ -99,10 +99,10 @@ class KanbanManager {
       setTimeout(resolve, 50);
     });
   }
- async debugGristUser() {
+async debugGristUser() {
   console.log('=== TEST UTILISATEUR GRIST ===');
   
-  const userName = this.currentuser;
+  const userName = this.currentUser; // ← CORRECTION : currentUser au lieu de currentuser
   
   if (userName) {
     console.log('🎉 Succès ! Nom d\'utilisateur:', userName);
@@ -118,7 +118,7 @@ class KanbanManager {
 }
 
 
- // === FONCTION POUR RÉCUPÉRER LE NOM D'UTILISATEUR GRIST ===
+
 async getCurrentGristUser() {
   try {
     console.log('🔍 Récupération utilisateur Grist...');
@@ -142,7 +142,7 @@ async getCurrentGristUser() {
       
       if (userName) {
         console.log('✅ Nom utilisateur trouvé:', userName);
-        this.currentUser=username;
+        this.currentUser = userName; // ← CORRECTION : currentUser au lieu de currentuser
         return this.currentUser;
       }
     }
@@ -150,32 +150,69 @@ async getCurrentGristUser() {
     // Essayer d'autres propriétés possibles
     if (userInfo?.metadata?.updatedBy) {
       console.log('✅ Nom trouvé dans metadata:', userInfo.metadata.updatedBy);
-      this.currentUser=userInfo.metadata.updatedBy;
+      this.currentUser = userInfo.metadata.updatedBy; // ← CORRECTION
       return this.currentUser;
-      
     }
     
     if (userInfo?.owner) {
       console.log('✅ Nom trouvé dans owner:', userInfo.owner);
-      
-      return userInfo.owner;
-       this.currentUser=userInfo.owner;
+      this.currentUser = userInfo.owner; // ← CORRECTION
       return this.currentUser;
     }
     
     console.log('❌ Aucun nom d\'utilisateur trouvé');
-    this.currentUser=null;
+    this.currentUser = null; // ← CORRECTION
     return this.currentUser;
-    
     
   } catch (error) {
     console.log('❌ Erreur API getDocInfo:', error.message);
-    this.currentUser=null;
+    this.currentUser = null; // ← CORRECTION
     return this.currentUser;
   }
 }
 
+  // Ajoutez cette fonction pour tester le système utilisateur :
+async testUserSystem() {
+  console.log('=== TEST COMPLET DU SYSTÈME UTILISATEUR ===');
   
+  // 1. Tester la récupération utilisateur
+  console.log('\n1. Test récupération utilisateur...');
+  await this.initializeUser();
+  
+  // 2. Afficher le résultat
+  console.log('\n2. Résultat:');
+  if (this.currentUser) {
+    console.log(`✅ Utilisateur: ${this.currentUser}`);
+  } else {
+    console.log('❌ Pas d\'utilisateur détecté');
+  }
+  
+  // 3. Tester l'ajout de timestamp
+  console.log('\n3. Test timestamp...');
+  const testDescription = this.addTimestampToDescription('', 'Test de commentaire', null);
+  console.log('Résultat timestamp:', testDescription);
+  
+  // 4. Vérifier les colonnes Grist
+  console.log('\n4. Colonnes utilisateur Grist:');
+  console.log('- last_modified_by:', this.availableColumns.has('last_modified_by') ? '✅' : '❌');
+  console.log('- last_modified_at:', this.availableColumns.has('last_modified_at') ? '✅' : '❌');
+  
+  // 5. Tester la table User_Actions
+  console.log('\n5. Test table User_Actions...');
+  try {
+    await this.logUserAction(999, 'test', 'ancienne_valeur', 'nouvelle_valeur', 'Test système');
+    console.log('✅ Logging User_Actions fonctionne');
+  } catch (e) {
+    console.log('❌ Erreur User_Actions:', e.message);
+  }
+  
+  return {
+    userDetected: !!this.currentUser,
+    userName: this.currentUser,
+    columnsOk: this.availableColumns.has('last_modified_by'),
+    testComplete: true
+  };
+}
 
   async initializeUser() {
   if (this.userInitialized) return this.currentUser;
