@@ -32,6 +32,71 @@ const OPTIONAL_COLUMNS = ['date_debut', 'date_echeance'];
 let projetsDynamiques = [];
 
 // === FONCTIONS UTILITAIRES ===
+
+function generateBureauBadges(bureauList, isCompact = false) {
+  if (!Array.isArray(bureauList) || bureauList.length <= 1) {
+    return ''; // Pas de bureaux ou format incorrect
+  }
+  
+  // Extraire les bureaux (en sautant le premier élément qui est 'L')
+  const bureaux = bureauList.slice(1).filter(Boolean);
+  
+  if (bureaux.length === 0) {
+    return '';
+  }
+
+  // Fonction pour normaliser le nom du bureau pour les classes CSS
+  const normalizeBureauName = (bureau) => {
+    return bureau.toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '')
+      .replace(/^chef-/, 'chef-'); // Simplifier "Chef SSIR" en "ssir"
+  };
+
+// Fonction pour obtenir l'icône du bureau
+  const getBureauIcon = (bureau) => {
+    const bureauLower = bureau.toLowerCase();
+    if (bureauLower.includes('exploit')) return 'bi-server';
+    if (bureauLower.includes('réseau') || bureauLower.includes('reseau')) return 'bi-router';
+    if (bureauLower.includes('bdd')) return 'bi-database';
+    if (bureauLower.includes('chef') || bureauLower.includes('ssir')) return 'bi-person-badge';
+    if (bureauLower.includes('sig')) return 'bi-geo-alt';
+    if (bureauLower.includes('nexsis') || bureauLower.includes('rrf')) return 'bi-broadcast';
+    if (bureauLower.includes('comsic')) return 'bi-shield-check';
+    if (bureauLower.includes('rssi')) return 'bi-shield-lock';
+    if (bureauLower.includes('dpo')) return 'bi-file-earmark-person';
+    return 'bi-building';
+  };
+
+  // Générer les badges
+  let badgesHTML = '';
+  const containerClass = bureaux.length > 1 ? 'bureau-badges multiple-bureaux' : 'bureau-badges';
+  
+  badgesHTML += `<div class="${containerClass}">`;
+  
+  bureaux.forEach(bureau => {
+    const normalizedName = normalizeBureauName(bureau);
+    const icon = getBureauIcon(bureau);
+    const badgeClass = `bureau-badge bureau-${normalizedName}`;
+    const displayName = bureau.length > 8 && isCompact ? bureau.substring(0, 6) + '.' : bureau;
+    
+    badgesHTML += `
+      <span class="${badgeClass}" title="Bureau lead: ${bureau}">
+        <i class="${icon}"></i>
+        ${displayName}
+      </span>
+    `;
+  });
+  
+  badgesHTML += '</div>';
+  
+  return badgesHTML;
+}
+
+
+
+
+  
 // === FONCTION DE DEBUG SIMPLE ===
 
 
@@ -909,33 +974,55 @@ updateStatusHistory(record, newStatus) {
     }
   }
 
-  createCompactTaskHTML(record) {
-    const prio = this.calculerPriorite(record.urgence, record.impact);
-    let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
+  // 3. MODIFICATION DE createCompactTaskHTML
+createCompactTaskHTML(record) {
+  const prio = this.calculerPriorite(record.urgence, record.impact);
+  let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
+  
+  // NOUVEAU : Badges bureaux
+  const bureauBadges = generateBureauBadges(record.bureau, true);
+  
+  let echeanceElement = '';
+  if (record.date_echeance) {
+    const echeanceDate = new Date(record.date_echeance);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    echeanceDate.setHours(0, 0, 0, 0);
     
-    let echeanceElement = '';
-    if (record.date_echeance) {
-      const echeanceDate = new Date(record.date_echeance);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      echeanceDate.setHours(0, 0, 0, 0);
-      
-      const diffTime = echeanceDate.getTime() - today.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
-      let echeanceClass = 'echeance-ok';
-      if (diffDays < 0) echeanceClass = 'echeance-depassee';
-      else if (diffDays === 0) echeanceClass = 'echeance-aujourd-hui';
-      else if (diffDays <= 3) echeanceClass = 'echeance-urgent';
-      else if (diffDays <= 7) echeanceClass = 'echeance-bientot';
-      
-      const echeanceText = diffDays < 0 ? `J${diffDays}` : 
-                          diffDays === 0 ? "Auj." : `J+${diffDays}`;
-      
-      echeanceElement = `<span class="date-echeance-compact ${echeanceClass}">
-        <i class="bi bi-calendar-x"></i> ${echeanceText}
-      </span>`;
-    }
+    const diffTime = echeanceDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    let echeanceClass = 'echeance-ok';
+    if (diffDays < 0) echeanceClass = 'echeance-depassee';
+    else if (diffDays === 0) echeanceClass = 'echeance-aujourd-hui';
+    else if (diffDays <= 3) echeanceClass = 'echeance-urgent';
+    else if (diffDays <= 7) echeanceClass = 'echeance-bientot';
+    
+    const echeanceText = diffDays < 0 ? `J${diffDays}` : 
+                        diffDays === 0 ? "Auj." : `J+${diffDays}`;
+    
+    echeanceElement = `<span class="date-echeance-compact ${echeanceClass}">
+      <i class="bi bi-calendar-x"></i> ${echeanceText}
+    </span>`;
+  }
+  
+  const hasEcheanceClass = record.date_echeance ? 'has-echeance' : '';
+  
+  return `<div class="kanban-item kanban-item-compact ${hasEcheanceClass}" data-id="${record.id}">
+    <div class="drag-handle">
+      <i class="bi bi-grip-vertical"></i>
+    </div>
+    ${bureauBadges}
+    <div class="compact-header">
+      <div class="compact-priority">${prioBadge}</div>
+      <div class="compact-echeance">${echeanceElement}</div>
+      <button class="btn-expand" title="Voir détails">
+        <i class="bi bi-chevron-down"></i>
+      </button>
+    </div>
+    <div class="compact-title editable-zone">${record.titre || ''}</div>
+  </div>`;
+}
     
     const hasEcheanceClass = record.date_echeance ? 'has-echeance' : '';
     
@@ -954,128 +1041,190 @@ updateStatusHistory(record, newStatus) {
     </div>`;
   }
 
-  createDetailedTaskHTML(record) {
-    const isExpanded = this.expandedCards.has(record.id);
-    
-    const prio = this.calculerPriorite(record.urgence, record.impact);
-    let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
-    
-    // Bouton historique
-    let historyButton = '';
-    if (record.historique_statuts) {
-      try {
-        const historyData = JSON.parse(record.historique_statuts);
-        const historyCount = historyData.historique ? historyData.historique.length : 0;
-        if (historyCount > 1) {
-          historyButton = `<button class="btn-history" title="Voir l'historique (${historyCount} étapes)" data-task-id="${record.id}">
-            <i class="bi bi-clock-history"></i> ${historyCount}
-          </button>`;
-        }
-      } catch (e) {
-        // Ignore les erreurs de parsing
+  // 4. MODIFICATION DE createDetailedTaskHTML
+function createDetailedTaskHTML(record) {
+  const isExpanded = this.expandedCards.has(record.id);
+  
+  const prio = this.calculerPriorite(record.urgence, record.impact);
+  let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
+  
+  // NOUVEAU : Badges bureaux
+  const bureauBadges = generateBureauBadges(record.bureau, false);
+  
+  // Bouton historique
+  let historyButton = '';
+  if (record.historique_statuts) {
+    try {
+      const historyData = JSON.parse(record.historique_statuts);
+      const historyCount = historyData.historique ? historyData.historique.length : 0;
+      if (historyCount > 1) {
+        historyButton = `<button class="btn-history" title="Voir l'historique (${historyCount} étapes)" data-task-id="${record.id}">
+          <i class="bi bi-clock-history"></i> ${historyCount}
+        </button>`;
       }
+    } catch (e) {
+      // Ignore les erreurs de parsing
     }
-    
-    let projetTag = '';
-    if (record.projet) {
-      const tooltip = [
-        record.strategie_objectif ? `Objectif: ${record.strategie_objectif}` : '',
-        record.strategie_sous_objectif ? `Sous-objectif: ${record.strategie_sous_objectif}` : '',
-        record.strategie_action ? `Action: ${record.strategie_action}` : ''
-      ].filter(Boolean).join('\n');
-      projetTag = `<span class="badge bg-info text-dark" title="${tooltip.replace(/"/g, '&quot;')}">${record.projet}</span>`;
-    }
-    
-    let resumeDesc = '';
-    if (record.description) {
-      const latestDesc = this.getLatestDescription(record.description);
-      const mots = latestDesc.split(/\s+/).slice(0, 10).join(' ');
-      resumeDesc = `<div class="desc-resume">${mots}${latestDesc.split(/\s+/).length > 10 ? '…' : ''}</div>`;
-    }
-    
-    let personnes = '';
-    if (Array.isArray(record.qui) && record.qui.length > 1) {
-      personnes = '<div class="personnes-list">' +
-        record.qui.slice(1).map(q => `<span class="personne-badge">${q}</span>`).join(' ') +
-        '</div>';
-    }
-    
-    let datesElement = '';
-    const dateDebut = this.normalizeDate(record.date_debut);
-    const dateEcheance = this.normalizeDate(record.date_echeance);
-    
-    if (dateDebut || dateEcheance) {
-      let dateInfo = [];
-      
-      if (dateDebut) {
-        const debutFormatted = this.formatDate(dateDebut);
-        dateInfo.push(`<span class="date-debut" title="Début: ${debutFormatted}">
-          <i class="bi bi-play-circle"></i> ${debutFormatted}
-        </span>`);
-      }
-      
-      if (dateEcheance) {
-        const echeanceDate = new Date(dateEcheance);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        echeanceDate.setHours(0, 0, 0, 0);
-        
-        const diffTime = echeanceDate.getTime() - today.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        let echeanceClass = 'echeance-ok';
-        let echeanceText = '';
-        
-        if (diffDays < 0) {
-          echeanceClass = 'echeance-depassee';
-          echeanceText = `Dépassé (${Math.abs(diffDays)}j)`;
-        } else if (diffDays === 0) {
-          echeanceClass = 'echeance-aujourd-hui';
-          echeanceText = "Aujourd'hui";
-        } else if (diffDays <= 3) {
-          echeanceClass = 'echeance-urgent';
-          echeanceText = `${diffDays}j restant${diffDays > 1 ? 's' : ''}`;
-        } else if (diffDays <= 7) {
-          echeanceClass = 'echeance-bientot';
-          echeanceText = `${diffDays}j restant${diffDays > 1 ? 's' : ''}`;
-        } else {
-          echeanceText = `J+${diffDays}`;
-        }
-        
-        const echeanceFormatted = this.formatDate(dateEcheance);
-        dateInfo.push(`<span class="date-echeance ${echeanceClass}" title="Échéance: ${echeanceFormatted}">
-          <i class="bi bi-calendar-x"></i> ${echeanceText}
-        </span>`);
-      }
-      
-      if (dateInfo.length > 0) {
-        datesElement = `<div class="dates-container">${dateInfo.join('')}</div>`;
-      }
-    }
-    
-    const hasEcheanceClass = dateEcheance ? 'has-echeance' : '';
-    const hasDateDebutClass = dateDebut ? 'has-debut' : '';
-    const collapseButton = (this.viewMode === 'compact' && isExpanded) ? 
-      `<button class="btn-collapse" title="Réduire"><i class="bi bi-chevron-up"></i></button>` : '';
-    
-    return `<div class="kanban-item kanban-item-detailed ${hasEcheanceClass} ${hasDateDebutClass}" data-id="${record.id}">
-      <div class="drag-handle">
-        <i class="bi bi-grip-vertical"></i>
-      </div>
-      <div class="kanban-item-header">
-        <div>${prioBadge}</div>
-        <div class="item-badges">
-          ${projetTag}
-          ${historyButton}
-          ${collapseButton}
-        </div>
-      </div>
-      <div class="item-title editable-zone">${record.titre || ''}</div>
-      ${resumeDesc}
-      ${datesElement}
-      ${personnes}
-    </div>`;
   }
+  
+  let projetTag = '';
+  if (record.projet) {
+    const tooltip = [
+      record.strategie_objectif ? `Objectif: ${record.strategie_objectif}` : '',
+      record.strategie_sous_objectif ? `Sous-objectif: ${record.strategie_sous_objectif}` : '',
+      record.strategie_action ? `Action: ${record.strategie_action}` : ''
+    ].filter(Boolean).join('\n');
+    projetTag = `<span class="badge bg-info text-dark" title="${tooltip.replace(/"/g, '&quot;')}">${record.projet}</span>`;
+  }
+  
+  let resumeDesc = '';
+  if (record.description) {
+    const latestDesc = this.getLatestDescription(record.description);
+    const mots = latestDesc.split(/\s+/).slice(0, 10).join(' ');
+    resumeDesc = `<div class="desc-resume">${mots}${latestDesc.split(/\s+/).length > 10 ? '…' : ''}</div>`;
+  }
+  
+  let personnes = '';
+  if (Array.isArray(record.qui) && record.qui.length > 1) {
+    personnes = '<div class="personnes-list">' +
+      record.qui.slice(1).map(q => `<span class="personne-badge">${q}</span>`).join(' ') +
+      '</div>';
+  }
+  
+  let datesElement = '';
+  const dateDebut = this.normalizeDate(record.date_debut);
+  const dateEcheance = this.normalizeDate(record.date_echeance);
+  
+  if (dateDebut || dateEcheance) {
+    let dateInfo = [];
+    
+    if (dateDebut) {
+      const debutFormatted = this.formatDate(dateDebut);
+      dateInfo.push(`<span class="date-debut" title="Début: ${debutFormatted}">
+        <i class="bi bi-play-circle"></i> ${debutFormatted}
+      </span>`);
+    }
+    
+    if (dateEcheance) {
+      const echeanceDate = new Date(dateEcheance);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      echeanceDate.setHours(0, 0, 0, 0);
+      
+      const diffTime = echeanceDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      let echeanceClass = 'echeance-ok';
+      let echeanceText = '';
+      
+      if (diffDays < 0) {
+        echeanceClass = 'echeance-depassee';
+        echeanceText = `Dépassé (${Math.abs(diffDays)}j)`;
+      } else if (diffDays === 0) {
+        echeanceClass = 'echeance-aujourd-hui';
+        echeanceText = "Aujourd'hui";
+      } else if (diffDays <= 3) {
+        echeanceClass = 'echeance-urgent';
+        echeanceText = `${diffDays}j restant${diffDays > 1 ? 's' : ''}`;
+      } else if (diffDays <= 7) {
+        echeanceClass = 'echeance-bientot';
+        echeanceText = `${diffDays}j restant${diffDays > 1 ? 's' : ''}`;
+      } else {
+        echeanceText = `J+${diffDays}`;
+      }
+      
+      const echeanceFormatted = this.formatDate(dateEcheance);
+      dateInfo.push(`<span class="date-echeance ${echeanceClass}" title="Échéance: ${echeanceFormatted}">
+        <i class="bi bi-calendar-x"></i> ${echeanceText}
+      </span>`);
+    }
+    
+    if (dateInfo.length > 0) {
+      datesElement = `<div class="dates-container">${dateInfo.join('')}</div>`;
+    }
+  }
+  
+  const hasEcheanceClass = dateEcheance ? 'has-echeance' : '';
+  const hasDateDebutClass = dateDebut ? 'has-debut' : '';
+  const collapseButton = (this.viewMode === 'compact' && isExpanded) ? 
+    `<button class="btn-collapse" title="Réduire"><i class="bi bi-chevron-up"></i></button>` : '';
+  
+  return `<div class="kanban-item kanban-item-detailed ${hasEcheanceClass} ${hasDateDebutClass}" data-id="${record.id}">
+    <div class="drag-handle">
+      <i class="bi bi-grip-vertical"></i>
+    </div>
+    ${bureauBadges}
+    <div class="kanban-item-header">
+      <div>${prioBadge}</div>
+      <div class="item-badges">
+        ${projetTag}
+        ${historyButton}
+        ${collapseButton}
+      </div>
+    </div>
+    <div class="item-title editable-zone">${record.titre || ''}</div>
+    ${resumeDesc}
+    ${datesElement}
+    ${personnes}
+  </div>`;
+}
+function filterByBureau(bureauName) {
+  if (!window.kanbanManager) return;
+  
+  const filterSelect = document.getElementById('filter-bureau');
+  if (filterSelect) {
+    filterSelect.value = bureauName;
+    window.kanbanManager.applyFilters();
+    console.log(`Filtrage appliqué pour le bureau: ${bureauName}`);
+  }
+}
+showBureauStats() {
+  if (!window.kanbanManager || !window.kanbanManager.currentRecords) {
+    console.log('Données non disponibles');
+    return;
+  }
+  
+  const records = window.kanbanManager.currentRecords;
+  const bureauStats = {};
+  
+  records.forEach(record => {
+    if (Array.isArray(record.bureau) && record.bureau.length > 1) {
+      const bureaux = record.bureau.slice(1);
+      
+      bureaux.forEach(bureau => {
+        if (!bureauStats[bureau]) {
+          bureauStats[bureau] = {
+            total: 0,
+            parStatut: {}
+          };
+        }
+        
+        bureauStats[bureau].total++;
+        
+        const statut = record.statut || 'Non défini';
+        if (!bureauStats[bureau].parStatut[statut]) {
+          bureauStats[bureau].parStatut[statut] = 0;
+        }
+        bureauStats[bureau].parStatut[statut]++;
+      });
+    }
+  });
+  
+  console.log('=== STATISTIQUES PAR BUREAU ===');
+  Object.keys(bureauStats).sort().forEach(bureau => {
+    const stats = bureauStats[bureau];
+    console.log(`\n${bureau}: ${stats.total} tâches`);
+    
+    Object.keys(stats.parStatut).sort().forEach(statut => {
+      const count = stats.parStatut[statut];
+      const pourcentage = Math.round((count / stats.total) * 100);
+      console.log(`  ${statut}: ${count} (${pourcentage}%)`);
+    });
+  });
+  
+  return bureauStats;
+}
+
 
   // === RENDU DU KANBAN ===
   refreshKanban() {
