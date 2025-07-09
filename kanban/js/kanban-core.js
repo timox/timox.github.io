@@ -33,7 +33,7 @@ let projetsDynamiques = [];
 
 // === FONCTIONS UTILITAIRES ===
 
-generateBureauBadges(bureauList, isCompact = false) {
+function generateBureauBadges(bureauList, isCompact = false) {
   if (!Array.isArray(bureauList) || bureauList.length <= 1) {
     return ''; // Pas de bureaux ou format incorrect
   }
@@ -44,16 +44,16 @@ generateBureauBadges(bureauList, isCompact = false) {
   if (bureaux.length === 0) {
     return '';
   }
-
+  
   // Fonction pour normaliser le nom du bureau pour les classes CSS
   const normalizeBureauName = (bureau) => {
     return bureau.toLowerCase()
       .replace(/\s+/g, '-')
       .replace(/[^a-z0-9-]/g, '')
-      .replace(/^chef-/, 'chef-'); // Simplifier "Chef SSIR" en "ssir"
+      .replace(/^chef-/, ''); // Simplifier "Chef SSIR" en "ssir"
   };
-}
-// Fonction pour obtenir l'icône du bureau
+  
+  // Fonction pour obtenir l'icône du bureau
   const getBureauIcon = (bureau) => {
     const bureauLower = bureau.toLowerCase();
     if (bureauLower.includes('exploit')) return 'bi-server';
@@ -67,7 +67,7 @@ generateBureauBadges(bureauList, isCompact = false) {
     if (bureauLower.includes('dpo')) return 'bi-file-earmark-person';
     return 'bi-building';
   };
-
+  
   // Générer les badges
   let badgesHTML = '';
   const containerClass = bureaux.length > 1 ? 'bureau-badges multiple-bureaux' : 'bureau-badges';
@@ -974,7 +974,7 @@ updateStatusHistory(record, newStatus) {
     }
   }
 
-  // 3. MODIFICATION DE createCompactTaskHTML
+// 3. MODIFICATION DE createCompactTaskHTML
 createCompactTaskHTML(record) {
   const prio = this.calculerPriorite(record.urgence, record.impact);
   let prioBadge = `<span class="priority-badge priority-${prio}">P${prio}</span>`;
@@ -1008,13 +1008,22 @@ createCompactTaskHTML(record) {
   
   const hasEcheanceClass = record.date_echeance ? 'has-echeance' : '';
   
-  return `<div class="kanban-item kanban-item-compact ${hasEcheanceClass}" data-id="${record.id}"><div class="drag-handle"><i class="bi bi-grip-vertical"></i></div>${bureauBadges}<div class="compact-header"><div class="compact-priority">${prioBadge}</div><div class="compact-echeance">${echeanceElement}</div>      <button class="btn-expand" title="Voir détails">        <i class="bi bi-chevron-down"></i>      </button>    </div>    <div class="compact-title editable-zone">${record.titre || ''}</div>  </div>`;
-  
+  return `<div class="kanban-item kanban-item-compact ${hasEcheanceClass}" data-id="${record.id}">
+    <div class="drag-handle">
+      <i class="bi bi-grip-vertical"></i>
+    </div>
+    ${bureauBadges}
+    <div class="compact-header">
+      <div class="compact-priority">${prioBadge}</div>
+      <div class="compact-echeance">${echeanceElement}</div>
+      <button class="btn-expand" title="Voir détails">
+        <i class="bi bi-chevron-down"></i>
+      </button>
+    </div>
+    <div class="compact-title editable-zone">${record.titre || ''}</div>
+  </div>`;
 }
-    
-
-
-  // 4. MODIFICATION DE createDetailedTaskHTML
+ // 4. MODIFICATION DE createDetailedTaskHTML
 createDetailedTaskHTML(record) {
   const isExpanded = this.expandedCards.has(record.id);
   
@@ -1141,6 +1150,7 @@ createDetailedTaskHTML(record) {
     ${personnes}
   </div>`;
 }
+
 filterByBureau(bureauName) {
   if (!window.kanbanManager) return;
   
@@ -1151,6 +1161,8 @@ filterByBureau(bureauName) {
     console.log(`Filtrage appliqué pour le bureau: ${bureauName}`);
   }
 }
+#
+// 5. FONCTION POUR AFFICHER LES STATISTIQUES PAR BUREAU
 showBureauStats() {
   if (!window.kanbanManager || !window.kanbanManager.currentRecords) {
     console.log('Données non disponibles');
@@ -1198,6 +1210,17 @@ showBureauStats() {
   return bureauStats;
 }
 
+// 6. FONCTION POUR FILTRER PAR BUREAU
+filterByBureau(bureauName) {
+  if (!window.kanbanManager) return;
+  
+  const filterSelect = document.getElementById('filter-bureau');
+  if (filterSelect) {
+    filterSelect.value = bureauName;
+    window.kanbanManager.applyFilters();
+    console.log(`Filtrage appliqué pour le bureau: ${bureauName}`);
+  }
+}
 
   // === RENDU DU KANBAN ===
   refreshKanban() {
