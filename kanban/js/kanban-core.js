@@ -1,4 +1,4 @@
-// === js/kanban-core.js - CODE CORRIGÉ ===
+// === js/kanban-core.js - PARTIE 1: CONFIGURATION ET UTILITAIRES ===
 
 // === CONFIGURATION ===
 const STATUTS = [
@@ -268,6 +268,10 @@ class DatePickerManager {
     }
   }
 }
+
+////////////////////////////////////////////////
+
+// === js/kanban-core.js - PARTIE 2: CLASSE KANBANMANAGER - INITIALISATION ===
 
 // === CLASSE PRINCIPALE KANBAN ===
 class KanbanManager {
@@ -558,6 +562,12 @@ class KanbanManager {
     }
     return records;
   }
+}
+
+//////////////////////////////////////////////////
+
+
+// === js/kanban-core.js - PARTIE 3: GESTION DES DATES ET COMMENTAIRES ===
 
   // === GESTION DES DATES ===
   normalizeDate(dateValue) {
@@ -827,6 +837,10 @@ class KanbanManager {
     }
   }
 
+
+/////////////////////////////////////////////////////////////////////
+// === js/kanban-core.js - PARTIE 4: MODES DE VUE ET CRÉATION DES CARTES ===
+
   // === GESTION DES MODES DE VUE ===
   initViewModeControls() {
     const controlsContainer = document.querySelector('.kanban-controls .row');
@@ -1049,6 +1063,21 @@ class KanbanManager {
     </div>`;
   }
 
+  calculerPriorite(u, i) {
+    const imp = String(i || '').trim().toLowerCase();
+    const urg = String(u || '').trim().toLowerCase();
+    if (imp === 'critique') return 1;
+    if (imp === 'important') return (urg === 'immédiate' || urg === 'courte') ? 1 : 2;
+    if (imp === 'modéré') return (urg === 'immédiate') ? 2 : 3;
+    if (imp === 'mineur') return 4;
+    return 3;
+  }
+
+
+///////////////////////////////////////////////////////
+
+// === js/kanban-core.js - PARTIE 5: RENDU DU KANBAN ===
+
   // === RENDU DU KANBAN ===
   refreshKanban() {
     if (!this.kanbanContainer) return;
@@ -1217,6 +1246,108 @@ class KanbanManager {
     });
   }
 
+  async handleDragEnd(evt, targetStatus) {
+    if (!evt.item || !evt.item.dataset) return;
+    
+    const id = parseInt(evt.item.dataset.id, 10);
+    if (isNaN(id)) return;
+    
+    const record = this.currentRecords.find(r => r.id === id);
+    if (!record) return;
+    
+    const newStatus = evt.to.dataset.status;
+    const oldStatus = record.statut;
+    
+    if (oldStatus === newStatus) return;
+    
+    console.log(`Déplacement de la tâche ${id} de "${oldStatus}" vers "${newStatus}"`);
+    
+    try {
+      const updateData = { statut: newStatus };
+      
+      const historyColumn = this.getHistoryColumnName();
+      if (this.availableColumns.has(historyColumn) && this.availableColumns.has('date_derniere_maj')) {
+        const historyUpdate = this.updateStatusHistory(record, newStatus);
+        Object.assign(updateData, historyUpdate);
+      }
+      
+      await grist.docApi.applyUserActions([
+        ['UpdateRecord', TABLE_ID, id, updateData]
+      ]);
+      
+      console.log(`Tâche ${id} mise à jour avec succès`);
+      
+      await this.logUserAction(id, 'status_change', oldStatus, newStatus, 'Drag & drop via Kanban');
+      
+      const recordIndex = this.currentRecords.findIndex(r => r.id === id);
+      if (recordIndex !== -1) {
+        this.currentRecords[recordIndex] = { 
+          ...this.currentRecords[recordIndex], 
+          ...updateData 
+        };
+      }
+      
+      this.refreshKanban();
+      
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour:', error);
+      displayError(`Erreur: ${error.message}`);
+      this.refreshKanban();
+    }
+  }
+
+  applyFilters() {
+    this.filters.bureau = document.getElementById('filter-bureau')?.value || '';
+    this.filters.qui = document.getElementById('filter-qui')?.value || '';
+    this.filters.projet = document.getElementById('filter-projet')?.value || '';
+    this.filters.statut = document.getElementById('filter-statut')?.value || '';
+    
+    const searchTerm = document.getElementById('search-input')?.value.toLowerCase() || '';
+    
+    let filteredRecords = this.currentRecords.filter(record => {
+      if (this.filters.bureau && Array.isArray(record.bureau)) {
+        const bureaux = record.bureau.slice(1);
+        if (!bureaux.includes(this.filters.bureau)) return false;
+      }
+      
+      if (this.filters.qui && Array.isArray(record.qui)) {
+        const responsables = record.qui.slice(1);
+        if (!responsables.includes(this.filters.qui)) return false;
+      }
+      
+      if (this.filters.projet && record.projet !== this.filters.projet) return false;
+      
+      if (this.filters.statut && record.statut !== this.filters.statut) return false;
+      
+      if (searchTerm) {
+        const searchableText = [
+          record.titre || '',
+          record.description || '',
+          record.projet || '',
+          record.strategie_objectif || '',
+          record.strategie_sous_objectif || '',
+          record.strategie_action || ''
+        ].join(' ').toLowerCase();
+        
+        if (!searchableText.includes(searchTerm)) return false;
+      }
+      
+      return true;
+    });
+    
+    const originalRecords = this.currentRecords;
+    this.currentRecords = filteredRecords;
+    
+    this.refreshKanban();
+    
+    this.currentRecords = originalRecords;
+  }
+
+
+//////////////////////////////////
+
+// === js/kanban-core.js - PARTIE 6: GESTION DES MODALS ET HISTORIQUE ===
+
   // === GESTION DES MODALS ===
   openPopup(tache = {}) {
     if (!this.modal || !this.modalElement) return;
@@ -1322,730 +1453,6 @@ class KanbanManager {
           `${Math.floor(entry.duree_minutes / 60)}h ${entry.duree_minutes % 60}m` : 
           'En cours...';
         
-        console.log(`${index + 1}. ${entry.statut}`);
-        console.log(`   Du: ${new Date(entry.date_entree).toLocaleString('fr-FR')}`);
-        console.log(`   Au: ${entry.date_sortie ? new Date(entry.date_sortie).toLocaleString('fr-FR') : 'En cours'}`);
-        console.log(`   Durée: ${duration}`);
-        if (entry.note) console.log(`   Note: ${entry.note}`);
-        console.log('');
-      });
-      
-    } catch (e) {
-      console.error('Erreur lors de l\'affichage de l\'historique:', e);
-    }
-  }
-
-  // === SAUVEGARDE ET GESTION DES DONNÉES ===
-  async saveTask() {
-    try {
-      const isNewTask = !this.currentTaskId;
-      const existingRecord = isNewTask ? null : this.currentRecords.find(r => r.id === this.currentTaskId);
-      
-      // Préparer les données de dates
-      let dateEcheance = null;
-      let dateDebut = null;
-      
-      const dateFromPicker = this.datePickerManager ? this.datePickerManager.getDate() : null;
-      if (dateFromPicker && dateFromPicker.trim()) {
-        dateEcheance = this.prepareDateForGrist(dateFromPicker.trim());
-        
-        if (!this.currentTaskId) {
-          dateDebut = new Date().toISOString().slice(0,10);
-        } else {
-          const existingDateDebut = existingRecord?.date_debut;
-          dateDebut = existingDateDebut ? this.normalizeDate(existingDateDebut) : null;
-        }
-      }
-      
-      // Récupérer les données du formulaire
-      const titre = document.getElementById('popup-titre').value;
-      const newDescription = document.getElementById('popup-description').value;
-      const statut = document.getElementById('popup-statut-text').value;
-      const projet = document.getElementById('popup-projet').value;
-      const urgence = document.getElementById('popup-urgence').value;
-      const impact = document.getElementById('popup-impact').value;
-      const bureau = Array.from(document.getElementById('popup-bureau').selectedOptions).map(o => o.value);
-      const qui = Array.from(document.getElementById('popup-qui').selectedOptions).map(o => o.value);
-      
-      const strategie_objectif = document.getElementById('strategie-objectif').value;
-      const strategie_sous_objectif = document.getElementById('strategie-sous-objectif').value;
-      const strategie_action = document.getElementById('strategie-action').value;
-      
-      // Gestion description avec historique
-      let finalDescription = newDescription;
-      
-      if (this.currentTaskId && existingRecord) {
-        const currentDescription = existingRecord.description || '';
-        finalDescription = this.addTimestampToDescription(currentDescription, newDescription, null);
-      } else if (newDescription && newDescription.trim()) {
-        // Nouvelle tâche - timestamp simple
-        const now = new Date().toLocaleString('fr-FR', {
-          year: 'numeric', month: '2-digit', day: '2-digit',
-          hour: '2-digit', minute: '2-digit'
-        });
-        finalDescription = `[${now}]\n${newDescription.trim()}`;
-      }
-      
-      // Préparer les données à sauvegarder
-      const row = {
-        titre, 
-        description: finalDescription, 
-        statut, 
-        projet, 
-        urgence, 
-        impact,
-        bureau: ['L', ...bureau],
-        qui: ['L', ...qui],
-        strategie_objectif,
-        strategie_sous_objectif,
-        strategie_action
-      };
-
-      // Ajouter les dates si les colonnes existent
-      if (this.availableColumns.has('date_debut') && dateDebut !== null) {
-        row.date_debut = dateDebut;
-      }
-      
-      if (this.availableColumns.has('date_echeance') && dateEcheance !== null) {
-        row.date_echeance = dateEcheance;
-      }
-
-      // Sauvegarder
-      if (isNewTask) {
-        const result = await grist.docApi.applyUserActions([
-          ['AddRecord', TABLE_ID, null, row]
-        ]);
-        
-        console.log('Nouvelle tâche créée avec succès');
-        
-        if (result && result[0] && result[0].id) {
-          const newRecord = { id: result[0].id, ...row };
-          this.currentRecords.push(newRecord);
-          
-          // Logger création
-          await this.logUserAction(result[0].id, 'creation', '', titre, 'Tâche créée via Kanban');
-        }
-        
-      } else {
-        await grist.docApi.applyUserActions([
-          ['UpdateRecord', TABLE_ID, this.currentTaskId, row]
-        ]);
-        
-        console.log(`Tâche ${this.currentTaskId} mise à jour avec succès`);
-        
-        // Logger modifications importantes
-        if (existingRecord.titre !== titre) {
-          await this.logUserAction(this.currentTaskId, 'title_change', existingRecord.titre, titre);
-        }
-        
-        if (existingRecord.statut !== statut) {
-          await this.logUserAction(this.currentTaskId, 'status_change', existingRecord.statut, statut);
-        }
-        
-        // Mise à jour locale
-        const recordIndex = this.currentRecords.findIndex(r => r.id === this.currentTaskId);
-        if (recordIndex !== -1) {
-          this.currentRecords[recordIndex] = { ...this.currentRecords[recordIndex], ...row };
-        }
-      }
-      
-      this.modal.hide();
-      this.refreshKanban();
-      
-    } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
-      displayError(`Erreur: ${error.message}`);
-    }
-  }
-
-  async logUserAction(taskId, actionType, oldValue = '', newValue = '', details = '') {
-    try {
-      const actionRecord = {
-        task_id: taskId,
-        action_type: actionType,
-        old_value: String(oldValue).substring(0, 500),
-        new_value: String(newValue).substring(0, 500), 
-        details: String(details).substring(0, 200)
-      };
-
-      await grist.docApi.applyUserActions([
-        ['AddRecord', this.USER_ACTIONS_TABLE, null, actionRecord]
-      ]);
-
-      console.log('Action loggée:', actionRecord);
-
-    } catch (error) {
-      console.warn('Erreur logging (non bloquante):', error);
-    }
-  }
-
-  async handleDragEnd(evt, targetStatus) {
-    if (!evt.item || !evt.item.dataset) return;
-    
-    const id = parseInt(evt.item.dataset.id, 10);
-    if (isNaN(id)) return;
-    
-    const record = this.currentRecords.find(r => r.id === id);
-    if (!record) return;
-    
-    const newStatus = evt.to.dataset.status;
-    const oldStatus = record.statut;
-    
-    if (oldStatus === newStatus) return;
-    
-    console.log(`Déplacement de la tâche ${id} de "${oldStatus}" vers "${newStatus}"`);
-    
-    try {
-      const updateData = { statut: newStatus };
-      
-      const historyColumn = this.getHistoryColumnName();
-      if (this.availableColumns.has(historyColumn) && this.availableColumns.has('date_derniere_maj')) {
-        const historyUpdate = this.updateStatusHistory(record, newStatus);
-        Object.assign(updateData, historyUpdate);
-      }
-      
-      await grist.docApi.applyUserActions([
-        ['UpdateRecord', TABLE_ID, id, updateData]
-      ]);
-      
-      console.log(`Tâche ${id} mise à jour avec succès`);
-      
-      await this.logUserAction(id, 'status_change', oldStatus, newStatus, 'Drag & drop via Kanban');
-      
-      const recordIndex = this.currentRecords.findIndex(r => r.id === id);
-      if (recordIndex !== -1) {
-        this.currentRecords[recordIndex] = { 
-          ...this.currentRecords[recordIndex], 
-          ...updateData 
-        };
-      }
-      
-      this.refreshKanban();
-      
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour:', error);
-      displayError(`Erreur: ${error.message}`);
-      this.refreshKanban();
-    }
-  }
-
-  async deleteTask(taskId) {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette tâche ?')) {
-      return;
-    }
-    
-    try {
-      await grist.docApi.applyUserActions([
-        ['RemoveRecord', TABLE_ID, taskId]
-      ]);
-      
-      console.log(`Tâche ${taskId} supprimée avec succès`);
-      
-      this.currentRecords = this.currentRecords.filter(r => r.id !== taskId);
-      
-      if (this.modal && this.currentTaskId === taskId) {
-        this.modal.hide();
-      }
-      
-      this.refreshKanban();
-      
-    } catch (error) {
-      console.error('Erreur lors de la suppression:', error);
-      displayError(`Erreur lors de la suppression: ${error.message}`);
-    }
-  }
-
-  calculerPriorite(u, i) {
-    const imp = String(i || '').trim().toLowerCase();
-    const urg = String(u || '').trim().toLowerCase();
-    if (imp === 'critique') return 1;
-    if (imp === 'important') return (urg === 'immédiate' || urg === 'courte') ? 1 : 2;
-    if (imp === 'modéré') return (urg === 'immédiate') ? 2 : 3;
-    if (imp === 'mineur') return 4;
-    return 3;
-  }
-
-  // === EXPORT ===
-  exportHistoryData() {
-    const exportData = this.currentRecords.map(task => {
-      let history = [];
-      try {
-        if (task.historique_statuts) {
-          const historyData = JSON.parse(task.historique_statuts);
-          history = historyData.historique || [];
-        }
-      } catch (e) {
-        console.warn(`Erreur parsing historique tâche ${task.id}:`, e);
-      }
-      
-      return {
-        id: task.id,
-        titre: task.titre,
-        projet: task.projet,
-        statut_actuel: task.statut,
-        historique: history,
-        duree_totale_minutes: history.reduce((total, entry) => {
-          return total + (entry.duree_minutes || 0);
-        }, 0)
-      };
-    }).filter(task => task.historique.length > 0);
-    
-    console.log('Données d\'historique:', exportData);
-    
-    let csv = 'ID,Titre,Projet,Statut,Historique_Statut,Date_Entree,Date_Sortie,Duree_Minutes\n';
-    
-    exportData.forEach(task => {
-      task.historique.forEach(entry => {
-        csv += `${task.id},"${task.titre}","${task.projet}","${task.statut_actuel}","${entry.statut}","${entry.date_entree}","${entry.date_sortie || ''}",${entry.duree_minutes || ''}\n`;
-      });
-    });
-    
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `historique_kanban_${new Date().toISOString().slice(0,10)}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-  }
-
-  exportSingleTaskHistory(taskId) {
-    const task = this.currentRecords.find(r => r.id === taskId);
-    if (!task || !task.historique_statuts) return;
-    
-    try {
-      const historyData = JSON.parse(task.historique_statuts);
-      const history = historyData.historique || [];
-      
-      let csv = 'Tâche,Statut,Date_Début,Date_Fin,Durée_Minutes,Durée_Heures,Note\n';
-      
-      history.forEach(entry => {
-        const dureeHeures = entry.duree_minutes ? (entry.duree_minutes / 60).toFixed(1) : '';
-        csv += `"${task.titre}","${entry.statut}","${entry.date_entree}","${entry.date_sortie || ''}",${entry.duree_minutes || ''},${dureeHeures},"${entry.note || ''}"\n`;
-      });
-      
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `historique_tache_${taskId}_${new Date().toISOString().slice(0,10)}.csv`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-      
-    } catch (e) {
-      console.error('Erreur export:', e);
-    }
-  }
-
-  // === GESTION GRIST ===
-  handleGristUpdate(gristRecords, mappings = null) {
-    if (this.isUpdating) return;
-    if (this.ignoreNextOnRecords) { 
-      this.ignoreNextOnRecords = false; 
-      return; 
-    }
-    
-    console.log('Mise à jour Grist reçue, rechargement des données...');
-    this.isUpdating = true;
-    
-    grist.docApi.fetchTable(TABLE_ID).then(fresh => {
-      this.currentRecords = this.mapGristRecords(fresh);
-      this.initFilters();
-      this.refreshKanban();
-      console.log('Données mises à jour avec succès');
-    }).catch(error => {
-      console.error('Erreur lors du rechargement des données:', error);
-      displayError(`Erreur lors du rechargement: ${error.message}`);
-    }).finally(() => { 
-      this.isUpdating = false; 
-    });
-  }
-
-  // === INITIALISATIONS ===
-  initFilters() {
-    this.populateSelectWithOptions('filter-bureau', this.gristOptions.bureau || []);
-    this.populateSelectWithOptions('filter-qui', this.gristOptions.qui || []);
-    this.populateSelectWithOptions('filter-projet', this.gristOptions.projet || []);
-    this.populateSelectWithOptions('filter-statut', DEFAULT_STATUTS);
-  }
-
-  initModalWithOptions() {
-    if (this.modalElement) {
-      this.modal = new bootstrap.Modal(this.modalElement, { backdrop: 'static', keyboard: false });
-      this.populateSelectWithOptions('popup-urgence', this.gristOptions.urgence || [], true);
-      this.populateSelectWithOptions('popup-impact', this.gristOptions.impact || [], true);
-      this.populateSelectWithOptions('popup-bureau', this.gristOptions.bureau || [], false);
-      this.populateSelectWithOptions('popup-qui', this.gristOptions.qui || [], false);
-      this.populateSelectWithOptions('popup-projet', this.gristOptions.projet || [], true);
-      
-      const btnAjoutProjet = document.getElementById('btn-ajout-projet');
-      if (btnAjoutProjet) {
-        btnAjoutProjet.onclick = () => {
-          const champ = document.getElementById('projet-ajout');
-          const val = champ.value.trim();
-          if(val && !this.gristOptions.projet.includes(val) && !projetsDynamiques.includes(val)) {
-            projetsDynamiques.push(val);
-            this.populateSelectWithOptions('popup-projet', [...this.gristOptions.projet, ...projetsDynamiques], true);
-            champ.value = '';
-          }
-        };
-      }
-    }
-  }
-
-  populateSelectWithOptions(selectId, options, addEmptyOption = true) {
-    const sel = document.getElementById(selectId);
-    if (!sel) return;
-    sel.innerHTML = '';
-    if (!Array.isArray(options)) return;
-    if (addEmptyOption && !sel.multiple) {
-      const opt = document.createElement('option');
-      opt.value = "";
-      opt.text = selectId.startsWith('filter-') ? "Tous" : "-- Choisir --";
-      sel.appendChild(opt);
-    }
-    options.forEach(v => {
-      if (v !== null && typeof v !== 'undefined') {
-        const o = document.createElement('option');
-        o.value = v;
-        o.text = v;
-        sel.appendChild(o);
-      }
-    });
-  }
-
-  getStratOptionsFromTasks() {
-    const set = new Set();
-    (this.currentRecords || []).forEach(rec => {
-      const obj = rec.strategie_objectif || "";
-      const sous = rec.strategie_sous_objectif || "";
-      const act = rec.strategie_action || "";
-      if (obj || sous || act) {
-        set.add(JSON.stringify({objectif: obj, sous_objectif: sous, action: act}));
-      }
-    });
-    return Array.from(set).map(s => JSON.parse(s));
-  }
-
-  populateStrategieLists(selected = {}) {
-    const STRATEGIES = this.getStratOptionsFromTasks();
-
-    const objectifs = [...new Set(STRATEGIES.map(s => s.objectif))].filter(Boolean).sort();
-    const selObj = document.getElementById('strategie-objectif');
-    if (!selObj) return;
-    selObj.innerHTML = objectifs.map(obj => `<option value="${obj}">${obj}</option>`).join('');
-    if (selected.objectif) selObj.value = selected.objectif;
-
-    const updateSousObjectif = () => {
-      const obj = selObj.value;
-      const sousObj = [...new Set(STRATEGIES.filter(s => s.objectif === obj).map(s => s.sous_objectif))].filter(Boolean).sort();
-      const selSous = document.getElementById('strategie-sous-objectif');
-      selSous.innerHTML = sousObj.map(so => `<option value="${so}">${so}</option>`).join('');
-      if (selected.sous_objectif) selSous.value = selected.sous_objectif;
-      updateAction();
-    };
-
-    const updateAction = () => {
-      const obj = selObj.value;
-      const sousObj = document.getElementById('strategie-sous-objectif').value;
-      const actions = [...new Set(STRATEGIES.filter(s => s.objectif === obj && s.sous_objectif === sousObj).map(s => s.action))].filter(Boolean).sort();
-      const selAct = document.getElementById('strategie-action');
-      selAct.innerHTML = actions.map(a => `<option value="${a}">${a}</option>`).join('');
-      if (selected.action) selAct.value = selected.action;
-    };
-
-    selObj.onchange = updateSousObjectif;
-    document.getElementById('strategie-sous-objectif').onchange = updateAction;
-
-    updateSousObjectif();
-  }
-
-  setSelectedOptions(selectId, valuesWithL) {
-    const sel = document.getElementById(selectId);
-    if (!sel) return;
-    const values = Array.isArray(valuesWithL) && valuesWithL[0] === 'L' ? valuesWithL.slice(1) : [];
-    const lowerVals = values.map(v => String(v).trim().toLowerCase());
-    Array.from(sel.options).forEach(o => {
-      const vClean = String(o.value).trim().toLowerCase();
-      o.selected = lowerVals.includes(vClean);
-    });
-  }
-
-  initFlatpickr() {
-    if (this.datePickerManager) {
-      this.datePickerManager.destroy();
-    }
-    
-    this.datePickerManager = new DatePickerManager(this);
-  }
-
-  getHistoryColumnName() {
-    const variants = [
-      'historique_statuts',
-      'historique _statuts',
-      'historique__statuts'
-    ];
-    
-    for (const variant of variants) {
-      if (this.availableColumns.has(variant)) {
-        return variant;
-      }
-    }
-    return 'historique_statuts';
-  }
-
-  initEventListeners() {
-    document.getElementById('btn-save-task')?.addEventListener('click', () => this.saveTask());
-    document.getElementById('btn-nouvelle-tache')?.addEventListener('click', () => this.openPopup());
-    
-    const btnDelete = document.getElementById('btn-delete-task');
-    if (btnDelete) {
-      btnDelete.addEventListener('click', () => {
-        if (this.currentTaskId) {
-          this.deleteTask(this.currentTaskId);
-        }
-      });
-    }
-
-    const btnExportHistory = document.getElementById('btn-export-history');
-    if (btnExportHistory) {
-      btnExportHistory.addEventListener('click', () => this.exportHistoryData());
-    }
-    
-    const filterElements = ['filter-bureau', 'filter-qui', 'filter-projet', 'filter-statut'];
-    filterElements.forEach(filterId => {
-      const filterEl = document.getElementById(filterId);
-      if (filterEl) {
-        filterEl.addEventListener('change', () => this.applyFilters());
-      }
-    });
-    
-    const searchInput = document.getElementById('search-input');
-    if (searchInput) {
-      searchInput.addEventListener('input', () => this.applyFilters());
-    }
-    
-    const showTermineCheckbox = document.getElementById('show-termine');
-    if (showTermineCheckbox) {
-      showTermineCheckbox.addEventListener('change', (e) => {
-        this.showTermine = e.target.checked;
-        this.refreshKanban();
-      });
-    }
-
-    // Event listeners pour l'historique
-    document.addEventListener('click', (e) => {
-      if (e.target.closest('.btn-history')) {
-        e.stopPropagation();
-        const taskId = parseInt(e.target.closest('.btn-history').dataset.taskId);
-        if (taskId && !isNaN(taskId)) {
-          this.showTaskHistory(taskId);
-        }
-      }
-    });
-
-    const exportBtn = document.getElementById('btn-export-task-history');
-    if (exportBtn) {
-      exportBtn.addEventListener('click', (e) => {
-        const taskId = parseInt(e.target.dataset.taskId);
-        if (taskId && !isNaN(taskId)) {
-          this.exportSingleTaskHistory(taskId);
-        }
-      });
-    }
-
-    const commentsBtn = document.getElementById('btn-show-comments-only');
-    if (commentsBtn) {
-      commentsBtn.addEventListener('click', (e) => {
-        const exportBtn = document.getElementById('btn-export-task-history');
-        if (exportBtn && exportBtn.dataset.taskId) {
-          const taskId = parseInt(exportBtn.dataset.taskId);
-          if (taskId && !isNaN(taskId)) {
-            this.showAllComments(taskId);
-          }
-        }
-      });
-    }
-    
-    // Raccourcis clavier
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'n' || e.key === 'N') {
-        if (!e.target.matches('input, textarea')) {
-          e.preventDefault();
-          this.openPopup();
-        }
-      }
-      if ((e.key === 'Delete' || e.key === 'Suppr') && this.currentTaskId) {
-        if (!e.target.matches('input, textarea')) {
-          e.preventDefault();
-          this.deleteTask(this.currentTaskId);
-        }
-      }
-      if (e.key === 'f' || e.key === 'F') {
-        if (!e.target.matches('input, textarea')) {
-          e.preventDefault();
-          const searchInput = document.getElementById('search-input');
-          if (searchInput) searchInput.focus();
-        }
-      }
-      if (e.key === '1' && !e.target.matches('input, textarea')) {
-        e.preventDefault();
-        this.setViewMode('compact');
-      }
-      if (e.key === '2' && !e.target.matches('input, textarea')) {
-        e.preventDefault();
-        this.setViewMode('detailed');
-      }
-      if (e.key === '3' && !e.target.matches('input, textarea')) {
-        e.preventDefault();
-        this.setViewMode('focus');
-      }
-    });
-  }
-
-  applyFilters() {
-    this.filters.bureau = document.getElementById('filter-bureau')?.value || '';
-    this.filters.qui = document.getElementById('filter-qui')?.value || '';
-    this.filters.projet = document.getElementById('filter-projet')?.value || '';
-    this.filters.statut = document.getElementById('filter-statut')?.value || '';
-    
-    const searchTerm = document.getElementById('search-input')?.value.toLowerCase() || '';
-    
-    let filteredRecords = this.currentRecords.filter(record => {
-      if (this.filters.bureau && Array.isArray(record.bureau)) {
-        const bureaux = record.bureau.slice(1);
-        if (!bureaux.includes(this.filters.bureau)) return false;
-      }
-      
-      if (this.filters.qui && Array.isArray(record.qui)) {
-        const responsables = record.qui.slice(1);
-        if (!responsables.includes(this.filters.qui)) return false;
-      }
-      
-      if (this.filters.projet && record.projet !== this.filters.projet) return false;
-      
-      if (this.filters.statut && record.statut !== this.filters.statut) return false;
-      
-      if (searchTerm) {
-        const searchableText = [
-          record.titre || '',
-          record.description || '',
-          record.projet || '',
-          record.strategie_objectif || '',
-          record.strategie_sous_objectif || '',
-          record.strategie_action || ''
-        ].join(' ').toLowerCase();
-        
-        if (!searchableText.includes(searchTerm)) return false;
-      }
-      
-      return true;
-    });
-    
-    const originalRecords = this.currentRecords;
-    this.currentRecords = filteredRecords;
-    
-    this.refreshKanban();
-    
-    this.currentRecords = originalRecords;
-  }
-
-  // === FONCTIONS DE DEBUG ===
-  debugDates(taskId) {
-    const task = this.currentRecords.find(r => r.id === taskId);
-    if (!task) {
-      console.log('Tâche non trouvée');
-      return;
-    }
-    
-    console.log('=== DEBUG DATES ===');
-    console.log('Tâche:', task.titre);
-    console.log('date_debut original:', task.date_debut, typeof task.date_debut);
-    console.log('date_echeance original:', task.date_echeance, typeof task.date_echeance);
-    console.log('date_debut normalisé:', this.normalizeDate(task.date_debut));
-    console.log('date_echeance normalisé:', this.normalizeDate(task.date_echeance));
-    console.log('date_debut formaté:', this.formatDate(task.date_debut));
-    console.log('date_echeance formaté:', this.formatDate(task.date_echeance));
-  }
-
-  showTaskCompleteReport(taskId) {
-    const task = this.currentRecords.find(r => r.id === taskId);
-    if (!task) return;
-    
-    console.log('=== RAPPORT COMPLET DE LA TÂCHE ===');
-    console.log(`ID: ${task.id}`);
-    console.log(`Titre: ${task.titre}`);
-    console.log(`Statut actuel: ${task.statut}`);
-    
-    if (task.historique_statuts) {
-      try {
-        const historyData = JSON.parse(task.historique_statuts);
-        console.log('\n--- HISTORIQUE DES STATUTS ---');
-        historyData.historique.forEach((entry, index) => {
-          const duration = entry.duree_minutes ? 
-            `${Math.floor(entry.duree_minutes / 60)}h ${entry.duree_minutes % 60}m` : 
-            'En cours...';
-          console.log(`${index + 1}. ${entry.statut} (${duration})`);
-        });
-      } catch (e) {
-        console.log('Erreur parsing historique statuts');
-      }
-    }
-    
-    const comments = this.getCommentsPerStatus(task);
-    console.log('\n--- COMMENTAIRES PAR STATUT ---');
-    Object.keys(comments).forEach(status => {
-      console.log(`\n${status}:`);
-      comments[status].forEach(comment => {
-        console.log(`  ${comment.timestamp}`);
-        console.log(`  ${comment.content}`);
-      });
-    });
-  }
-}
-
-// === FONCTIONS UTILITAIRES GLOBALES SUPPLÉMENTAIRES ===
-
-function filterByBureau(bureauName) {
-  if (!window.kanbanManager) return;
-  
-  const filterSelect = document.getElementById('filter-bureau');
-  if (filterSelect) {
-    filterSelect.value = bureauName;
-    window.kanbanManager.applyFilters();
-    console.log(`Filtrage appliqué pour le bureau: ${bureauName}`);
-  }
-}
-
-function showBureauStats() {
-  if (!window.kanbanManager || !window.kanbanManager.currentRecords) {
-    console.log('Données non disponibles');
-    return;
-  }
-  
-  const records = window.kanbanManager.currentRecords;
-  const bureauStats = {};
-  
-  records.forEach(record => {
-    if (Array.isArray(record.bureau) && record.bureau.length > 1) {
-      const bureaux = record.bureau.slice(1);
-      
-      bureaux.forEach(bureau => {
-        if (!bureauStats[bureau]) {
-          bureauStats[bureau] = {
-            total: 0,
-            parStatut: {}
-          };
-        }
-        
-        bureauStats[bureau].total++;
-        
-        const statut = record.statut || 'Non défini';
-        if (!bureauStats[bureau].parStatut[statut]) {
-          bureauStats[bureau].parStatut[statut] = 0;
-        }
-          'En cours...';
-        
         const statusComments = commentsByStatus[entry.statut] || [];
         
         let commentsHTML = '';
@@ -2114,6 +1521,47 @@ function showBureauStats() {
     }
   }
 
+  showTaskHistory(taskId) {
+    const task = this.currentRecords.find(r => r.id === taskId);
+    if (!task) {
+      console.error('Tâche non trouvée:', taskId);
+      return;
+    }
+    
+    this.logTaskHistory(task);
+    this.openHistoryModal(task);
+  }
+
+  logTaskHistory(task) {
+    if (!task.historique_statuts) {
+      console.log('Pas d\'historique disponible pour cette tâche');
+      return;
+    }
+    
+    try {
+      const historyData = JSON.parse(task.historique_statuts);
+      console.log('=== HISTORIQUE DE LA TÂCHE ===');
+      console.log(`Tâche: ${task.titre}`);
+      console.log('Statuts:');
+      
+      historyData.historique.forEach((entry, index) => {
+        const duration = entry.duree_minutes ? 
+          `${Math.floor(entry.duree_minutes / 60)}h ${entry.duree_minutes % 60}m` : 
+          'En cours...';
+        
+        console.log(`${index + 1}. ${entry.statut}`);
+        console.log(`   Du: ${new Date(entry.date_entree).toLocaleString('fr-FR')}`);
+        console.log(`   Au: ${entry.date_sortie ? new Date(entry.date_sortie).toLocaleString('fr-FR') : 'En cours'}`);
+        console.log(`   Durée: ${duration}`);
+        if (entry.note) console.log(`   Note: ${entry.note}`);
+        console.log('');
+      });
+      
+    } catch (e) {
+      console.error('Erreur lors de l\'affichage de l\'historique:', e);
+    }
+  }
+
   showAllComments(taskId) {
     const task = this.currentRecords.find(r => r.id === taskId);
     if (!task || !task.description) {
@@ -2179,46 +1627,8 @@ function showBureauStats() {
     }
   }
 
-  showTaskHistory(taskId) {
-    const task = this.currentRecords.find(r => r.id === taskId);
-    if (!task) {
-      console.error('Tâche non trouvée:', taskId);
-      return;
-    }
-    
-    this.logTaskHistory(task);
-    this.openHistoryModal(task);
-  }
-
-  logTaskHistory(task) {
-    if (!task.historique_statuts) {
-      console.log('Pas d\'historique disponible pour cette tâche');
-      return;
-    }
-    
-    try {
-      const historyData = JSON.parse(task.historique_statuts);
-      console.log('=== HISTORIQUE DE LA TÂCHE ===');
-      console.log(`Tâche: ${task.titre}`);
-      console.log('Statuts:');
-      
-      historyData.historique.forEach((entry, index) => {
-        const duration = entry.duree_minutes ? 
-          `${Math.floor(entry.duree_minutes / 60)}h ${entry.duree_minutes % 60}m` : 
-          'En cours...';
-        
-        console.log(`${index + 1}. ${entry.statut}`);
-        console.log(`   Du: ${new Date(entry.date_entree).toLocaleString('fr-FR')}`);
-        console.log(`   Au: ${entry.date_sortie ? new Date(entry.date_sortie).toLocaleString('fr-FR') : 'En cours'}`);
-        console.log(`   Durée: ${duration}`);
-        if (entry.note) console.log(`   Note: ${entry.note}`);
-        console.log('');
-      });
-      
-    } catch (e) {
-      console.error('Erreur lors de l\'affichage de l\'historique:', e);
-    }
-  }
+/////////////////////////////////////////////
+// === js/kanban-core.js - PARTIE 7: SAUVEGARDE ET GESTION DES DONNÉES ===
 
   // === SAUVEGARDE ET GESTION DES DONNÉES ===
   async saveTask() {
@@ -2364,56 +1774,6 @@ function showBureauStats() {
     }
   }
 
-  async handleDragEnd(evt, targetStatus) {
-    if (!evt.item || !evt.item.dataset) return;
-    
-    const id = parseInt(evt.item.dataset.id, 10);
-    if (isNaN(id)) return;
-    
-    const record = this.currentRecords.find(r => r.id === id);
-    if (!record) return;
-    
-    const newStatus = evt.to.dataset.status;
-    const oldStatus = record.statut;
-    
-    if (oldStatus === newStatus) return;
-    
-    console.log(`Déplacement de la tâche ${id} de "${oldStatus}" vers "${newStatus}"`);
-    
-    try {
-      const updateData = { statut: newStatus };
-      
-      const historyColumn = this.getHistoryColumnName();
-      if (this.availableColumns.has(historyColumn) && this.availableColumns.has('date_derniere_maj')) {
-        const historyUpdate = this.updateStatusHistory(record, newStatus);
-        Object.assign(updateData, historyUpdate);
-      }
-      
-      await grist.docApi.applyUserActions([
-        ['UpdateRecord', TABLE_ID, id, updateData]
-      ]);
-      
-      console.log(`Tâche ${id} mise à jour avec succès`);
-      
-      await this.logUserAction(id, 'status_change', oldStatus, newStatus, 'Drag & drop via Kanban');
-      
-      const recordIndex = this.currentRecords.findIndex(r => r.id === id);
-      if (recordIndex !== -1) {
-        this.currentRecords[recordIndex] = { 
-          ...this.currentRecords[recordIndex], 
-          ...updateData 
-        };
-      }
-      
-      this.refreshKanban();
-      
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour:', error);
-      displayError(`Erreur: ${error.message}`);
-      this.refreshKanban();
-    }
-  }
-
   async deleteTask(taskId) {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cette tâche ?')) {
       return;
@@ -2438,16 +1798,6 @@ function showBureauStats() {
       console.error('Erreur lors de la suppression:', error);
       displayError(`Erreur lors de la suppression: ${error.message}`);
     }
-  }
-
-  calculerPriorite(u, i) {
-    const imp = String(i || '').trim().toLowerCase();
-    const urg = String(u || '').trim().toLowerCase();
-    if (imp === 'critique') return 1;
-    if (imp === 'important') return (urg === 'immédiate' || urg === 'courte') ? 1 : 2;
-    if (imp === 'modéré') return (urg === 'immédiate') ? 2 : 3;
-    if (imp === 'mineur') return 4;
-    return 3;
   }
 
   // === EXPORT ===
@@ -2545,6 +1895,10 @@ function showBureauStats() {
       this.isUpdating = false; 
     });
   }
+
+///////////////////////////////////////////////
+
+// === js/kanban-core.js - PARTIE 8: INITIALISATIONS ET FONCTIONS UTILITAIRES ===
 
   // === INITIALISATIONS ===
   initFilters() {
@@ -2786,53 +2140,6 @@ function showBureauStats() {
         this.setViewMode('focus');
       }
     });
-  }
-
-  applyFilters() {
-    this.filters.bureau = document.getElementById('filter-bureau')?.value || '';
-    this.filters.qui = document.getElementById('filter-qui')?.value || '';
-    this.filters.projet = document.getElementById('filter-projet')?.value || '';
-    this.filters.statut = document.getElementById('filter-statut')?.value || '';
-    
-    const searchTerm = document.getElementById('search-input')?.value.toLowerCase() || '';
-    
-    let filteredRecords = this.currentRecords.filter(record => {
-      if (this.filters.bureau && Array.isArray(record.bureau)) {
-        const bureaux = record.bureau.slice(1);
-        if (!bureaux.includes(this.filters.bureau)) return false;
-      }
-      
-      if (this.filters.qui && Array.isArray(record.qui)) {
-        const responsables = record.qui.slice(1);
-        if (!responsables.includes(this.filters.qui)) return false;
-      }
-      
-      if (this.filters.projet && record.projet !== this.filters.projet) return false;
-      
-      if (this.filters.statut && record.statut !== this.filters.statut) return false;
-      
-      if (searchTerm) {
-        const searchableText = [
-          record.titre || '',
-          record.description || '',
-          record.projet || '',
-          record.strategie_objectif || '',
-          record.strategie_sous_objectif || '',
-          record.strategie_action || ''
-        ].join(' ').toLowerCase();
-        
-        if (!searchableText.includes(searchTerm)) return false;
-      }
-      
-      return true;
-    });
-    
-    const originalRecords = this.currentRecords;
-    this.currentRecords = filteredRecords;
-    
-    this.refreshKanban();
-    
-    this.currentRecords = originalRecords;
   }
 
   // === FONCTIONS DE DEBUG ===
@@ -3224,3 +2531,4 @@ console.log('- KanbanDebug.systemCheck() : Vérification système');
 console.log('- KanbanDebug.showColumns() : Colonnes disponibles');
 console.log('- KanbanDebug.reloadData() : Recharger données');
 console.log('- KanbanDebug.reset() : Réinitialiser interface');
+/////////////////////////////////////////////////
