@@ -52,7 +52,7 @@ generateBureauBadges(bureauList, isCompact = false) {
       .replace(/[^a-z0-9-]/g, '')
       .replace(/^chef-/, 'chef-'); // Simplifier "Chef SSIR" en "ssir"
   };
-
+}
 // Fonction pour obtenir l'icône du bureau
   const getBureauIcon = (bureau) => {
     const bureauLower = bureau.toLowerCase();
