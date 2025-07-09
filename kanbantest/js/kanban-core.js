@@ -11,8 +11,8 @@ const STATUTS = [
   { id: 'Terminé', libelle: 'Terminé', classe: 'termine' }
 ];
 
-const DEFAULT_BUREAUX = ['Exploit', 'Réseau', 'BDD', 'Chef SSIR', 'SIG','NEXSIS-RRF','COMSIC'];
-const DEFAULT_RESPONSABLES = ['Alex', 'Timothée', 'Isabelle', 'Chloé', 'Paul', 'Théo', 'Gaël', 'Thomas', 'Elie', 'Landry', 'Presta','Yvon','Clarisse','Hervé'];
+const DEFAULT_BUREAUX = ['Exploit', 'Réseau', 'BDD', 'Chef SSIR', 'SIG','NEXSIS-RRF','COMSIC', 'RSSI','DPO'];
+const DEFAULT_RESPONSABLES = ['Alex', 'Timothée', 'Isabelle', 'Chloé', 'Paul', 'Théo', 'Gaël', 'Thomas', 'Elie', 'Landry', 'Presta','Yvon','Clarisse','Hervé','Didier'];
 const DEFAULT_URGENCES = ['Immédiate', 'Courte', 'Moyenne', 'Longue'];
 const DEFAULT_IMPACTS = ['Critique', 'Important', 'Modéré', 'Mineur'];
 const DEFAULT_STATUTS = STATUTS.map(s => s.id);
@@ -49,79 +49,6 @@ function displayError(message) {
   if (k && k.innerHTML.includes('Chargement')) k.innerHTML = '';
 }
 
-function updateStatusHistory(record, newStatus, userId = null) {
-  const now = new Date().toISOString();
-  
-  try {
-    let historyData;
-    if (record.historique_statuts) {
-      historyData = JSON.parse(record.historique_statuts);
-    } else {
-      historyData = { historique: [], version: 1 };
-      
-      if (record.statut) {
-        const estimatedStartDate = record.date_creation || 
-                                 record.date_debut || 
-                                 new Date(Date.now() - 24*60*60*1000).toISOString();
-        
-        historyData.historique.push({
-          statut: record.statut,
-          date_entree: estimatedStartDate,
-          date_sortie: now,
-          duree_minutes: Math.round((new Date(now) - new Date(estimatedStartDate)) / (1000 * 60)),
-          utilisateur: userId,
-          note: "Reconstitué automatiquement"
-        });
-      }
-    }
-    
-    if (historyData.historique.length > 0) {
-      const dernierStatut = historyData.historique[historyData.historique.length - 1];
-      if (dernierStatut.date_sortie === null) {
-        dernierStatut.date_sortie = now;
-        dernierStatut.duree_minutes = Math.round(
-          (new Date(now) - new Date(dernierStatut.date_entree)) / (1000 * 60)
-        );
-      }
-    }
-    
-    historyData.historique.push({
-      statut: newStatus,
-      date_entree: now,
-      date_sortie: null,
-      duree_minutes: null,
-      utilisateur: userId
-    });
-    
-    return {
-      historique_statuts: JSON.stringify(historyData),
-      date_derniere_maj: now,
-      statut_precedent: record.statut
-    };
-    
-  } catch (error) {
-    console.error('Erreur lors de la mise à jour de l\'historique:', error);
-    
-    const fallbackHistory = {
-      historique: [{
-        statut: newStatus,
-        date_entree: now,
-        date_sortie: null,
-        duree_minutes: null,
-        utilisateur: userId,
-        note: "Historique reconstruit après erreur"
-      }],
-      version: 1
-    };
-    
-    return {
-      historique_statuts: JSON.stringify(fallbackHistory),
-      date_derniere_maj: now,
-      statut_precedent: record.statut || 'Inconnu'
-    };
-  }
-}
-
 
 // === CLASSE PRINCIPALE KANBAN ===
 class KanbanManager {
@@ -137,6 +64,7 @@ class KanbanManager {
     this.ignoreNextOnRecords = false;
     this.filters = { bureau: '', qui: '', projet: '', statut: '' };
     this.showTermine = true;
+    this.USER_ACTIONS_TABLE = "User_Actions";
     this.sortableInstances = [];
     this.flatpickr = null;
     this.availableColumns = new Set();
@@ -263,6 +191,90 @@ async getCurrentGristUser() {
   }
   
   return this.currentUser;
+}
+// === 2. REMPLACEZ VOTRE updateStatusHistory PAR CELLE-CI ===
+updateStatusHistory(record, newStatus) {
+  const now = new Date().toISOString();
+  
+  try {
+    let historyData;
+    
+    // Détecter le nom correct de la colonne d'historique
+    const historyColumn = this.getHistoryColumnName ? this.getHistoryColumnName() : 'historique_statuts';
+    const existingHistory = record[historyColumn];
+    
+    if (existingHistory) {
+      historyData = JSON.parse(existingHistory);
+    } else {
+      historyData = { historique: [], version: 1 };
+      
+      // Ajouter le statut précédent si il existe
+      if (record.statut) {
+        const estimatedStartDate = record.date_creation || 
+                                 record.date_debut || 
+                                 new Date(Date.now() - 24*60*60*1000).toISOString();
+        
+        historyData.historique.push({
+          statut: record.statut,
+          date_entree: estimatedStartDate,
+          date_sortie: now,
+          duree_minutes: Math.round((new Date(now) - new Date(estimatedStartDate)) / (1000 * 60)),
+          utilisateur: record.last_modified_by || 'Système',
+          note: "Reconstitué automatiquement"
+        });
+      }
+    }
+    
+    // Fermer le statut actuel
+    if (historyData.historique.length > 0) {
+      const dernierStatut = historyData.historique[historyData.historique.length - 1];
+      if (dernierStatut.date_sortie === null) {
+        dernierStatut.date_sortie = now;
+        dernierStatut.duree_minutes = Math.round(
+          (new Date(now) - new Date(dernierStatut.date_entree)) / (1000 * 60)
+        );
+      }
+    }
+    
+    // Ajouter le nouveau statut
+    historyData.historique.push({
+      statut: newStatus,
+      date_entree: now,
+      date_sortie: null,
+      duree_minutes: null,
+      utilisateur: record.last_modified_by || 'En cours...'
+    });
+    
+    return {
+      [historyColumn]: JSON.stringify(historyData),
+      date_derniere_maj: now,
+      statut_precedent: record.statut
+    };
+    
+  } catch (error) {
+    console.error('Erreur historique:', error);
+    
+    // Fallback simple
+    const fallbackHistory = {
+      historique: [{
+        statut: newStatus,
+        date_entree: now,
+        date_sortie: null,
+        duree_minutes: null,
+        utilisateur: 'Système',
+        note: "Historique reconstruit après erreur"
+      }],
+      version: 1
+    };
+    
+    const historyColumn = this.getHistoryColumnName ? this.getHistoryColumnName() : 'historique_statuts';
+    
+    return {
+      [historyColumn]: JSON.stringify(fallbackHistory),
+      date_derniere_maj: now,
+      statut_precedent: record.statut || 'Inconnu'
+    };
+  }
 }
 
   async loadGristDataAndOptions() {
@@ -1295,196 +1307,282 @@ async getCurrentGristUser() {
   }
 
   // === SAUVEGARDE ET GESTION DES DONNÉES ===
-  async saveTask() {
-    try {
-      let dateEcheance = null;
-      let dateDebut = null;
-      
-      const delaiInput = document.getElementById('popup-delai');
-      if (delaiInput && delaiInput.value.trim()) {
-        dateEcheance = this.prepareDateForGrist(delaiInput.value.trim());
-        
-        if (!this.currentTaskId) {
-          dateDebut = new Date().toISOString().slice(0,10);
-        } else {
-          const existingRecord = this.currentRecords.find(r => r.id === this.currentTaskId);
-          const existingDateDebut = existingRecord?.date_debut;
-          dateDebut = existingDateDebut ? this.normalizeDate(existingDateDebut) : null;
-        }
-      }
-      
-      const titre = document.getElementById('popup-titre').value;
-      const newDescription = document.getElementById('popup-description').value;
-      const statut = document.getElementById('popup-statut-text').value;
-      const projet = document.getElementById('popup-projet').value;
-      const urgence = document.getElementById('popup-urgence').value;
-      const impact = document.getElementById('popup-impact').value;
-      const bureau = Array.from(document.getElementById('popup-bureau').selectedOptions).map(o => o.value);
-      const qui = Array.from(document.getElementById('popup-qui').selectedOptions).map(o => o.value);
-      
-      const strategie_objectif = document.getElementById('strategie-objectif').value;
-      const strategie_sous_objectif = document.getElementById('strategie-sous-objectif').value;
-      const strategie_action = document.getElementById('strategie-action').value;
-      
-      let finalDescription = newDescription;
+ // === 4. REMPLACEZ VOTRE saveTask PAR CELLE-CI ===
+async saveTask() {
+  try {
+    const isNewTask = !this.currentTaskId;
+    const existingRecord = isNewTask ? null : this.currentRecords.find(r => r.id === this.currentTaskId);
     
+    // Préparer les données de dates
+    let dateEcheance = null;
+    let dateDebut = null;
     
-    if (this.currentTaskId) {
-      const existingRecord = this.currentRecords.find(r => r.id === this.currentTaskId);
-      const currentDescription = existingRecord?.description || '';
+    const delaiInput = document.getElementById('popup-delai');
+    if (delaiInput && delaiInput.value.trim()) {
+      dateEcheance = this.prepareDateForGrist ? this.prepareDateForGrist(delaiInput.value.trim()) : delaiInput.value.trim();
       
-      // Utiliser l'utilisateur Grist initialisé
-      finalDescription = this.addTimestampToDescription(currentDescription, newDescription, this.currentUser);
-  
+      if (!this.currentTaskId) {
+        dateDebut = new Date().toISOString().slice(0,10);
       } else {
-        if (newDescription && newDescription.trim()) {
-          let currentUser = null;
-          try {
-            const userInfo = await grist.docApi.getDocInfo();
-            currentUser = userInfo?.user?.name || userInfo?.user?.email || null;
-          } catch (e) {
-            // Ignore
-          }
-          
-          const now = new Date().toLocaleString('fr-FR', {
-            year: 'numeric',
-            month: '2-digit', 
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-          
-          const user = currentUser ? ` (${currentUser})` : '';
-          finalDescription = `[${now}${user}]\n${newDescription.trim()}`;
-        }
+        const existingDateDebut = existingRecord?.date_debut;
+        dateDebut = existingDateDebut ? (this.normalizeDate ? this.normalizeDate(existingDateDebut) : existingDateDebut) : null;
       }
-      
-      const row = {
-        titre, 
-        description: finalDescription, 
-        statut, 
-        projet, 
-        urgence, 
-        impact,
-        bureau: ['L', ...bureau],
-        qui: ['L', ...qui],
-        strategie_objectif,
-        strategie_sous_objectif,
-        strategie_action
-      };
-
-      if (this.availableColumns.has('date_debut') && dateDebut !== null) {
-        row.date_debut = dateDebut;
-      }
-      
-      if (this.availableColumns.has('date_echeance') && dateEcheance !== null) {
-        row.date_echeance = dateEcheance;
-      }
-
-      console.log('Données à sauvegarder:', row);
-
-      if (this.currentTaskId) {
-        await grist.docApi.applyUserActions([
-          ['UpdateRecord', TABLE_ID, this.currentTaskId, row]
-        ]);
-        console.log(`Tâche ${this.currentTaskId} mise à jour avec succès`);
-        
-        const recordIndex = this.currentRecords.findIndex(r => r.id === this.currentTaskId);
-        if (recordIndex !== -1) {
-          this.currentRecords[recordIndex] = { ...this.currentRecords[recordIndex], ...row };
-        }
-        
-      } else {
-        const result = await grist.docApi.applyUserActions([
-          ['AddRecord', TABLE_ID, null, row]
-        ]);
-        console.log('Nouvelle tâche créée avec succès');
-        
-        if (result && result[0] && result[0].id) {
-          const newRecord = { id: result[0].id, ...row };
-          this.currentRecords.push(newRecord);
-        }
-      }
-      
-      this.modal.hide();
-      this.refreshKanban();
-      
-    } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
-      displayError(`Erreur lors de la sauvegarde: ${error.message}`);
     }
-  }
-
-  async handleDragEnd(evt, targetStatus) {
-    if (!evt.item || !evt.item.dataset) return;
     
-    const id = parseInt(evt.item.dataset.id, 10);
-    if (isNaN(id)) return;
+    // Récupérer les données du formulaire
+    const titre = document.getElementById('popup-titre').value;
+    const newDescription = document.getElementById('popup-description').value;
+    const statut = document.getElementById('popup-statut-text').value;
+    const projet = document.getElementById('popup-projet').value;
+    const urgence = document.getElementById('popup-urgence').value;
+    const impact = document.getElementById('popup-impact').value;
+    const bureau = Array.from(document.getElementById('popup-bureau').selectedOptions).map(o => o.value);
+    const qui = Array.from(document.getElementById('popup-qui').selectedOptions).map(o => o.value);
     
-    const record = this.currentRecords.find(r => r.id === id);
-    if (!record) return;
+    const strategie_objectif = document.getElementById('strategie-objectif').value;
+    const strategie_sous_objectif = document.getElementById('strategie-sous-objectif').value;
+    const strategie_action = document.getElementById('strategie-action').value;
     
-    const newStatus = evt.to.dataset.status;
+    // Gestion description avec historique
+    let finalDescription = newDescription;
     
-    if (record.statut === newStatus) return;
-    
-    console.log(`Déplacement de la tâche ${id} de "${record.statut}" vers "${newStatus}"`);
-    
-    try {
-      let currentUser = null;
-      try {
-        const userInfo = await grist.docApi.getDocInfo();
-        currentUser = userInfo?.user?.email || null;
-      } catch (e) {
-        console.log('Info utilisateur non disponible');
+    if (this.currentTaskId && existingRecord) {
+      const currentDescription = existingRecord.description || '';
+      // Utiliser la méthode d'historique si elle existe
+      if (this.addTimestampToDescription) {
+        finalDescription = this.addTimestampToDescription(currentDescription, newDescription, null);
+      } else {
+        finalDescription = newDescription;
       }
-      
-          // Utiliser l'utilisateur Grist déjà initialisé
-    const historyUpdate = updateStatusHistory(record, newStatus, this.currentUser);
-    const updateData = {
-      statut: newStatus,
-      ...historyUpdate
-      };
-      
-      await grist.docApi.applyUserActions([
-        ['UpdateRecord', TABLE_ID, id, updateData]
+    } else if (newDescription && newDescription.trim()) {
+      // Nouvelle tâche - timestamp simple
+      const now = new Date().toLocaleString('fr-FR', {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit'
+      });
+      finalDescription = `[${now}]\n${newDescription.trim()}`;
+    }
+    
+    // Préparer les données à sauvegarder
+    const row = {
+      titre, 
+      description: finalDescription, 
+      statut, 
+      projet, 
+      urgence, 
+      impact,
+      bureau: ['L', ...bureau],
+      qui: ['L', ...qui],
+      strategie_objectif,
+      strategie_sous_objectif,
+      strategie_action
+    };
+
+    // Ajouter les dates si les colonnes existent
+    if (this.availableColumns.has('date_debut') && dateDebut !== null) {
+      row.date_debut = dateDebut;
+    }
+    
+    if (this.availableColumns.has('date_echeance') && dateEcheance !== null) {
+      row.date_echeance = dateEcheance;
+    }
+
+    // Sauvegarder
+    if (isNewTask) {
+      const result = await grist.docApi.applyUserActions([
+        ['AddRecord', TABLE_ID, null, row]
       ]);
       
-      console.log(`Tâche ${id} mise à jour avec historique`);
+      console.log('Nouvelle tâche créée avec succès');
       
-      const recordIndex = this.currentRecords.findIndex(r => r.id === id);
-      if (recordIndex !== -1) {
-        this.currentRecords[recordIndex] = { 
-          ...this.currentRecords[recordIndex], 
-          ...updateData 
-        };
+      if (result && result[0] && result[0].id) {
+        const newRecord = { id: result[0].id, ...row };
+        this.currentRecords.push(newRecord);
+        
+        // Logger création
+        await this.logUserAction(result[0].id, 'creation', '', titre, 'Tâche créée via Kanban');
       }
       
-      this.refreshKanban();
+    } else {
+      await grist.docApi.applyUserActions([
+        ['UpdateRecord', TABLE_ID, this.currentTaskId, row]
+      ]);
       
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour avec historique:', error);
+      console.log(`Tâche ${this.currentTaskId} mise à jour avec succès`);
       
-      try {
-        await grist.docApi.applyUserActions([
-          ['UpdateRecord', TABLE_ID, id, { statut: newStatus }]
-        ]);
-        
-        const recordIndex = this.currentRecords.findIndex(r => r.id === id);
-        if (recordIndex !== -1) {
-          this.currentRecords[recordIndex].statut = newStatus;
-        }
-        
-        this.refreshKanban();
-        console.log('Fallback réussi - historique non sauvegardé');
-        
-      } catch (fallbackError) {
-        console.error('Erreur même en fallback:', fallbackError);
-        displayError(`Erreur lors du déplacement de la tâche: ${fallbackError.message}`);
-        this.refreshKanban();
+      // Logger modifications importantes
+      if (existingRecord.titre !== titre) {
+        await this.logUserAction(this.currentTaskId, 'title_change', existingRecord.titre, titre);
+      }
+      
+      if (existingRecord.statut !== statut) {
+        await this.logUserAction(this.currentTaskId, 'status_change', existingRecord.statut, statut);
+      }
+      
+      // Mise à jour locale
+      const recordIndex = this.currentRecords.findIndex(r => r.id === this.currentTaskId);
+      if (recordIndex !== -1) {
+        this.currentRecords[recordIndex] = { ...this.currentRecords[recordIndex], ...row };
       }
     }
+    
+    this.modal.hide();
+    this.refreshKanban();
+    
+  } catch (error) {
+    console.error('Erreur lors de la sauvegarde:', error);
+    displayError(`Erreur: ${error.message}`);
   }
+}
+    // === MÉTHODE POUR VOIR LES ACTIONS (optionnelle) ===
+// Méthode pour voir les actions utilisateur
+async showUserActions(taskId = null) {
+  try {
+    const userActions = await grist.docApi.fetchTable(this.USER_ACTIONS_TABLE);
+    
+    if (!userActions || !userActions.id) {
+      console.log('Pas d\'actions utilisateur disponibles');
+      return;
+    }
+    
+    const actions = this.mapGristRecords(userActions)
+      .filter(action => !taskId || action.task_id === taskId)
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    
+    console.log('=== ACTIONS UTILISATEUR ===');
+    if (taskId) {
+      const task = this.currentRecords.find(r => r.id === taskId);
+      console.log(`Tâche: ${task?.titre || taskId}`);
+    }
+    
+    actions.forEach(action => {
+      const date = new Date(action.timestamp).toLocaleString('fr-FR');
+      console.log(`${date} - ${action.user_name || 'Système'}`);
+      console.log(`  ${action.action_type}: ${action.old_value} → ${action.new_value}`);
+      if (action.details) console.log(`  ${action.details}`);
+      console.log('');
+    });
+    
+  } catch (error) {
+    console.warn('Impossible d\'afficher les actions:', error);
+  }
+}
+  // Méthode de diagnostic
+async diagnosticUserSystem() {
+  console.log('=== DIAGNOSTIC SYSTÈME UTILISATEUR ===');
+  
+  try {
+    const userActions = await grist.docApi.fetchTable(this.USER_ACTIONS_TABLE);
+    console.log('✅ Table User_Actions accessible');
+    console.log(`   Actions: ${userActions.id?.length || 0}`);
+  } catch (e) {
+    console.log('❌ Table User_Actions:', e.message);
+  }
+  
+  const hasUserColumns = this.availableColumns.has('last_modified_by');
+  console.log(`${hasUserColumns ? '✅' : '❌'} Colonnes utilisateur détectées`);
+  
+  if (this.currentRecords && hasUserColumns) {
+    const users = [...new Set(this.currentRecords
+      .map(r => r.last_modified_by)
+      .filter(Boolean))];
+    console.log('Utilisateurs actifs:', users);
+  }
+}
+  
+
+getHistoryColumnName() {
+  const variants = [
+    'historique_statuts',
+    'historique _statuts',
+    'historique__statuts'
+  ];
+  
+  for (const variant of variants) {
+    if (this.availableColumns.has(variant)) {
+      return variant;
+    }
+  }
+  return 'historique_statuts'; // Fallback
+}
+  
+  async logUserAction(taskId, actionType, oldValue = '', newValue = '', details = '') {
+    try {
+      const actionRecord = {
+        task_id: taskId,
+        action_type: actionType,
+        old_value: String(oldValue).substring(0, 500),
+        new_value: String(newValue).substring(0, 500), 
+        details: String(details).substring(0, 200)
+        // user_name et timestamp sont automatiquement remplis par Grist
+      };
+
+      await grist.docApi.applyUserActions([
+        ['AddRecord', this.USER_ACTIONS_TABLE, null, actionRecord]
+      ]);
+
+      console.log('Action loggée:', actionRecord);
+
+    } catch (error) {
+      console.warn('Erreur logging (non bloquante):', error);
+      // Ne pas faire échouer l'opération principale
+    }
+  }
+  // === 3. REMPLACEZ VOTRE handleDragEnd PAR CELLE-CI ===
+async handleDragEnd(evt, targetStatus) {
+  if (!evt.item || !evt.item.dataset) return;
+  
+  const id = parseInt(evt.item.dataset.id, 10);
+  if (isNaN(id)) return;
+  
+  const record = this.currentRecords.find(r => r.id === id);
+  if (!record) return;
+  
+  const newStatus = evt.to.dataset.status;
+  const oldStatus = record.statut;
+  
+  if (oldStatus === newStatus) return;
+  
+  console.log(`Déplacement de la tâche ${id} de "${oldStatus}" vers "${newStatus}"`);
+  
+  try {
+    const updateData = { statut: newStatus };
+    
+    // Historique si disponible
+    const historyColumn = this.getHistoryColumnName ? this.getHistoryColumnName() : 'historique_statuts';
+    if (this.availableColumns.has(historyColumn) && this.availableColumns.has('date_derniere_maj')) {
+      const historyUpdate = this.updateStatusHistory(record, newStatus);
+      Object.assign(updateData, historyUpdate);
+    }
+    
+    await grist.docApi.applyUserActions([
+      ['UpdateRecord', TABLE_ID, id, updateData]
+    ]);
+    
+    console.log(`Tâche ${id} mise à jour avec succès`);
+    
+    // Logger l'action (utilisateur automatique via Grist)
+    await this.logUserAction(id, 'status_change', oldStatus, newStatus, 'Drag & drop via Kanban');
+    
+    // Mise à jour locale
+    const recordIndex = this.currentRecords.findIndex(r => r.id === id);
+    if (recordIndex !== -1) {
+      this.currentRecords[recordIndex] = { 
+        ...this.currentRecords[recordIndex], 
+        ...updateData 
+      };
+    }
+    
+    this.refreshKanban();
+    
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour:', error);
+    displayError(`Erreur: ${error.message}`);
+    this.refreshKanban();
+  }
+}
+
+
 
   async deleteTask(taskId) {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cette tâche ?')) {
