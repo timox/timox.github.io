@@ -480,3 +480,129 @@
     color: #ffffff !important;
   }
 }
+// 1. CSS POUR LES BADGES BUREAUX
+
+/* === Badges Bureaux === */
+.bureau-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.bureau-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 1rem;
+  border: 1px solid;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Couleurs par bureau */
+.bureau-badge.bureau-exploit {
+  background: linear-gradient(135deg, #e8f5e8, #c8e6c9);
+  color: #2e7d32;
+  border-color: #4caf50;
+}
+
+.bureau-badge.bureau-reseau {
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+  color: #1565c0;
+  border-color: #2196f3;
+}
+
+.bureau-badge.bureau-bdd {
+  background: linear-gradient(135deg, #f3e5f5, #e1bee7);
+  color: #7b1fa2;
+  border-color: #9c27b0;
+}
+
+.bureau-badge.bureau-chef-ssir {
+  background: linear-gradient(135deg, #fff3e0, #ffcc02);
+  color: #e65100;
+  border-color: #ff9800;
+}
+
+.bureau-badge.bureau-sig {
+  background: linear-gradient(135deg, #e0f2f1, #b2dfdb);
+  color: #00695c;
+  border-color: #009688;
+}
+
+.bureau-badge.bureau-nexsis-rrf {
+  background: linear-gradient(135deg, #fce4ec, #f8bbd9);
+  color: #c2185b;
+  border-color: #e91e63;
+}
+
+.bureau-badge.bureau-comsic {
+  background: linear-gradient(135deg, #e8eaf6, #c5cae9);
+  color: #3f51b5;
+  border-color: #5c6bc0;
+}
+
+.bureau-badge.bureau-rssi {
+  background: linear-gradient(135deg, #ffebee, #ffcdd2);
+  color: #c62828;
+  border-color: #f44336;
+}
+
+.bureau-badge.bureau-dpo {
+  background: linear-gradient(135deg, #f1f8e9, #dcedc8);
+  color: #558b2f;
+  border-color: #8bc34a;
+}
+
+/* Badge générique pour bureaux non définis */
+.bureau-badge.bureau-default {
+  background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
+  color: #424242;
+  border-color: #757575;
+}
+
+/* Effet hover */
+.bureau-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Version compacte pour le mode compact */
+.kanban-compact .bureau-badge {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+  letter-spacing: 0.3px;
+}
+
+/* Badge avec icône */
+.bureau-badge i {
+  margin-right: 0.3rem;
+  font-size: 0.9em;
+}
+
+/* Badge multiple (quand plusieurs bureaux) */
+.bureau-badge.multiple {
+  background: linear-gradient(135deg, #fff8e1, #ffecb3);
+  color: #f57c00;
+  border-color: #ffa726;
+}
+
+/* Animation pour les badges multiples */
+.bureau-badges.multiple-bureaux .bureau-badge {
+  animation: badge-appear 0.3s ease-out;
+}
+
+@keyframes badge-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
