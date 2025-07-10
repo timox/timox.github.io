@@ -46,28 +46,25 @@ import {
   addEventListenerSafe,
   toggleVisibility
 } from './utils/dom.js';
+// === CONSTANTES ===
+const TABLE_ID = "Ssir_principale_task";
+const STRATEGIES_TABLE_ID = "Ssir_strategie2"; // Table des stratégies
 
-import { FilterManager } from './managers/FilterManagers.js';
-import { DatePickerManager } from './managers/DatePickerManager.js';
-import { ModalManager } from './managers/ModalManager.js';
-import { HistoryManager } from './managers/HistoryManager.js';
-import { CardRenderer } from './renderers/CardRenderer.js';
-import { BoardRenderer } from './renderers/boardRenderer.js';
-
-// === VARIABLES GLOBALES ===
 let projetsDynamiques = [];
 
-// === CLASSE KANBANMANAGER REFACTORISÉE ET COMPLÈTE ===
+// === CLASSE KANBANMANAGER CORRIGÉE ===
 class KanbanManager {
   constructor() {
     // Propriétés principales
     this.kanbanContainer = document.getElementById('kanban-container');
     this.currentRecords = [];
     this.modalElement = document.getElementById('popup-tache');
+    this.timelineModalElement = document.getElementById('timeline-modal'); // AJOUT
     this.currentTaskId = null;
     this.isUpdating = false;
     this.canEdit = true;
     this.gristOptions = {};
+    this.strategiesData = []; // AJOUT pour les stratégies depuis Grist
     this.ignoreNextOnRecords = false;
     this.availableColumns = new Set();
     
@@ -77,26 +74,22 @@ class KanbanManager {
     this.viewMode = VIEW_MODES.COMPACT;
     this.focusColumn = null;
     this.expandedCards = new Set();
-    
-    // Gestion utilisateur
+
+ // Gestion utilisateur
     this.currentUser = null;
     this.userInitialized = false;
     
     // Instances Sortable
     this.sortableInstances = [];
     
-    // Managers spécialisés
-    this.filterManager = null;
-    this.datePickerManager = null;
-    this.modalManager = null;
-    this.historyManager = null;
-    this.cardRenderer = null;
-    this.boardRenderer = null;
+    // Modal instances
+    this.modal = null;
+    this.timelineModal = null; // AJOUT
     
     this.init();
   }
 
-  // === INITIALISATION ===
+ // === INITIALISATION ===
   async init() {
     try {
       toggleLoadingSpinner(true);
@@ -105,7 +98,7 @@ class KanbanManager {
       await this.loadGristDataAndOptions();
       await this.initializeUser();
       
-      this.initializeManagers();
+      this.initModals(); // AJOUT
       this.initEventListeners();
       
       this.refreshKanban();
@@ -128,6 +121,27 @@ class KanbanManager {
     });
   }
 
+  async waitForGristReady() {
+    return new Promise((resolve) => {
+      grist.ready({ requiredAccess: 'full' });
+      grist.onRecords(this.handleGristUpdate.bind(this));
+      setTimeout(resolve, 50);
+    });
+  }
+ // CORRECTION 2: INITIALISATION DES MODALS (TASK + TIMELINE)
+  initModals() {
+    // Modal tâche
+    if (this.modalElement) {
+      try {
+        this.modal = new bootstrap.Modal(this.modalElement, { 
+          backdrop: 'static', 
+          keyboard: false 
+        });
+        console.log('Modal tâche initialisée');
+      } catch (e) {
+        console.error('Erreur init modal tâche:', e);
+      }
+    }
   /**
    * Initialise tous les managers spécialisés
    */
@@ -213,9 +227,10 @@ class KanbanManager {
     return this.currentUser;
   }
 
-  // === GESTION DES DONNÉES GRIST ===
+  // === CORRECTION 1: CHARGEMENT DES STRATÉGIES DEPUIS GRIST ===
   async loadGristDataAndOptions() {
     try {
+      // Charger les tâches principales
       const records = await grist.docApi.fetchTable(TABLE_ID);
       
       if (records && typeof records === 'object') {
@@ -225,7 +240,7 @@ class KanbanManager {
       
       this.currentRecords = this.mapGristRecords(records);
       
-      // Charger les options
+      // Charger les options de base
       this.gristOptions.statut = getDefaultStatuts();
       this.gristOptions.urgence = ['Immédiate', 'Courte', 'Moyenne', 'Longue'];
       this.gristOptions.impact = ['Critique', 'Important', 'Modéré', 'Mineur'];
@@ -239,6 +254,9 @@ class KanbanManager {
       const projets = this.getUniqueValuesFromData('projet');
       this.gristOptions.projet = [...new Set([...projets, ...projetsDynamiques])].sort();
       
+      // NOUVEAU: Charger les stratégies depuis Grist
+      await this.loadStrategiesFromGrist();
+      
     } catch (error) {
       console.error('Erreur lors du chargement des données:', error);
       // Valeurs par défaut en cas d'erreur
@@ -248,7 +266,37 @@ class KanbanManager {
       this.gristOptions.bureau = DEFAULT_BUREAUX;
       this.gristOptions.responsables = DEFAULT_RESPONSABLES;
       this.gristOptions.projet = [];
+      this.strategiesData = [];
       if (!this.currentRecords) this.currentRecords = [];
+    }
+  }
+
+
+  // NOUVEAU: Chargement des stratégies depuis la table Grist
+  async loadStrategiesFromGrist() {
+    try {
+      console.log(`Chargement table stratégies: ${STRATEGIES_TABLE_ID}...`);
+      const strategiesTable = await grist.docApi.fetchTable(STRATEGIES_TABLE_ID);
+      
+      if (strategiesTable && strategiesTable.id) {
+        this.strategiesData = strategiesTable.id.map((id, index) => ({
+          id: id,
+          objectif: strategiesTable.objectif?.[index] || '',
+          sous_objectif: strategiesTable.sous_objectif?.[index] || '',
+          action: strategiesTable.action?.[index] || '',
+          responsable: strategiesTable.responsable?.[index] || '',
+          echeance: strategiesTable.echeance?.[index] || '',
+          portee: strategiesTable.portee?.[index] || ''
+        }));
+        
+        console.log(`${this.strategiesData.length} stratégies chargées depuis Grist`);
+      } else {
+        console.warn('Table stratégies vide ou non trouvée');
+        this.strategiesData = [];
+      }
+    } catch (error) {
+      console.error('Erreur chargement stratégies:', error);
+      this.strategiesData = [];
     }
   }
 
