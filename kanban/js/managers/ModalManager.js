@@ -463,4 +463,284 @@ export class ModalManager {
     
     // Vérifier si le projet existe déjà
     const currentProjects = this.kanban.gristOptions?.projet || [];
-    if (currentProjects.includes(
+    if (currentProjects.includes(newProjectName)) {
+      displayError('Ce projet existe déjà');
+      return;
+    }
+    
+    // Ajouter le projet à la liste
+    const updatedProjects = [...currentProjects, newProjectName].sort();
+    this.kanban.gristOptions.projet = updatedProjects;
+    
+    // Mettre à jour le select
+    populateSelect('popup-projet', updatedProjects, true);
+    setFieldValue('popup-projet', newProjectName);
+    setFieldValue('projet-ajout', '');
+    
+    displaySuccess(`Projet "${newProjectName}" ajouté`);
+  }
+  
+  /**
+   * Ouvre la modal d'historique pour une tâche
+   * @param {number} taskId - ID de la tâche
+   */
+  openHistoryModal(taskId) {
+    if (!this.historyModal) {
+      displayError('Modal d\'historique non disponible');
+      return;
+    }
+    
+    const task = this.kanban.currentRecords?.find(r => r.id === taskId);
+    if (!task) {
+      displayError('Tâche non trouvée');
+      return;
+    }
+    
+    // Mettre à jour le titre
+    const modalTitle = document.getElementById('history-modal-label');
+    if (modalTitle) {
+      modalTitle.innerHTML = `
+        <i class="bi bi-clock-history me-2"></i>
+        Historique de la tâche #${taskId} - ${task.titre}
+      `;
+    }
+    
+    // Déléguer le rendu à HistoryManager
+    if (this.kanban.historyManager) {
+      this.kanban.historyManager.renderTaskHistory(task);
+    }
+    
+    // Ouvrir la modal
+    this.historyModal.show();
+  }
+  
+  /**
+   * Ferme toutes les modales ouvertes
+   */
+  closeAllModals() {
+    if (this.taskModal) {
+      this.taskModal.hide();
+    }
+    
+    if (this.historyModal) {
+      this.historyModal.hide();
+    }
+  }
+  
+  /**
+   * Auto-resize d'un textarea
+   * @param {Event} event - Événement input
+   */
+  autoResizeTextarea(event) {
+    const textarea = event.target;
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 300) + 'px';
+  }
+  
+  /**
+   * Peuple les options des selects depuis les données Grist
+   */
+  populateSelectOptions() {
+    if (!this.kanban.gristOptions) return;
+    
+    const { urgence, impact, bureau, responsables, projet } = this.kanban.gristOptions;
+    
+    // Peupler les selects
+    populateSelect('popup-urgence', urgence || [], true);
+    populateSelect('popup-impact', impact || [], true);
+    populateSelect('popup-bureau', bureau || [], false);
+    populateSelect('popup-qui', responsables || [], false);
+    populateSelect('popup-projet', projet || [], true);
+  }
+  
+  /**
+   * Réinitialise le formulaire de tâche
+   */
+  resetTaskForm() {
+    resetForm('task-form');
+    
+    // Réinitialiser les selects multiples
+    setSelectedOptions('popup-bureau', ['L']);
+    setSelectedOptions('popup-qui', ['L']);
+    
+    // Réinitialiser la stratégie
+    populateSelect('strategie-sous-objectif', [], true, '-- Choisir sous-objectif --');
+    populateSelect('strategie-action', [], true, '-- Choisir action --');
+    
+    // Réinitialiser la date
+    if (this.kanban.datePickerManager) {
+      this.kanban.datePickerManager.reset();
+    }
+  }
+  
+  /**
+   * Valide les données du formulaire
+   * @returns {boolean} True si valide
+   */
+  validateTaskData() {
+    const titre = getFieldValue('popup-titre').trim();
+    
+    if (!titre) {
+      displayError('Le titre est obligatoire');
+      return false;
+    }
+    
+    if (titre.length > 255) {
+      displayError('Le titre ne peut pas dépasser 255 caractères');
+      return false;
+    }
+    
+    // Validation des bureaux
+    const bureaux = getSelectedOptionsAsGristFormat('popup-bureau');
+    if (bureaux.length <= 1) {
+      displayError('Veuillez sélectionner au moins un bureau');
+      return false;
+    }
+    
+    return true;
+  }
+  
+  /**
+   * Configure la modal en mode lecture seule
+   * @param {boolean} readOnly - Mode lecture seule
+   */
+  setReadOnlyMode(readOnly) {
+    const formElements = document.querySelectorAll('#task-form input, #task-form select, #task-form textarea');
+    
+    formElements.forEach(element => {
+      element.disabled = readOnly;
+    });
+    
+    // Masquer les boutons d'action en mode lecture seule
+    toggleVisibility('btn-save-task', !readOnly);
+    toggleVisibility('btn-delete-task', !readOnly && !this.isNewTask);
+    toggleVisibility('btn-ajout-projet', !readOnly);
+    
+    if (this.kanban.datePickerManager) {
+      this.kanban.datePickerManager.setEnabled(!readOnly);
+    }
+  }
+  
+  /**
+   * Gère les raccourcis clavier dans la modal
+   * @param {KeyboardEvent} event - Événement clavier
+   */
+  handleModalKeyboard(event) {
+    // Ctrl+S pour sauvegarder
+    if (event.ctrlKey && event.key === 's') {
+      event.preventDefault();
+      this.saveTask();
+    }
+    
+    // Echap pour fermer (si pas de modifications)
+    if (event.key === 'Escape') {
+      if (this.hasUnsavedChanges()) {
+        if (confirmAction('Des modifications non sauvegardées seront perdues. Continuer ?')) {
+          this.closeAllModals();
+        }
+      } else {
+        this.closeAllModals();
+      }
+    }
+  }
+  
+  /**
+   * Vérifie s'il y a des modifications non sauvegardées
+   * @returns {boolean} True s'il y a des modifications
+   */
+  hasUnsavedChanges() {
+    if (this.isNewTask) {
+      // Vérifier si des champs ont été remplis
+      const titre = getFieldValue('popup-titre').trim();
+      const description = getFieldValue('popup-description').trim();
+      return titre !== '' || description !== '';
+    }
+    
+    if (!this.currentTask) return false;
+    
+    // Comparer avec les données originales
+    const currentData = this.collectFormData();
+    
+    return (
+      currentData.titre !== (this.currentTask.titre || '') ||
+      currentData.projet !== (this.currentTask.projet || '') ||
+      currentData.urgence !== (this.currentTask.urgence || '') ||
+      currentData.impact !== (this.currentTask.impact || '')
+      // Ajouter d'autres comparaisons selon les besoins
+    );
+  }
+  
+  /**
+   * Configure les écouteurs pour la détection de modifications
+   */
+  setupChangeDetection() {
+    const formElements = document.querySelectorAll('#task-form input, #task-form select, #task-form textarea');
+    
+    formElements.forEach(element => {
+      element.addEventListener('change', () => {
+        this.updateSaveButtonState();
+      });
+      
+      element.addEventListener('input', () => {
+        this.updateSaveButtonState();
+      });
+    });
+  }
+  
+  /**
+   * Met à jour l'état du bouton de sauvegarde
+   */
+  updateSaveButtonState() {
+    const saveButton = document.getElementById('btn-save-task');
+    if (!saveButton) return;
+    
+    const hasChanges = this.hasUnsavedChanges();
+    const isValid = this.validateTaskData();
+    
+    saveButton.disabled = !isValid;
+    
+    if (hasChanges && isValid) {
+      saveButton.classList.remove('btn-primary');
+      saveButton.classList.add('btn-warning');
+      saveButton.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Sauvegarder';
+    } else {
+      saveButton.classList.remove('btn-warning');
+      saveButton.classList.add('btn-primary');
+      saveButton.innerHTML = '<i class="bi bi-check2-circle me-2"></i>Sauvegarder';
+    }
+  }
+  
+  /**
+   * Exporte l'état du gestionnaire
+   * @returns {object} État exporté
+   */
+  exportState() {
+    return {
+      currentTaskId: this.currentTaskId,
+      isNewTask: this.isNewTask,
+      hasTaskModal: this.taskModal !== null,
+      hasHistoryModal: this.historyModal !== null,
+      timestamp: Date.now()
+    };
+  }
+  
+  /**
+   * Nettoie les ressources
+   */
+  destroy() {
+    if (this.taskModal) {
+      this.taskModal.dispose();
+      this.taskModal = null;
+    }
+    
+    if (this.historyModal) {
+      this.historyModal.dispose();
+      this.historyModal = null;
+    }
+    
+    this.currentTask = null;
+    this.currentTaskId = null;
+    
+    console.log('ModalManager: Ressources nettoyées');
+  }
+}
