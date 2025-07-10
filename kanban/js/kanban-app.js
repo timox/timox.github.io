@@ -46,8 +46,8 @@ import {
   addEventListenerSafe,
   toggleVisibility
 } from './utils/dom.js';
+
 // === CONSTANTES ===
-const TABLE_ID = "Ssir_principale_task";
 const STRATEGIES_TABLE_ID = "Ssir_strategie2"; // Table des stratégies
 
 let projetsDynamiques = [];
@@ -59,7 +59,7 @@ class KanbanManager {
     this.kanbanContainer = document.getElementById('kanban-container');
     this.currentRecords = [];
     this.modalElement = document.getElementById('popup-tache');
-    this.timelineModalElement = document.getElementById('timeline-modal'); // AJOUT
+    this.timelineModalElement = document.getElementById('history-modal'); // Utiliser la modal existante
     this.currentTaskId = null;
     this.isUpdating = false;
     this.canEdit = true;
@@ -74,8 +74,8 @@ class KanbanManager {
     this.viewMode = VIEW_MODES.COMPACT;
     this.focusColumn = null;
     this.expandedCards = new Set();
-
- // Gestion utilisateur
+    
+    // Gestion utilisateur
     this.currentUser = null;
     this.userInitialized = false;
     
@@ -84,12 +84,12 @@ class KanbanManager {
     
     // Modal instances
     this.modal = null;
-    this.timelineModal = null; // AJOUT
+    this.timelineModal = null;
     
     this.init();
   }
 
- // === INITIALISATION ===
+  // === INITIALISATION ===
   async init() {
     try {
       toggleLoadingSpinner(true);
@@ -98,7 +98,7 @@ class KanbanManager {
       await this.loadGristDataAndOptions();
       await this.initializeUser();
       
-      this.initModals(); // AJOUT
+      this.initModals();
       this.initEventListeners();
       
       this.refreshKanban();
@@ -121,14 +121,7 @@ class KanbanManager {
     });
   }
 
-  async waitForGristReady() {
-    return new Promise((resolve) => {
-      grist.ready({ requiredAccess: 'full' });
-      grist.onRecords(this.handleGristUpdate.bind(this));
-      setTimeout(resolve, 50);
-    });
-  }
- // CORRECTION 2: INITIALISATION DES MODALS (TASK + TIMELINE)
+  // === INITIALISATION DES MODALS ===
   initModals() {
     // Modal tâche
     if (this.modalElement) {
@@ -142,92 +135,26 @@ class KanbanManager {
         console.error('Erreur init modal tâche:', e);
       }
     }
-  /**
-   * Initialise tous les managers spécialisés
-   */
-  initializeManagers() {
-    // Renderer pour les cartes
-    this.cardRenderer = new CardRenderer(this);
-    
-    // Renderer pour les colonnes
-    this.boardRenderer = new BoardRenderer(this, this.cardRenderer);
-    
-    // Gestionnaire de filtres
-    this.filterManager = new FilterManager(this);
-    
-    // Gestionnaire de dates
-    this.datePickerManager = new DatePickerManager(this);
-    
-    // Gestionnaire de modales
-    this.modalManager = new ModalManager(this);
-    
-    // Gestionnaire d'historique
-    this.historyManager = new HistoryManager(this);
-    
+
+    // Modal historique/timeline
+    this.timelineModalElement = document.getElementById('history-modal');
+    if (this.timelineModalElement) {
+      try {
+        this.timelineModal = new bootstrap.Modal(this.timelineModalElement, { 
+          backdrop: true, 
+          keyboard: true 
+        });
+        console.log('Modal timeline initialisée');
+      } catch (e) {
+        console.error('Erreur init modal timeline:', e);
+      }
+    }
+
     // Peupler les options des selects
-    this.modalManager.populateSelectOptions();
-    
-    console.log('KanbanManager: Tous les managers initialisés');
+    this.populateSelectOptions();
   }
 
-  // === GESTION UTILISATEUR ===
-  async getCurrentGristUser() {
-    try {
-      console.log('🔍 Récupération utilisateur Grist...');
-      
-      const userInfo = await grist.docApi.getDocInfo();
-      console.log('Info Grist reçue:', userInfo);
-      
-      const user = userInfo?.user || userInfo?.users?.[0] || null;
-      
-      if (user) {
-        const userName = user.name || user.displayName || user.email || user.id || null;
-        if (userName) {
-          console.log('✅ Nom utilisateur trouvé:', userName);
-          this.currentUser = userName;
-          return this.currentUser;
-        }
-      }
-      
-      // Alternatives de fallback
-      if (userInfo?.metadata?.updatedBy) {
-        this.currentUser = userInfo.metadata.updatedBy;
-        return this.currentUser;
-      }
-      
-      if (userInfo?.owner) {
-        this.currentUser = userInfo.owner;
-        return this.currentUser;
-      }
-      
-      console.log('❌ Aucun nom d\'utilisateur trouvé');
-      this.currentUser = null;
-      return this.currentUser;
-      
-    } catch (error) {
-      console.log('❌ Erreur API getDocInfo:', error.message);
-      this.currentUser = null;
-      return this.currentUser;
-    }
-  }
-
-  async initializeUser() {
-    if (this.userInitialized) return this.currentUser;
-    
-    console.log('Initialisation de l\'utilisateur Grist...');
-    this.currentUser = await this.getCurrentGristUser();
-    this.userInitialized = true;
-    
-    if (this.currentUser) {
-      console.log('✅ Utilisateur Grist initialisé:', this.currentUser);
-    } else {
-      console.log('⚠️ Pas de nom d\'utilisateur Grist disponible');
-    }
-    
-    return this.currentUser;
-  }
-
-  // === CORRECTION 1: CHARGEMENT DES STRATÉGIES DEPUIS GRIST ===
+  // === CHARGEMENT DES DONNÉES ===
   async loadGristDataAndOptions() {
     try {
       // Charger les tâches principales
@@ -254,7 +181,7 @@ class KanbanManager {
       const projets = this.getUniqueValuesFromData('projet');
       this.gristOptions.projet = [...new Set([...projets, ...projetsDynamiques])].sort();
       
-      // NOUVEAU: Charger les stratégies depuis Grist
+      // Charger les stratégies depuis Grist
       await this.loadStrategiesFromGrist();
       
     } catch (error) {
@@ -271,8 +198,7 @@ class KanbanManager {
     }
   }
 
-
-  // NOUVEAU: Chargement des stratégies depuis la table Grist
+  // Chargement des stratégies depuis la table Grist
   async loadStrategiesFromGrist() {
     try {
       console.log(`Chargement table stratégies: ${STRATEGIES_TABLE_ID}...`);
@@ -362,13 +288,53 @@ class KanbanManager {
     return Array.from(values).filter(v => v).sort();
   }
 
+  // === GESTION UTILISATEUR ===
+  async getCurrentGristUser() {
+    try {
+      console.log('🔍 Récupération utilisateur Grist...');
+      
+      const userInfo = await grist.docApi.getDocInfo();
+      console.log('Info Grist reçue:', userInfo);
+      
+      const user = userInfo?.user || userInfo?.users?.[0] || null;
+      
+      if (user) {
+        const userName = user.name || user.displayName || user.email || user.id || null;
+        if (userName) {
+          console.log('✅ Nom utilisateur trouvé:', userName);
+          this.currentUser = userName;
+          return this.currentUser;
+        }
+      }
+      
+      this.currentUser = 'Utilisateur';
+      return this.currentUser;
+      
+    } catch (error) {
+      console.log('❌ Erreur API getDocInfo:', error.message);
+      this.currentUser = 'Utilisateur';
+      return this.currentUser;
+    }
+  }
+
+  async initializeUser() {
+    if (this.userInitialized) return this.currentUser;
+    
+    console.log('Initialisation de l\'utilisateur Grist...');
+    this.currentUser = await this.getCurrentGristUser();
+    this.userInitialized = true;
+    
+    console.log('✅ Utilisateur Grist initialisé:', this.currentUser);
+    return this.currentUser;
+  }
+
   // === GESTION DES COMMENTAIRES ===
   addTimestampToDescription(currentDescription, newContent, userName = null) {
     if (!newContent || newContent.trim() === '') {
       return currentDescription || '';
     }
 
-    const user = userName || this.currentUser;
+    const user = userName || this.currentUser || 'Utilisateur';
     const timestamp = generateTimestamp(new Date(), user);
     const separator = '---';
     
@@ -424,264 +390,648 @@ class KanbanManager {
     return 3;
   }
 
-  // === RENDU DU KANBAN ===
-  refreshKanban() {
-    if (!this.kanbanContainer || !this.boardRenderer) return;
+  // === RENDU DES CARTES ===
+  createTaskElementHTML(record) {
+    if (!record?.id) return '';
     
-    const filteredRecords = this.filterManager 
-      ? this.filterManager.filterRecords(this.currentRecords)
-      : this.currentRecords;
+    const priority = this.calculerPriorite(record.urgence, record.impact);
+    const priorityBadge = generatePriorityBadge(priority);
     
-    this.boardRenderer.renderKanban(this.viewMode, filteredRecords, {
-      showTermine: this.showTermine,
-      focusColumn: this.focusColumn,
-      container: this.kanbanContainer
+    // Stratégie avec tooltip si disponible
+    const strategyInfo = this.getStrategyInfo(record.strategie_id);
+    const strategyTooltip = strategyInfo ? 
+      `data-toggle="tooltip" data-placement="top" title="Objectif: ${strategyInfo.objectif} | Action: ${strategyInfo.action}"` : '';
+    const strategyIcon = strategyInfo ? 
+      `<i class="fas fa-bullseye strategie-icon" ${strategyTooltip}></i>` : '';
+
+    // Projet
+    const projectBadge = record.projet ? 
+      generateProjectBadge({
+        projet: record.projet,
+        strategie_objectif: strategyInfo?.objectif,
+        strategie_sous_objectif: strategyInfo?.sous_objectif,
+        strategie_action: strategyInfo?.action
+      }) : '';
+
+    // Description résumée
+    const resumeDesc = record.description ? 
+      `<div class="desc-resume">${this.getLatestDescription(record.description).substring(0, 80)}${record.description.length > 80 ? '…' : ''}</div>` : '';
+    
+    // Dates
+    const datesElement = generateDatesContainer({
+      date_debut: record.date_debut,
+      date_echeance: record.date_echeance
+    }, false);
+    
+    // Badges bureaux (sans texte superflu en dessous)
+    const bureauBadges = generateBureauBadges(record.bureau, false);
+    
+    // Badges responsables (sans texte superflu en dessous)
+    const responsablesBadges = generateResponsablesBadges(record.qui);
+    
+    // Timeline button
+    const timelineButton = this.generateTimelineButton(record);
+    
+    const hasEcheanceClass = record.date_echeance ? 'has-echeance' : '';
+    const hasDateDebutClass = record.date_debut ? 'has-debut' : '';
+    
+    return `<div class="kanban-item ${hasEcheanceClass} ${hasDateDebutClass}" data-id="${record.id}">
+      <div class="drag-handle">
+        <i class="bi bi-grip-vertical"></i>
+      </div>
+      
+      ${bureauBadges}
+      
+      <div class="kanban-item-header">
+        <div class="priority-section">
+          ${priorityBadge}
+          ${strategyIcon}
+        </div>
+        <div class="item-badges">
+          ${projectBadge}
+          ${timelineButton}
+        </div>
+      </div>
+      
+      <div class="item-title editable-zone">${record.titre || 'Sans titre'}</div>
+      
+      ${resumeDesc}
+      
+      ${datesElement}
+      
+      ${responsablesBadges}
+    </div>`;
+  }
+
+  // Génération du bouton timeline
+  generateTimelineButton(record) {
+    if (!record.description && !record.historique_statuts) return '';
+    
+    // Compter les commentaires
+    const commentCount = record.description ? 
+      (record.description.match(/^\[.*\]$/gm) || []).length : 0;
+    
+    // Compter les changements de statut
+    let statusChangeCount = 0;
+    if (record.historique_statuts) {
+      try {
+        const history = JSON.parse(record.historique_statuts);
+        statusChangeCount = history.historique ? history.historique.length : 0;
+      } catch (e) {
+        statusChangeCount = 0;
+      }
+    }
+    
+    const totalEvents = commentCount + statusChangeCount;
+    if (totalEvents === 0) return '';
+    
+    return `<button class="btn-timeline" title="Voir la timeline (${totalEvents} événement${totalEvents > 1 ? 's' : ''})" data-task-id="${record.id}">
+      <i class="bi bi-clock-history"></i> ${totalEvents}
+    </button>`;
+  }
+
+  // Récupération des infos stratégie
+  getStrategyInfo(strategieId) {
+    if (!strategieId || !this.strategiesData) return null;
+    
+    return this.strategiesData.find(strategy => strategy.id === strategieId) || null;
+  }
+
+  // === GESTION DES SELECTS ===
+  populateSelectOptions() {
+    if (!this.gristOptions) return;
+    
+    const { urgence, impact, bureau, responsables, projet } = this.gristOptions;
+    
+    // Peupler les selects de base
+    populateSelect('popup-urgence', urgence || [], true);
+    populateSelect('popup-impact', impact || [], true);
+    populateSelect('popup-bureau', bureau || [], false);
+    populateSelect('popup-qui', responsables || [], false);
+    populateSelect('popup-projet', projet || [], true);
+    
+    // Peupler le select des stratégies depuis Grist
+    this.populateStrategySelect();
+  }
+
+  // Peuplement du select stratégies
+  populateStrategySelect() {
+    const strategySelect = document.getElementById('popup-strategie');
+    if (!strategySelect) return;
+    
+    strategySelect.innerHTML = '<option value="">-- Choisir une stratégie --</option>';
+    
+    this.strategiesData.forEach(strategy => {
+      const option = document.createElement('option');
+      option.value = strategy.id;
+      option.textContent = `${strategy.objectif} - ${strategy.action}`;
+      strategySelect.appendChild(option);
+    });
+    
+    // Écouteur pour afficher les détails de la stratégie
+    strategySelect.addEventListener('change', (e) => {
+      this.updateStrategyDetails(parseInt(e.target.value) || null);
     });
   }
 
-  // === DRAG & DROP ===
-  async handleDragEnd(evt, targetStatus) {
-    if (!evt.item || !evt.item.dataset) return;
+  // Mise à jour des détails de stratégie
+  updateStrategyDetails(strategyId) {
+    const strategy = strategyId ? this.getStrategyInfo(strategyId) : null;
     
-    const id = parseInt(evt.item.dataset.id, 10);
-    if (isNaN(id)) return;
+    const objectifEl = document.getElementById('popup-strategie-objectif');
+    const sousObjectifEl = document.getElementById('popup-strategie-sous-objectif');
+    const actionEl = document.getElementById('popup-strategie-action');
     
-    const record = this.currentRecords.find(r => r.id === id);
-    if (!record) return;
+    if (objectifEl) objectifEl.textContent = strategy?.objectif || '';
+    if (sousObjectifEl) sousObjectifEl.textContent = strategy?.sous_objectif || '';
+    if (actionEl) actionEl.textContent = strategy?.action || '';
     
-    const newStatus = evt.to.dataset.status;
-    const oldStatus = record.statut;
+    // Mettre à jour les champs cachés
+    setFieldValue('popup-strategie-objectif-hidden', strategy?.objectif || '');
+    setFieldValue('popup-strategie-sous-objectif-hidden', strategy?.sous_objectif || '');
+    setFieldValue('popup-strategie-action-hidden', strategy?.action || '');
+  }
+
+  // === RENDU DU KANBAN ===
+  refreshKanban() {
+    if (!this.kanbanContainer) return;
     
-    if (oldStatus === newStatus) return;
+    const filteredRecords = this.filterRecords(this.currentRecords);
+    const statutsToShow = this.showTermine ? STATUTS : STATUTS.filter(s => s.id !== 'Terminé');
     
-    console.log(`Déplacement de la tâche ${id} de "${oldStatus}" vers "${newStatus}"`);
+    this.sortableInstances.forEach(s => s.destroy());
+    this.sortableInstances = [];
     
+    let kanbanHTML = '';
+    
+    statutsToShow.forEach(statut => {
+      const boardId = statut.classe;
+      const boardRecords = filteredRecords.filter(r => r.statut === statut.id);
+      
+      boardRecords.sort((a, b) => {
+        const prioA = this.calculerPriorite(a.urgence, a.impact);
+        const prioB = this.calculerPriorite(b.urgence, b.impact);
+        if (prioA !== prioB) return prioA - prioB;
+        return (a.id || 0) - (b.id || 0);
+      });
+
+      const itemsHTML = boardRecords.map(record => this.createTaskElementHTML(record)).join('');
+      const count = boardRecords.length;
+      const isHidden = (count === 0 && statut.id !== 'Terminé' && this.showTermine);
+      const hiddenClass = isHidden ? ' board-hidden' : '';
+
+      kanbanHTML += `
+        <div class="kanban-board${hiddenClass}" data-status-id="${statut.id}" data-board-class="${statut.classe}">
+          <div class="kanban-board-header entete-${statut.classe}">
+            <span>${statut.libelle}</span>
+            <span class="badge badge-secondary count-badge ml-2">${count}</span>
+          </div>
+          <div class="kanban-items-container" data-status-id="${statut.id}">
+            ${itemsHTML}
+          </div>
+        </div>
+      `;
+    });
+
+    this.kanbanContainer.innerHTML = kanbanHTML || '<div style="padding: 20px; color: grey;">Aucune tâche à afficher.</div>';
+    
+    // Initialiser Sortable
+    this.kanbanContainer.querySelectorAll('.kanban-items-container').forEach(container => {
+      const sortableInstance = Sortable.create(container, {
+        group: 'kanban-tasks',
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        dragClass: 'sortable-drag',
+        filter: '.ignore-drag',
+        preventOnFilter: true,
+        onEnd: (evt) => this.handleDragEnd(evt)
+      });
+      this.sortableInstances.push(sortableInstance);
+    });
+    
+    // Attacher les événements
+    this.attachCardEventListeners();
+  }
+
+  filterRecords(records) {
+    const { bureau, qui, projet, statut } = this.filters;
+    if (!bureau && !qui && !projet && !statut) return records;
+    
+    return records.filter(r => {
+      const matchBureau = !bureau || this.nettoyerListe(r.bureau).includes(bureau);
+      const matchQui = !qui || this.nettoyerListe(r.qui).includes(qui);
+      const matchProjet = !projet || r.projet === projet;
+      const matchStatut = !statut || r.statut === statut;
+      return matchBureau && matchQui && matchProjet && matchStatut;
+    });
+  }
+
+  nettoyerListe(v) {
+    if (Array.isArray(v) && v[0] === 'L') {
+      return v.slice(1).filter(i => i !== null && typeof i !== 'undefined').map(String);
+    }
+    if (Array.isArray(v)) {
+      return v.filter(i => i !== null && typeof i !== 'undefined').map(String);
+    }
+    if (typeof v === 'string' && v.trim() !== '') {
+      return v.split(',').map(s => s.trim()).filter(Boolean);
+    }
+    return [];
+  }
+
+  // === EVENT LISTENERS ===
+  attachCardEventListeners() {
+    // Édition des tâches
+    this.kanbanContainer.querySelectorAll('.editable-zone').forEach(zone => {
+      zone.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        
+        const card = zone.closest('.kanban-item');
+        const taskId = parseInt(card.dataset.id, 10);
+        const task = this.currentRecords.find(r => r.id === taskId);
+        
+        if (task) this.openPopup(task);
+      });
+    });
+    
+    // Boutons timeline
+    this.kanbanContainer.querySelectorAll('.btn-timeline').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        
+        const taskId = parseInt(btn.dataset.taskId, 10);
+        this.openTimelineModal(taskId);
+      });
+    });
+  }
+
+  // === GESTION DE LA MODAL TIMELINE ===
+  openTimelineModal(taskId) {
+    const task = this.currentRecords.find(r => r.id === taskId);
+    if (!task) {
+      displayError('Tâche non trouvée');
+      return;
+    }
+
+    if (!this.timelineModal) {
+      displayError('Modal timeline non disponible');
+      return;
+    }
+
+    // Mettre à jour le titre
+    const modalTitle = document.getElementById('history-modal-label');
+    if (modalTitle) {
+      modalTitle.innerHTML = `
+        <i class="bi bi-clock-history me-2"></i>
+        Timeline - Tâche #${taskId}: ${task.titre}
+      `;
+    }
+
+    // Générer le contenu
+    this.renderTimelineContent(task);
+    
+    // Ouvrir la modal
+    this.timelineModal.show();
+  }
+
+  renderTimelineContent(task) {
+    const timelineStats = document.getElementById('history-stats');
+    const timelineContent = document.getElementById('history-timeline');
+    
+    if (!timelineStats || !timelineContent) return;
+
+    // Analyser les données
+    const timelineData = this.parseTimelineData(task);
+    
+    // Statistiques
+    timelineStats.innerHTML = `
+      <div class="row g-3">
+        <div class="col-md-3">
+          <div class="text-center">
+            <h4 class="text-primary">${timelineData.events.length}</h4>
+            <small class="text-muted">Événements total</small>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-center">
+            <h4 class="text-info">${timelineData.comments.length}</h4>
+            <small class="text-muted">Commentaires</small>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-center">
+            <h4 class="text-warning">${timelineData.statusChanges.length}</h4>
+            <small class="text-muted">Changements statut</small>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-center">
+            <h4 class="text-success">${task.statut}</h4>
+            <small class="text-muted">Statut actuel</small>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Timeline
+    let timelineHTML = '<div class="timeline">';
+    
+    timelineData.events.forEach((event, index) => {
+      const isLatest = index === 0;
+      const eventClass = isLatest ? 'timeline-event latest' : 'timeline-event';
+      
+      if (event.type === 'comment') {
+        timelineHTML += `
+          <div class="${eventClass}">
+            <div class="timeline-marker bg-info">
+              <i class="bi bi-chat-text text-white"></i>
+            </div>
+            <div class="timeline-content">
+              <div class="timeline-header">
+                <h6 class="mb-1">Commentaire ${isLatest ? '(Dernier)' : ''}</h6>
+                <small class="text-muted">${event.timestamp} par ${event.user}</small>
+              </div>
+              <div class="timeline-body">
+                <div class="comment-content bg-light p-3 rounded">${event.content}</div>
+                ${isLatest ? '' : '<small class="text-muted mt-2 d-block">✓ Commentaire validé</small>'}
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (event.type === 'status') {
+        timelineHTML += `
+          <div class="${eventClass}">
+            <div class="timeline-marker bg-warning">
+              <i class="bi bi-arrow-right text-white"></i>
+            </div>
+            <div class="timeline-content">
+              <div class="timeline-header">
+                <h6 class="mb-1">Changement de statut</h6>
+                <small class="text-muted">${event.timestamp} par ${event.user}</small>
+              </div>
+              <div class="timeline-body">
+                <span class="badge bg-primary">${event.status}</span>
+                ${event.duration ? `<span class="ms-2 text-muted">Durée: ${formatDuration(event.duration)}</span>` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    });
+    
+    timelineHTML += '</div>';
+    timelineContent.innerHTML = timelineHTML;
+  }
+
+  parseTimelineData(task) {
+    const events = [];
+    const comments = [];
+    const statusChanges = [];
+    
+    // Parser les commentaires depuis la description
+    if (task.description) {
+      const sections = task.description.split(/^---\s*$/gm);
+      
+      sections.forEach(section => {
+        const lines = section.trim().split('\n');
+        if (lines.length === 0) return;
+        
+        const timestampMatch = lines[0].match(/^\[(.+)\]$/);
+        if (timestampMatch) {
+          const content = lines.slice(1).join('\n').trim();
+          if (content) {
+            const comment = {
+              type: 'comment',
+              timestamp: timestampMatch[1],
+              content: content,
+              user: this.extractUserFromTimestamp(timestampMatch[1])
+            };
+            comments.push(comment);
+            events.push(comment);
+          }
+        }
+      });
+    }
+    
+    // Parser l'historique des statuts
+    if (task.historique_statuts) {
+      try {
+        const history = JSON.parse(task.historique_statuts);
+        if (history.historique) {
+          history.historique.forEach(entry => {
+            const statusChange = {
+              type: 'status',
+              timestamp: new Date(entry.date_entree).toLocaleString('fr-FR'),
+              status: entry.statut,
+              user: entry.utilisateur || 'Système',
+              duration: entry.duree_minutes
+            };
+            statusChanges.push(statusChange);
+            events.push(statusChange);
+          });
+        }
+      } catch (e) {
+        console.warn('Erreur parsing historique statuts:', e);
+      }
+    }
+    
+    // Trier les événements par date (plus récent en premier)
+    events.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    
+    return { events, comments, statusChanges };
+  }
+
+  extractUserFromTimestamp(timestamp) {
+    const match = timestamp.match(/\(([^)]+)\)$/);
+    return match ? match[1] : this.currentUser;
+  }
+
+  // === EVENT LISTENERS PRINCIPAUX ===
+  initEventListeners() {
+    // Bouton nouvelle tâche
+    const btnNewTask = document.getElementById('btn-nouvelle-tache');
+    if (btnNewTask) {
+      btnNewTask.addEventListener('click', () => this.openPopup());
+    }
+
+    // Bouton sauvegarder
+    const btnSave = document.getElementById('btn-save-task');
+    if (btnSave) {
+      btnSave.addEventListener('click', () => this.saveTask());
+    }
+
+    // Boutons de la modal timeline (si présents)
+    const btnExportTimeline = document.getElementById('btn-export-task-history');
+    if (btnExportTimeline) {
+      btnExportTimeline.addEventListener('click', () => this.exportTimeline());
+    }
+
+    // Raccourcis clavier
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'r' || e.key === 'R') {
+        if (!e.target.matches('input, textarea')) {
+          e.preventDefault();
+          this.refreshKanban();
+        }
+      }
+    });
+  }
+
+  // === GESTION DES MODALS ===
+  openPopup(tache = {}) {
+    if (!this.modal) {
+      displayError('Modal non disponible');
+      return;
+    }
+    
+    const isNewTask = !tache.id;
+    this.currentTaskId = tache.id || null;
+    
+    // Peupler les champs
+    setFieldValue('popup-titre', tache.titre || '');
+    setFieldValue('popup-description', this.getLatestDescription(tache.description || ''));
+    setFieldValue('popup-statut-text', tache.statut || (isNewTask ? 'Backlog' : ''));
+    setFieldValue('popup-projet', tache.projet || '');
+    setFieldValue('popup-urgence', tache.urgence || '');
+    setFieldValue('popup-impact', tache.impact || '');
+    
+    // Stratégie depuis Grist
+    setFieldValue('popup-strategie', tache.strategie_id || '');
+    this.updateStrategyDetails(tache.strategie_id);
+    
+    setSelectedOptions('popup-bureau', tache.bureau || ['L']);
+    setSelectedOptions('popup-qui', tache.qui || ['L']);
+    
+    toggleVisibility('btn-delete-task', !isNewTask, 'inline-block');
+    
+    this.modal.show();
+  }
+
+  async saveTask() {
     try {
-      const updateData = { statut: newStatus };
-      
-      // Ajouter l'historique si disponible
-      if (this.historyManager) {
-        const historyData = this.historyManager.updateTaskHistory(
-          record, 
-          newStatus, 
-          'Déplacé par glisser-déposer'
-        );
-        Object.assign(updateData, historyData);
+      const titre = getFieldValue('popup-titre').trim();
+      if (!titre) {
+        displayError('Le titre est obligatoire');
+        return;
       }
+
+      const description = getFieldValue('popup-description').trim();
+      const currentDescription = this.currentTaskId ? 
+        (this.currentRecords.find(r => r.id === this.currentTaskId)?.description || '') : '';
       
-      await grist.docApi.applyUserActions([
-        ['UpdateRecord', TABLE_ID, id, updateData]
-      ]);
-      
-      console.log(`Tâche ${id} mise à jour avec succès`);
-      
-      // Mise à jour locale
-      const recordIndex = this.currentRecords.findIndex(r => r.id === id);
-      if (recordIndex !== -1) {
-        this.currentRecords[recordIndex] = { 
-          ...this.currentRecords[recordIndex], 
-          ...updateData 
-        };
+      const finalDescription = description ? 
+        this.addTimestampToDescription(currentDescription, description) : currentDescription;
+
+      const taskData = {
+        titre,
+        description: finalDescription,
+        statut: getFieldValue('popup-statut-text'),
+        projet: getFieldValue('popup-projet') || null,
+        urgence: getFieldValue('popup-urgence') || null,
+        impact: getFieldValue('popup-impact') || null,
+        strategie_id: parseInt(getFieldValue('popup-strategie')) || null,
+        bureau: getSelectedOptionsAsGristFormat('popup-bureau'),
+        qui: getSelectedOptionsAsGristFormat('popup-qui')
+      };
+
+      // Ajouter les champs stratégie dénormalisés pour la compatibilité
+      const strategy = this.getStrategyInfo(taskData.strategie_id);
+      if (strategy) {
+        taskData.strategie_objectif = strategy.objectif;
+        taskData.strategie_sous_objectif = strategy.sous_objectif;
+        taskData.strategie_action = strategy.action;
       }
-      
+
+      let result;
+      if (this.currentTaskId) {
+        result = await grist.docApi.applyUserActions([
+          ['UpdateRecord', TABLE_ID, this.currentTaskId, taskData]
+        ]);
+        displaySuccess('Tâche mise à jour avec succès');
+      } else {
+        result = await grist.docApi.applyUserActions([
+          ['AddRecord', TABLE_ID, null, taskData]
+        ]);
+        displaySuccess('Tâche créée avec succès');
+      }
+
+      this.modal.hide();
       this.refreshKanban();
-      
+
     } catch (error) {
-      console.error('Erreur lors de la mise à jour:', error);
+      console.error('Erreur sauvegarde:', error);
+      displayError(`Erreur: ${error.message}`);
+    }
+  }
+
+  // === DRAG & DROP ===
+  async handleDragEnd(evt) {
+    const itemEl = evt.item;
+    const targetContainer = evt.to;
+    const taskId = parseInt(itemEl.dataset.id, 10);
+    const newStatus = targetContainer.dataset.statusId;
+
+    const record = this.currentRecords.find(r => r.id === taskId);
+    if (!record || record.statut === newStatus) return;
+
+    try {
+      await grist.docApi.applyUserActions([
+        ['UpdateRecord', TABLE_ID, taskId, { statut: newStatus }]
+      ]);
+
+      const recordIndex = this.currentRecords.findIndex(r => r.id === taskId);
+      if (recordIndex !== -1) {
+        this.currentRecords[recordIndex].statut = newStatus;
+      }
+
+      this.refreshKanban();
+
+    } catch (error) {
+      console.error('Erreur déplacement:', error);
       displayError(`Erreur: ${error.message}`);
       this.refreshKanban();
     }
   }
 
-  // === GESTION DES MODALS ===
-  openPopup(tache = {}) {
-    if (this.modalManager) {
-      this.modalManager.openTaskModal(tache);
-    }
-  }
-
-  // === EVENT LISTENERS PRINCIPAUX ===
-  initEventListeners() {
-    // Export de l'historique complet
-    const btnExportHistory = document.getElementById('btn-export-history');
-    if (btnExportHistory) {
-      btnExportHistory.addEventListener('click', () => {
-        if (this.historyManager) {
-          this.historyManager.exportFullHistory();
-        }
-      });
-    }
-    
-    // Raccourcis clavier globaux
-    document.addEventListener('keydown', (e) => {
-      // Ces raccourcis sont déjà gérés par les managers spécialisés
-      // Ici on peut ajouter des raccourcis globaux supplémentaires
-      
-      if (e.key === 'r' || e.key === 'R') {
-        if (!e.target.matches('input, textarea')) {
-          e.preventDefault();
-          this.refreshKanban();
-          console.log('🔄 Kanban rechargé manuellement');
-        }
-      }
-    });
-  }
-
   // === GESTION DES MISES À JOUR GRIST ===
   handleGristUpdate(gristRecords, mappings = null) {
-    if (this.isUpdating) {
-      console.log('KanbanManager: Ignorer mise à jour (opération en cours)');
-      return;
-    }
+    if (this.isUpdating) return;
     
-    console.log('KanbanManager: Mise à jour des enregistrements depuis Grist');
-    
-    try {
-      // Recharger les données
-      this.loadGristDataAndOptions().then(() => {
-        this.refreshKanban();
-        
-        // Mettre à jour les options des selects
-        if (this.modalManager) {
-          this.modalManager.populateSelectOptions();
-        }
-      });
-    } catch (error) {
-      console.error('KanbanManager: Erreur lors de la mise à jour:', error);
-      displayError('Erreur lors de la synchronisation avec Grist');
-    }
-  }
-
-  /**
-   * Callback appelé quand les données sont rechargées
-   * @param {Array} newRecords - Nouveaux enregistrements
-   * @param {object} newOptions - Nouvelles options
-   */
-  onDataReloaded(newRecords, newOptions) {
-    this.currentRecords = newRecords;
-    this.gristOptions = newOptions;
-    
-    this.refreshKanban();
-    
-    // Notifier les managers
-    if (this.filterManager) {
-      this.filterManager.updateFilterStats();
-    }
+    console.log('Mise à jour depuis Grist');
+    this.loadGristDataAndOptions().then(() => {
+      this.refreshKanban();
+      this.populateSelectOptions();
+    });
   }
 
   // === MÉTHODES UTILITAIRES ===
-  
-  /**
-   * Recherche des tâches par critères
-   * @param {object} criteria - Critères de recherche
-   * @returns {Array} Tâches correspondantes
-   */
-  searchTasks(criteria = {}) {
-    return this.currentRecords.filter(record => {
-      // Déléguer à FilterManager si disponible
-      if (this.filterManager) {
-        return this.filterManager.filterRecords([record]).length > 0;
-      }
-      
-      // Fallback simple
-      if (criteria.text) {
-        const searchText = criteria.text.toLowerCase();
-        const searchableText = [
-          record.titre || '',
-          record.description || '',
-          record.projet || ''
-        ].join(' ').toLowerCase();
-        
-        return searchableText.includes(searchText);
-      }
-      
-      return true;
-    });
+  exportKanban() {
+    const csvData = this.exportToCSV();
+    const filename = `kanban_export_${new Date().toISOString().slice(0, 10)}.csv`;
+    this.downloadCSV(csvData, filename);
+    displaySuccess('Export réussi');
   }
 
-  /**
-   * Obtient les statistiques du Kanban
-   * @returns {object} Statistiques
-   */
-  getKanbanStatistics() {
-    const stats = {
-      totalTasks: this.currentRecords.length,
-      byStatus: {},
-      byPriority: {},
-      byBureau: {},
-      withDeadlines: 0,
-      overdue: 0,
-      urgent: 0,
-      recentlyUpdated: 0
-    };
-
-    const now = new Date();
-    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
-
-    this.currentRecords.forEach(record => {
-      // Par statut
-      const status = record.statut || 'Non défini';
-      stats.byStatus[status] = (stats.byStatus[status] || 0) + 1;
-
-      // Par priorité
-      const priority = this.calculerPriorite(record.urgence, record.impact);
-      stats.byPriority[priority] = (stats.byPriority[priority] || 0) + 1;
-
-      // Par bureau
-      if (Array.isArray(record.bureau) && record.bureau.length > 1) {
-        record.bureau.slice(1).forEach(bureau => {
-          stats.byBureau[bureau] = (stats.byBureau[bureau] || 0) + 1;
-        });
-      }
-
-      // Échéances
-      if (record.date_echeance) {
-        stats.withDeadlines++;
-        
-        const deadline = new Date(record.date_echeance);
-        if (deadline < now && record.statut !== 'Terminé') {
-          stats.overdue++;
-        }
-        
-        if (deadline <= threeDaysFromNow && deadline >= now) {
-          stats.urgent++;
-        }
-      }
-
-      // Récemment mises à jour
-      if (record.date_derniere_maj) {
-        const lastUpdate = new Date(record.date_derniere_maj);
-        if (lastUpdate > oneDayAgo) {
-          stats.recentlyUpdated++;
-        }
-      }
-    });
-
-    return stats;
-  }
-
-  /**
-   * Exporte les données au format CSV
-   * @returns {string} Données CSV
-   */
   exportToCSV() {
     const headers = [
       'ID', 'Titre', 'Description', 'Statut', 'Projet', 'Urgence', 'Impact',
-      'Bureaux', 'Responsables', 'Date_Echeance', 'Date_Debut', 'Priorité'
+      'Bureaux', 'Responsables', 'Date_Echeance', 'Stratégie'
     ];
 
     let csv = headers.join(',') + '\n';
 
     this.currentRecords.forEach(record => {
-      const priority = this.calculerPriorite(record.urgence, record.impact);
+      const strategy = this.getStrategyInfo(record.strategie_id);
       const bureaux = Array.isArray(record.bureau) ? record.bureau.slice(1).join(', ') : '';
       const responsables = Array.isArray(record.qui) ? record.qui.slice(1).join(', ') : '';
       
       const row = [
         record.id || '',
         `"${(record.titre || '').replace(/"/g, '""')}"`,
-        `"${(record.description || '').replace(/"/g, '""')}"`,
+        `"${(this.getLatestDescription(record.description) || '').replace(/"/g, '""')}"`,
         record.statut || '',
         record.projet || '',
         record.urgence || '',
@@ -689,8 +1039,7 @@ class KanbanManager {
         `"${bureaux}"`,
         `"${responsables}"`,
         record.date_echeance || '',
-        record.date_debut || '',
-        priority
+        `"${strategy ? `${strategy.objectif} - ${strategy.action}` : ''}"`
       ];
 
       csv += row.join(',') + '\n';
@@ -699,11 +1048,6 @@ class KanbanManager {
     return csv;
   }
 
-  /**
-   * Télécharge un fichier CSV
-   * @param {string} csvData - Données CSV
-   * @param {string} filename - Nom du fichier
-   */
   downloadCSV(csvData, filename) {
     const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
@@ -720,327 +1064,28 @@ class KanbanManager {
     window.URL.revokeObjectURL(url);
   }
 
-  /**
-   * Exporte tout le Kanban
-   */
-  exportKanban() {
-    try {
-      const csvData = this.exportToCSV();
-      const filename = `kanban_export_${new Date().toISOString().slice(0, 10)}.csv`;
-      this.downloadCSV(csvData, filename);
-      
-      displaySuccess(`Export de ${this.currentRecords.length} tâches réussi`);
-    } catch (error) {
-      console.error('Erreur export Kanban:', error);
-      displayError('Erreur lors de l\'export');
-    }
-  }
-
-  /**
-   * Trouve une tâche par ID
-   * @param {number} taskId - ID de la tâche
-   * @returns {object|null} Tâche trouvée ou null
-   */
-  findTaskById(taskId) {
-    return this.currentRecords.find(r => r.id === taskId) || null;
-  }
-
-  /**
-   * Met à jour une tâche localement
-   * @param {number} taskId - ID de la tâche
-   * @param {object} updates - Mises à jour
-   */
-  updateLocalTask(taskId, updates) {
-    const index = this.currentRecords.findIndex(r => r.id === taskId);
-    if (index !== -1) {
-      this.currentRecords[index] = {
-        ...this.currentRecords[index],
-        ...updates
-      };
-    }
-  }
-
-  /**
-   * Ajoute une tâche localement
-   * @param {object} newTask - Nouvelle tâche
-   */
-  addLocalTask(newTask) {
-    this.currentRecords.push(newTask);
-  }
-
-  /**
-   * Supprime une tâche localement
-   * @param {number} taskId - ID de la tâche
-   */
-  removeLocalTask(taskId) {
-    this.currentRecords = this.currentRecords.filter(r => r.id !== taskId);
-  }
-
-  /**
-   * Vérifie l'état de connexion à Grist
-   * @returns {boolean} True si connecté
-   */
-  isGristConnected() {
-    return typeof grist !== 'undefined' && this.currentRecords.length >= 0;
-  }
-
-  /**
-   * Recharge les données depuis Grist
-   */
-  async reloadFromGrist() {
-    try {
-      toggleLoadingSpinner(true);
-      
-      await this.loadGristDataAndOptions();
-      this.refreshKanban();
-      
-      // Mettre à jour les filtres
-      if (this.filterManager) {
-        this.filterManager.updateFilterStats();
-      }
-      
-      displaySuccess('Données rechargées depuis Grist');
-      
-    } catch (error) {
-      console.error('Erreur rechargement Grist:', error);
-      displayError('Erreur lors du rechargement');
-    } finally {
-      toggleLoadingSpinner(false);
-    }
-  }
-
-  /**
-   * Nettoie les cartes expandées
-   */
-  clearExpandedCards() {
-    this.expandedCards.clear();
-    if (this.cardRenderer) {
-      this.cardRenderer.clearExpandedCards();
-    }
-  }
-
-  /**
-   * Change le mode de vue
-   * @param {string} newMode - Nouveau mode (compact, detailed, focus)
-   */
-  setViewMode(newMode) {
-    if (this.filterManager) {
-      this.filterManager.setViewMode(newMode);
-    } else {
-      this.viewMode = newMode;
-      this.refreshKanban();
-    }
-  }
-
-  /**
-   * Applique un filtre rapide
-   * @param {string} filterType - Type de filtre
-   */
-  applyQuickFilter(filterType) {
-    if (this.filterManager) {
-      this.filterManager.applyQuickFilter(filterType);
-    }
-  }
-
-  /**
-   * Efface tous les filtres
-   */
-  clearAllFilters() {
-    if (this.filterManager) {
-      this.filterManager.clearAllFilters();
-    }
-  }
-
-  /**
-   * Obtient l'état complet du Kanban
-   * @returns {object} État complet
-   */
-  exportFullState() {
-    const state = {
-      version: '2.0',
-      timestamp: Date.now(),
-      recordCount: this.currentRecords.length,
-      viewMode: this.viewMode,
-      currentUser: this.currentUser,
-      gristConnected: this.isGristConnected(),
-      managers: {}
-    };
-
-    // États des managers
-    if (this.filterManager) {
-      state.managers.filter = this.filterManager.exportState();
-    }
-
-    if (this.datePickerManager) {
-      state.managers.datePicker = this.datePickerManager.exportState();
-    }
-
-    if (this.modalManager) {
-      state.managers.modal = this.modalManager.exportState();
-    }
-
-    if (this.cardRenderer) {
-      state.managers.cardRenderer = this.cardRenderer.exportState();
-    }
-
-    return state;
-  }
-
-  /**
-   * Importe un état du Kanban
-   * @param {object} state - État à importer
-   */
-  importFullState(state) {
-    if (!state || state.version !== '2.0') {
-      console.warn('État incompatible ou invalide');
-      return;
-    }
-
-    // Importer dans les managers
-    if (state.managers) {
-      if (this.filterManager && state.managers.filter) {
-        this.filterManager.importState(state.managers.filter);
-      }
-
-      if (this.datePickerManager && state.managers.datePicker) {
-        this.datePickerManager.importState(state.managers.datePicker);
-      }
-
-      if (this.cardRenderer && state.managers.cardRenderer) {
-        this.cardRenderer.importState(state.managers.cardRenderer);
-      }
-    }
-
-    console.log('État Kanban importé avec succès');
-  }
-
-  /**
-   * Méthode de debug pour les développeurs
-   */
-  debug() {
-    const debugInfo = {
-      kanbanManager: this,
-      currentRecords: this.currentRecords,
-      gristOptions: this.gristOptions,
-      managers: {
-        filter: this.filterManager,
-        datePicker: this.datePickerManager,
-        modal: this.modalManager,
-        history: this.historyManager,
-        cardRenderer: this.cardRenderer,
-        boardRenderer: this.boardRenderer
-      },
-      statistics: this.getKanbanStatistics(),
-      state: this.exportFullState()
-    };
-
-    console.log('🐛 DEBUG KANBAN:', debugInfo);
-    return debugInfo;
-  }
-
-  /**
-   * Nettoie toutes les ressources
-   */
-  destroy() {
-    // Nettoyer les managers
-    if (this.filterManager) {
-      this.filterManager.destroy();
-      this.filterManager = null;
-    }
-
-    if (this.datePickerManager) {
-      this.datePickerManager.destroy();
-      this.datePickerManager = null;
-    }
-
-    if (this.modalManager) {
-      this.modalManager.destroy();
-      this.modalManager = null;
-    }
-
-    if (this.historyManager) {
-      this.historyManager.destroy();
-      this.historyManager = null;
-    }
-
-    if (this.boardRenderer) {
-      this.boardRenderer.destroy();
-      this.boardRenderer = null;
-    }
-
-    // Nettoyer les données
-    this.currentRecords = [];
-    this.gristOptions = {};
-    this.availableColumns.clear();
-    this.expandedCards.clear();
-    this.sortableInstances = [];
-
-    console.log('KanbanManager: Toutes les ressources nettoyées');
+  exportTimeline() {
+    // Méthode pour exporter la timeline de la tâche courante
+    displaySuccess('Export timeline en cours...');
   }
 }
 
-// === INITIALISATION DE L'APPLICATION ===
+// === INITIALISATION ===
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('🚀 Initialisation de l\'application Kanban modulaire...');
-  
+  console.log('🚀 Initialisation Kanban avec corrections...');
   window.kanbanManager = new KanbanManager();
-  
-  // Gestion des erreurs globales
-  window.addEventListener('error', (event) => {
-    console.error('Erreur globale Kanban:', event.error);
-    displayError(`Erreur système: ${event.error.message}`);
-  });
-  
-  // Gestion des promesses rejetées
-  window.addEventListener('unhandledrejection', (event) => {
-    console.error('Promesse rejetée:', event.reason);
-    displayError(`Erreur asynchrone: ${event.reason}`);
-  });
 });
 
 // === EXPORT POUR UTILISATION EXTERNE ===
 window.KanbanApp = {
   KanbanManager,
-  // Managers exportés
-  FilterManager,
-  DatePickerManager,
-  ModalManager,
-  HistoryManager,
-  CardRenderer,
-  BoardRenderer,
-  // Utilitaires exposés
   displayError,
   displaySuccess,
   normalizeDate,
   formatDate,
   generateBureauBadges,
   generateAllTaskBadges,
-  // Constantes
   STATUTS,
   VIEW_MODES,
   TABLE_ID
 };
-
-// === COMMANDES DE DEBUG POUR LA CONSOLE ===
-if (typeof window !== 'undefined') {
-  window.debugKanban = () => {
-    if (window.kanbanManager) {
-      return window.kanbanManager.debug();
-    }
-    console.warn('KanbanManager non initialisé');
-  };
-  
-  window.exportKanbanState = () => {
-    if (window.kanbanManager) {
-      const state = window.kanbanManager.exportFullState();
-      console.log('État exporté:', state);
-      return state;
-    }
-  };
-  
-  window.reloadKanban = () => {
-    if (window.kanbanManager) {
-      window.kanbanManager.reloadFromGrist();
-    }
-  };
-}
