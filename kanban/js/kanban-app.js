@@ -555,7 +555,7 @@ class KanbanManager {
    * Obtient les statistiques du Kanban
    * @returns {object} Statistiques
    */
-  getKanbanStats() {
+  getKanbanStatistics() {
     const stats = {
       totalTasks: this.currentRecords.length,
       byStatus: {},
@@ -564,53 +564,43 @@ class KanbanManager {
       withDeadlines: 0,
       overdue: 0,
       urgent: 0,
-      recentlyCreated: 0,
       recentlyUpdated: 0
     };
-    
+
     const now = new Date();
     const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
-    
+    const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+
     this.currentRecords.forEach(record => {
       // Par statut
       const status = record.statut || 'Non défini';
       stats.byStatus[status] = (stats.byStatus[status] || 0) + 1;
-      
+
       // Par priorité
       const priority = this.calculerPriorite(record.urgence, record.impact);
       stats.byPriority[priority] = (stats.byPriority[priority] || 0) + 1;
-      
+
       // Par bureau
       if (Array.isArray(record.bureau) && record.bureau.length > 1) {
         record.bureau.slice(1).forEach(bureau => {
           stats.byBureau[bureau] = (stats.byBureau[bureau] || 0) + 1;
         });
       }
-      
-      // Avec échéances
+
+      // Échéances
       if (record.date_echeance) {
         stats.withDeadlines++;
         
         const deadline = new Date(record.date_echeance);
-        const diffTime = deadline.getTime() - now.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        if (diffDays < 0 && record.statut !== 'Terminé') {
+        if (deadline < now && record.statut !== 'Terminé') {
           stats.overdue++;
-        } else if (diffDays >= 0 && diffDays <= 3) {
+        }
+        
+        if (deadline <= threeDaysFromNow && deadline >= now) {
           stats.urgent++;
         }
       }
-      
-      // Récemment créées (estimation basée sur l'ID)
-      if (record.id && this.currentRecords.length > 0) {
-        const maxId = Math.max(...this.currentRecords.map(r => r.id));
-        if (record.id > (maxId - 5)) {
-          stats.recentlyCreated++;
-        }
-      }
-      
+
       // Récemment mises à jour
       if (record.date_derniere_maj) {
         const lastUpdate = new Date(record.date_derniere_maj);
@@ -619,76 +609,60 @@ class KanbanManager {
         }
       }
     });
-    
+
     return stats;
   }
 
   /**
-   * Exporte les données du Kanban
-   * @param {string} format - Format d'export ('csv', 'json')
-   * @returns {string} Données exportées
+   * Exporte les données au format CSV
+   * @returns {string} Données CSV
    */
-  exportKanbanData(format = 'csv') {
-    if (format === 'json') {
-      return JSON.stringify({
-        metadata: {
-          exportDate: new Date().toISOString(),
-          totalRecords: this.currentRecords.length,
-          kanbanVersion: '2.0',
-          columns: Array.from(this.availableColumns)
-        },
-        data: this.currentRecords,
-        statistics: this.getKanbanStats()
-      }, null, 2);
-    }
-    
-    // Format CSV par défaut
+  exportToCSV() {
     const headers = [
       'ID', 'Titre', 'Description', 'Statut', 'Projet', 'Urgence', 'Impact',
-      'Bureaux', 'Responsables', 'Date_Echeance', 'Date_Debut', 'Date_Derniere_MAJ'
+      'Bureaux', 'Responsables', 'Date_Echeance', 'Date_Debut', 'Priorité'
     ];
-    
+
     let csv = headers.join(',') + '\n';
-    
+
     this.currentRecords.forEach(record => {
+      const priority = this.calculerPriorite(record.urgence, record.impact);
+      const bureaux = Array.isArray(record.bureau) ? record.bureau.slice(1).join(', ') : '';
+      const responsables = Array.isArray(record.qui) ? record.qui.slice(1).join(', ') : '';
+      
       const row = [
         record.id || '',
         `"${(record.titre || '').replace(/"/g, '""')}"`,
-        `"${this.getLatestDescription(record.description || '').replace(/"/g, '""')}"`,
+        `"${(record.description || '').replace(/"/g, '""')}"`,
         record.statut || '',
         record.projet || '',
         record.urgence || '',
         record.impact || '',
-        `"${Array.isArray(record.bureau) ? record.bureau.slice(1).join(', ') : ''}"`,
-        `"${Array.isArray(record.qui) ? record.qui.slice(1).join(', ') : ''}"`,
+        `"${bureaux}"`,
+        `"${responsables}"`,
         record.date_echeance || '',
         record.date_debut || '',
-        record.date_derniere_maj || ''
+        priority
       ];
-      
+
       csv += row.join(',') + '\n';
     });
-    
+
     return csv;
   }
 
   /**
-   * Télécharge les données exportées
-   * @param {string} format - Format d'export
-   * @param {string} filename - Nom du fichier (optionnel)
+   * Télécharge un fichier CSV
+   * @param {string} csvData - Données CSV
+   * @param {string} filename - Nom du fichier
    */
-  downloadExport(format = 'csv', filename = null) {
-    const data = this.exportKanbanData(format);
-    const defaultFilename = `kanban_export_${new Date().toISOString().slice(0, 10)}.${format}`;
-    const finalFilename = filename || defaultFilename;
-    
-    const mimeType = format === 'json' ? 'application/json' : 'text/csv';
-    const blob = new Blob([data], { type: `${mimeType};charset=utf-8;` });
+  downloadCSV(csvData, filename) {
+    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     
     const link = document.createElement('a');
     link.href = url;
-    link.download = finalFilename;
+    link.download = filename;
     link.style.display = 'none';
     
     document.body.appendChild(link);
@@ -696,360 +670,329 @@ class KanbanManager {
     document.body.removeChild(link);
     
     window.URL.revokeObjectURL(url);
-    displaySuccess(`Export ${format.toUpperCase()} téléchargé: ${finalFilename}`);
   }
 
   /**
-   * Réinitialise le Kanban
+   * Exporte tout le Kanban
    */
-  resetKanban() {
-    // Réinitialiser les filtres
+  exportKanban() {
+    try {
+      const csvData = this.exportToCSV();
+      const filename = `kanban_export_${new Date().toISOString().slice(0, 10)}.csv`;
+      this.downloadCSV(csvData, filename);
+      
+      displaySuccess(`Export de ${this.currentRecords.length} tâches réussi`);
+    } catch (error) {
+      console.error('Erreur export Kanban:', error);
+      displayError('Erreur lors de l\'export');
+    }
+  }
+
+  /**
+   * Trouve une tâche par ID
+   * @param {number} taskId - ID de la tâche
+   * @returns {object|null} Tâche trouvée ou null
+   */
+  findTaskById(taskId) {
+    return this.currentRecords.find(r => r.id === taskId) || null;
+  }
+
+  /**
+   * Met à jour une tâche localement
+   * @param {number} taskId - ID de la tâche
+   * @param {object} updates - Mises à jour
+   */
+  updateLocalTask(taskId, updates) {
+    const index = this.currentRecords.findIndex(r => r.id === taskId);
+    if (index !== -1) {
+      this.currentRecords[index] = {
+        ...this.currentRecords[index],
+        ...updates
+      };
+    }
+  }
+
+  /**
+   * Ajoute une tâche localement
+   * @param {object} newTask - Nouvelle tâche
+   */
+  addLocalTask(newTask) {
+    this.currentRecords.push(newTask);
+  }
+
+  /**
+   * Supprime une tâche localement
+   * @param {number} taskId - ID de la tâche
+   */
+  removeLocalTask(taskId) {
+    this.currentRecords = this.currentRecords.filter(r => r.id !== taskId);
+  }
+
+  /**
+   * Vérifie l'état de connexion à Grist
+   * @returns {boolean} True si connecté
+   */
+  isGristConnected() {
+    return typeof grist !== 'undefined' && this.currentRecords.length >= 0;
+  }
+
+  /**
+   * Recharge les données depuis Grist
+   */
+  async reloadFromGrist() {
+    try {
+      toggleLoadingSpinner(true);
+      
+      await this.loadGristDataAndOptions();
+      this.refreshKanban();
+      
+      // Mettre à jour les filtres
+      if (this.filterManager) {
+        this.filterManager.updateFilterStats();
+      }
+      
+      displaySuccess('Données rechargées depuis Grist');
+      
+    } catch (error) {
+      console.error('Erreur rechargement Grist:', error);
+      displayError('Erreur lors du rechargement');
+    } finally {
+      toggleLoadingSpinner(false);
+    }
+  }
+
+  /**
+   * Nettoie les cartes expandées
+   */
+  clearExpandedCards() {
+    this.expandedCards.clear();
+    if (this.cardRenderer) {
+      this.cardRenderer.clearExpandedCards();
+    }
+  }
+
+  /**
+   * Change le mode de vue
+   * @param {string} newMode - Nouveau mode (compact, detailed, focus)
+   */
+  setViewMode(newMode) {
+    if (this.filterManager) {
+      this.filterManager.setViewMode(newMode);
+    } else {
+      this.viewMode = newMode;
+      this.refreshKanban();
+    }
+  }
+
+  /**
+   * Applique un filtre rapide
+   * @param {string} filterType - Type de filtre
+   */
+  applyQuickFilter(filterType) {
+    if (this.filterManager) {
+      this.filterManager.applyQuickFilter(filterType);
+    }
+  }
+
+  /**
+   * Efface tous les filtres
+   */
+  clearAllFilters() {
     if (this.filterManager) {
       this.filterManager.clearAllFilters();
     }
-    
-    // Réinitialiser les modes de vue
-    this.viewMode = VIEW_MODES.COMPACT;
-    this.focusColumn = null;
-    this.expandedCards.clear();
-    
-    // Fermer les modales
-    if (this.modalManager) {
-      this.modalManager.closeAllModals();
-    }
-    
-    // Rafraîchir l'affichage
-    this.refreshKanban();
-    
-    displaySuccess('Kanban réinitialisé');
   }
 
   /**
-   * Valide l'intégrité des données
-   * @returns {object} Rapport de validation
+   * Obtient l'état complet du Kanban
+   * @returns {object} État complet
    */
-  validateDataIntegrity() {
-    const report = {
-      isValid: true,
-      errors: [],
-      warnings: [],
-      stats: {
-        totalRecords: this.currentRecords.length,
-        validRecords: 0,
-        invalidRecords: 0
-      }
-    };
-    
-    this.currentRecords.forEach((record, index) => {
-      const recordErrors = [];
-      
-      // Vérifications obligatoires
-      if (!record.id || isNaN(record.id)) {
-        recordErrors.push('ID manquant ou invalide');
-      }
-      
-      if (!record.titre || record.titre.trim() === '') {
-        recordErrors.push('Titre manquant');
-      }
-      
-      if (!record.statut || !STATUTS.find(s => s.id === record.statut)) {
-        recordErrors.push('Statut manquant ou invalide');
-      }
-      
-      // Vérifications du format des listes
-      if (record.bureau && (!Array.isArray(record.bureau) || record.bureau[0] !== 'L')) {
-        recordErrors.push('Format de liste bureau invalide');
-      }
-      
-      if (record.qui && (!Array.isArray(record.qui) || record.qui[0] !== 'L')) {
-        recordErrors.push('Format de liste responsables invalide');
-      }
-      
-      // Vérifications des dates
-      if (record.date_echeance && !normalizeDate(record.date_echeance)) {
-        recordErrors.push('Format de date d\'échéance invalide');
-      }
-      
-      if (record.date_debut && !normalizeDate(record.date_debut)) {
-        recordErrors.push('Format de date de début invalide');
-      }
-      
-      if (recordErrors.length > 0) {
-        report.errors.push({
-          recordIndex: index,
-          recordId: record.id,
-          recordTitle: record.titre,
-          errors: recordErrors
-        });
-        report.stats.invalidRecords++;
-        report.isValid = false;
-      } else {
-        report.stats.validRecords++;
-      }
-    });
-    
-    return report;
-  }
-
-  /**
-   * Répare les données si possible
-   * @returns {Promise<boolean>} True si des réparations ont été effectuées
-   */
-  async repairData() {
-    const report = this.validateDataIntegrity();
-    
-    if (report.isValid) {
-      displaySuccess('Aucune réparation nécessaire');
-      return false;
-    }
-    
-    let repairCount = 0;
-    
-    for (const errorRecord of report.errors) {
-      const record = this.currentRecords[errorRecord.recordIndex];
-      const repairs = {};
-      
-      // Réparer les formats de listes
-      if (record.bureau && !Array.isArray(record.bureau)) {
-        repairs.bureau = ['L'];
-        repairCount++;
-      }
-      
-      if (record.qui && !Array.isArray(record.qui)) {
-        repairs.qui = ['L'];
-        repairCount++;
-      }
-      
-      // Réparer les statuts invalides
-      if (!record.statut || !STATUTS.find(s => s.id === record.statut)) {
-        repairs.statut = 'Backlog';
-        repairCount++;
-      }
-      
-      // Appliquer les réparations
-      if (Object.keys(repairs).length > 0) {
-        try {
-          await grist.docApi.applyUserActions([
-            ['UpdateRecord', TABLE_ID, record.id, repairs]
-          ]);
-          
-          // Mise à jour locale
-          Object.assign(record, repairs);
-          
-        } catch (error) {
-          console.error(`Erreur lors de la réparation de la tâche ${record.id}:`, error);
-        }
-      }
-    }
-    
-    if (repairCount > 0) {
-      displaySuccess(`${repairCount} réparation(s) effectuée(s)`);
-      this.refreshKanban();
-      return true;
-    }
-    
-    return false;
-  }
-
-  /**
-   * Sauvegarde l'état du Kanban
-   * @returns {object} État sauvegardé
-   */
-  saveState() {
+  exportFullState() {
     const state = {
+      version: '2.0',
+      timestamp: Date.now(),
+      recordCount: this.currentRecords.length,
       viewMode: this.viewMode,
-      focusColumn: this.focusColumn,
-      expandedCards: Array.from(this.expandedCards),
-      filters: this.filterManager ? this.filterManager.exportState() : null,
-      user: this.currentUser,
-      timestamp: Date.now()
+      currentUser: this.currentUser,
+      gristConnected: this.isGristConnected(),
+      managers: {}
     };
-    
-    // Sauvegarder dans localStorage
-    try {
-      localStorage.setItem('kanban-state', JSON.stringify(state));
-    } catch (error) {
-      console.warn('Impossible de sauvegarder l\'état:', error);
+
+    // États des managers
+    if (this.filterManager) {
+      state.managers.filter = this.filterManager.exportState();
     }
-    
+
+    if (this.datePickerManager) {
+      state.managers.datePicker = this.datePickerManager.exportState();
+    }
+
+    if (this.modalManager) {
+      state.managers.modal = this.modalManager.exportState();
+    }
+
+    if (this.cardRenderer) {
+      state.managers.cardRenderer = this.cardRenderer.exportState();
+    }
+
     return state;
   }
 
   /**
-   * Restaure l'état du Kanban
-   * @param {object} state - État à restaurer
+   * Importe un état du Kanban
+   * @param {object} state - État à importer
    */
-  restoreState(state = null) {
-    let stateToRestore = state;
-    
-    // Charger depuis localStorage si pas d'état fourni
-    if (!stateToRestore) {
-      try {
-        const saved = localStorage.getItem('kanban-state');
-        if (saved) {
-          stateToRestore = JSON.parse(saved);
-        }
-      } catch (error) {
-        console.warn('Impossible de charger l\'état sauvegardé:', error);
-        return;
-      }
-    }
-    
-    if (!stateToRestore) return;
-    
-    // Vérifier que l'état n'est pas trop ancien (7 jours)
-    const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 jours
-    if (Date.now() - stateToRestore.timestamp > maxAge) {
-      localStorage.removeItem('kanban-state');
+  importFullState(state) {
+    if (!state || state.version !== '2.0') {
+      console.warn('État incompatible ou invalide');
       return;
     }
-    
-    // Restaurer l'état
-    if (stateToRestore.viewMode) {
-      this.viewMode = stateToRestore.viewMode;
+
+    // Importer dans les managers
+    if (state.managers) {
+      if (this.filterManager && state.managers.filter) {
+        this.filterManager.importState(state.managers.filter);
+      }
+
+      if (this.datePickerManager && state.managers.datePicker) {
+        this.datePickerManager.importState(state.managers.datePicker);
+      }
+
+      if (this.cardRenderer && state.managers.cardRenderer) {
+        this.cardRenderer.importState(state.managers.cardRenderer);
+      }
     }
-    
-    if (stateToRestore.focusColumn) {
-      this.focusColumn = stateToRestore.focusColumn;
-    }
-    
-    if (Array.isArray(stateToRestore.expandedCards)) {
-      this.expandedCards = new Set(stateToRestore.expandedCards);
-    }
-    
-    if (stateToRestore.filters && this.filterManager) {
-      this.filterManager.importState(stateToRestore.filters);
-    }
-    
-    console.log('KanbanManager: État restauré depuis sauvegarde');
+
+    console.log('État Kanban importé avec succès');
   }
 
   /**
-   * Exporte l'état complet du gestionnaire
-   * @returns {object} État complet
+   * Méthode de debug pour les développeurs
    */
-  exportFullState() {
-    return {
-      // Données principales
-      recordCount: this.currentRecords.length,
-      availableColumns: Array.from(this.availableColumns),
+  debug() {
+    const debugInfo = {
+      kanbanManager: this,
+      currentRecords: this.currentRecords,
       gristOptions: this.gristOptions,
-      
-      // État de l'interface
-      viewMode: this.viewMode,
-      focusColumn: this.focusColumn,
-      expandedCards: Array.from(this.expandedCards),
-      
-      // États des managers
-      filterManager: this.filterManager ? this.filterManager.exportState() : null,
-      datePickerManager: this.datePickerManager ? this.datePickerManager.exportState() : null,
-      modalManager: this.modalManager ? this.modalManager.exportState() : null,
-      cardRenderer: this.cardRenderer ? this.cardRenderer.exportState() : null,
-      
-      // Métadonnées
-      user: this.currentUser,
-      timestamp: Date.now(),
-      version: '2.0',
-      
-      // Statistiques
-      statistics: this.getKanbanStats(),
-      
-      // Rapport d'intégrité
-      integrityReport: this.validateDataIntegrity()
+      managers: {
+        filter: this.filterManager,
+        datePicker: this.datePickerManager,
+        modal: this.modalManager,
+        history: this.historyManager,
+        cardRenderer: this.cardRenderer,
+        boardRenderer: this.boardRenderer
+      },
+      statistics: this.getKanbanStatistics(),
+      state: this.exportFullState()
     };
+
+    console.log('🐛 DEBUG KANBAN:', debugInfo);
+    return debugInfo;
   }
 
   /**
-   * Nettoie les ressources et détruit le gestionnaire
+   * Nettoie toutes les ressources
    */
   destroy() {
-    // Sauvegarder l'état avant destruction
-    this.saveState();
-    
-    // Détruire les managers
+    // Nettoyer les managers
     if (this.filterManager) {
       this.filterManager.destroy();
+      this.filterManager = null;
     }
-    
+
     if (this.datePickerManager) {
       this.datePickerManager.destroy();
+      this.datePickerManager = null;
     }
-    
+
     if (this.modalManager) {
       this.modalManager.destroy();
+      this.modalManager = null;
     }
-    
+
     if (this.historyManager) {
       this.historyManager.destroy();
+      this.historyManager = null;
     }
-    
+
     if (this.boardRenderer) {
       this.boardRenderer.destroy();
+      this.boardRenderer = null;
     }
-    
+
     // Nettoyer les données
     this.currentRecords = [];
     this.gristOptions = {};
     this.availableColumns.clear();
     this.expandedCards.clear();
-    
-    // Supprimer la référence globale
-    window.kanbanManager = null;
-    
-    console.log('KanbanManager: Toutes les ressources ont été nettoyées');
+    this.sortableInstances = [];
+
+    console.log('KanbanManager: Toutes les ressources nettoyées');
   }
 }
 
 // === INITIALISATION DE L'APPLICATION ===
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('🚀 Initialisation du Kanban modulaire...');
+  console.log('🚀 Initialisation de l\'application Kanban modulaire...');
   
-  // Créer l'instance principale
   window.kanbanManager = new KanbanManager();
   
-  // Restaurer l'état sauvegardé
-  window.kanbanManager.restoreState();
-  
-  // Gestionnaire de fermeture de page
-  window.addEventListener('beforeunload', () => {
-    if (window.kanbanManager) {
-      window.kanbanManager.saveState();
-    }
-  });
-  
-  // Gestionnaire d'erreurs globales
+  // Gestion des erreurs globales
   window.addEventListener('error', (event) => {
     console.error('Erreur globale Kanban:', event.error);
     displayError(`Erreur système: ${event.error.message}`);
   });
   
-  // Gestionnaire de promesses rejetées
+  // Gestion des promesses rejetées
   window.addEventListener('unhandledrejection', (event) => {
     console.error('Promesse rejetée:', event.reason);
     displayError(`Erreur asynchrone: ${event.reason}`);
   });
-  
-  console.log('✅ Kanban modulaire initialisé avec succès');
 });
 
 // === EXPORT POUR UTILISATION EXTERNE ===
 window.KanbanApp = {
   KanbanManager,
+  // Managers exportés
+  FilterManager,
+  DatePickerManager,
+  ModalManager,
+  HistoryManager,
+  CardRenderer,
+  BoardRenderer,
   // Utilitaires exposés
   displayError,
   displaySuccess,
   normalizeDate,
   formatDate,
   generateBureauBadges,
+  generateAllTaskBadges,
   // Constantes
-  VIEW_MODES,
   STATUTS,
-  // Fonction d'aide pour créer une nouvelle instance
-  createKanban: () => new KanbanManager(),
-  // Fonction d'aide pour accéder à l'instance principale
-  getInstance: () => window.kanbanManager
+  VIEW_MODES,
+  TABLE_ID
 };
 
-// === EXPORT ES6 (pour compatibilité) ===
-export { KanbanManager, VIEW_MODES, STATUTS };
-export default KanbanManager;
+// === COMMANDES DE DEBUG POUR LA CONSOLE ===
+if (typeof window !== 'undefined') {
+  window.debugKanban = () => {
+    if (window.kanbanManager) {
+      return window.kanbanManager.debug();
+    }
+    console.warn('KanbanManager non initialisé');
+  };
+  
+  window.exportKanbanState = () => {
+    if (window.kanbanManager) {
+      const state = window.kanbanManager.exportFullState();
+      console.log('État exporté:', state);
+      return state;
+    }
+  };
+  
+  window.reloadKanban = () => {
+    if (window.kanbanManager) {
+      window.kanbanManager.reloadFromGrist();
+    }
+  };
+}
