@@ -130,7 +130,7 @@ export class ModalManager {
         getSubObjectives,
         getActions
       } = window.KanbanAppInitializer ? 
-        await import('../config/strategyData.js') : 
+       import('../config/strategyData.js') : 
         { STRATEGIC_OBJECTIVES: [], SUB_OBJECTIVES: {}, STRATEGIC_ACTIONS: {} };
       
       strategieObjectifs = STRATEGIC_OBJECTIVES.map(obj => obj.label);
