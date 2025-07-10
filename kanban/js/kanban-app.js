@@ -1,5 +1,5 @@
-// === js/kanban-app.js ===
-// Point d'entrée principal de l'application Kanban (version modulaire complète)
+// === js/kanban-app.js CORRIGÉ ===
+// Point d'entrée principal avec filtres, vues multiples et commentaires séparés
 
 // === IMPORTS DES MODULES ===
 import { 
@@ -47,8 +47,12 @@ import {
   toggleVisibility
 } from './utils/dom.js';
 
+// NOUVEAU: Import des managers
+import { FilterManager } from './managers/FilterManager.js';
+import { ViewModeManager } from './managers/ViewModeManager.js';
+
 // === CONSTANTES ===
-const STRATEGIES_TABLE_ID = "Ssir_strategie2"; // Table des stratégies
+const STRATEGIES_TABLE_ID = "Ssir_strategie2";
 
 let projetsDynamiques = [];
 
@@ -59,17 +63,17 @@ class KanbanManager {
     this.kanbanContainer = document.getElementById('kanban-container');
     this.currentRecords = [];
     this.modalElement = document.getElementById('popup-tache');
-    this.timelineModalElement = document.getElementById('history-modal'); // Utiliser la modal existante
+    this.historyModalElement = document.getElementById('history-modal');
     this.currentTaskId = null;
     this.isUpdating = false;
     this.canEdit = true;
     this.gristOptions = {};
-    this.strategiesData = []; // AJOUT pour les stratégies depuis Grist
+    this.strategiesData = [];
     this.ignoreNextOnRecords = false;
     this.availableColumns = new Set();
     
-    // Filtres et modes de vue
-    this.filters = { bureau: '', qui: '', projet: '', statut: '' };
+    // CORRIGÉ: Propriétés pour les filtres et vues (utilisées par les managers)
+    this.filters = { bureau: '', qui: '', projet: '', statut: '', search: '' };
     this.showTermine = true;
     this.viewMode = VIEW_MODES.COMPACT;
     this.focusColumn = null;
@@ -84,7 +88,11 @@ class KanbanManager {
     
     // Modal instances
     this.modal = null;
-    this.timelineModal = null;
+    this.historyModal = null;
+    
+    // NOUVEAU: Managers
+    this.filterManager = null;
+    this.viewModeManager = null;
     
     this.init();
   }
@@ -101,6 +109,9 @@ class KanbanManager {
       this.initModals();
       this.initEventListeners();
       
+      // NOUVEAU: Initialiser les managers après le chargement des données
+      this.initializeManagers();
+      
       this.refreshKanban();
       
       displaySuccess('Kanban initialisé avec succès');
@@ -113,6 +124,19 @@ class KanbanManager {
     }
   }
 
+  // NOUVEAU: Initialisation des managers
+  initializeManagers() {
+    console.log('🔧 Initialisation des managers...');
+    
+    // Manager des filtres
+    this.filterManager = new FilterManager(this);
+    
+    // Manager des modes de vue 
+    this.viewModeManager = new ViewModeManager(this);
+    
+    console.log('✅ Managers initialisés');
+  }
+
   async waitForGristReady() {
     return new Promise((resolve) => {
       grist.ready({ requiredAccess: 'full' });
@@ -121,40 +145,7 @@ class KanbanManager {
     });
   }
 
-  // === INITIALISATION DES MODALS ===
-  initModals() {
-    // Modal tâche
-    if (this.modalElement) {
-      try {
-        this.modal = new bootstrap.Modal(this.modalElement, { 
-          backdrop: 'static', 
-          keyboard: false 
-        });
-        console.log('Modal tâche initialisée');
-      } catch (e) {
-        console.error('Erreur init modal tâche:', e);
-      }
-    }
-
-    // Modal historique/timeline
-    this.timelineModalElement = document.getElementById('history-modal');
-    if (this.timelineModalElement) {
-      try {
-        this.timelineModal = new bootstrap.Modal(this.timelineModalElement, { 
-          backdrop: true, 
-          keyboard: true 
-        });
-        console.log('Modal timeline initialisée');
-      } catch (e) {
-        console.error('Erreur init modal timeline:', e);
-      }
-    }
-
-    // Peupler les options des selects
-    this.populateSelectOptions();
-  }
-
-  // === CHARGEMENT DES DONNÉES ===
+  // === CHARGEMENT DES DONNÉES CORRIGÉ ===
   async loadGristDataAndOptions() {
     try {
       // Charger les tâches principales
@@ -172,6 +163,7 @@ class KanbanManager {
       this.gristOptions.urgence = ['Immédiate', 'Courte', 'Moyenne', 'Longue'];
       this.gristOptions.impact = ['Critique', 'Important', 'Modéré', 'Mineur'];
       
+      // CORRIGÉ: Utiliser les données réelles pour les filtres
       const bureaux = this.getUniqueValuesFromData('bureau', true);
       this.gristOptions.bureau = [...new Set([...DEFAULT_BUREAUX, ...bureaux])].sort();
       
@@ -183,6 +175,14 @@ class KanbanManager {
       
       // Charger les stratégies depuis Grist
       await this.loadStrategiesFromGrist();
+      
+      console.log('✅ Données chargées:', {
+        taches: this.currentRecords.length,
+        bureaux: this.gristOptions.bureau.length,
+        responsables: this.gristOptions.responsables.length,
+        projets: this.gristOptions.projet.length,
+        strategies: this.strategiesData.length
+      });
       
     } catch (error) {
       console.error('Erreur lors du chargement des données:', error);
@@ -328,7 +328,7 @@ class KanbanManager {
     return this.currentUser;
   }
 
-  // === GESTION DES COMMENTAIRES ===
+  // === GESTION DES COMMENTAIRES CORRIGÉE ===
   addTimestampToDescription(currentDescription, newContent, userName = null) {
     if (!newContent || newContent.trim() === '') {
       return currentDescription || '';
@@ -378,6 +378,39 @@ class KanbanManager {
     return description;
   }
 
+  // NOUVEAU: Génère l'historique des commentaires pour affichage lecture seule
+  generateCommentHistory(description) {
+    if (!description) return '';
+    
+    const sections = description.split(/^---\s*$/gm);
+    let historyHTML = '';
+    
+    sections.forEach((section, index) => {
+      const lines = section.trim().split('\n');
+      if (lines.length === 0) return;
+      
+      const timestampMatch = lines[0].match(/^\[(.+)\]$/);
+      if (timestampMatch) {
+        const timestamp = timestampMatch[1];
+        const content = lines.slice(1).join('\n').trim();
+        
+        if (content) {
+          const isLatest = index === 0;
+          const entryClass = isLatest ? 'description-entry latest' : 'description-entry historical';
+          
+          historyHTML += `
+            <div class="${entryClass}">
+              <div class="description-timestamp">${timestamp}</div>
+              <div class="description-content">${content}</div>
+            </div>
+          `;
+        }
+      }
+    });
+    
+    return historyHTML;
+  }
+
   // === CALCUL DE PRIORITÉ ===
   calculerPriorite(urgence, impact) {
     const imp = String(impact || '').trim().toLowerCase();
@@ -421,12 +454,12 @@ class KanbanManager {
     const datesElement = generateDatesContainer({
       date_debut: record.date_debut,
       date_echeance: record.date_echeance
-    }, false);
+    }, this.viewMode === VIEW_MODES.COMPACT);
     
-    // Badges bureaux (sans texte superflu en dessous)
-    const bureauBadges = generateBureauBadges(record.bureau, false);
+    // Badges bureaux
+    const bureauBadges = generateBureauBadges(record.bureau, this.viewMode === VIEW_MODES.COMPACT);
     
-    // Badges responsables (sans texte superflu en dessous)
+    // Badges responsables
     const responsablesBadges = generateResponsablesBadges(record.qui);
     
     // Timeline button
@@ -435,7 +468,10 @@ class KanbanManager {
     const hasEcheanceClass = record.date_echeance ? 'has-echeance' : '';
     const hasDateDebutClass = record.date_debut ? 'has-debut' : '';
     
-    return `<div class="kanban-item ${hasEcheanceClass} ${hasDateDebutClass}" data-id="${record.id}">
+    // CORRIGÉ: Classe selon le mode de vue
+    const cardClass = this.viewMode === VIEW_MODES.COMPACT ? 'kanban-item-compact' : 'kanban-item';
+    
+    return `<div class="kanban-item ${cardClass} ${hasEcheanceClass} ${hasDateDebutClass}" data-id="${record.id}">
       <div class="drag-handle">
         <i class="bi bi-grip-vertical"></i>
       </div>
@@ -497,7 +533,38 @@ class KanbanManager {
     return this.strategiesData.find(strategy => strategy.id === strategieId) || null;
   }
 
-  // === GESTION DES SELECTS ===
+  // === GESTION DES MODALS ===
+  initModals() {
+    // Modal tâche
+    if (this.modalElement) {
+      try {
+        this.modal = new bootstrap.Modal(this.modalElement, { 
+          backdrop: 'static', 
+          keyboard: false 
+        });
+        console.log('Modal tâche initialisée');
+      } catch (e) {
+        console.error('Erreur init modal tâche:', e);
+      }
+    }
+
+    // Modal historique
+    if (this.historyModalElement) {
+      try {
+        this.historyModal = new bootstrap.Modal(this.historyModalElement, { 
+          backdrop: true, 
+          keyboard: true 
+        });
+        console.log('Modal historique initialisée');
+      } catch (e) {
+        console.error('Erreur init modal historique:', e);
+      }
+    }
+
+    // Peupler les options des selects
+    this.populateSelectOptions();
+  }
+
   populateSelectOptions() {
     if (!this.gristOptions) return;
     
@@ -509,6 +576,12 @@ class KanbanManager {
     populateSelect('popup-bureau', bureau || [], false);
     populateSelect('popup-qui', responsables || [], false);
     populateSelect('popup-projet', projet || [], true);
+    
+    // CORRIGÉ: Peupler aussi les filtres
+    populateSelect('filter-bureau', bureau || [], true, 'Tous les bureaux');
+    populateSelect('filter-qui', responsables || [], true, 'Tous les responsables');
+    populateSelect('filter-projet', projet || [], true, 'Tous les projets');
+    populateSelect('filter-statut', this.gristOptions.statut || [], true, 'Tous les statuts');
     
     // Peupler le select des stratégies depuis Grist
     this.populateStrategySelect();
@@ -552,46 +625,75 @@ class KanbanManager {
     setFieldValue('popup-strategie-action-hidden', strategy?.action || '');
   }
 
-  // === RENDU DU KANBAN ===
+  // === RENDU DU KANBAN CORRIGÉ ===
   refreshKanban() {
     if (!this.kanbanContainer) return;
     
-    const filteredRecords = this.filterRecords(this.currentRecords);
+    // CORRIGÉ: Utiliser le FilterManager pour filtrer
+    const filteredRecords = this.filterManager ? 
+      this.filterManager.filterRecords(this.currentRecords) : 
+      this.currentRecords;
+    
     const statutsToShow = this.showTermine ? STATUTS : STATUTS.filter(s => s.id !== 'Terminé');
     
     this.sortableInstances.forEach(s => s.destroy());
     this.sortableInstances = [];
     
+    // CORRIGÉ: Appliquer les classes du mode de vue
     let kanbanHTML = '';
+    const modeClass = this.viewMode === VIEW_MODES.COMPACT ? 'kanban-compact' : 
+                     this.viewMode === VIEW_MODES.DETAILED ? 'kanban-detailed' : 
+                     'kanban-focus';
     
-    statutsToShow.forEach(statut => {
-      const boardId = statut.classe;
-      const boardRecords = filteredRecords.filter(r => r.statut === statut.id);
-      
-      boardRecords.sort((a, b) => {
-        const prioA = this.calculerPriorite(a.urgence, a.impact);
-        const prioB = this.calculerPriorite(b.urgence, b.impact);
-        if (prioA !== prioB) return prioA - prioB;
-        return (a.id || 0) - (b.id || 0);
+    this.kanbanContainer.className = `kanban-container ${modeClass}`;
+    
+    // Mode focus : afficher une seule colonne
+    if (this.viewMode === VIEW_MODES.FOCUS && this.focusColumn) {
+      const focusStatut = STATUTS.find(s => s.id === this.focusColumn);
+      if (focusStatut) {
+        const boardRecords = filteredRecords.filter(r => r.statut === focusStatut.id);
+        this.sortRecords(boardRecords);
+        const itemsHTML = boardRecords.map(record => this.createTaskElementHTML(record)).join('');
+        const count = boardRecords.length;
+
+        kanbanHTML = `
+          <div class="kanban-board focus-board" data-status-id="${focusStatut.id}">
+            <div class="kanban-board-header">
+              <span>${focusStatut.libelle}</span>
+              <span class="badge badge-secondary count-badge ml-2">${count}</span>
+            </div>
+            <div class="kanban-items-container" data-status-id="${focusStatut.id}">
+              ${itemsHTML}
+            </div>
+          </div>
+        `;
+      }
+    } else {
+      // Mode normal : afficher toutes les colonnes
+      statutsToShow.forEach(statut => {
+        const boardId = statut.classe;
+        const boardRecords = filteredRecords.filter(r => r.statut === statut.id);
+        
+        this.sortRecords(boardRecords);
+
+        const itemsHTML = boardRecords.map(record => this.createTaskElementHTML(record)).join('');
+        const count = boardRecords.length;
+        const isHidden = (count === 0 && statut.id !== 'Terminé' && this.showTermine);
+        const hiddenClass = isHidden ? ' board-hidden' : '';
+
+        kanbanHTML += `
+          <div class="kanban-board${hiddenClass}" data-status-id="${statut.id}" data-board-class="${statut.classe}">
+            <div class="kanban-board-header board-${statut.classe}">
+              <span>${statut.libelle}</span>
+              <span class="badge badge-secondary count-badge ml-2">${count}</span>
+            </div>
+            <div class="kanban-items-container" data-status-id="${statut.id}">
+              ${itemsHTML}
+            </div>
+          </div>
+        `;
       });
-
-      const itemsHTML = boardRecords.map(record => this.createTaskElementHTML(record)).join('');
-      const count = boardRecords.length;
-      const isHidden = (count === 0 && statut.id !== 'Terminé' && this.showTermine);
-      const hiddenClass = isHidden ? ' board-hidden' : '';
-
-      kanbanHTML += `
-        <div class="kanban-board${hiddenClass}" data-status-id="${statut.id}" data-board-class="${statut.classe}">
-          <div class="kanban-board-header entete-${statut.classe}">
-            <span>${statut.libelle}</span>
-            <span class="badge badge-secondary count-badge ml-2">${count}</span>
-          </div>
-          <div class="kanban-items-container" data-status-id="${statut.id}">
-            ${itemsHTML}
-          </div>
-        </div>
-      `;
-    });
+    }
 
     this.kanbanContainer.innerHTML = kanbanHTML || '<div style="padding: 20px; color: grey;">Aucune tâche à afficher.</div>';
     
@@ -614,33 +716,17 @@ class KanbanManager {
     this.attachCardEventListeners();
   }
 
-  filterRecords(records) {
-    const { bureau, qui, projet, statut } = this.filters;
-    if (!bureau && !qui && !projet && !statut) return records;
-    
-    return records.filter(r => {
-      const matchBureau = !bureau || this.nettoyerListe(r.bureau).includes(bureau);
-      const matchQui = !qui || this.nettoyerListe(r.qui).includes(qui);
-      const matchProjet = !projet || r.projet === projet;
-      const matchStatut = !statut || r.statut === statut;
-      return matchBureau && matchQui && matchProjet && matchStatut;
+  // NOUVEAU: Tri des enregistrements
+  sortRecords(records) {
+    records.sort((a, b) => {
+      const prioA = this.calculerPriorite(a.urgence, a.impact);
+      const prioB = this.calculerPriorite(b.urgence, b.impact);
+      if (prioA !== prioB) return prioA - prioB;
+      return (a.id || 0) - (b.id || 0);
     });
   }
 
-  nettoyerListe(v) {
-    if (Array.isArray(v) && v[0] === 'L') {
-      return v.slice(1).filter(i => i !== null && typeof i !== 'undefined').map(String);
-    }
-    if (Array.isArray(v)) {
-      return v.filter(i => i !== null && typeof i !== 'undefined').map(String);
-    }
-    if (typeof v === 'string' && v.trim() !== '') {
-      return v.split(',').map(s => s.trim()).filter(Boolean);
-    }
-    return [];
-  }
-
-  // === EVENT LISTENERS ===
+  // EVENT LISTENERS
   attachCardEventListeners() {
     // Édition des tâches
     this.kanbanContainer.querySelectorAll('.editable-zone').forEach(zone => {
@@ -676,7 +762,7 @@ class KanbanManager {
       return;
     }
 
-    if (!this.timelineModal) {
+    if (!this.historyModal) {
       displayError('Modal timeline non disponible');
       return;
     }
@@ -686,7 +772,7 @@ class KanbanManager {
     if (modalTitle) {
       modalTitle.innerHTML = `
         <i class="bi bi-clock-history me-2"></i>
-        Timeline - Tâche #${taskId}: ${task.titre}
+        Historique - Tâche #${taskId}: ${task.titre}
       `;
     }
 
@@ -694,14 +780,14 @@ class KanbanManager {
     this.renderTimelineContent(task);
     
     // Ouvrir la modal
-    this.timelineModal.show();
+    this.historyModal.show();
   }
 
   renderTimelineContent(task) {
-    const timelineStats = document.getElementById('history-stats');
     const timelineContent = document.getElementById('history-timeline');
+    const timelineStats = document.getElementById('history-stats');
     
-    if (!timelineStats || !timelineContent) return;
+    if (!timelineContent || !timelineStats) return;
 
     // Analyser les données
     const timelineData = this.parseTimelineData(task);
@@ -863,10 +949,10 @@ class KanbanManager {
       btnSave.addEventListener('click', () => this.saveTask());
     }
 
-    // Boutons de la modal timeline (si présents)
-    const btnExportTimeline = document.getElementById('btn-export-task-history');
-    if (btnExportTimeline) {
-      btnExportTimeline.addEventListener('click', () => this.exportTimeline());
+    // Bouton export historique
+    const btnExportHistory = document.getElementById('btn-export-history');
+    if (btnExportHistory) {
+      btnExportHistory.addEventListener('click', () => this.exportKanban());
     }
 
     // Raccourcis clavier
@@ -880,7 +966,7 @@ class KanbanManager {
     });
   }
 
-  // === GESTION DES MODALS ===
+  // === GESTION DES MODALS TÂCHE CORRIGÉE ===
   openPopup(tache = {}) {
     if (!this.modal) {
       displayError('Modal non disponible');
@@ -892,7 +978,26 @@ class KanbanManager {
     
     // Peupler les champs
     setFieldValue('popup-titre', tache.titre || '');
-    setFieldValue('popup-description', this.getLatestDescription(tache.description || ''));
+    
+    // CORRIGÉ: Séparer commentaires historique et nouvelle saisie
+    if (tache.description) {
+      // Afficher l'historique en lecture seule
+      const historyContainer = document.getElementById('description-history');
+      if (historyContainer) {
+        const historyHTML = this.generateCommentHistory(tache.description);
+        historyContainer.innerHTML = historyHTML;
+        
+        // Rendre le container rétractable
+        const historyWrapper = historyContainer.closest('.description-history-wrapper');
+        if (historyWrapper) {
+          historyWrapper.style.display = historyHTML ? 'block' : 'none';
+        }
+      }
+    }
+    
+    // Zone de saisie vide pour nouveau commentaire
+    setFieldValue('popup-description', '');
+    
     setFieldValue('popup-statut-text', tache.statut || (isNewTask ? 'Backlog' : ''));
     setFieldValue('popup-projet', tache.projet || '');
     setFieldValue('popup-urgence', tache.urgence || '');
@@ -1004,6 +1109,11 @@ class KanbanManager {
     this.loadGristDataAndOptions().then(() => {
       this.refreshKanban();
       this.populateSelectOptions();
+      
+      // CORRIGÉ: Mettre à jour les options des filtres
+      if (this.filterManager) {
+        this.filterManager.updateFilterOptions();
+      }
     });
   }
 
@@ -1064,15 +1174,61 @@ class KanbanManager {
     window.URL.revokeObjectURL(url);
   }
 
-  exportTimeline() {
-    // Méthode pour exporter la timeline de la tâche courante
-    displaySuccess('Export timeline en cours...');
+  // NOUVEAU: Callbacks pour les managers
+  onDataReloaded(records, options) {
+    this.currentRecords = records;
+    this.gristOptions = { ...this.gristOptions, ...options };
+    this.refreshKanban();
+    this.populateSelectOptions();
+  }
+
+  // NOUVEAU: Méthodes de recherche pour FilterManager
+  searchTasks(criteria) {
+    return this.currentRecords.filter(task => {
+      if (criteria.text) {
+        const searchableText = [
+          task.titre || '',
+          task.description || '',
+          task.projet || ''
+        ].join(' ').toLowerCase();
+        
+        return searchableText.includes(criteria.text.toLowerCase());
+      }
+      return true;
+    });
+  }
+
+  // NOUVEAU: Statistiques pour l'affichage
+  getKanbanStatistics() {
+    const stats = {
+      totalTasks: this.currentRecords.length,
+      byStatus: {},
+      urgent: 0,
+      highPriority: 0
+    };
+
+    this.currentRecords.forEach(task => {
+      // Par statut
+      const status = task.statut || 'Non défini';
+      stats.byStatus[status] = (stats.byStatus[status] || 0) + 1;
+
+      // Tâches urgentes
+      const priority = this.calculerPriorite(task.urgence, task.impact);
+      if (priority <= 2) {
+        stats.highPriority++;
+      }
+      if (task.urgence === 'Immédiate') {
+        stats.urgent++;
+      }
+    });
+
+    return stats;
   }
 }
 
 // === INITIALISATION ===
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('🚀 Initialisation Kanban avec corrections...');
+  console.log('🚀 Initialisation Kanban avec gestionnaires...');
   window.kanbanManager = new KanbanManager();
 });
 
