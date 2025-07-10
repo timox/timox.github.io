@@ -1,5 +1,5 @@
 // === managers/FilterManager.js ===
-// Gestionnaire pour les filtres, la recherche et les modes de vue
+// Gestionnaire pour les filtres, la recherche et les modes de vue (VERSION CORRIGÉE)
 
 import { getFieldValue, setFieldValue, debounce } from '../utils/dom.js';
 
@@ -21,11 +21,12 @@ export class FilterManager {
     
     // Options d'affichage
     this.showTermine = true;
-    this.viewMode = 'compact'; // compact, detailed, focus
-    this.focusColumn = null;
     
     // Debounced search
     this.debouncedSearch = debounce(this.performSearch.bind(this), 300);
+    
+    // Indicateur d'initialisation
+    this.isInitialized = false;
     
     this.init();
   }
@@ -34,10 +35,29 @@ export class FilterManager {
    * Initialise le gestionnaire de filtres
    */
   init() {
+    console.log('FilterManager: Initialisation...');
+    
+    // Attendre que le DOM soit prêt
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        this.setupAfterDOMReady();
+      });
+    } else {
+      this.setupAfterDOMReady();
+    }
+  }
+  
+  /**
+   * Configuration après que le DOM soit prêt
+   */
+  setupAfterDOMReady() {
     this.setupFilterElements();
     this.setupEventListeners();
-    this.setupViewModeControls();
     this.loadSavedFilters();
+    this.populateFilterOptions();
+    this.isInitialized = true;
+    
+    console.log('FilterManager: Gestionnaire de filtres initialisé');
   }
   
   /**
@@ -54,10 +74,12 @@ export class FilterManager {
       showTermine: document.getElementById('show-termine')
     };
     
-    // Logging des éléments manquants
+    // Logging des éléments trouvés/manquants
     Object.entries(this.elements).forEach(([key, element]) => {
       if (!element) {
         console.warn(`FilterManager: Élément ${key} non trouvé`);
+      } else {
+        console.log(`FilterManager: Élément ${key} trouvé`);
       }
     });
   }
@@ -75,7 +97,7 @@ export class FilterManager {
       
       // Raccourci clavier pour focus
       document.addEventListener('keydown', (e) => {
-        if ((e.key === 'f' || e.key === 'F') && !e.target.matches('input, textarea')) {
+        if ((e.key === 'f' || e.key === 'F') && !e.target.matches('input, textarea, select')) {
           e.preventDefault();
           this.elements.searchInput.focus();
         }
@@ -118,112 +140,73 @@ export class FilterManager {
         this.applyFilters();
       });
     }
+    
+    console.log('FilterManager: Event listeners configurés');
   }
   
   /**
-   * Configure les contrôles de mode de vue
+   * Peuple les options des filtres
    */
-  setupViewModeControls() {
-    // Créer les boutons de mode de vue s'ils n'existent pas
-    this.createViewModeButtons();
-    
-    // Raccourcis clavier pour les modes de vue
-    document.addEventListener('keydown', (e) => {
-      if (!e.target.matches('input, textarea')) {
-        switch (e.key) {
-          case '1':
-            e.preventDefault();
-            this.setViewMode('compact');
-            break;
-          case '2':
-            e.preventDefault();
-            this.setViewMode('detailed');
-            break;
-          case '3':
-            e.preventDefault();
-            this.setViewMode('focus');
-            break;
-        }
-      }
-    });
-  }
-  
-  /**
-   * Crée les boutons de mode de vue
-   */
-  createViewModeButtons() {
-    const controlsContainer = document.querySelector('.kanban-controls .row');
-    if (!controlsContainer) return;
-    
-    // Vérifier si les boutons existent déjà
-    if (document.getElementById('view-mode-controls')) return;
-    
-    const viewModeCol = document.createElement('div');
-    viewModeCol.className = 'col-md-12 mb-2';
-    viewModeCol.id = 'view-mode-controls';
-    
-    viewModeCol.innerHTML = `
-      <div class="btn-group" role="group" aria-label="Modes de vue">
-        <button type="button" class="btn btn-outline-secondary active" data-mode="compact">
-          <i class="bi bi-grid-3x2"></i> Compact
-        </button>
-        <button type="button" class="btn btn-outline-secondary" data-mode="detailed">
-          <i class="bi bi-card-list"></i> Détaillé
-        </button>
-        <button type="button" class="btn btn-outline-secondary" data-mode="focus">
-          <i class="bi bi-zoom-in"></i> Focus
-        </button>
-      </div>
-      <small class="text-muted ms-3">
-        <kbd>1</kbd> Compact • <kbd>2</kbd> Détaillé • <kbd>3</kbd> Focus
-      </small>
-    `;
-    
-    // Insérer au début du container
-    controlsContainer.insertBefore(viewModeCol, controlsContainer.firstChild);
-    
-    // Ajouter les écouteurs
-    viewModeCol.querySelectorAll('.btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const mode = e.currentTarget.dataset.mode;
-        this.setViewMode(mode);
-      });
-    });
-  }
-  
-  /**
-   * Définit le mode de vue
-   * @param {string} mode - Mode de vue (compact, detailed, focus)
-   */
-  setViewMode(mode) {
-    if (!['compact', 'detailed', 'focus'].includes(mode)) {
-      console.warn(`FilterManager: Mode de vue invalide: ${mode}`);
+  populateFilterOptions() {
+    if (!this.kanban.gristOptions) {
+      console.warn('FilterManager: Pas de gristOptions disponibles');
       return;
     }
     
-    this.viewMode = mode;
+    const { bureau, responsables, projet, statut } = this.kanban.gristOptions;
     
-    // Mettre à jour les boutons
-    document.querySelectorAll('#view-mode-controls .btn').forEach(btn => {
-      btn.classList.remove('active');
-      if (btn.dataset.mode === mode) {
-        btn.classList.add('active');
-      }
+    // Peupler bureau
+    if (this.elements.filterBureau && bureau) {
+      this.populateSelect(this.elements.filterBureau, bureau, 'Tous les bureaux');
+    }
+    
+    // Peupler responsables
+    if (this.elements.filterQui && responsables) {
+      this.populateSelect(this.elements.filterQui, responsables, 'Tous les responsables');
+    }
+    
+    // Peupler projets
+    if (this.elements.filterProjet && projet) {
+      this.populateSelect(this.elements.filterProjet, projet, 'Tous les projets');
+    }
+    
+    // Peupler statuts
+    if (this.elements.filterStatut && statut) {
+      this.populateSelect(this.elements.filterStatut, statut, 'Tous les statuts');
+    }
+    
+    console.log('FilterManager: Options des filtres peuplées');
+  }
+  
+  /**
+   * Peuple un select avec des options
+   * @param {HTMLSelectElement} selectElement - Élément select
+   * @param {Array} options - Options à ajouter
+   * @param {string} allText - Texte pour "tous"
+   */
+  populateSelect(selectElement, options, allText) {
+    selectElement.innerHTML = '';
+    
+    // Option "Tous"
+    const allOption = document.createElement('option');
+    allOption.value = '';
+    allOption.textContent = allText;
+    selectElement.appendChild(allOption);
+    
+    // Ajouter les options
+    options.forEach(option => {
+      const optionElement = document.createElement('option');
+      optionElement.value = option;
+      optionElement.textContent = option;
+      selectElement.appendChild(optionElement);
     });
-    
-    // Sauvegarder la préférence
-    this.saveFilters();
-    
-    // Appliquer les changements
-    this.applyFilters();
-    
-    console.log(`FilterManager: Mode de vue changé vers "${mode}"`);
   }
   
   /**
    * Effectue la recherche textuelle
    */
   performSearch() {
+    console.log('FilterManager: Recherche effectuée:', this.filters.search);
     this.applyFilters();
   }
   
@@ -236,11 +219,11 @@ export class FilterManager {
       return;
     }
     
+    console.log('FilterManager: Application des filtres:', this.filters);
+    
     // Mettre à jour l'état du KanbanManager
     this.kanban.filters = { ...this.filters };
     this.kanban.showTermine = this.showTermine;
-    this.kanban.viewMode = this.viewMode;
-    this.kanban.focusColumn = this.focusColumn;
     
     // Rafraîchir l'affichage
     if (this.kanban.refreshKanban) {
@@ -322,7 +305,19 @@ export class FilterManager {
     const filteredCount = filteredRecords.length;
     
     // Mettre à jour le compteur dans l'interface (si l'élément existe)
-    const statsElement = document.getElementById('filter-stats');
+    let statsElement = document.getElementById('filter-stats');
+    if (!statsElement) {
+      // Créer l'élément s'il n'existe pas
+      statsElement = document.createElement('small');
+      statsElement.id = 'filter-stats';
+      statsElement.className = 'text-muted ms-3';
+      
+      const controlsRow = document.querySelector('.kanban-controls .row');
+      if (controlsRow) {
+        controlsRow.appendChild(statsElement);
+      }
+    }
+    
     if (statsElement) {
       if (filteredCount === totalRecords) {
         statsElement.innerHTML = `<span class="text-muted">${totalRecords} tâche${totalRecords > 1 ? 's' : ''}</span>`;
@@ -331,7 +326,6 @@ export class FilterManager {
       }
     }
     
-    // Logging pour debug
     console.log(`FilterManager: ${filteredCount}/${totalRecords} tâches affichées`);
   }
   
@@ -365,18 +359,6 @@ export class FilterManager {
   }
   
   /**
-   * Définit la colonne de focus (pour le mode focus)
-   * @param {string} columnId - ID de la colonne
-   */
-  setFocusColumn(columnId) {
-    this.focusColumn = columnId;
-    
-    if (this.viewMode === 'focus') {
-      this.applyFilters();
-    }
-  }
-  
-  /**
    * Active/désactive un filtre rapide prédéfini
    * @param {string} type - Type de filtre (urgent, my-tasks, etc.)
    */
@@ -388,8 +370,8 @@ export class FilterManager {
     
     switch (type) {
       case 'urgent':
-        // Tâches urgentes (échéance proche)
-        this.filters.search = ''; // Sera géré par la logique de date
+        // Tâches urgentes (logique à implémenter côté rendu)
+        this.filters.search = '';
         break;
         
       case 'my-tasks':
@@ -416,11 +398,6 @@ export class FilterManager {
         }
         break;
         
-      case 'no-deadline':
-        // Tâches sans échéance
-        // Cette logique sera gérée dans filterRecords
-        break;
-        
       default:
         console.warn(`FilterManager: Filtre rapide inconnu: ${type}`);
         return;
@@ -431,54 +408,6 @@ export class FilterManager {
   }
   
   /**
-   * Crée des boutons de filtre rapide
-   */
-  createQuickFilterButtons() {
-    const controlsContainer = document.querySelector('.kanban-controls');
-    if (!controlsContainer) return;
-    
-    // Vérifier si les boutons existent déjà
-    if (document.getElementById('quick-filters')) return;
-    
-    const quickFiltersDiv = document.createElement('div');
-    quickFiltersDiv.className = 'row mt-2';
-    quickFiltersDiv.id = 'quick-filters';
-    
-    quickFiltersDiv.innerHTML = `
-      <div class="col-12">
-        <div class="d-flex flex-wrap gap-2 align-items-center">
-          <span class="text-muted small">Filtres rapides:</span>
-          <button class="btn btn-sm btn-outline-danger" data-filter="urgent">
-            <i class="bi bi-exclamation-triangle"></i> Urgent
-          </button>
-          <button class="btn btn-sm btn-outline-primary" data-filter="my-tasks">
-            <i class="bi bi-person"></i> Mes tâches
-          </button>
-          <button class="btn btn-sm btn-outline-warning" data-filter="in-progress">
-            <i class="bi bi-play"></i> En cours
-          </button>
-          <button class="btn btn-sm btn-outline-dark" data-filter="blocked">
-            <i class="bi bi-x-octagon"></i> Bloquées
-          </button>
-          <button class="btn btn-sm btn-outline-secondary" onclick="window.kanbanManager.filterManager.clearAllFilters()">
-            <i class="bi bi-arrow-clockwise"></i> Tout
-          </button>
-        </div>
-      </div>
-    `;
-    
-    controlsContainer.appendChild(quickFiltersDiv);
-    
-    // Ajouter les écouteurs
-    quickFiltersDiv.querySelectorAll('[data-filter]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const filterType = e.currentTarget.dataset.filter;
-        this.applyQuickFilter(filterType);
-      });
-    });
-  }
-  
-  /**
    * Sauvegarde les filtres dans le localStorage
    */
   saveFilters() {
@@ -486,8 +415,6 @@ export class FilterManager {
       const filterState = {
         filters: this.filters,
         showTermine: this.showTermine,
-        viewMode: this.viewMode,
-        focusColumn: this.focusColumn,
         timestamp: Date.now()
       };
       
@@ -521,14 +448,6 @@ export class FilterManager {
       
       if (typeof filterState.showTermine === 'boolean') {
         this.showTermine = filterState.showTermine;
-      }
-      
-      if (filterState.viewMode) {
-        this.viewMode = filterState.viewMode;
-      }
-      
-      if (filterState.focusColumn) {
-        this.focusColumn = filterState.focusColumn;
       }
       
       // Mettre à jour l'interface
@@ -570,58 +489,71 @@ export class FilterManager {
     if (this.elements.showTermine) {
       this.elements.showTermine.checked = this.showTermine;
     }
-    
-    // Boutons de mode de vue
-    document.querySelectorAll('#view-mode-controls .btn').forEach(btn => {
-      btn.classList.remove('active');
-      if (btn.dataset.mode === this.viewMode) {
-        btn.classList.add('active');
-      }
-    });
   }
   
   /**
-   * Exporte l'état actuel des filtres
+   * Met à jour les options des filtres quand les données changent
+   */
+  updateFilterOptions() {
+    if (this.isInitialized) {
+      this.populateFilterOptions();
+    }
+  }
+  
+  /**
+   * Obtient l'état actuel des filtres
+   * @returns {object} État des filtres
+   */
+  getFilters() {
+    return {
+      ...this.filters,
+      showTermine: this.showTermine
+    };
+  }
+  
+  /**
+   * Définit les filtres
+   * @param {object} newFilters - Nouveaux filtres
+   */
+  setFilters(newFilters) {
+    if (newFilters.filters) {
+      this.filters = { ...this.filters, ...newFilters.filters };
+    }
+    
+    if (typeof newFilters.showTermine === 'boolean') {
+      this.showTermine = newFilters.showTermine;
+    }
+    
+    this.updateInterfaceFromState();
+    this.applyFilters();
+  }
+  
+  /**
+   * Exporte l'état des filtres
    * @returns {object} État des filtres
    */
   exportState() {
     return {
       filters: { ...this.filters },
       showTermine: this.showTermine,
-      viewMode: this.viewMode,
-      focusColumn: this.focusColumn,
       totalRecords: this.kanban.currentRecords?.length || 0,
       filteredRecords: this.filterRecords(this.kanban.currentRecords || []).length
     };
   }
   
   /**
-   * Importe un état de filtres
-   * @param {object} state - État à importer
+   * Vérifie si des filtres sont actifs
+   * @returns {boolean} True si des filtres sont actifs
    */
-  importState(state) {
-    if (!state || typeof state !== 'object') return;
-    
-    if (state.filters) {
-      this.filters = { ...this.filters, ...state.filters };
-    }
-    
-    if (typeof state.showTermine === 'boolean') {
-      this.showTermine = state.showTermine;
-    }
-    
-    if (state.viewMode) {
-      this.viewMode = state.viewMode;
-    }
-    
-    if (state.focusColumn) {
-      this.focusColumn = state.focusColumn;
-    }
-    
-    this.updateInterfaceFromState();
-    this.applyFilters();
-    
-    console.log('FilterManager: État importé avec succès');
+  hasActiveFilters() {
+    return (
+      this.filters.bureau !== '' ||
+      this.filters.qui !== '' ||
+      this.filters.projet !== '' ||
+      this.filters.statut !== '' ||
+      this.filters.search !== '' ||
+      !this.showTermine
+    );
   }
   
   /**
@@ -630,13 +562,6 @@ export class FilterManager {
   destroy() {
     // Sauvegarder une dernière fois
     this.saveFilters();
-    
-    // Supprimer les écouteurs d'événements en remplaçant les éléments
-    Object.values(this.elements).forEach(element => {
-      if (element && element.parentNode) {
-        element.replaceWith(element.cloneNode(true));
-      }
-    });
     
     console.log('FilterManager: Ressources nettoyées');
   }
