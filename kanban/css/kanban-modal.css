@@ -359,3 +359,31 @@
   background: #218838;
   border-color: #1e7e34;
 }
+
+.strategy-details {
+  margin-top: 1rem;
+}
+
+.strategy-detail {
+  padding: 0.5rem;
+  background: #ffffff;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
+  margin-top: 0.25rem;
+  min-height: 2rem;
+  font-style: italic;
+  color: #495057;
+}
+
+.strategy-detail:empty::before {
+  content: "Non défini";
+  color: #6c757d;
+  font-style: italic;
+}
+
+#popup-strategie {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIGZpbGw9IiMwMDdiZmYiIHZpZXdCb3g9IjAgMCAxNiAxNiI+PHBhdGggZD0iTTggMEE4IDggMCAxIDAgOCAxNkE4IDggMCAwIDAgOCAwem0wIDFhNyA3IDAgMSAxIDAgMTRBNyA3IDAgMCAxIDggMXoiLz48L3N2Zz4=");
+  background-repeat: no-repeat;
+  background-position: calc(100% - 2rem) center;
+  background-size: 1rem;
+}
