@@ -103,108 +103,153 @@
     </div>
   </div>
 
-  <!-- Modal Tâche (identique à l'original) -->
-  <div class="modal fade" id="popup-tache" tabindex="-1" aria-labelledby="popup-tache-label" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-body">
-          <form id="task-form" novalidate>
-            <div class="row g-3">
-              <div class="col-12">
-                <label for="popup-titre" class="form-label">Titre *</label>
-                <input type="text" class="form-control" id="popup-titre" required>
-              </div>
-              <div class="col-12">
-                <label for="popup-description" class="form-label">
-                  Description / Commentaires
-                  <small class="text-muted">(Un horodatage sera automatiquement ajouté)</small>
-                </label>
-                <textarea class="form-control" id="popup-description" rows="4" 
-                          placeholder="Décrivez la tâche, les blocages, les actions réalisées..."></textarea>
-                <div class="description-help">
-                  💡 Tip: Chaque modification sera automatiquement horodatée pour garder un historique des commentaires
-                </div>
-              </div>
-              <div class="col-md-4">
-                <label for="popup-statut-text" class="form-label">Statut *</label>
-                <input type="text" class="form-control" id="popup-statut-text" readonly required>
-              </div>
-              <div class="col-md-4">
-                <label for="popup-projet" class="form-label">Projet</label>
-                <div class="input-group">
-                  <select class="form-select" id="popup-projet"></select>
-                  <input type="text" class="form-control" id="projet-ajout" placeholder="Ajouter projet">
-                  <button class="btn btn-outline-secondary" type="button" id="btn-ajout-projet"><i class="bi bi-plus"></i></button>
-                </div>
-              </div>
-              <div class="col-12">
-                <label class="form-label">Stratégie</label>
-                <div class="input-group flex-nowrap" style="gap:1.2rem;">
-                  <select class="form-select" id="strategie-objectif" size="5"></select>
-                  <select class="form-select" id="strategie-sous-objectif" size="5"></select>
-                  <select class="form-select" id="strategie-action" size="5"></select>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Urgence & Impact</label>
-                <div class="input-group">
-                  <select class="form-select" id="popup-urgence">
-                    <option value="">-- Urgence --</option>
-                  </select>
-                  <select class="form-select" id="popup-impact">
-                    <option value="">-- Impact --</option>
-                  </select>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">
-                  <i class="bi bi-calendar-event me-2"></i>Date butoir
-                  <small class="text-muted ms-2">(Optionnelle)</small>
-                </label>
-                <div class="input-group">
-                  <input type="text" class="form-control" id="popup-delai" 
-                         placeholder="Cliquer pour choisir une date..." 
-                         aria-label="Date butoir" readonly>
-                  <button class="btn btn-outline-secondary" type="button" id="btn-clear-date" 
-                          title="Supprimer la date" style="display: none;">
-                    <i class="bi bi-x-lg"></i>
-                  </button>
-                  <button class="btn btn-outline-primary" type="button" id="btn-pick-date" 
-                          title="Choisir une date">
-                    <i class="bi bi-calendar3"></i>
-                  </button>
-                </div>
-                <div class="form-text">
-                  <span id="date-status" class="text-muted">Aucune date définie</span>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label for="popup-bureau" class="form-label">Bureaux</label>
-                <select class="form-select" id="popup-bureau" multiple size="4"></select>
-                <div class="form-text">Maintenez Ctrl pour sélectionner plusieurs bureaux</div>
-              </div>
-              <div class="col-md-6">
-                <label for="popup-qui" class="form-label">Responsables</label>
-                <select class="form-select" id="popup-qui" multiple size="4"></select>
-                <div class="form-text">Maintenez Ctrl pour sélectionner plusieurs responsables</div>
+<!-- Modal Tâche corrigée avec stratégies et couleurs -->
+<div class="modal fade" id="popup-tache" tabindex="-1" aria-labelledby="popup-tache-label" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="popup-tache-label">
+          <i class="bi bi-card-checklist me-2"></i>Détails Tâche
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <div class="modal-body">
+        <form id="task-form" novalidate>
+          <div class="row g-3">
+            <div class="col-12">
+              <label for="popup-titre" class="form-label">Titre *</label>
+              <input type="text" class="form-control" id="popup-titre" required>
+            </div>
+            <div class="col-12">
+              <label for="popup-description" class="form-label">
+                Description / Commentaires
+                <small class="text-muted">(Un horodatage sera automatiquement ajouté)</small>
+              </label>
+              <textarea class="form-control" id="popup-description" rows="4" 
+                        placeholder="Décrivez la tâche, les blocages, les actions réalisées..."></textarea>
+              <div class="description-help">
+                💡 Tip: Chaque modification sera automatiquement horodatée pour garder un historique des commentaires
               </div>
             </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-danger me-auto" id="btn-delete-task" style="display: none;">
-            <i class="bi bi-trash me-2"></i>Supprimer
-          </button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-            <i class="bi bi-x-circle me-2"></i>Annuler
-          </button>
-          <button type="button" class="btn btn-primary" id="btn-save-task">
-            <i class="bi bi-check2-circle me-2"></i>Sauvegarder
-          </button>
-        </div>
+            <div class="col-md-4">
+              <label for="popup-statut-text" class="form-label">Statut *</label>
+              <input type="text" class="form-control" id="popup-statut-text" readonly required>
+            </div>
+            <div class="col-md-4">
+              <label for="popup-projet" class="form-label">Projet</label>
+              <div class="input-group">
+                <select class="form-select" id="popup-projet"></select>
+                <input type="text" class="form-control" id="projet-ajout" placeholder="Ajouter projet">
+                <button class="btn btn-outline-secondary" type="button" id="btn-ajout-projet">
+                  <i class="bi bi-plus"></i>
+                </button>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label for="popup-urgence" class="form-label">Urgence & Impact</label>
+              <div class="input-group">
+                <select class="form-select" id="popup-urgence">
+                  <option value="">-- Urgence --</option>
+                </select>
+                <select class="form-select" id="popup-impact">
+                  <option value="">-- Impact --</option>
+                </select>
+              </div>
+            </div>
+            
+            <!-- SECTION STRATÉGIE CORRIGÉE -->
+            <div class="col-12">
+              <label class="form-label">
+                <i class="bi bi-bullseye me-2"></i>Stratégie
+                <small class="text-muted">(Optionnel - Alignement stratégique)</small>
+              </label>
+              
+              <!-- Select stratégie depuis Grist -->
+              <div class="mb-3">
+                <select class="form-select" id="popup-strategie">
+                  <option value="">-- Choisir une stratégie --</option>
+                </select>
+                <div class="form-text">Sélectionnez une stratégie depuis la base de données</div>
+              </div>
+              
+              <!-- Détails de la stratégie sélectionnée -->
+              <div class="strategy-details" id="strategy-details" style="display: none;">
+                <div class="card bg-light">
+                  <div class="card-body">
+                    <h6 class="card-title">Détails de la stratégie sélectionnée:</h6>
+                    <div class="row">
+                      <div class="col-md-4">
+                        <strong>Objectif:</strong>
+                        <div id="popup-strategie-objectif" class="strategy-detail"></div>
+                      </div>
+                      <div class="col-md-4">
+                        <strong>Sous-objectif:</strong>
+                        <div id="popup-strategie-sous-objectif" class="strategy-detail"></div>
+                      </div>
+                      <div class="col-md-4">
+                        <strong>Action:</strong>
+                        <div id="popup-strategie-action" class="strategy-detail"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Champs cachés pour la compatibilité -->
+              <input type="hidden" id="popup-strategie-objectif-hidden">
+              <input type="hidden" id="popup-strategie-sous-objectif-hidden">
+              <input type="hidden" id="popup-strategie-action-hidden">
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label">
+                <i class="bi bi-calendar-event me-2"></i>Date butoir
+                <small class="text-muted ms-2">(Optionnelle)</small>
+              </label>
+              <div class="input-group">
+                <input type="text" class="form-control" id="popup-delai" 
+                       placeholder="Cliquer pour choisir une date..." 
+                       aria-label="Date butoir" readonly>
+                <button class="btn btn-outline-secondary" type="button" id="btn-clear-date" 
+                        title="Supprimer la date" style="display: none;">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+                <button class="btn btn-outline-primary" type="button" id="btn-pick-date" 
+                        title="Choisir une date">
+                  <i class="bi bi-calendar3"></i>
+                </button>
+              </div>
+              <div class="form-text">
+                <span id="date-status" class="text-muted">Aucune date définie</span>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label for="popup-bureau" class="form-label">Bureaux</label>
+              <select class="form-select" id="popup-bureau" multiple size="4"></select>
+              <div class="form-text">Maintenez Ctrl pour sélectionner plusieurs bureaux</div>
+            </div>
+            <div class="col-md-6">
+              <label for="popup-qui" class="form-label">Responsables</label>
+              <select class="form-select" id="popup-qui" multiple size="4"></select>
+              <div class="form-text">Maintenez Ctrl pour sélectionner plusieurs responsables</div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger me-auto" id="btn-delete-task" style="display: none;">
+          <i class="bi bi-trash me-2"></i>Supprimer
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-x-circle me-2"></i>Annuler
+        </button>
+        <button type="button" class="btn btn-primary" id="btn-save-task">
+          <i class="bi bi-check2-circle me-2"></i>Sauvegarder
+        </button>
       </div>
     </div>
   </div>
+</div>
 
   <!-- Modal Historique (identique à l'original) -->
   <div class="modal fade history-modal" id="history-modal" tabindex="-1" aria-labelledby="history-modal-label" aria-hidden="true">
