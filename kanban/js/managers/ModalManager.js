@@ -118,50 +118,157 @@ export class ModalManager {
    * Configure les listes déroulantes de stratégie
    */
   setupStrategySelects() {
-    // Données de stratégie (à adapter selon les besoins)
-    const strategieObjectifs = [
-      'Modernisation Infrastructure',
-      'Sécurité Renforcée', 
-      'Performance Optimisée',
-      'Conformité Réglementaire',
-      'Innovation Technologique'
-    ];
+    // Importer les données stratégiques si disponibles
+    let strategieObjectifs, strategieSousObjectifs, strategieActions;
     
-    const strategieSousObjectifs = {
-      'Modernisation Infrastructure': [
-        'Migration Cloud',
-        'Virtualisation',
-        'Automatisation',
-        'Conteneurisation'
-      ],
-      'Sécurité Renforcée': [
-        'Authentification Multi-Facteur',
-        'Chiffrement des Données',
-        'Monitoring Sécurité',
-        'Formation Utilisateurs'
-      ],
-      'Performance Optimisée': [
-        'Optimisation Base de Données',
-        'Cache et CDN',
-        'Load Balancing',
-        'Monitoring Performance'
-      ]
-    };
-    
-    const strategieActions = {
-      'Migration Cloud': [
-        'Audit Infrastructure Existante',
-        'Planification Migration',
-        'Tests de Performance',
-        'Formation Équipes'
-      ],
-      'Virtualisation': [
-        'Évaluation Serveurs Physiques',
-        'Déploiement Hyperviseur',
-        'Migration Applications',
-        'Optimisation Ressources'
-      ]
-    };
+    try {
+      // Tenter d'importer les données stratégiques
+      const { 
+        STRATEGIC_OBJECTIVES, 
+        SUB_OBJECTIVES, 
+        STRATEGIC_ACTIONS,
+        getSubObjectives,
+        getActions
+      } = window.KanbanAppInitializer ? 
+        await import('../config/strategyData.js') : 
+        { STRATEGIC_OBJECTIVES: [], SUB_OBJECTIVES: {}, STRATEGIC_ACTIONS: {} };
+      
+      strategieObjectifs = STRATEGIC_OBJECTIVES.map(obj => obj.label);
+      strategieSousObjectifs = {};
+      strategieActions = {};
+      
+      // Construire les mappings
+      STRATEGIC_OBJECTIVES.forEach(obj => {
+        const subObjs = SUB_OBJECTIVES[obj.id] || [];
+        strategieSousObjectifs[obj.label] = subObjs.map(sub => sub.label);
+        
+        subObjs.forEach(subObj => {
+          const actions = STRATEGIC_ACTIONS[subObj.id] || [];
+          strategieActions[subObj.label] = actions;
+        });
+      });
+      
+    } catch (error) {
+      console.warn('ModalManager: Utilisation des données stratégiques par défaut');
+      
+      // Données de stratégie par défaut (fallback)
+      strategieObjectifs = [
+        'Modernisation Infrastructure',
+        'Sécurité Renforcée', 
+        'Performance Optimisée',
+        'Conformité Réglementaire',
+        'Innovation Technologique',
+        'Résilience & Continuité'
+      ];
+      
+      strategieSousObjectifs = {
+        'Modernisation Infrastructure': [
+          'Migration Cloud',
+          'Virtualisation',
+          'Automatisation',
+          'Conteneurisation',
+          'Réseaux Nouvelle Génération'
+        ],
+        'Sécurité Renforcée': [
+          'Authentification Multi-Facteur',
+          'Chiffrement des Données',
+          'Monitoring Sécurité',
+          'Formation Utilisateurs',
+          'Audits & Tests d\'Intrusion'
+        ],
+        'Performance Optimisée': [
+          'Optimisation Base de Données',
+          'Cache et CDN',
+          'Load Balancing',
+          'Monitoring Performance'
+        ],
+        'Conformité Réglementaire': [
+          'Conformité RGPD',
+          'Certification ISO 27001',
+          'Archivage Légal',
+          'Audits de Conformité'
+        ],
+        'Innovation Technologique': [
+          'Intelligence Artificielle',
+          'Intégration IoT',
+          'Blockchain',
+          'Edge Computing'
+        ],
+        'Résilience & Continuité': [
+          'Plan de Reprise d\'Activité',
+          'Stratégie Sauvegarde 3-2-1',
+          'Redondance Multi-Sites',
+          'Tests de Résilience'
+        ]
+      };
+      
+      strategieActions = {
+        'Migration Cloud': [
+          'Audit Infrastructure Existante',
+          'Sélection Fournisseur Cloud',
+          'Planification Migration',
+          'Migration Pilot',
+          'Migration Production',
+          'Optimisation Coûts Cloud',
+          'Formation Équipes Cloud',
+          'Monitoring Cloud Native'
+        ],
+        'Virtualisation': [
+          'Évaluation Serveurs Physiques',
+          'Choix Solution Virtualisation',
+          'Déploiement Hyperviseur',
+          'Migration Applications Legacy',
+          'Optimisation Ressources VM',
+          'Backup Machines Virtuelles',
+          'Monitoring Infrastructure Virtuelle'
+        ],
+        'Automatisation': [
+          'Identification Processus Manuels',
+          'Sélection Outils Automatisation',
+          'Développement Scripts',
+          'Tests Automatisation',
+          'Déploiement Production',
+          'Formation Équipes',
+          'Amélioration Continue'
+        ],
+        'Authentification Multi-Facteur': [
+          'Choix Solution AMF',
+          'Pilot Groupe Test',
+          'Déploiement Phases',
+          'Formation Utilisateurs',
+          'Support Utilisateurs',
+          'Monitoring Authentifications',
+          'Optimisation UX'
+        ],
+        'Optimisation Base de Données': [
+          'Audit Performance BDD',
+          'Optimisation Requêtes',
+          'Indexation Intelligente',
+          'Partitionnement Tables',
+          'Optimisation Mémoire',
+          'Monitoring Temps Réponse',
+          'Maintenance Préventive'
+        ],
+        'Conformité RGPD': [
+          'Audit Données Personnelles',
+          'Cartographie Traitements',
+          'Mise à Jour Mentions Légales',
+          'Procédures Exercice Droits',
+          'Formation RGPD',
+          'Outils Anonymisation',
+          'Documentation Conformité'
+        ],
+        'Plan de Reprise d\'Activité': [
+          'Analyse Impact Business',
+          'Identification Risques',
+          'Définition RTO/RPO',
+          'Procédures Reprise',
+          'Tests PRA Réguliers',
+          'Formation Équipes Crise',
+          'Amélioration Continue PRA'
+        ]
+      };
+    }
     
     // Peupler la liste des objectifs
     populateSelect('strategie-objectif', strategieObjectifs, true, '-- Choisir objectif --');
