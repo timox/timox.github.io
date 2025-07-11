@@ -1049,7 +1049,7 @@ class KanbanManager {
     console.log('✅ Event listeners initialisés');
   }
 
-  // === OUVERTURE DE MODAL CORRIGÉE ===
+// === OUVERTURE DE MODAL CORRIGÉE ===
   openPopup(tache = {}) {
     console.log('🔓 Tentative d\'ouverture de modal', { tache: tache?.id || 'nouvelle' });
     
@@ -1100,62 +1100,6 @@ class KanbanManager {
     } catch (error) {
       console.error('❌ Erreur ouverture modal:', error);
       displayError(`Erreur ouverture modal: ${error.message}`);
-    }
-  }
-  async saveTask() {
-    try {
-      const titre = getFieldValue('popup-titre').trim();
-      if (!titre) {
-        displayError('Le titre est obligatoire');
-        return;
-      }
-
-      const description = getFieldValue('popup-description').trim();
-      const currentDescription = this.currentTaskId ? 
-        (this.currentRecords.find(r => r.id === this.currentTaskId)?.description || '') : '';
-      
-      const finalDescription = description ? 
-        this.addTimestampToDescription(currentDescription, description) : currentDescription;
-
-      const taskData = {
-        titre,
-        description: finalDescription,
-        statut: getFieldValue('popup-statut-text'),
-        projet: getFieldValue('popup-projet') || null,
-        urgence: getFieldValue('popup-urgence') || null,
-        impact: getFieldValue('popup-impact') || null,
-        strategie_id: parseInt(getFieldValue('popup-strategie')) || null,
-        bureau: getSelectedOptionsAsGristFormat('popup-bureau'),
-        qui: getSelectedOptionsAsGristFormat('popup-qui')
-      };
-
-      // Ajouter les champs stratégie dénormalisés pour la compatibilité
-      const strategy = this.getStrategyInfo(taskData.strategie_id);
-      if (strategy) {
-        taskData.strategie_objectif = strategy.objectif;
-        taskData.strategie_sous_objectif = strategy.sous_objectif;
-        taskData.strategie_action = strategy.action;
-      }
-
-      let result;
-      if (this.currentTaskId) {
-        result = await grist.docApi.applyUserActions([
-          ['UpdateRecord', TABLE_ID, this.currentTaskId, taskData]
-        ]);
-        displaySuccess('Tâche mise à jour avec succès');
-      } else {
-        result = await grist.docApi.applyUserActions([
-          ['AddRecord', TABLE_ID, null, taskData]
-        ]);
-        displaySuccess('Tâche créée avec succès');
-      }
-
-      this.modal.hide();
-      this.refreshKanban();
-
-    } catch (error) {
-      console.error('Erreur sauvegarde:', error);
-      displayError(`Erreur: ${error.message}`);
     }
   }
 
