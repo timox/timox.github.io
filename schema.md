@@ -1,7 +1,10 @@
 tables utilisées
 
 
-------
+**Ssir_strategie2
+
+
+```
 @grist.UserTable
 class Ssir_strategie2:
   id2 = grist.Text()
@@ -12,10 +15,12 @@ class Ssir_strategie2:
   echeance = grist.Text()
   portee = grist.Text()
   ssir_principale_task = grist.ReferenceList('Ssir_principale_task', reverse_of='strategie_id')
+```
+
+**Ssir_principale_task
 
 
-________________________
-
+```
 @grist.UserTable
 class Ssir_principale_task:
   id_task = grist.Choice()
@@ -147,9 +152,13 @@ class Ssir_principale_task:
   @grist.formulaType(grist.Text())
   def str_impact(rec, table):
     return rec.impact
--------------------------------------------------
 
 
+```
+
+**User_Actions2
+
+```
 @grist.UserTable
 class User_Actions2:
   id2 = grist.Reference('User_Actions2', reverse_of='User_Actions')
@@ -167,4 +176,4 @@ class User_Actions2:
     return user.Name
   user_name = grist.Text()
   User_Actions = grist.ReferenceList('User_Actions2', reverse_of='id2')
-
+```
