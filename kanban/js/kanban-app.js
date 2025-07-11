@@ -714,11 +714,10 @@ class KanbanManager {
     populateSelect('popup-qui', responsables || [], false);
     populateSelect('popup-projet', projet || [], true);
     
-    // CORRIGÉ: Peupler aussi les filtres
-    populateSelect('filter-bureau', bureau || [], true, 'Tous les bureaux');
-    populateSelect('filter-qui', responsables || [], true, 'Tous les responsables');
-    populateSelect('filter-projet', projet || [], true, 'Tous les projets');
-    populateSelect('filter-statut', this.gristOptions.statut || [], true, 'Tous les statuts');
+    // CORRIGÉ: Laisser le FilterManager gérer les filtres
+    if (this.filterManager && this.filterManager.updateFilterOptions) {
+      this.filterManager.updateFilterOptions();
+    }
     
     // Peupler le select des stratégies depuis Grist
     this.populateStrategySelect();
@@ -1177,6 +1176,25 @@ class KanbanManager {
       }
     });
 
+    // Timeline modal buttons
+    const btnShowCommentsOnly = document.getElementById('btn-show-comments-only');
+    if (btnShowCommentsOnly) {
+      btnShowCommentsOnly.addEventListener('click', (e) => {
+        e.preventDefault();
+        // Toggle affichage des commentaires seulement
+        this.toggleCommentsOnlyView();
+      });
+    }
+
+    const btnExportTaskHistory = document.getElementById('btn-export-task-history');
+    if (btnExportTaskHistory) {
+      btnExportTaskHistory.addEventListener('click', (e) => {
+        e.preventDefault();
+        // Exporter l'historique de la tâche
+        this.exportCurrentTaskHistory();
+      });
+    }
+
     console.log('✅ Event listeners initialisés');
   }
 
@@ -1210,7 +1228,13 @@ class KanbanManager {
     console.log('📝 Remplissage des champs de la modal');
     
     // Peupler les champs
-    this.modalManager.populateTaskForm(tache, isNewTask);
+    if (this.modalManager) {
+      this.modalManager.populateTaskForm(tache, isNewTask);
+    } else {
+      console.error('❌ ModalManager non disponible');
+      displayError('ModalManager non initialisé. Veuillez recharger la page.');
+      return;
+    }
     
     // Afficher/masquer le bouton supprimer
     toggleVisibility('btn-delete-task', !isNewTask, 'inline-block');
@@ -1341,6 +1365,17 @@ class KanbanManager {
       projets: this.gristOptions.projet.length,
       strategies: this.strategiesData.length
     });
+  }
+
+  // === MÉTHODES TIMELINE MODAL ===
+  toggleCommentsOnlyView() {
+    // Cette méthode peut être implémentée plus tard
+    console.log('Toggle comments only view');
+  }
+
+  exportCurrentTaskHistory() {
+    // Cette méthode peut être implémentée plus tard
+    console.log('Export current task history');
   }
 
   // === MÉTHODES DE FILTRAGE ET TRI ===

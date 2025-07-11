@@ -341,6 +341,11 @@ export class ModalManager {
    */
   // === REMPLISSAGE DU FORMULAIRE CORRIGÉ ===
   populateTaskForm(tache, isNewTask) {
+    // S'assurer que tache est un objet
+    if (!tache) {
+      tache = {};
+    }
+    
     // Champs de base
     setFieldValue('popup-titre', tache.titre || '');
     
@@ -362,7 +367,9 @@ export class ModalManager {
     
     // Stratégie depuis Grist
     setFieldValue('popup-strategie', tache.strategie_id || '');
-    this.updateStrategyDetails(tache.strategie_id);
+    if (this.kanban.updateStrategyDetails) {
+      this.kanban.updateStrategyDetails(tache.strategie_id);
+    }
     
     // Bureaux et responsables (selects multiples)
     setSelectedOptions('popup-bureau', tache.bureau || ['L']);
