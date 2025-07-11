@@ -485,7 +485,12 @@ export class GristManager {
     
     try {
       // Recharger les données complètes
-      this.reloadData();
+      this.reloadData().then(() => {
+        // Notifier le kanban que les données ont changé
+        if (this.kanban && this.kanban.refreshKanban) {
+          this.kanban.refreshKanban();
+        }
+      });
     } catch (error) {
       console.error('GristManager: Erreur lors de la mise à jour:', error);
       displayError('Erreur lors de la synchronisation avec Grist');

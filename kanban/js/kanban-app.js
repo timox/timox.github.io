@@ -51,6 +51,7 @@ import {
 import { FilterManager } from './managers/FilterManager.js';
 import { ViewModeManager } from './managers/ViewModeManager.js';
 import { ModalManager } from './managers/ModalManager.js';
+import { GristManager } from './managers/GristManager.js';
 
 // === CONSTANTES ===
 const STRATEGIES_TABLE_ID = "Ssir_strategie2";
@@ -95,6 +96,7 @@ class KanbanManager {
     this.filterManager = null;
     this.viewModeManager = null;
     this.modalManager = null;
+    this.gristManager = null;
     
     this.init();
   }
@@ -105,15 +107,21 @@ class KanbanManager {
       toggleLoadingSpinner(true);
       
       await this.waitForGristReady();
+      
+      // NOUVEAU: Initialiser les managers avant le chargement des données
+      this.initializeManagers();
+      
+      // Attendre que le GristManager soit connecté
+      if (this.gristManager) {
+        await this.waitForGristManagerReady();
+      }
+      
       await this.loadGristDataAndOptions();
       await this.initializeUser();
       // IMPORTANT: Attendre que le DOM soit complètement prêt
       await this.waitForDOM();
       this.initModals();
       this.initEventListeners();
-      
-      // NOUVEAU: Initialiser les managers après le chargement des données
-      this.initializeManagers();
       
       this.refreshKanban();
       
@@ -126,6 +134,20 @@ class KanbanManager {
       toggleLoadingSpinner(false);
     }
   }
+
+  async waitForGristManagerReady() {
+    return new Promise((resolve) => {
+      const checkReady = () => {
+        if (this.gristManager && this.gristManager.isConnected) {
+          resolve();
+        } else {
+          setTimeout(checkReady, 100);
+        }
+      };
+      checkReady();
+    });
+  }
+
    // NOUVEAU: Attendre que le DOM soit prêt
   async waitForDOM() {
     return new Promise((resolve) => {
@@ -149,19 +171,62 @@ class KanbanManager {
     // Manager des modales
     this.modalManager = new ModalManager(this);
     
+    // Manager Grist
+    this.gristManager = new GristManager(this);
+    
     console.log('✅ Managers initialisés');
   }
 
   async waitForGristReady() {
     return new Promise((resolve) => {
       grist.ready({ requiredAccess: 'full' });
-      grist.onRecords(this.handleGristUpdate.bind(this));
+      // Note: GristManager will handle onRecords callback
       setTimeout(resolve, 50);
     });
   }
 
-  // === CHARGEMENT DES DONNÉES CORRIGÉ ===
+  // === CHARGEMENT DES DONNÉES VIA GRISTMANAGER ===
   async loadGristDataAndOptions() {
+    try {
+      // Utiliser le GristManager pour charger les données
+      if (this.gristManager && this.gristManager.isConnected) {
+        await this.gristManager.reloadData();
+        
+        // Récupérer les données depuis le GristManager
+        this.currentRecords = this.gristManager.currentRecords;
+        this.availableColumns = this.gristManager.availableColumns;
+        this.gristOptions = this.gristManager.gristOptions;
+        
+        console.log('✅ Données chargées via GristManager:', {
+          taches: this.currentRecords.length,
+          bureaux: this.gristOptions.bureau?.length || 0,
+          responsables: this.gristOptions.responsables?.length || 0,
+          projets: this.gristOptions.projet?.length || 0
+        });
+      } else {
+        console.warn('GristManager non connecté, chargement direct...');
+        await this.loadGristDataDirect();
+      }
+      
+      // Charger les stratégies depuis Grist
+      await this.loadStrategiesFromGrist();
+      
+    } catch (error) {
+      console.error('Erreur lors du chargement des données:', error);
+      // Valeurs par défaut en cas d'erreur
+      this.gristOptions.statut = getDefaultStatuts();
+      this.gristOptions.urgence = ['Immédiate', 'Courte', 'Moyenne', 'Longue'];
+      this.gristOptions.impact = ['Critique', 'Important', 'Modéré', 'Mineur'];
+      this.gristOptions.bureau = DEFAULT_BUREAUX;
+      this.gristOptions.responsables = DEFAULT_RESPONSABLES;
+      this.gristOptions.projet = [];
+      this.strategiesData = [];
+      if (!this.currentRecords) this.currentRecords = [];
+    }
+  }
+
+  // === CHARGEMENT DIRECT EN FALLBACK ===
+  async loadGristDataDirect() {
     try {
       // Charger les tâches principales
       const records = await grist.docApi.fetchTable(TABLE_ID);
@@ -178,7 +243,7 @@ class KanbanManager {
       this.gristOptions.urgence = ['Immédiate', 'Courte', 'Moyenne', 'Longue'];
       this.gristOptions.impact = ['Critique', 'Important', 'Modéré', 'Mineur'];
       
-      // CORRIGÉ: Utiliser les données réelles pour les filtres
+      // Utiliser les données réelles pour les filtres
       const bureaux = this.getUniqueValuesFromData('bureau', true);
       this.gristOptions.bureau = [...new Set([...DEFAULT_BUREAUX, ...bureaux])].sort();
       
@@ -188,28 +253,16 @@ class KanbanManager {
       const projets = this.getUniqueValuesFromData('projet');
       this.gristOptions.projet = [...new Set([...projets, ...projetsDynamiques])].sort();
       
-      // Charger les stratégies depuis Grist
-      await this.loadStrategiesFromGrist();
-      
-      console.log('✅ Données chargées:', {
+      console.log('✅ Données chargées (fallback):', {
         taches: this.currentRecords.length,
         bureaux: this.gristOptions.bureau.length,
         responsables: this.gristOptions.responsables.length,
-        projets: this.gristOptions.projet.length,
-        strategies: this.strategiesData.length
+        projets: this.gristOptions.projet.length
       });
       
     } catch (error) {
-      console.error('Erreur lors du chargement des données:', error);
-      // Valeurs par défaut en cas d'erreur
-      this.gristOptions.statut = getDefaultStatuts();
-      this.gristOptions.urgence = ['Immédiate', 'Courte', 'Moyenne', 'Longue'];
-      this.gristOptions.impact = ['Critique', 'Important', 'Modéré', 'Mineur'];
-      this.gristOptions.bureau = DEFAULT_BUREAUX;
-      this.gristOptions.responsables = DEFAULT_RESPONSABLES;
-      this.gristOptions.projet = [];
-      this.strategiesData = [];
-      if (!this.currentRecords) this.currentRecords = [];
+      console.error('Erreur chargement direct:', error);
+      throw error;
     }
   }
 
@@ -1119,16 +1172,20 @@ class KanbanManager {
     if (!record || record.statut === newStatus) return;
 
     try {
-      await grist.docApi.applyUserActions([
-        ['UpdateRecord', TABLE_ID, taskId, { statut: newStatus }]
-      ]);
-
-      const recordIndex = this.currentRecords.findIndex(r => r.id === taskId);
-      if (recordIndex !== -1) {
-        this.currentRecords[recordIndex].statut = newStatus;
+      // Utiliser le GristManager pour sauvegarder
+      if (this.gristManager) {
+        await this.gristManager.saveRecord({ statut: newStatus }, taskId);
+        
+        // Mettre à jour les données locales
+        const recordIndex = this.currentRecords.findIndex(r => r.id === taskId);
+        if (recordIndex !== -1) {
+          this.currentRecords[recordIndex].statut = newStatus;
+        }
+        
+        this.refreshKanban();
+      } else {
+        throw new Error('GristManager non disponible');
       }
-
-      this.refreshKanban();
 
     } catch (error) {
       console.error('Erreur déplacement:', error);
