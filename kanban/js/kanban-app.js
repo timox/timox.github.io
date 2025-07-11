@@ -1142,14 +1142,49 @@ class KanbanManager {
     if (this.isUpdating) return;
     
     console.log('Mise à jour depuis Grist');
-    this.loadGristDataAndOptions().then(() => {
-      this.refreshKanban();
-      this.populateSelectOptions();
-      
-      // CORRIGÉ: Mettre à jour les options des filtres
-      if (this.filterManager) {
-        this.filterManager.updateFilterOptions();
-      }
+    
+    // Utiliser directement les données reçues pour la table principale
+    if (gristRecords && typeof gristRecords === 'object') {
+      this.availableColumns = new Set(Object.keys(gristRecords));
+      console.log('Colonnes disponibles:', Array.from(this.availableColumns));
+    }
+    
+    this.currentRecords = this.mapGristRecords(gristRecords);
+    
+    // Mettre à jour les options basées sur les nouvelles données
+    this.updateGristOptions();
+    
+    this.refreshKanban();
+    this.populateSelectOptions();
+    
+    // CORRIGÉ: Mettre à jour les options des filtres
+    if (this.filterManager) {
+      this.filterManager.updateFilterOptions();
+    }
+  }
+
+  // === MISE À JOUR DES OPTIONS SANS RE-FETCH ===
+  updateGristOptions() {
+    // Charger les options de base
+    this.gristOptions.statut = getDefaultStatuts();
+    this.gristOptions.urgence = ['Immédiate', 'Courte', 'Moyenne', 'Longue'];
+    this.gristOptions.impact = ['Critique', 'Important', 'Modéré', 'Mineur'];
+    
+    // Utiliser les données réelles pour les filtres
+    const bureaux = this.getUniqueValuesFromData('bureau', true);
+    this.gristOptions.bureau = [...new Set([...DEFAULT_BUREAUX, ...bureaux])].sort();
+    
+    const responsables = this.getUniqueValuesFromData('qui', true);
+    this.gristOptions.responsables = [...new Set([...DEFAULT_RESPONSABLES, ...responsables])].sort();
+    
+    const projets = this.getUniqueValuesFromData('projet');
+    this.gristOptions.projet = [...new Set([...projets, ...projetsDynamiques])].sort();
+    
+    console.log('Options mises à jour:', {
+      bureaux: this.gristOptions.bureau.length,
+      responsables: this.gristOptions.responsables.length,
+      projets: this.gristOptions.projet.length,
+      strategies: this.strategiesData.length
     });
   }
 
