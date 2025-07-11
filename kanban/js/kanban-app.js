@@ -50,6 +50,7 @@ import {
 // NOUVEAU: Import des managers
 import { FilterManager } from './managers/FilterManager.js';
 import { ViewModeManager } from './managers/ViewModeManager.js';
+import { ModalManager } from './managers/ModalManager.js';
 
 // === CONSTANTES ===
 const STRATEGIES_TABLE_ID = "Ssir_strategie2";
@@ -93,6 +94,7 @@ class KanbanManager {
     // NOUVEAU: Managers
     this.filterManager = null;
     this.viewModeManager = null;
+    this.modalManager = null;
     
     this.init();
   }
@@ -143,6 +145,9 @@ class KanbanManager {
     
     // Manager des modes de vue 
     this.viewModeManager = new ViewModeManager(this);
+    
+    // Manager des modales
+    this.modalManager = new ModalManager(this);
     
     console.log('✅ Managers initialisés');
   }
@@ -1079,7 +1084,7 @@ class KanbanManager {
     console.log('📝 Remplissage des champs de la modal');
     
     // Peupler les champs
-    this.populateTaskForm(tache, isNewTask);
+    this.modalManager.populateTaskForm(tache, isNewTask);
     
     // Afficher/masquer le bouton supprimer
     toggleVisibility('btn-delete-task', !isNewTask, 'inline-block');
