@@ -429,21 +429,22 @@ export class ModalManager {
       let result;
       
       if (this.isNewTask) {
-        // Création via GristManager
-        if (this.kanban.gristManager) {
-          result = await this.kanban.gristManager.saveRecord(gristData);
-          displaySuccess('Tâche créée avec succès');
-        } else {
-          throw new Error('GristManager non disponible');
-        }
+        // Création
+        result = await grist.docApi.applyUserActions([
+          ['AddRecord', TABLE_ID, null, gristData]
+        ]);
+        displaySuccess('Tâche créée avec succès');
       } else {
-        // Mise à jour via GristManager
-        if (this.kanban.gristManager) {
-          result = await this.kanban.gristManager.saveRecord(gristData, this.currentTaskId);
-          displaySuccess('Tâche mise à jour avec succès');
-        } else {
-          throw new Error('GristManager non disponible');
-        }
+        // Mise à jour
+        result = await grist.docApi.applyUserActions([
+          ['UpdateRecord', TABLE_ID, this.currentTaskId, gristData]
+        ]);
+        displaySuccess('Tâche mise à jour avec succès');
+      }
+      
+      // Signaler la mise à jour locale
+      if (this.kanban.signalLocalUpdate) {
+        this.kanban.signalLocalUpdate();
       }
       
       // Fermer la modal et rafraîchir
@@ -547,11 +548,15 @@ export class ModalManager {
     }
     
     try {
-      if (this.kanban.gristManager) {
-        await this.kanban.gristManager.deleteRecord(this.currentTaskId);
-        displaySuccess('Tâche supprimée avec succès');
-      } else {
-        throw new Error('GristManager non disponible');
+      await grist.docApi.applyUserActions([
+        ['RemoveRecord', TABLE_ID, this.currentTaskId]
+      ]);
+      
+      displaySuccess('Tâche supprimée avec succès');
+      
+      // Signaler la mise à jour locale
+      if (this.kanban.signalLocalUpdate) {
+        this.kanban.signalLocalUpdate();
       }
       
       // Fermer la modal et rafraîchir

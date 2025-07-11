@@ -107,21 +107,16 @@ class KanbanManager {
       toggleLoadingSpinner(true);
       
       await this.waitForGristReady();
-      
-      // NOUVEAU: Initialiser les managers avant le chargement des données
-      this.initializeManagers();
-      
-      // Attendre que le GristManager soit connecté
-      if (this.gristManager) {
-        await this.waitForGristManagerReady();
-      }
-      
       await this.loadGristDataAndOptions();
       await this.initializeUser();
+      
       // IMPORTANT: Attendre que le DOM soit complètement prêt
       await this.waitForDOM();
       this.initModals();
       this.initEventListeners();
+      
+      // Initialiser les managers après le chargement des données
+      this.initializeManagers();
       
       this.refreshKanban();
       
@@ -179,50 +174,83 @@ class KanbanManager {
 
   async waitForGristReady() {
     return new Promise((resolve) => {
-      grist.ready({ requiredAccess: 'full' });
-      // Note: GristManager will handle onRecords callback
-      setTimeout(resolve, 50);
+      console.log("Attente grist.ready...");
+      try {
+        grist.ready({ requiredAccess: 'full' });
+        grist.onRecords(this.handleGristUpdate.bind(this));
+        console.log("Listener onRecords attaché.");
+        setTimeout(() => {
+          console.log("grist.ready OK.");
+          resolve();
+        }, 50);
+      } catch (err) {
+        console.error("Erreur grist.ready/listeners:", err);
+        resolve(); // Don't fail, just continue
+      }
     });
   }
 
-  // === CHARGEMENT DES DONNÉES VIA GRISTMANAGER ===
+  // === CHARGEMENT DES DONNÉES CORRIGÉ (BASÉ SUR OLD EXAMPLE) ===
   async loadGristDataAndOptions() {
+    console.log("Chargement données Grist (Tâches et Options)...");
     try {
-      // Utiliser le GristManager pour charger les données
-      if (this.gristManager && this.gristManager.isConnected) {
-        await this.gristManager.reloadData();
-        
-        // Récupérer les données depuis le GristManager
-        this.currentRecords = this.gristManager.currentRecords;
-        this.availableColumns = this.gristManager.availableColumns;
-        this.gristOptions = this.gristManager.gristOptions;
-        
-        console.log('✅ Données chargées via GristManager:', {
-          taches: this.currentRecords.length,
-          bureaux: this.gristOptions.bureau?.length || 0,
-          responsables: this.gristOptions.responsables?.length || 0,
-          projets: this.gristOptions.projet?.length || 0
-        });
-      } else {
-        console.warn('GristManager non connecté, chargement direct...');
-        await this.loadGristDataDirect();
-      }
-      
-      // Charger les stratégies depuis Grist
-      await this.loadStrategiesFromGrist();
-      
-    } catch (error) {
-      console.error('Erreur lors du chargement des données:', error);
-      // Valeurs par défaut en cas d'erreur
+      // Charger les tâches principales
+      const records = await grist.docApi.fetchTable(TABLE_ID);
+      this.currentRecords = this.mapGristRecords(records);
+      console.log("Données tâches mappées:", this.currentRecords.length, "enreg.");
+      if (!this.currentRecords?.length) console.warn("Aucune donnée tâche Grist chargée.");
+
+      // Options Statiques
       this.gristOptions.statut = getDefaultStatuts();
       this.gristOptions.urgence = ['Immédiate', 'Courte', 'Moyenne', 'Longue'];
       this.gristOptions.impact = ['Critique', 'Important', 'Modéré', 'Mineur'];
-      this.gristOptions.bureau = DEFAULT_BUREAUX;
-      this.gristOptions.responsables = DEFAULT_RESPONSABLES;
-      this.gristOptions.projet = [];
+      this.gristOptions.bureau = [...DEFAULT_BUREAUX].sort((a, b) => String(a).localeCompare(String(b)));
+      this.gristOptions.responsables = [...DEFAULT_RESPONSABLES].sort((a, b) => String(a).localeCompare(String(b)));
+
+      // Projets dynamiques
+      this.gristOptions.projet = this.getUniqueValuesFromData('projet', false);
+      console.log(`Options Projets (dynamique): ${this.gristOptions.projet.length} valeurs.`);
+
+      // Charger les stratégies depuis Grist
+      await this.loadStrategiesFromGrist();
+      
+      console.log('✅ Données chargées:', {
+        taches: this.currentRecords.length,
+        bureaux: this.gristOptions.bureau.length,
+        responsables: this.gristOptions.responsables.length,
+        projets: this.gristOptions.projet.length,
+        strategies: this.strategiesData.length
+      });
+      
+    } catch (error) {
+      console.error('Erreur majeure loadGristDataAndOptions:', error);
+      this.gristOptions = { 
+        statut: getDefaultStatuts(), 
+        urgence: ['Immédiate', 'Courte', 'Moyenne', 'Longue'], 
+        impact: ['Critique', 'Important', 'Modéré', 'Mineur'], 
+        bureau: [], 
+        responsables: [], 
+        projet: [] 
+      };
       this.strategiesData = [];
       if (!this.currentRecords) this.currentRecords = [];
+      throw error;
     }
+  }
+
+  // === MÉTHODE UTILITAIRE POUR EXTRAIRE VALEURS UNIQUES ===
+  getUniqueValuesFromData(key, isList = false) {
+    const values = new Set();
+    (this.currentRecords || []).forEach(rec => {
+      const v = rec[key];
+      if (isList && Array.isArray(v)) {
+        v.slice(1).forEach(i => i && values.add(String(i).trim()));
+      } else if (!isList && v !== null && typeof v !== 'undefined' && String(v).trim() !== '') {
+        values.add(String(v).trim());
+      }
+    });
+    const sorted = Array.from(values).sort((a, b) => String(a).localeCompare(String(b)));
+    return sorted;
   }
 
   // === CHARGEMENT DIRECT EN FALLBACK ===
@@ -266,30 +294,32 @@ class KanbanManager {
     }
   }
 
-  // Chargement des stratégies depuis la table Grist
+  // Chargement des stratégies depuis la table Grist (basé sur old example)
   async loadStrategiesFromGrist() {
     try {
-      console.log(`Chargement table stratégies: ${STRATEGIES_TABLE_ID}...`);
-      const strategiesTable = await grist.docApi.fetchTable(STRATEGIES_TABLE_ID);
+      console.log(`Chargement table ${STRATEGIES_TABLE_ID}...`);
+      const strategiesData = await grist.docApi.fetchTable(STRATEGIES_TABLE_ID);
       
-      if (strategiesTable && strategiesTable.id) {
-        this.strategiesData = strategiesTable.id.map((id, index) => ({
-          id: id,
-          objectif: strategiesTable.objectif?.[index] || '',
-          sous_objectif: strategiesTable.sous_objectif?.[index] || '',
-          action: strategiesTable.action?.[index] || '',
-          responsable: strategiesTable.responsable?.[index] || '',
-          echeance: strategiesTable.echeance?.[index] || '',
-          portee: strategiesTable.portee?.[index] || ''
-        }));
+      // Colonnes à extraire de Ssir_strategie2
+      const requiredStratCols = ['id', 'id2', 'objectif', 'sous_objectif', 'action'];
+      const displayCol = 'id2';
+      
+      if (strategiesData && requiredStratCols.every(col => strategiesData.hasOwnProperty(col))) {
+        this.strategiesData = strategiesData.id.map((id, index) => {
+          const stratRecord = {};
+          requiredStratCols.forEach(col => {
+            stratRecord[col] = strategiesData[col][index];
+          });
+          return stratRecord;
+        }).sort((a, b) => String(a[displayCol] || '').localeCompare(String(b[displayCol] || '')));
         
-        console.log(`${this.strategiesData.length} stratégies chargées depuis Grist`);
+        console.log(`Options Stratégies (dynamique): ${this.strategiesData.length} valeurs chargées.`);
       } else {
-        console.warn('Table stratégies vide ou non trouvée');
+        console.warn(`La table ${STRATEGIES_TABLE_ID} ou des colonnes requises (${requiredStratCols.join(', ')}) sont manquantes/vides.`);
         this.strategiesData = [];
       }
-    } catch (error) {
-      console.error('Erreur chargement stratégies:', error);
+    } catch (stratError) {
+      console.error(`Erreur chargement table ${STRATEGIES_TABLE_ID}:`, stratError);
       this.strategiesData = [];
     }
   }
@@ -1172,52 +1202,77 @@ class KanbanManager {
     if (!record || record.statut === newStatus) return;
 
     try {
-      // Utiliser le GristManager pour sauvegarder
-      if (this.gristManager) {
-        await this.gristManager.saveRecord({ statut: newStatus }, taskId);
-        
-        // Mettre à jour les données locales
-        const recordIndex = this.currentRecords.findIndex(r => r.id === taskId);
-        if (recordIndex !== -1) {
-          this.currentRecords[recordIndex].statut = newStatus;
-        }
-        
-        this.refreshKanban();
-      } else {
-        throw new Error('GristManager non disponible');
+      this.isUpdating = true;
+      
+      // Mettre à jour les données locales
+      const recordIndex = this.currentRecords.findIndex(r => r.id === taskId);
+      if (recordIndex !== -1) {
+        this.currentRecords[recordIndex].statut = newStatus;
       }
+      
+      this.refreshKanban();
+      this.signalLocalUpdate();
+      
+      // Envoyer la mise à jour à Grist
+      await grist.docApi.applyUserActions([
+        ['UpdateRecord', TABLE_ID, taskId, { statut: newStatus }]
+      ]);
+      
+      console.log(`Succès mise à jour statut ${taskId}.`);
 
     } catch (error) {
       console.error('Erreur déplacement:', error);
       displayError(`Erreur: ${error.message}`);
       this.refreshKanban();
+    } finally {
+      this.isUpdating = false;
     }
   }
 
   // === GESTION DES MISES À JOUR GRIST ===
   handleGristUpdate(gristRecords, mappings = null) {
-    if (this.isUpdating) return;
-    
-    console.log('Mise à jour depuis Grist');
-    
-    // Utiliser directement les données reçues pour la table principale
-    if (gristRecords && typeof gristRecords === 'object') {
-      this.availableColumns = new Set(Object.keys(gristRecords));
-      console.log('Colonnes disponibles:', Array.from(this.availableColumns));
+    if (this.isUpdating) {
+      console.log("onRecords ignoré (verrou)");
+      return;
+    }
+    if (this.ignoreNextOnRecords) {
+      console.log("onRecords ignoré (flag)");
+      this.ignoreNextOnRecords = false;
+      return;
     }
     
-    this.currentRecords = this.mapGristRecords(gristRecords);
+    console.log("MAJ Grist (onRecords):", gristRecords ? 'Données' : 'Pas');
+    this.isUpdating = true;
     
-    // Mettre à jour les options basées sur les nouvelles données
-    this.updateGristOptions();
-    
-    this.refreshKanban();
-    this.populateSelectOptions();
-    
-    // CORRIGÉ: Mettre à jour les options des filtres
-    if (this.filterManager) {
-      this.filterManager.updateFilterOptions();
-    }
+    console.log("Stratégie: Re-fetch");
+    grist.docApi.fetchTable(TABLE_ID).then(fresh => {
+      console.log("Données re-fetchées.");
+      this.currentRecords = this.mapGristRecords(fresh);
+      this.refreshKanban();
+      
+      // Mettre à jour les options des filtres
+      if (this.filterManager) {
+        this.filterManager.updateFilterOptions();
+      }
+    }).catch(err => {
+      console.error("Erreur re-fetch:", err);
+      displayError("Erreur MAJ Grist.");
+    }).finally(() => {
+      this.isUpdating = false;
+      console.log("Verrou MAJ levé.");
+    });
+  }
+
+  // === SIGNAL LOCAL UPDATE ===
+  signalLocalUpdate() {
+    console.log("Flag ignoreNextOnRecords activé.");
+    this.ignoreNextOnRecords = true;
+    setTimeout(() => {
+      if (this.ignoreNextOnRecords) {
+        console.log("Flag ignoreNextOnRecords désactivé (timeout).");
+        this.ignoreNextOnRecords = false;
+      }
+    }, 500);
   }
 
   // === MISE À JOUR DES OPTIONS SANS RE-FETCH ===
