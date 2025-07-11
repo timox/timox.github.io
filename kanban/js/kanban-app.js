@@ -1195,6 +1195,30 @@ class KanbanManager {
       });
     }
 
+    // Force timeline modal close buttons to work
+    const timelineCloseButtons = document.querySelectorAll('#history-modal [data-bs-dismiss="modal"]');
+    timelineCloseButtons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (this.historyModal) {
+          this.historyModal.hide();
+        }
+      });
+    });
+
+    // Force task modal close buttons to work
+    const taskCloseButtons = document.querySelectorAll('#popup-tache [data-bs-dismiss="modal"]');
+    taskCloseButtons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (this.modalManager && this.modalManager.taskModal) {
+          this.modalManager.taskModal.hide();
+        } else if (this.modal) {
+          this.modal.hide();
+        }
+      });
+    });
+
     console.log('✅ Event listeners initialisés');
   }
 
@@ -1239,19 +1263,26 @@ class KanbanManager {
     // Afficher/masquer le bouton supprimer
     toggleVisibility('btn-delete-task', !isNewTask, 'inline-block');
     
-    // Ouvrir la modal
+    // Ouvrir la modal via ModalManager
     try {
       console.log('🔓 Ouverture de la modal...');
-      this.modal.show();
-      
-      // Focus sur le premier champ après ouverture
-      setTimeout(() => {
-        const firstField = document.getElementById('popup-titre');
-        if (firstField) {
-          firstField.focus();
-        }
-      }, 300);
-      
+      if (this.modalManager && this.modalManager.taskModal) {
+        this.modalManager.taskModal.show();
+        
+        // Focus sur le premier champ après ouverture
+        setTimeout(() => {
+          const firstField = document.getElementById('popup-titre');
+          if (firstField) {
+            firstField.focus();
+          }
+        }, 300);
+        
+        console.log('✅ Modal tâche ouverte via ModalManager');
+      } else {
+        // Fallback vers l'ancienne méthode
+        this.modal.show();
+        console.log('✅ Modal tâche ouverte (fallback)');
+      }
     } catch (error) {
       console.error('❌ Erreur ouverture modal:', error);
       displayError(`Erreur ouverture modal: ${error.message}`);

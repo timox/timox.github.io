@@ -351,7 +351,7 @@ export class ModalManager {
     
     // Description - extraire la dernière version si horodatée
     const latestDescription = tache.description ? 
-      this.getLatestDescription(tache.description) : '';
+      this.kanban.getLatestDescription(tache.description) : '';
     setFieldValue('popup-description', latestDescription);
     
     // Statut (lecture seule)
