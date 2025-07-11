@@ -141,8 +141,11 @@ export function getSelectedOptionsAsGristFormat(selectId) {
   const select = document.getElementById(selectId);
   if (!select) return ['L'];
   
-  const selectedValues = Array.from(select.selectedOptions).map(option => option.value);
-  return ['L', ...selectedValues];
+  const selectedValues = Array.from(select.selectedOptions)
+    .map(option => option.value)
+    .filter(value => value && value.trim() !== ''); // Filter out empty values
+  
+  return selectedValues.length > 0 ? ['L', ...selectedValues] : ['L'];
 }
 
 /**

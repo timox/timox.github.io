@@ -498,10 +498,9 @@ export class ModalManager {
       impact: getFieldValue('popup-impact') || null,
       bureau: getSelectedOptionsAsGristFormat('popup-bureau'),
       qui: getSelectedOptionsAsGristFormat('popup-qui'),
-      strategie_id: getFieldValue('popup-strategie') || null,
-      strategie_objectif: getFieldValue('strategie-objectif') || null,
-      strategie_sous_objectif: getFieldValue('strategie-sous-objectif') || null,
-      strategie_action: getFieldValue('strategie-action') || null
+      strategie_id: getFieldValue('popup-strategie') || null
+      // NOTE: strategie_objectif, strategie_sous_objectif, strategie_action 
+      // are NOT saved - only strategie_id is saved to link to the strategy table
     };
     
     // Debug chaque champ collecté
@@ -513,9 +512,6 @@ export class ModalManager {
     console.log('Bureau (raw):', data.bureau);
     console.log('Qui (raw):', data.qui);
     console.log('Strategie_id (raw):', data.strategie_id);
-    console.log('Strategie_objectif:', data.strategie_objectif);
-    console.log('Strategie_sous_objectif:', data.strategie_sous_objectif);
-    console.log('Strategie_action:', data.strategie_action);
     
     // Description avec horodatage si modifiée
     const newDescription = getFieldValue('popup-description').trim();
@@ -561,7 +557,7 @@ export class ModalManager {
       gristData.statut = 'Backlog';
     }
     
-    // Assurer que les listes sont dans le bon format
+    // Assurer que les listes sont dans le bon format (based on old example mapGristRecords)
     console.log('Bureau avant traitement:', gristData.bureau, typeof gristData.bureau);
     if (!Array.isArray(gristData.bureau) || gristData.bureau[0] !== 'L') {
       console.log('Bureau corrigé vers format Grist');
@@ -571,6 +567,14 @@ export class ModalManager {
     console.log('Qui avant traitement:', gristData.qui, typeof gristData.qui);
     if (!Array.isArray(gristData.qui) || gristData.qui[0] !== 'L') {
       console.log('Qui corrigé vers format Grist');
+      gristData.qui = ['L'];
+    }
+    
+    // Ensure empty lists are properly formatted as ['L'] not ['L', ''] 
+    if (gristData.bureau.length === 2 && gristData.bureau[1] === '') {
+      gristData.bureau = ['L'];
+    }
+    if (gristData.qui.length === 2 && gristData.qui[1] === '') {
       gristData.qui = ['L'];
     }
     
