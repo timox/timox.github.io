@@ -339,39 +339,39 @@ export class ModalManager {
    * Peuple le formulaire avec les données d'une tâche
    * @param {object} task - Données de la tâche
    */
-  populateTaskForm(task = {}) {
-    // Champs simples
-    setFieldValue('popup-titre', task.titre || '');
+ / === REMPLISSAGE DU FORMULAIRE CORRIGÉ ===
+  populateTaskForm(tache, isNewTask) {
+    // Champs de base
+    setFieldValue('popup-titre', tache.titre || '');
     
     // Description - extraire la dernière version si horodatée
-    const latestDescription = task.description 
-      ? this.kanban.getLatestDescription(task.description) 
-      : '';
+    const latestDescription = tache.description ? 
+      this.getLatestDescription(tache.description) : '';
     setFieldValue('popup-description', latestDescription);
     
     // Statut (lecture seule)
-    const statut = task.statut || (this.isNewTask ? 'Backlog' : '');
+    const statut = tache.statut || (isNewTask ? 'Backlog' : '');
     setFieldValue('popup-statut-text', statut);
     
     // Projet
-    setFieldValue('popup-projet', task.projet || '');
+    setFieldValue('popup-projet', tache.projet || '');
     
     // Urgence et Impact
-    setFieldValue('popup-urgence', task.urgence || '');
-    setFieldValue('popup-impact', task.impact || '');
+    setFieldValue('popup-urgence', tache.urgence || '');
+    setFieldValue('popup-impact', tache.impact || '');
+    
+    // Stratégie depuis Grist
+    setFieldValue('popup-strategie', tache.strategie_id || '');
+    this.updateStrategyDetails(tache.strategie_id);
     
     // Bureaux et responsables (selects multiples)
-    setSelectedOptions('popup-bureau', task.bureau || ['L']);
-    setSelectedOptions('popup-qui', task.qui || ['L']);
+    setSelectedOptions('popup-bureau', tache.bureau || ['L']);
+    setSelectedOptions('popup-qui', tache.qui || ['L']);
     
-    // Stratégie
-    this.populateStrategyFields(task);
-    
-    // Date d'échéance (via DatePickerManager)
-    if (this.kanban.datePickerManager) {
-      this.kanban.datePickerManager.setDate(task.date_echeance);
-    }
+    console.log('✅ Formulaire rempli');
   }
+
+
   
   /**
    * Peuple les champs de stratégie
@@ -530,13 +530,17 @@ export class ModalManager {
   /**
    * Supprime la tâche courante
    */
+   // === SUPPRESSION DE TÂCHE ===
   async deleteTask() {
-    if (this.isNewTask || !this.currentTaskId) {
-      displayError('Aucune tâche à supprimer');
+    if (!this.currentTaskId) {
+      displayError('Aucune tâche sélectionnée pour suppression');
       return;
     }
     
-    if (!confirmAction(`Êtes-vous sûr de vouloir supprimer la tâche "${this.currentTask?.titre || 'cette tâche'}" ?`, 'delete')) {
+    const task = this.currentRecords.find(r => r.id === this.currentTaskId);
+    const taskTitle = task?.titre || 'cette tâche';
+    
+    if (!confirmAction(`Êtes-vous sûr de vouloir supprimer "${taskTitle}" ?`)) {
       return;
     }
     
@@ -548,18 +552,70 @@ export class ModalManager {
       displaySuccess('Tâche supprimée avec succès');
       
       // Fermer la modal et rafraîchir
-      this.taskModal.hide();
-      this.kanban.refreshKanban();
+      if (this.modal) {
+        this.modal.hide();
+      }
+      this.refreshKanban();
       
     } catch (error) {
-      console.error('ModalManager: Erreur suppression:', error);
+      console.error('Erreur suppression:', error);
       displayError(`Erreur lors de la suppression: ${error.message}`);
     }
   }
-  
+// === MÉTHODE DE DIAGNOSTIC ===
+  diagnoseModals() {
+    console.log('🔍 DIAGNOSTIC DES MODALES:');
+    console.log('- Bootstrap disponible:', typeof bootstrap !== 'undefined');
+    console.log('- Modal element existe:', !!document.getElementById('popup-tache'));
+    console.log('- Modal instance créée:', !!this.modal);
+    console.log('- History modal element existe:', !!document.getElementById('history-modal'));
+    console.log('- History modal instance créée:', !!this.historyModal);
+    console.log('- Bouton nouvelle tâche existe:', !!document.getElementById('btn-nouvelle-tache'));
+    
+    if (this.modal) {
+      console.log('- Modal peut être ouverte:', typeof this.modal.show === 'function');
+    }
+  }
+
+  // === RESET COMPLET DES MODALES ===
+  resetModals() {
+    console.log('🔄 Reset complet des modales...');
+    
+    // Détruire les instances existantes
+    if (this.modal) {
+      try {
+        this.modal.dispose();
+      } catch (e) {
+        console.warn('Erreur lors de la destruction de la modal:', e);
+      }
+    }
+    
+    if (this.historyModal) {
+      try {
+        this.historyModal.dispose();
+      } catch (e) {
+        console.warn('Erreur lors de la destruction de la modal historique:', e);
+      }
+    }
+    
+    // Réinitialiser
+    this.modal = null;
+    this.historyModal = null;
+    this.modalElement = null;
+    this.historyModalElement = null;
+    
+    // Réinitialiser
+    setTimeout(() => {
+      this.initModals();
+    }, 100);
+  }
+
+
+
   /**
    * Ajoute un nouveau projet
    */
+  // === MÉTHODE D'AJOUT DE NOUVEAU PROJET ===
   addNewProject() {
     const newProjectName = getFieldValue('projet-ajout').trim();
     
@@ -569,7 +625,7 @@ export class ModalManager {
     }
     
     // Vérifier si le projet existe déjà
-    const currentProjects = this.kanban.gristOptions?.projet || [];
+    const currentProjects = this.gristOptions?.projet || [];
     if (currentProjects.includes(newProjectName)) {
       displayError('Ce projet existe déjà');
       return;
@@ -577,7 +633,7 @@ export class ModalManager {
     
     // Ajouter le projet à la liste
     const updatedProjects = [...currentProjects, newProjectName].sort();
-    this.kanban.gristOptions.projet = updatedProjects;
+    this.gristOptions.projet = updatedProjects;
     
     // Mettre à jour le select
     populateSelect('popup-projet', updatedProjects, true);
@@ -586,7 +642,7 @@ export class ModalManager {
     
     displaySuccess(`Projet "${newProjectName}" ajouté`);
   }
-  
+
   /**
    * Ouvre la modal d'historique pour une tâche
    * @param {number} taskId - ID de la tâche
