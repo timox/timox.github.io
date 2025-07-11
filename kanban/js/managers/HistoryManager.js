@@ -154,7 +154,7 @@ export class HistoryManager {
       if (lines.length === 0) return;
       
       const firstLine = lines[0].trim();
-      const timestampMatch = firstLine.match(/^\[(\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2})(\s*\([^)]+\))?\]$/);
+      const timestampMatch = firstLine.match(/^\((\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2})(\s*\([^)]+\))?\)$/);
       
       if (timestampMatch) {
         const timestampStr = timestampMatch[1];

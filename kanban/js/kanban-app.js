@@ -442,7 +442,7 @@ class KanbanManager {
     
     // Vérifier si le contenu n'a pas changé
     const lines = currentDescription.split('\n');
-    const lastContentIndex = lines.findIndex(line => line.startsWith('[') && line.includes(']'));
+    const lastContentIndex = lines.findIndex(line => line.startsWith('(') && line.includes(')'));
     
     if (lastContentIndex >= 0) {
       const lastContent = lines.slice(lastContentIndex + 1)
@@ -462,7 +462,7 @@ class KanbanManager {
     if (!description) return '';
     
     const lines = description.split('\n');
-    const firstTimestampIndex = lines.findIndex(line => line.match(/^\[.*\]$/));
+    const firstTimestampIndex = lines.findIndex(line => line.match(/^\(.*\)$/));
     
     if (firstTimestampIndex >= 0) {
       const separatorIndex = lines.findIndex((line, index) => 
@@ -487,7 +487,7 @@ class KanbanManager {
       const lines = section.trim().split('\n');
       if (lines.length === 0) return;
       
-      const timestampMatch = lines[0].match(/^\[(.+)\]$/);
+      const timestampMatch = lines[0].match(/^\((.+)\)$/);
       if (timestampMatch) {
         const timestamp = timestampMatch[1];
         const content = lines.slice(1).join('\n').trim();
@@ -608,7 +608,7 @@ class KanbanManager {
     
     // Compter les commentaires
     const commentCount = record.description ? 
-      (record.description.match(/^\[.*\]$/gm) || []).length : 0;
+      (record.description.match(/^\(.*\)$/gm) || []).length : 0;
     
     // Compter les changements de statut
     let statusChangeCount = 0;
@@ -1059,7 +1059,7 @@ class KanbanManager {
         const lines = section.trim().split('\n');
         if (lines.length === 0) return;
         
-        const timestampMatch = lines[0].match(/^\[(.+)\]$/);
+        const timestampMatch = lines[0].match(/^\((.+)\)$/);
         if (timestampMatch) {
           const content = lines.slice(1).join('\n').trim();
           if (content) {

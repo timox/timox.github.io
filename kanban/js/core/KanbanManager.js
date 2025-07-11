@@ -1,5 +1,5 @@
 // === core/KanbanManager.js ===
-// Orchestrateur principal allégé pour l'application Kanban
+// Orchestrateur principal allï¿½gï¿½ pour l'application Kanban
 
 import { VIEW_MODES, STATUTS } from '../config/constants.js';
 import { displayError, displaySuccess, toggleLoadingSpinner } from '../utils/dom.js';
@@ -18,18 +18,18 @@ import { BoardRenderer } from '../renderers/BoardRenderer.js';
 import { GristManager } from './GristManager.js';
 
 /**
- * Orchestrateur principal de l'application Kanban (version allégée)
+ * Orchestrateur principal de l'application Kanban (version allï¿½gï¿½e)
  */
 export class KanbanManager {
   constructor() {
     // Container principal
     this.kanbanContainer = document.getElementById('kanban-container');
     
-    // État de l'application
+    // ï¿½tat de l'application
     this.isInitialized = false;
     this.isUpdating = false;
     
-    // Gestionnaires spécialisés
+    // Gestionnaires spï¿½cialisï¿½s
     this.gristManager = null;
     this.datePickerManager = null;
     this.modalManager = null;
@@ -38,11 +38,11 @@ export class KanbanManager {
     this.cardRenderer = null;
     this.boardRenderer = null;
     
-    // État des données
+    // ï¿½tat des donnï¿½es
     this.currentRecords = [];
     this.gristOptions = {};
     
-    // État de l'interface
+    // ï¿½tat de l'interface
     this.viewMode = VIEW_MODES.COMPACT;
     this.filters = {};
     this.showTermine = true;
@@ -62,13 +62,13 @@ export class KanbanManager {
       console.log('KanbanManager: Initialisation...');
       toggleLoadingSpinner(true);
       
-      // Vérifier les prérequis
+      // Vï¿½rifier les prï¿½requis
       this.checkPrerequisites();
       
       // Initialiser les gestionnaires dans l'ordre
       await this.initializeManagers();
       
-      // Charger les données initiales
+      // Charger les donnï¿½es initiales
       await this.loadInitialData();
       
       // Initialiser l'interface
@@ -78,8 +78,8 @@ export class KanbanManager {
       this.refreshKanban();
       
       this.isInitialized = true;
-      console.log('KanbanManager: Initialisation terminée avec succès');
-      displaySuccess('Kanban initialisé avec succès');
+      console.log('KanbanManager: Initialisation terminï¿½e avec succï¿½s');
+      displaySuccess('Kanban initialisï¿½ avec succï¿½s');
       
     } catch (error) {
       console.error('KanbanManager: Erreur d\'initialisation:', error);
@@ -90,42 +90,42 @@ export class KanbanManager {
   }
   
   /**
-   * Vérifie les prérequis de l'application
+   * Vï¿½rifie les prï¿½requis de l'application
    */
   checkPrerequisites() {
-    // Vérifier la présence du container principal
+    // Vï¿½rifier la prï¿½sence du container principal
     if (!this.kanbanContainer) {
-      throw new Error('Container Kanban non trouvé');
+      throw new Error('Container Kanban non trouvï¿½');
     }
     
-    // Vérifier la présence de Grist
+    // Vï¿½rifier la prï¿½sence de Grist
     if (typeof grist === 'undefined') {
       throw new Error('API Grist non disponible');
     }
     
-    // Vérifier Bootstrap
+    // Vï¿½rifier Bootstrap
     if (typeof bootstrap === 'undefined') {
-      console.warn('KanbanManager: Bootstrap non détecté');
+      console.warn('KanbanManager: Bootstrap non dï¿½tectï¿½');
     }
     
-    // Vérifier SortableJS
+    // Vï¿½rifier SortableJS
     if (typeof Sortable === 'undefined') {
-      console.warn('KanbanManager: SortableJS non détecté');
+      console.warn('KanbanManager: SortableJS non dï¿½tectï¿½');
     }
     
-    // Vérifier Flatpickr
+    // Vï¿½rifier Flatpickr
     if (typeof flatpickr === 'undefined') {
-      console.warn('KanbanManager: Flatpickr non détecté');
+      console.warn('KanbanManager: Flatpickr non dï¿½tectï¿½');
     }
   }
   
   /**
-   * Initialise tous les gestionnaires spécialisés
+   * Initialise tous les gestionnaires spï¿½cialisï¿½s
    */
   async initializeManagers() {
     console.log('KanbanManager: Initialisation des gestionnaires...');
     
-    // 1. Gestionnaire Grist (données)
+    // 1. Gestionnaire Grist (donnï¿½es)
     this.gristManager = new GristManager(this);
     
     // 2. Renderers (interface)
@@ -141,27 +141,27 @@ export class KanbanManager {
     // 5. Gestionnaire d'historique
     this.historyManager = new HistoryManager(this);
     
-    // 6. Gestionnaire de filtres (en dernier car il dépend des autres)
+    // 6. Gestionnaire de filtres (en dernier car il dï¿½pend des autres)
     this.filterManager = new FilterManager(this);
     
-    console.log('KanbanManager: Gestionnaires initialisés');
+    console.log('KanbanManager: Gestionnaires initialisï¿½s');
   }
   
   /**
-   * Charge les données initiales
+   * Charge les donnï¿½es initiales
    */
   async loadInitialData() {
-    console.log('KanbanManager: Chargement des données...');
+    console.log('KanbanManager: Chargement des donnï¿½es...');
     
-    // Les données sont chargées par le GristManager
-    // On récupère les références
+    // Les donnï¿½es sont chargï¿½es par le GristManager
+    // On rï¿½cupï¿½re les rï¿½fï¿½rences
     this.currentRecords = this.gristManager.currentRecords || [];
     this.gristOptions = this.gristManager.gristOptions || {};
     
     // Obtenir les informations utilisateur
     await this.loadUserInfo();
     
-    console.log(`KanbanManager: ${this.currentRecords.length} tâches chargées`);
+    console.log(`KanbanManager: ${this.currentRecords.length} tï¿½ches chargï¿½es`);
   }
   
   /**
@@ -172,9 +172,9 @@ export class KanbanManager {
       const userInfo = await this.gristManager.getUserInfo();
       if (userInfo && userInfo.user) {
         this.currentUser = userInfo.user.name || userInfo.user.email || 'Utilisateur';
-        console.log('KanbanManager: Utilisateur détecté:', this.currentUser);
+        console.log('KanbanManager: Utilisateur dï¿½tectï¿½:', this.currentUser);
       } else {
-        console.log('KanbanManager: Aucun utilisateur détecté');
+        console.log('KanbanManager: Aucun utilisateur dï¿½tectï¿½');
       }
     } catch (error) {
       console.warn('KanbanManager: Impossible de charger les infos utilisateur:', error);
@@ -193,7 +193,7 @@ export class KanbanManager {
     // Configurer les raccourcis clavier globaux
     this.setupGlobalKeyboardShortcuts();
     
-    // Initialiser les contrôles de vue
+    // Initialiser les contrï¿½les de vue
     this.setupViewControls();
   }
   
@@ -246,28 +246,28 @@ export class KanbanManager {
   }
   
   /**
-   * Configure les contrôles de vue
+   * Configure les contrï¿½les de vue
    */
   setupViewControls() {
-    // Les contrôles sont gérés par le FilterManager
-    // On s'assure juste que l'état initial est correct
+    // Les contrï¿½les sont gï¿½rï¿½s par le FilterManager
+    // On s'assure juste que l'ï¿½tat initial est correct
     this.viewMode = this.filterManager?.viewMode || VIEW_MODES.COMPACT;
   }
   
   /**
-   * Rafraîchit l'affichage du Kanban
+   * Rafraï¿½chit l'affichage du Kanban
    */
   refreshKanban() {
     if (!this.isInitialized || this.isUpdating) {
-      console.log('KanbanManager: Rafraîchissement ignoré (pas initialisé ou en cours de mise à jour)');
+      console.log('KanbanManager: Rafraï¿½chissement ignorï¿½ (pas initialisï¿½ ou en cours de mise ï¿½ jour)');
       return;
     }
     
     try {
-      // Récupérer les données filtrées
+      // Rï¿½cupï¿½rer les donnï¿½es filtrï¿½es
       const filteredRecords = this.getFilteredRecords();
       
-      // Déléguer le rendu au BoardRenderer
+      // Dï¿½lï¿½guer le rendu au BoardRenderer
       if (this.boardRenderer) {
         this.boardRenderer.renderKanban(this.viewMode, filteredRecords, {
           showTermine: this.showTermine,
@@ -277,14 +277,14 @@ export class KanbanManager {
       }
       
     } catch (error) {
-      console.error('KanbanManager: Erreur lors du rafraîchissement:', error);
+      console.error('KanbanManager: Erreur lors du rafraï¿½chissement:', error);
       displayError('Erreur lors de l\'affichage du Kanban');
     }
   }
   
   /**
-   * Obtient les enregistrements filtrés
-   * @returns {Array} Enregistrements filtrés
+   * Obtient les enregistrements filtrï¿½s
+   * @returns {Array} Enregistrements filtrï¿½s
    */
   getFilteredRecords() {
     if (this.filterManager && typeof this.filterManager.filterRecords === 'function') {
@@ -296,7 +296,7 @@ export class KanbanManager {
   }
   
   /**
-   * Crée une nouvelle tâche
+   * Crï¿½e une nouvelle tï¿½che
    */
   createNewTask() {
     if (this.modalManager) {
@@ -326,10 +326,10 @@ export class KanbanManager {
   }
   
   /**
-   * Sauvegarde une tâche (appelée par le ModalManager)
-   * @param {object} taskData - Données de la tâche
-   * @param {number|null} taskId - ID pour mise à jour
-   * @returns {Promise} Promise résolue quand la sauvegarde est terminée
+   * Sauvegarde une tï¿½che (appelï¿½e par le ModalManager)
+   * @param {object} taskData - Donnï¿½es de la tï¿½che
+   * @param {number|null} taskId - ID pour mise ï¿½ jour
+   * @returns {Promise} Promise rï¿½solue quand la sauvegarde est terminï¿½e
    */
   async saveTaskData(taskData, taskId = null) {
     if (!this.gristManager) {
@@ -339,21 +339,21 @@ export class KanbanManager {
     try {
       const result = await this.gristManager.saveRecord(taskData, taskId);
       
-      // Rafraîchir l'affichage
+      // Rafraï¿½chir l'affichage
       this.refreshKanban();
       
       return result;
       
     } catch (error) {
-      console.error('KanbanManager: Erreur sauvegarde tâche:', error);
+      console.error('KanbanManager: Erreur sauvegarde tï¿½che:', error);
       throw error;
     }
   }
   
   /**
-   * Supprime une tâche (appelée par le ModalManager)
-   * @param {number} taskId - ID de la tâche à supprimer
-   * @returns {Promise} Promise résolue quand la suppression est terminée
+   * Supprime une tï¿½che (appelï¿½e par le ModalManager)
+   * @param {number} taskId - ID de la tï¿½che ï¿½ supprimer
+   * @returns {Promise} Promise rï¿½solue quand la suppression est terminï¿½e
    */
   async deleteTaskById(taskId) {
     if (!this.gristManager) {
@@ -363,18 +363,18 @@ export class KanbanManager {
     try {
       await this.gristManager.deleteRecord(taskId);
       
-      // Rafraîchir l'affichage
+      // Rafraï¿½chir l'affichage
       this.refreshKanban();
       
     } catch (error) {
-      console.error('KanbanManager: Erreur suppression tâche:', error);
+      console.error('KanbanManager: Erreur suppression tï¿½che:', error);
       throw error;
     }
   }
   
   /**
-   * Gère le drag & drop d'une tâche
-   * @param {Event} evt - Événement de drag
+   * Gï¿½re le drag & drop d'une tï¿½che
+   * @param {Event} evt - ï¿½vï¿½nement de drag
    * @param {string} targetStatus - Statut de destination
    */
   async handleDragEnd(evt, targetStatus) {
@@ -389,10 +389,10 @@ export class KanbanManager {
     const oldStatus = task.statut;
     if (oldStatus === targetStatus) return;
     
-    console.log(`KanbanManager: Déplacement tâche ${taskId}: ${oldStatus} ? ${targetStatus}`);
+    console.log(`KanbanManager: Dï¿½placement tï¿½che ${taskId}: ${oldStatus} ? ${targetStatus}`);
     
     try {
-      // Préparer les données de mise à jour
+      // Prï¿½parer les donnï¿½es de mise ï¿½ jour
       const updateData = { statut: targetStatus };
       
       // Ajouter l'historique si le HistoryManager est disponible
@@ -404,48 +404,48 @@ export class KanbanManager {
       // Sauvegarder via GristManager
       await this.gristManager.saveRecord(updateData, taskId);
       
-      console.log('KanbanManager: Déplacement réussi');
+      console.log('KanbanManager: Dï¿½placement rï¿½ussi');
       
     } catch (error) {
-      console.error('KanbanManager: Erreur lors du déplacement:', error);
+      console.error('KanbanManager: Erreur lors du dï¿½placement:', error);
       displayError(`Erreur: ${error.message}`);
       
-      // Rafraîchir pour annuler le déplacement visuel
+      // Rafraï¿½chir pour annuler le dï¿½placement visuel
       this.refreshKanban();
     }
   }
   
   /**
-   * Callback appelé quand les données Grist sont rechargées
+   * Callback appelï¿½ quand les donnï¿½es Grist sont rechargï¿½es
    * @param {Array} newRecords - Nouveaux enregistrements
    * @param {object} newOptions - Nouvelles options
    */
   onDataReloaded(newRecords, newOptions) {
-    console.log('KanbanManager: Données rechargées depuis Grist');
+    console.log('KanbanManager: Donnï¿½es rechargï¿½es depuis Grist');
     
     this.currentRecords = newRecords || [];
     this.gristOptions = newOptions || {};
     
-    // Mettre à jour les options des formulaires
+    // Mettre ï¿½ jour les options des formulaires
     this.populateFormOptions();
     
-    // Rafraîchir l'affichage
+    // Rafraï¿½chir l'affichage
     this.refreshKanban();
   }
   
   /**
-   * Callback appelé quand une date est changée
+   * Callback appelï¿½ quand une date est changï¿½e
    * @param {string|null} newDate - Nouvelle date
    */
   onDateChanged(newDate) {
     // Callback pour le DatePickerManager
-    console.log('KanbanManager: Date changée:', newDate);
+    console.log('KanbanManager: Date changï¿½e:', newDate);
   }
   
   /**
-   * Obtient la dernière description d'une tâche (pour la compatibilité)
+   * Obtient la derniï¿½re description d'une tï¿½che (pour la compatibilitï¿½)
    * @param {string} description - Description avec historique
-   * @returns {string} Dernière description
+   * @returns {string} Derniï¿½re description
    */
   getLatestDescription(description) {
     if (this.historyManager && typeof this.historyManager.getLatestDescription === 'function') {
@@ -456,7 +456,7 @@ export class KanbanManager {
     if (!description) return '';
     
     const lines = description.split('\n');
-    const firstTimestampIndex = lines.findIndex(line => line.match(/^\[.*\]$/));
+    const firstTimestampIndex = lines.findIndex(line => line.match(/^\(.*\)$/));
     
     if (firstTimestampIndex >= 0) {
       const separatorIndex = lines.findIndex((line, index) => 
@@ -471,7 +471,7 @@ export class KanbanManager {
   }
   
   /**
-   * Ajoute un timestamp à une description (pour la compatibilité)
+   * Ajoute un timestamp ï¿½ une description (pour la compatibilitï¿½)
    * @param {string} currentDescription - Description actuelle
    * @param {string} newContent - Nouveau contenu
    * @param {string} userName - Nom d'utilisateur
@@ -523,11 +523,11 @@ export class KanbanManager {
     if (this.filterManager && typeof this.filterManager.setViewMode === 'function') {
       this.filterManager.setViewMode(newMode);
     } else {
-      // Fallback: rafraîchir directement
+      // Fallback: rafraï¿½chir directement
       this.refreshKanban();
     }
     
-    console.log('KanbanManager: Mode de vue changé:', newMode);
+    console.log('KanbanManager: Mode de vue changï¿½:', newMode);
   }
   
   /**
@@ -541,15 +541,15 @@ export class KanbanManager {
     if (this.filterManager && typeof this.filterManager.applyFilters === 'function') {
       this.filterManager.applyFilters();
     } else {
-      // Fallback: rafraîchir directement
+      // Fallback: rafraï¿½chir directement
       this.refreshKanban();
     }
   }
   
   /**
-   * Exporte les données du Kanban
+   * Exporte les donnï¿½es du Kanban
    * @param {string} format - Format d'export ('csv', 'json')
-   * @returns {string} Données exportées
+   * @returns {string} Donnï¿½es exportï¿½es
    */
   exportData(format = 'csv') {
     if (!this.gristManager) {
@@ -572,13 +572,13 @@ export class KanbanManager {
         }, null, 2);
         
       default:
-        throw new Error(`Format d'export non supporté: ${format}`);
+        throw new Error(`Format d'export non supportï¿½: ${format}`);
     }
   }
   
   /**
    * Obtient les statistiques du Kanban
-   * @returns {object} Statistiques détaillées
+   * @returns {object} Statistiques dï¿½taillï¿½es
    */
   getStatistics() {
     const stats = {
@@ -598,26 +598,26 @@ export class KanbanManager {
     
     this.currentRecords.forEach(record => {
       // Par statut
-      const status = record.statut || 'Non défini';
+      const status = record.statut || 'Non dï¿½fini';
       stats.byStatus[status] = (stats.byStatus[status] || 0) + 1;
       
-      // Par priorité (calcul simplifié)
+      // Par prioritï¿½ (calcul simplifiï¿½)
       const priority = this.calculateSimplePriority(record);
       stats.byPriority[`P${priority}`] = (stats.byPriority[`P${priority}`] || 0) + 1;
       
-      // Avec échéances
+      // Avec ï¿½chï¿½ances
       if (record.date_echeance) {
         stats.withDeadlines++;
         
         const deadline = new Date(record.date_echeance);
-        if (deadline < now && record.statut !== 'Terminé') {
+        if (deadline < now && record.statut !== 'Terminï¿½') {
           stats.overdue++;
-        } else if (deadline <= threeDaysFromNow && record.statut !== 'Terminé') {
+        } else if (deadline <= threeDaysFromNow && record.statut !== 'Terminï¿½') {
           stats.urgent++;
         }
       }
       
-      // Récemment créées (approximation par ID élevé)
+      // Rï¿½cemment crï¿½ï¿½es (approximation par ID ï¿½levï¿½)
       if (record.id && this.currentRecords.length > 0) {
         const maxId = Math.max(...this.currentRecords.map(r => r.id));
         if (record.id > (maxId - 5)) {
@@ -625,7 +625,7 @@ export class KanbanManager {
         }
       }
       
-      // Récemment mises à jour
+      // Rï¿½cemment mises ï¿½ jour
       if (record.date_derniere_maj) {
         const lastUpdate = new Date(record.date_derniere_maj);
         if (lastUpdate > oneDayAgo) {
@@ -638,9 +638,9 @@ export class KanbanManager {
   }
   
   /**
-   * Calcule une priorité simplifiée
+   * Calcule une prioritï¿½ simplifiï¿½e
    * @param {object} record - Enregistrement
-   * @returns {number} Priorité (1-4)
+   * @returns {number} Prioritï¿½ (1-4)
    */
   calculateSimplePriority(record) {
     if (this.cardRenderer && typeof this.cardRenderer.calculatePriority === 'function') {
@@ -652,15 +652,15 @@ export class KanbanManager {
     const urgence = String(record.urgence || '').toLowerCase();
     
     if (impact === 'critique') return 1;
-    if (impact === 'important') return (urgence === 'immédiate' || urgence === 'courte') ? 1 : 2;
-    if (impact === 'modéré') return (urgence === 'immédiate') ? 2 : 3;
+    if (impact === 'important') return (urgence === 'immï¿½diate' || urgence === 'courte') ? 1 : 2;
+    if (impact === 'modï¿½rï¿½') return (urgence === 'immï¿½diate') ? 2 : 3;
     return 4;
   }
   
   /**
-   * Recherche des tâches
-   * @param {string} query - Requête de recherche
-   * @returns {Array} Tâches correspondantes
+   * Recherche des tï¿½ches
+   * @param {string} query - Requï¿½te de recherche
+   * @returns {Array} Tï¿½ches correspondantes
    */
   searchTasks(query) {
     if (!query || query.trim() === '') {
@@ -685,17 +685,17 @@ export class KanbanManager {
   }
   
   /**
-   * Obtient une tâche par ID
-   * @param {number} taskId - ID de la tâche
-   * @returns {object|null} Tâche trouvée ou null
+   * Obtient une tï¿½che par ID
+   * @param {number} taskId - ID de la tï¿½che
+   * @returns {object|null} Tï¿½che trouvï¿½e ou null
    */
   getTaskById(taskId) {
     return this.currentRecords.find(record => record.id === taskId) || null;
   }
   
   /**
-   * Vérifie si l'application est prête
-   * @returns {boolean} True si prête
+   * Vï¿½rifie si l'application est prï¿½te
+   * @returns {boolean} True si prï¿½te
    */
   isReady() {
     return this.isInitialized && 
@@ -704,8 +704,8 @@ export class KanbanManager {
   }
   
   /**
-   * Obtient l'état complet de l'application
-   * @returns {object} État complet
+   * Obtient l'ï¿½tat complet de l'application
+   * @returns {object} ï¿½tat complet
    */
   getApplicationState() {
     return {
@@ -733,31 +733,31 @@ export class KanbanManager {
   }
   
   /**
-   * Mode debug : affiche l'état dans la console
+   * Mode debug : affiche l'ï¿½tat dans la console
    */
   debugInfo() {
     console.group('?? KanbanManager Debug Info');
-    console.log('État:', this.getApplicationState());
+    console.log('ï¿½tat:', this.getApplicationState());
     console.log('Statistiques:', this.getStatistics());
     console.log('Enregistrements:', this.currentRecords);
     console.log('Options Grist:', this.gristOptions);
     if (this.gristManager) {
-      console.log('État Grist:', this.gristManager.exportState());
+      console.log('ï¿½tat Grist:', this.gristManager.exportState());
     }
     console.groupEnd();
   }
   
   /**
-   * Redémarre l'application
+   * Redï¿½marre l'application
    */
   async restart() {
-    console.log('KanbanManager: Redémarrage de l\'application...');
+    console.log('KanbanManager: Redï¿½marrage de l\'application...');
     
     try {
-      // Nettoyer l'état actuel
+      // Nettoyer l'ï¿½tat actuel
       this.destroy();
       
-      // Réinitialiser les variables
+      // Rï¿½initialiser les variables
       this.isInitialized = false;
       this.isUpdating = false;
       this.currentRecords = [];
@@ -766,11 +766,11 @@ export class KanbanManager {
       // Relancer l'initialisation
       await this.init();
       
-      displaySuccess('Application redémarrée avec succès');
+      displaySuccess('Application redï¿½marrï¿½e avec succï¿½s');
       
     } catch (error) {
-      console.error('KanbanManager: Erreur lors du redémarrage:', error);
-      displayError('Erreur lors du redémarrage');
+      console.error('KanbanManager: Erreur lors du redï¿½marrage:', error);
+      displayError('Erreur lors du redï¿½marrage');
     }
   }
   
@@ -816,11 +816,11 @@ export class KanbanManager {
       this.kanbanContainer.innerHTML = '';
     }
     
-    // Réinitialiser l'état
+    // Rï¿½initialiser l'ï¿½tat
     this.isInitialized = false;
     this.currentRecords = [];
     this.gristOptions = {};
     
-    console.log('KanbanManager: Ressources nettoyées');
+    console.log('KanbanManager: Ressources nettoyï¿½es');
   }
 }

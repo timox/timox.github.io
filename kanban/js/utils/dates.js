@@ -264,7 +264,8 @@ export function generateTimestamp(date = new Date(), userName = null) {
   });
   
   const userSuffix = userName ? ` (${userName})` : '';
-  return `[${timestamp}${userSuffix}]`;
+  // Changed from [brackets] to (parentheses) to avoid Grist array parsing issues
+  return `(${timestamp}${userSuffix})`;
 }
 
 /**
@@ -273,7 +274,7 @@ export function generateTimestamp(date = new Date(), userName = null) {
  * @returns {Date|null} Date parsée ou null
  */
 export function parseTimestamp(timestampString) {
-  const match = timestampString.match(/\[(\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2})/);
+  const match = timestampString.match(/\((\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2})/);
   if (!match) return null;
   
   const [datePart, timePart] = match[1].split(' ');
