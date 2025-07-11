@@ -62,8 +62,8 @@ class KanbanManager {
     // Propriétés principales
     this.kanbanContainer = document.getElementById('kanban-container');
     this.currentRecords = [];
-    this.modalElement = document.getElementById('popup-tache');
-    this.historyModalElement = document.getElementById('history-modal');
+    this.modalElement = null;
+    this.historyModalElement =null;
     this.currentTaskId = null;
     this.isUpdating = false;
     this.canEdit = true;
@@ -105,7 +105,8 @@ class KanbanManager {
       await this.waitForGristReady();
       await this.loadGristDataAndOptions();
       await this.initializeUser();
-      
+      // IMPORTANT: Attendre que le DOM soit complètement prêt
+      await this.waitForDOM();
       this.initModals();
       this.initEventListeners();
       
@@ -123,7 +124,16 @@ class KanbanManager {
       toggleLoadingSpinner(false);
     }
   }
-
+   // NOUVEAU: Attendre que le DOM soit prêt
+  async waitForDOM() {
+    return new Promise((resolve) => {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', resolve);
+      } else {
+        resolve();
+      }
+    });
+  }
   // NOUVEAU: Initialisation des managers
   initializeManagers() {
     console.log('🔧 Initialisation des managers...');
@@ -533,37 +543,71 @@ class KanbanManager {
     return this.strategiesData.find(strategy => strategy.id === strategieId) || null;
   }
 
-  // === GESTION DES MODALS ===
+  // === INITIALISATION DES MODALES CORRIGÉE ===
   initModals() {
-    // Modal tâche
+    console.log('🔧 Initialisation des modales...');
+    
+    // Vérifier que Bootstrap est disponible
+    if (typeof bootstrap === 'undefined') {
+      console.error('❌ Bootstrap n\'est pas chargé !');
+      displayError('Bootstrap n\'est pas disponible. Veuillez recharger la page.');
+      return;
+    }
+    
+    // Rechercher les éléments de modal
+    this.modalElement = document.getElementById('popup-tache');
+    this.historyModalElement = document.getElementById('history-modal');
+    
+    // Debug: Vérifier si les éléments existent
+    console.log('Modal element trouvé:', !!this.modalElement);
+    console.log('History modal element trouvé:', !!this.historyModalElement);
+    
+    // Initialiser la modal tâche
     if (this.modalElement) {
       try {
         this.modal = new bootstrap.Modal(this.modalElement, { 
           backdrop: 'static', 
           keyboard: false 
         });
-        console.log('Modal tâche initialisée');
+        console.log('✅ Modal tâche initialisée');
+        
+        // Ajouter des événements de debug
+        this.modalElement.addEventListener('show.bs.modal', () => {
+          console.log('📖 Modal tâche en cours d\'ouverture');
+        });
+        
+        this.modalElement.addEventListener('shown.bs.modal', () => {
+          console.log('✅ Modal tâche ouverte');
+        });
+        
       } catch (e) {
-        console.error('Erreur init modal tâche:', e);
+        console.error('❌ Erreur init modal tâche:', e);
+        displayError('Erreur initialisation modal tâche');
       }
+    } else {
+      console.error('❌ Élément modal tâche non trouvé !');
+      displayError('Modal tâche non trouvée dans le DOM');
     }
 
-    // Modal historique
+    // Initialiser la modal historique
     if (this.historyModalElement) {
       try {
         this.historyModal = new bootstrap.Modal(this.historyModalElement, { 
           backdrop: true, 
           keyboard: true 
         });
-        console.log('Modal historique initialisée');
+        console.log('✅ Modal historique initialisée');
       } catch (e) {
-        console.error('Erreur init modal historique:', e);
+        console.error('❌ Erreur init modal historique:', e);
       }
+    } else {
+      console.warn('⚠️ Modal historique non trouvée, elle sera créée si nécessaire');
     }
 
     // Peupler les options des selects
     this.populateSelectOptions();
   }
+
 
   populateSelectOptions() {
     if (!this.gristOptions) return;
@@ -935,28 +979,65 @@ class KanbanManager {
     return match ? match[1] : this.currentUser;
   }
 
-  // === EVENT LISTENERS PRINCIPAUX ===
+ // === EVENT LISTENERS CORRIGÉS ===
   initEventListeners() {
+    console.log('🔧 Initialisation des event listeners...');
+    
     // Bouton nouvelle tâche
     const btnNewTask = document.getElementById('btn-nouvelle-tache');
     if (btnNewTask) {
-      btnNewTask.addEventListener('click', () => this.openPopup());
+      btnNewTask.addEventListener('click', (e) => {
+        console.log('🆕 Clic bouton nouvelle tâche');
+        e.preventDefault();
+        this.openPopup();
+      });
+      console.log('✅ Event listener bouton nouvelle tâche attaché');
+    } else {
+      console.error('❌ Bouton nouvelle tâche non trouvé !');
     }
 
     // Bouton sauvegarder
     const btnSave = document.getElementById('btn-save-task');
     if (btnSave) {
-      btnSave.addEventListener('click', () => this.saveTask());
+      btnSave.addEventListener('click', (e) => {
+        console.log('💾 Clic bouton sauvegarder');
+        e.preventDefault();
+        this.saveTask();
+      });
+      console.log('✅ Event listener bouton sauvegarder attaché');
+    } else {
+      console.warn('⚠️ Bouton sauvegarder non trouvé');
+    }
+
+    // Bouton supprimer
+    const btnDelete = document.getElementById('btn-delete-task');
+    if (btnDelete) {
+      btnDelete.addEventListener('click', (e) => {
+        console.log('🗑️ Clic bouton supprimer');
+        e.preventDefault();
+        this.deleteTask();
+      });
     }
 
     // Bouton export historique
     const btnExportHistory = document.getElementById('btn-export-history');
     if (btnExportHistory) {
-      btnExportHistory.addEventListener('click', () => this.exportKanban());
+      btnExportHistory.addEventListener('click', (e) => {
+        console.log('📤 Clic bouton export historique');
+        e.preventDefault();
+        this.exportKanban();
+      });
     }
+
+   
 
     // Raccourcis clavier
     document.addEventListener('keydown', (e) => {
+      if ((e.key === 'n' || e.key === 'N') && !e.target.matches('input, textarea')) {
+        console.log('⌨️ Raccourci N pour nouvelle tâche');
+        e.preventDefault();
+        this.openPopup();
+      }
       if (e.key === 'r' || e.key === 'R') {
         if (!e.target.matches('input, textarea')) {
           e.preventDefault();
@@ -964,57 +1045,63 @@ class KanbanManager {
         }
       }
     });
+
+    console.log('✅ Event listeners initialisés');
   }
 
-  // === GESTION DES MODALS TÂCHE CORRIGÉE ===
+  // === OUVERTURE DE MODAL CORRIGÉE ===
   openPopup(tache = {}) {
+    console.log('🔓 Tentative d\'ouverture de modal', { tache: tache?.id || 'nouvelle' });
+    
+    // Vérifications de sécurité
     if (!this.modal) {
-      displayError('Modal non disponible');
+      console.error('❌ Instance modal non disponible');
+      
+      // Tentative de réinitialisation
+      console.log('🔄 Tentative de réinitialisation de la modal...');
+      this.initModals();
+      
+      if (!this.modal) {
+        displayError('Modal non disponible. Veuillez recharger la page.');
+        return;
+      }
+    }
+    
+    if (!this.modalElement) {
+      console.error('❌ Élément modal non disponible');
+      displayError('Élément modal non trouvé dans le DOM');
       return;
     }
     
     const isNewTask = !tache.id;
     this.currentTaskId = tache.id || null;
     
+    console.log('📝 Remplissage des champs de la modal');
+    
     // Peupler les champs
-    setFieldValue('popup-titre', tache.titre || '');
+    this.populateTaskForm(tache, isNewTask);
     
-    // CORRIGÉ: Séparer commentaires historique et nouvelle saisie
-    if (tache.description) {
-      // Afficher l'historique en lecture seule
-      const historyContainer = document.getElementById('description-history');
-      if (historyContainer) {
-        const historyHTML = this.generateCommentHistory(tache.description);
-        historyContainer.innerHTML = historyHTML;
-        
-        // Rendre le container rétractable
-        const historyWrapper = historyContainer.closest('.description-history-wrapper');
-        if (historyWrapper) {
-          historyWrapper.style.display = historyHTML ? 'block' : 'none';
-        }
-      }
-    }
-    
-    // Zone de saisie vide pour nouveau commentaire
-    setFieldValue('popup-description', '');
-    
-    setFieldValue('popup-statut-text', tache.statut || (isNewTask ? 'Backlog' : ''));
-    setFieldValue('popup-projet', tache.projet || '');
-    setFieldValue('popup-urgence', tache.urgence || '');
-    setFieldValue('popup-impact', tache.impact || '');
-    
-    // Stratégie depuis Grist
-    setFieldValue('popup-strategie', tache.strategie_id || '');
-    this.updateStrategyDetails(tache.strategie_id);
-    
-    setSelectedOptions('popup-bureau', tache.bureau || ['L']);
-    setSelectedOptions('popup-qui', tache.qui || ['L']);
-    
+    // Afficher/masquer le bouton supprimer
     toggleVisibility('btn-delete-task', !isNewTask, 'inline-block');
     
-    this.modal.show();
+    // Ouvrir la modal
+    try {
+      console.log('🔓 Ouverture de la modal...');
+      this.modal.show();
+      
+      // Focus sur le premier champ après ouverture
+      setTimeout(() => {
+        const firstField = document.getElementById('popup-titre');
+        if (firstField) {
+          firstField.focus();
+        }
+      }, 300);
+      
+    } catch (error) {
+      console.error('❌ Erreur ouverture modal:', error);
+      displayError(`Erreur ouverture modal: ${error.message}`);
+    }
   }
-
   async saveTask() {
     try {
       const titre = getFieldValue('popup-titre').trim();
@@ -1197,6 +1284,7 @@ class KanbanManager {
       return true;
     });
   }
+ 
 
   // NOUVEAU: Statistiques pour l'affichage
   getKanbanStatistics() {
