@@ -339,7 +339,7 @@ export class ModalManager {
    * Peuple le formulaire avec les données d'une tâche
    * @param {object} task - Données de la tâche
    */
- / === REMPLISSAGE DU FORMULAIRE CORRIGÉ ===
+  // === REMPLISSAGE DU FORMULAIRE CORRIGÉ ===
   populateTaskForm(tache, isNewTask) {
     // Champs de base
     setFieldValue('popup-titre', tache.titre || '');
