@@ -307,9 +307,17 @@ export class ModalManager {
       return;
     }
     
+    console.log('=== DEBUG: openTaskModal ===');
+    console.log('Task parameter:', task);
+    console.log('Task ID:', task?.id);
+    console.log('Task type:', typeof task?.id);
+    
     this.isNewTask = !task;
     this.currentTask = task;
     this.currentTaskId = task?.id || null;
+    
+    console.log('IsNewTask:', this.isNewTask);
+    console.log('CurrentTaskId:', this.currentTaskId);
     
     // Mettre à jour le titre de la modal
     const modalTitle = document.getElementById('popup-tache-label');
@@ -439,7 +447,16 @@ export class ModalManager {
       console.log('IsNewTask:', this.isNewTask);
       console.log('TABLE_ID:', TABLE_ID);
       console.log('CurrentTaskId:', this.currentTaskId);
+      console.log('CurrentTaskId type:', typeof this.currentTaskId);
       console.log('Action à envoyer:', this.isNewTask ? 'AddRecord' : 'UpdateRecord');
+      
+      // Validation critique
+      if (!this.isNewTask && (!this.currentTaskId || this.currentTaskId === null)) {
+        console.error('ERREUR CRITIQUE: Tentative UpdateRecord avec currentTaskId null!');
+        console.error('CurrentTask:', this.currentTask);
+        displayError('Erreur: ID de tâche manquant pour la mise à jour');
+        return;
+      }
       
       if (this.isNewTask) {
         // Création
