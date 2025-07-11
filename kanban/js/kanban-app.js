@@ -523,7 +523,12 @@ class KanbanManager {
 
   // === RENDU DES CARTES ===
   createTaskElementHTML(record) {
-    if (!record?.id) return '';
+    if (!record?.id) {
+      console.warn('createTaskElementHTML: record sans ID', record);
+      return '';
+    }
+    
+    console.log(`Création HTML pour tâche ${record.id}: ${record.titre}`);
     
     const priority = this.calculerPriorite(record.urgence, record.impact);
     const priorityBadge = generatePriorityBadge(priority);
@@ -759,14 +764,24 @@ class KanbanManager {
 
   // === RENDU DU KANBAN CORRIGÉ ===
   refreshKanban() {
-    if (!this.kanbanContainer) return;
+    if (!this.kanbanContainer) {
+      console.error("Conteneur Kanban principal manquant !");
+      return;
+    }
     
-    // CORRIGÉ: Utiliser le FilterManager pour filtrer
-    const filteredRecords = this.filterManager ? 
-      this.filterManager.filterRecords(this.currentRecords) : 
-      this.currentRecords;
+    console.log("Rafraîchissement Kanban (Génération HTML + Sortable)...");
+    console.log("Nombre d'enregistrements disponibles:", this.currentRecords?.length || 0);
+    
+    // Filtrer les enregistrements
+    const filteredRecords = this.filterRecords(this.currentRecords || []);
+    console.log(`Refresh - ${filteredRecords.length} enregistrements après filtrage.`);
+    
+    if (filteredRecords.length > 0) {
+      console.log("Exemple d'enregistrement:", filteredRecords[0]);
+    }
     
     const statutsToShow = this.showTermine ? STATUTS : STATUTS.filter(s => s.id !== 'Terminé');
+    console.log("Statuts à afficher:", statutsToShow.map(s => s.id));
     
     this.sortableInstances.forEach(s => s.destroy());
     this.sortableInstances = [];
@@ -784,7 +799,13 @@ class KanbanManager {
       const focusStatut = STATUTS.find(s => s.id === this.focusColumn);
       if (focusStatut) {
         const boardRecords = filteredRecords.filter(r => r.statut === focusStatut.id);
-        this.sortRecords(boardRecords);
+        // Trier les enregistrements par priorité
+        boardRecords.sort((a, b) => {
+          const prioA = this.calculerPriorite(a.urgence, a.impact);
+          const prioB = this.calculerPriorite(b.urgence, b.impact);
+          if (prioA !== prioB) return prioA - prioB;
+          return (a.id || 0) - (b.id || 0);
+        });
         const itemsHTML = boardRecords.map(record => this.createTaskElementHTML(record)).join('');
         const count = boardRecords.length;
 
@@ -806,16 +827,35 @@ class KanbanManager {
         const boardId = statut.classe;
         const boardRecords = filteredRecords.filter(r => r.statut === statut.id);
         
-        this.sortRecords(boardRecords);
+        console.log(`Statut ${statut.id}: ${boardRecords.length} enregistrements`);
+        
+        // Trier les enregistrements par priorité
+        boardRecords.sort((a, b) => {
+          const prioA = this.calculerPriorite(a.urgence, a.impact);
+          const prioB = this.calculerPriorite(b.urgence, b.impact);
+          if (prioA !== prioB) return prioA - prioB;
+          return (a.id || 0) - (b.id || 0);
+        });
 
-        const itemsHTML = boardRecords.map(record => this.createTaskElementHTML(record)).join('');
+        const itemsHTML = boardRecords.map(record => {
+          const html = this.createTaskElementHTML(record);
+          if (!html) {
+            console.warn(`Aucun HTML généré pour l'enregistrement:`, record);
+          }
+          return html;
+        }).join('');
         const count = boardRecords.length;
         const isHidden = (count === 0 && statut.id !== 'Terminé' && this.showTermine);
         const hiddenClass = isHidden ? ' board-hidden' : '';
 
+        console.log(`Items HTML pour ${statut.id}: ${itemsHTML.length} caractères`);
+        if (count > 0 && itemsHTML.length === 0) {
+          console.error(`Problème: ${count} enregistrements mais 0 caractères HTML générés`);
+        }
+
         kanbanHTML += `
           <div class="kanban-board${hiddenClass}" data-status-id="${statut.id}" data-board-class="${statut.classe}">
-            <div class="kanban-board-header board-${statut.classe}">
+            <div class="kanban-board-header entete-${statut.classe}">
               <span>${statut.libelle}</span>
               <span class="badge badge-secondary count-badge ml-2">${count}</span>
             </div>
@@ -827,7 +867,10 @@ class KanbanManager {
       });
     }
 
+    console.log('HTML final à injecter:', kanbanHTML.length, 'caractères');
     this.kanbanContainer.innerHTML = kanbanHTML || '<div style="padding: 20px; color: grey;">Aucune tâche à afficher.</div>';
+    
+    console.log('Vérification après injection:', this.kanbanContainer.innerHTML.length, 'caractères');
     
     // Initialiser Sortable
     this.kanbanContainer.querySelectorAll('.kanban-items-container').forEach(container => {
@@ -1298,6 +1341,45 @@ class KanbanManager {
       projets: this.gristOptions.projet.length,
       strategies: this.strategiesData.length
     });
+  }
+
+  // === MÉTHODES DE FILTRAGE ET TRI ===
+  filterRecords(records) {
+    const { bureau, qui, projet, statut } = this.filters;
+    if (!bureau && !qui && !projet && !statut) {
+      return records;
+    }
+    console.log("Application filtres:", this.filters);
+    return records.filter(r => {
+      const matchBureau = !bureau || this.nettoyerListe(r.bureau).includes(bureau);
+      const matchQui = !qui || this.nettoyerListe(r.qui).includes(qui);
+      const matchProjet = !projet || r.projet === projet;
+      const matchStatut = !statut || r.statut === statut;
+      return matchBureau && matchQui && matchProjet && matchStatut;
+    });
+  }
+
+  nettoyerListe(v) {
+    if (Array.isArray(v) && v[0] === 'L') {
+      return v.slice(1).filter(i => i !== null && typeof i !== 'undefined').map(String);
+    }
+    if (Array.isArray(v)) {
+      return v.filter(i => i !== null && typeof i !== 'undefined').map(String);
+    }
+    if (typeof v === 'string' && v.trim() !== '') {
+      return v.split(',').map(s => s.trim()).filter(Boolean);
+    }
+    return [];
+  }
+
+  calculerPriorite(u, i) {
+    const imp = String(i || '').trim().toLowerCase();
+    const urg = String(u || '').trim().toLowerCase();
+    if (imp === 'critique') return 1;
+    if (imp === 'important') return (urg === 'immédiate' || urg === 'courte') ? 1 : 2;
+    if (imp === 'modéré') return (urg === 'immédiate') ? 2 : 3;
+    if (imp === 'mineur') return 4;
+    return 3;
   }
 
   // === MÉTHODES UTILITAIRES ===
