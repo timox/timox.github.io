@@ -435,19 +435,27 @@ export class ModalManager {
       
       let result;
       
+      console.log('=== DEBUG: Envoi vers Grist ===');
+      console.log('IsNewTask:', this.isNewTask);
+      console.log('TABLE_ID:', TABLE_ID);
+      console.log('CurrentTaskId:', this.currentTaskId);
+      console.log('Action à envoyer:', this.isNewTask ? 'AddRecord' : 'UpdateRecord');
+      
       if (this.isNewTask) {
         // Création
-        result = await grist.docApi.applyUserActions([
-          ['AddRecord', TABLE_ID, null, gristData]
-        ]);
+        const action = ['AddRecord', TABLE_ID, null, gristData];
+        console.log('Action AddRecord complète:', action);
+        result = await grist.docApi.applyUserActions([action]);
         displaySuccess('Tâche créée avec succès');
       } else {
         // Mise à jour
-        result = await grist.docApi.applyUserActions([
-          ['UpdateRecord', TABLE_ID, this.currentTaskId, gristData]
-        ]);
+        const action = ['UpdateRecord', TABLE_ID, this.currentTaskId, gristData];
+        console.log('Action UpdateRecord complète:', action);
+        result = await grist.docApi.applyUserActions([action]);
         displaySuccess('Tâche mise à jour avec succès');
       }
+      
+      console.log('Résultat Grist:', result);
       
       // Signaler la mise à jour locale
       if (this.kanban.signalLocalUpdate) {
@@ -459,8 +467,19 @@ export class ModalManager {
       this.kanban.refreshKanban();
       
     } catch (error) {
-      console.error('ModalManager: Erreur sauvegarde:', error);
-      displayError(`Erreur lors de la sauvegarde: ${error.message}`);
+      console.error('ModalManager: Erreur sauvegarde complète:', error);
+      console.error('Error stack:', error.stack);
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      
+      // Afficher l'erreur détaillée
+      let errorMessage = `Erreur lors de la sauvegarde: ${error.message}`;
+      if (error.stack) {
+        console.error('Stack trace complet:', error.stack);
+        errorMessage += '\n(Voir console pour détails)';
+      }
+      
+      displayError(errorMessage);
     }
   }
   
@@ -469,6 +488,8 @@ export class ModalManager {
    * @returns {object} Données collectées
    */
   collectFormData() {
+    console.log('=== DEBUG: collectFormData ===');
+    
     const data = {
       titre: getFieldValue('popup-titre').trim(),
       statut: getFieldValue('popup-statut-text'),
@@ -477,10 +498,24 @@ export class ModalManager {
       impact: getFieldValue('popup-impact') || null,
       bureau: getSelectedOptionsAsGristFormat('popup-bureau'),
       qui: getSelectedOptionsAsGristFormat('popup-qui'),
+      strategie_id: getFieldValue('popup-strategie') || null,
       strategie_objectif: getFieldValue('strategie-objectif') || null,
       strategie_sous_objectif: getFieldValue('strategie-sous-objectif') || null,
       strategie_action: getFieldValue('strategie-action') || null
     };
+    
+    // Debug chaque champ collecté
+    console.log('Titre:', data.titre);
+    console.log('Statut:', data.statut);
+    console.log('Projet:', data.projet);
+    console.log('Urgence:', data.urgence);
+    console.log('Impact:', data.impact);
+    console.log('Bureau (raw):', data.bureau);
+    console.log('Qui (raw):', data.qui);
+    console.log('Strategie_id (raw):', data.strategie_id);
+    console.log('Strategie_objectif:', data.strategie_objectif);
+    console.log('Strategie_sous_objectif:', data.strategie_sous_objectif);
+    console.log('Strategie_action:', data.strategie_action);
     
     // Description avec horodatage si modifiée
     const newDescription = getFieldValue('popup-description').trim();
@@ -490,12 +525,15 @@ export class ModalManager {
     } else {
       data.description = this.currentTask?.description || '';
     }
+    console.log('Description finale:', data.description);
     
     // Date d'échéance
     if (this.kanban.datePickerManager) {
       data.date_echeance = this.kanban.datePickerManager.getDateForGrist();
     }
+    console.log('Date_echeance:', data.date_echeance);
     
+    console.log('=== Data collectée complète ===', data);
     return data;
   }
   
@@ -505,13 +543,57 @@ export class ModalManager {
    * @returns {object} Données formatées pour Grist
    */
   prepareTaskDataForGrist(taskData) {
+    console.log('=== DEBUG: prepareTaskDataForGrist ===');
+    console.log('Input taskData:', taskData);
+    
     const gristData = { ...taskData };
     
     // Ajouter les métadonnées
     gristData.date_derniere_maj = new Date().toISOString();
     
+    // Assurer que les champs obligatoires sont présents
+    if (!gristData.titre) {
+      throw new Error('Le titre est obligatoire');
+    }
+    
+    // Assurer que le statut est défini
+    if (!gristData.statut) {
+      gristData.statut = 'Backlog';
+    }
+    
+    // Assurer que les listes sont dans le bon format
+    console.log('Bureau avant traitement:', gristData.bureau, typeof gristData.bureau);
+    if (!Array.isArray(gristData.bureau) || gristData.bureau[0] !== 'L') {
+      console.log('Bureau corrigé vers format Grist');
+      gristData.bureau = ['L'];
+    }
+    
+    console.log('Qui avant traitement:', gristData.qui, typeof gristData.qui);
+    if (!Array.isArray(gristData.qui) || gristData.qui[0] !== 'L') {
+      console.log('Qui corrigé vers format Grist');
+      gristData.qui = ['L'];
+    }
+    
+    // Convertir strategie_id en nombre si nécessaire
+    console.log('Strategie_id avant traitement:', gristData.strategie_id, typeof gristData.strategie_id);
+    if (gristData.strategie_id && typeof gristData.strategie_id === 'string') {
+      const strategyId = parseInt(gristData.strategie_id);
+      gristData.strategie_id = isNaN(strategyId) ? null : strategyId;
+      console.log('Strategie_id après conversion:', gristData.strategie_id);
+    }
+    
+    // Nettoyer les valeurs nulles/undefined problématiques
+    Object.keys(gristData).forEach(key => {
+      if (gristData[key] === undefined) {
+        console.log(`Nettoyage: ${key} undefined -> null`);
+        gristData[key] = null;
+      }
+    });
+    
+    // Éviter les appels au history manager qui peuvent causer des problèmes
+    // (commenté pour l'instant)
+    /*
     if (this.isNewTask) {
-      // Pour les nouvelles tâches, initialiser l'historique
       if (this.kanban.historyManager) {
         const historyData = this.kanban.historyManager.updateTaskHistory(
           { statut: null }, 
@@ -521,7 +603,6 @@ export class ModalManager {
         Object.assign(gristData, historyData);
       }
     } else {
-      // Pour les mises à jour, vérifier si le statut a changé
       if (this.currentTask && this.currentTask.statut !== taskData.statut) {
         if (this.kanban.historyManager) {
           const historyData = this.kanban.historyManager.updateTaskHistory(
@@ -533,6 +614,15 @@ export class ModalManager {
         }
       }
     }
+    */
+    
+    console.log('=== FINAL gristData pour envoi ===');
+    console.log('Données préparées pour Grist:', gristData);
+    
+    // Validation finale des types
+    Object.entries(gristData).forEach(([key, value]) => {
+      console.log(`${key}: ${value} (type: ${typeof value}, isArray: ${Array.isArray(value)})`);
+    });
     
     return gristData;
   }
