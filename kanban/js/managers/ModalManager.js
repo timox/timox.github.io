@@ -586,6 +586,16 @@ export class ModalManager {
       console.log('Strategie_id après conversion:', gristData.strategie_id);
     }
     
+    // Remove fields that are auto-computed by Grist formulas
+    delete gristData.strategie_objectif;
+    delete gristData.strategie_sous_objectif; 
+    delete gristData.strategie_action;
+    console.log('Removed auto-computed strategy fields');
+    
+    // Remove historique_statuts - it's a Date field, not JSON
+    delete gristData.historique_statuts;
+    console.log('Removed historique_statuts field (Date field, not JSON)');
+    
     // Nettoyer les valeurs nulles/undefined problématiques
     Object.keys(gristData).forEach(key => {
       if (gristData[key] === undefined) {

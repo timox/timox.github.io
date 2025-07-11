@@ -30,13 +30,14 @@ export const DEFAULT_PROJETS = [];
 
 // === CONFIGURATION GRIST ===
 export const TABLE_ID = "Ssir_principale_task";
-export const USER_ACTIONS_TABLE = "User_Actions";
+export const USER_ACTIONS_TABLE = "User_Actions2";
 
 // === COLONNES REQUISES ET OPTIONNELLES ===
 export const REQUIRED_COLUMNS = [
   'id', 'titre', 'description', 'statut', 'bureau', 'qui', 'urgence', 'impact',
-  'projet', 'strategie_objectif', 'strategie_sous_objectif', 'strategie_action', 
-  'notes', 'historique_statuts', 'date_derniere_maj', 'statut_precedent'
+  'projet', 'strategie_id', 'notes', 'date_derniere_maj', 'statut_precedent'
+  // Removed: strategie_objectif, strategie_sous_objectif, strategie_action (auto-computed)
+  // Removed: historique_statuts (Date field, not JSON)
 ];
 
 export const OPTIONAL_COLUMNS = ['date_debut', 'date_echeance'];
