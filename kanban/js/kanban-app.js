@@ -1442,6 +1442,17 @@ class KanbanManager {
       return;
     }
     
+    // Ignorer les mises à jour des enregistrements temporaires du système d'historique
+    if (gristRecords && Array.isArray(gristRecords)) {
+      const hasTempRecord = gristRecords.some(record => 
+        record && record.titre === '___TEMP_USER_RECORD___'
+      );
+      if (hasTempRecord) {
+        console.log("onRecords ignoré (enregistrement temporaire système)");
+        return;
+      }
+    }
+    
     console.log("MAJ Grist (onRecords):", gristRecords ? 'Données' : 'Pas');
     this.isUpdating = true;
     
@@ -1473,7 +1484,7 @@ class KanbanManager {
         console.log("Flag ignoreNextOnRecords désactivé (timeout).");
         this.ignoreNextOnRecords = false;
       }
-    }, 500);
+    }, 1000); // Augmenté de 500ms à 1000ms pour laisser plus de temps aux cascades
   }
 
   // === MISE À JOUR DES OPTIONS SANS RE-FETCH ===

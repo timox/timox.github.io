@@ -108,28 +108,32 @@ export class FilterManager {
     // Filtres par sélection
     if (this.elements.filterBureau) {
       this.elements.filterBureau.addEventListener('change', (e) => {
-        this.filters.bureau = e.target.value;
+        this.filters.bureau = e.target.value || '';
+        console.log('FilterManager: Filtre bureau changé:', this.filters.bureau);
         this.applyFilters();
       });
     }
     
     if (this.elements.filterQui) {
       this.elements.filterQui.addEventListener('change', (e) => {
-        this.filters.qui = e.target.value;
+        this.filters.qui = e.target.value || '';
+        console.log('FilterManager: Filtre qui changé:', this.filters.qui);
         this.applyFilters();
       });
     }
     
     if (this.elements.filterProjet) {
       this.elements.filterProjet.addEventListener('change', (e) => {
-        this.filters.projet = e.target.value;
+        this.filters.projet = e.target.value || '';
+        console.log('FilterManager: Filtre projet changé:', this.filters.projet);
         this.applyFilters();
       });
     }
     
     if (this.elements.filterStatut) {
       this.elements.filterStatut.addEventListener('change', (e) => {
-        this.filters.statut = e.target.value;
+        this.filters.statut = e.target.value || '';
+        console.log('FilterManager: Filtre statut changé:', this.filters.statut);
         this.applyFilters();
       });
     }
@@ -256,25 +260,25 @@ export class FilterManager {
     if (!Array.isArray(records)) return [];
     
     return records.filter(record => {
-      // Filtre bureau
-      if (this.filters.bureau && Array.isArray(record.bureau)) {
+      // Filtre bureau - Vérifier explicitement que la valeur n'est pas vide
+      if (this.filters.bureau && this.filters.bureau.trim() !== '' && Array.isArray(record.bureau)) {
         const bureaux = record.bureau.slice(1); // Enlever le 'L' de Grist
         if (!bureaux.includes(this.filters.bureau)) return false;
       }
       
-      // Filtre responsable
-      if (this.filters.qui && Array.isArray(record.qui)) {
+      // Filtre responsable - Vérifier explicitement que la valeur n'est pas vide
+      if (this.filters.qui && this.filters.qui.trim() !== '' && Array.isArray(record.qui)) {
         const responsables = record.qui.slice(1); // Enlever le 'L' de Grist
         if (!responsables.includes(this.filters.qui)) return false;
       }
       
-      // Filtre projet
-      if (this.filters.projet && record.projet !== this.filters.projet) {
+      // Filtre projet - Vérifier explicitement que la valeur n'est pas vide
+      if (this.filters.projet && this.filters.projet.trim() !== '' && record.projet !== this.filters.projet) {
         return false;
       }
       
-      // Filtre statut
-      if (this.filters.statut && record.statut !== this.filters.statut) {
+      // Filtre statut - Vérifier explicitement que la valeur n'est pas vide
+      if (this.filters.statut && this.filters.statut.trim() !== '' && record.statut !== this.filters.statut) {
         return false;
       }
       
@@ -283,8 +287,8 @@ export class FilterManager {
         return false;
       }
       
-      // Recherche textuelle
-      if (this.filters.search) {
+      // Recherche textuelle - Vérifier explicitement que la valeur n'est pas vide
+      if (this.filters.search && this.filters.search.trim() !== '') {
         const searchableText = [
           record.titre || '',
           record.description || '',
@@ -295,7 +299,7 @@ export class FilterManager {
           record.notes || ''
         ].join(' ').toLowerCase();
         
-        if (!searchableText.includes(this.filters.search)) {
+        if (!searchableText.includes(this.filters.search.trim())) {
           return false;
         }
       }
