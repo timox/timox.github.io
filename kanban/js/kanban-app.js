@@ -23,6 +23,8 @@ import {
   formatDuration
 } from './utils/dates.js';
 
+import { initUserActionManager, getUserActionManager } from './utils/UserActionManager.js';
+
 import {
   generateBureauBadges,
   generatePriorityBadge,
@@ -179,6 +181,11 @@ class KanbanManager {
         grist.ready({ requiredAccess: 'full' });
         grist.onRecords(this.handleGristUpdate.bind(this));
         console.log("Listener onRecords attaché.");
+        
+        // Initialiser le gestionnaire d'actions utilisateur
+        initUserActionManager(grist);
+        console.log("UserActionManager initialisé.");
+        
         setTimeout(() => {
           console.log("grist.ready OK.");
           resolve();
@@ -1315,6 +1322,12 @@ class KanbanManager {
       await grist.docApi.applyUserActions([
         ['UpdateRecord', TABLE_ID, taskId, { statut: newStatus }]
       ]);
+      
+      // Enregistrer l'action utilisateur pour le changement de statut
+      const userActionManager = getUserActionManager();
+      if (userActionManager) {
+        await userActionManager.statusChangeAction(taskId, record.statut, newStatus);
+      }
       
       console.log(`Succès mise à jour statut ${taskId}.`);
 

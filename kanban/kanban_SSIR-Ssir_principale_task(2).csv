@@ -1,0 +1,687 @@
+id_task,ref_task,titre,description,type_tache_id,bureau,qui,priorite,impact,statut,historique_statuts,date_derniere_maj,statut_precedent,date_debut,date_echeance,notes,projet,urgence,ssir_type_task,qualification_necessaire,ssir_qualification,datenow,str_statut,str_urgence,str_qui,str_bureau,str_impact,date_creation,date_modif,Créé par,strategie_id,strategie_objectif,strategie_sous_objectif,strategie_action,strategie_id_sous_objectif
+Analyse et remédiation,,Mise à jour RDS -sécurisation accès rdp,"Améliorer l'infrastructure RDS existante
+presta demandée + voir les anciens rapports d'audit , trouver des moyens de protéger le rds
+ne pas partir de la migration des anciennes fermes",Mise à jour infrastructure,Exploit,Théo,Normal (3),Important,À faire,,2025-07-11 7:01pm,,,,Manque une stratégie globale,conformité SSI,Longue,Mise à jour infrastructure,non,,2025-07-11 7:01pm,À faire,Longue,Théo,Exploit,Important,2025-03-17 1:08am,2025-07-11 19:01:46.657700+02:00,timothee.foucart,exploit_acces_distants,Assurer le fonctionnement des systèmes d'information ,"Mettre en conformité les réseaux, logiciels et matériels","Sécurisation et homogénéisation des moyens d'accès distant (RDS, VPN, dotations en matériel portable)",Standardiser accès distants
+,,test,"[11/07/2025 01:49 (Utilisateur)]
+j'ai rien fait
+
+---
+
+[11/07/2025 01:23 (Utilisateur)]
+ceci est un test",,Exploit,"Didier, Théo",Élevé (2),Critique,Backlog,,2025-07-11 7:01pm,,,,,conformité SSI,Moyenne,,non,,2025-07-11 7:01pm,Backlog,Moyenne,"Didier, Théo",Exploit,Critique,2025-07-11 1:23am,2025-07-11 19:01:50.086586+02:00,timothee.foucart,,,,,Organiser les modalités de saisines et le suivi des réponses du service aux sollicitations
+,,Mise à jour Horoquartz,"[11/07/2025 01:26 (Utilisateur)]
+Mise à niveau de la solution gestion du temps d'activité + planification
+Soucis en lien avec les évolutions sur la version actuelle (développements en interne + publication des feuilles de garde ""à façon"" sur la solution BIRT)
+
+---
+
+[10/07/2025 17:47]
+Mise à niveau de la solution gestion du temps d'activité + planification
+Soucis en lien avec les évolutions sur la version actuelle (développements en interne + publication des feuilles de garde ""à façon"" sur la solution BIRT)
+
+---
+
+Mise à niveau de la solution gestion du temps d'activité + planification
+Soucis en lien avec les évolutions sur la version actuelle (développements en interne + publication des feuilles de garde ""à façon"" sur la solution BIRT)",,"BDD, Chef SSIR","Chloé, Isabelle, Timothée",Élevé (2),Critique,À faire,,2025-07-11 7:01pm,,,,,Évolution applicative,Moyenne,,non,,2025-07-11 7:01pm,À faire,Moyenne,"Chloé, Isabelle, Timothée","BDD, Chef SSIR",Critique,2025-07-08 11:48am,2025-07-11 19:01:52.169310+02:00,yvon.stortz,,,,,
+,,client vpn fortinet,client vpn fortinet à déployer,,"Exploit, Réseau","Alex, Théo",Élevé (2),Important,À faire,,2025-07-11 7:01pm,,,,,Évolution applicative,Moyenne,,non,,2025-07-11 7:01pm,À faire,Moyenne,"Alex, Théo","Exploit, Réseau",Important,2025-07-07 4:26pm,2025-07-11 19:01:53.561104+02:00,timothee.foucart,,,,,
+Analyse et remédiation,,Audit AD continu,"Automatiser le suivi des audits Active Directory
+ ok pas de visibilité? pas de priorité? on fait quoi?",Audit de sécurité,Exploit,"Paul, Théo",Normal (3),Modéré,Terminé,,2025-07-11 7:02pm,,,,Évaluation selon critères ANSSI,,Moyenne,Audit de sécurité,non,,2025-07-11 7:02pm,Terminé,Moyenne,"Paul, Théo",Exploit,Modéré,2025-03-17 1:08am,2025-07-11 19:02:03.589000+02:00,timothee.foucart,exploit_ad_durci,Assurer le fonctionnement des systèmes d'information ,"Mettre en conformité les réseaux, logiciels et matériels",Mise en conformité et durcissement de l'AD,Conformité infrastructure
+Déploiement politique sécurité,,Politique mots de passe,"Engager un changement de politique des mots de passe.
+=> aucun blocage ? la politique de mot de passe peut être engagée : fixer des délais prendre en compte les mises à jour.
+=>> politique de mdp : phasage.
+Paul me renvoie les gpo : OK
++MFA vérifier les Mises à jour
++ vérifier le positionnement de flux dmz.
+
+=> codir ? mot de passe n'expirant jamais. => à éclaircir.
+=> voir avant Yvon
++ voir avec le système de changement de mot de passe : mise à jour du produit",Déploiement politique sécurité,Exploit,Paul,Urgent (1),Important,En cours,,2025-07-11 7:02pm,,,,,infrastructure système,Immédiate,Déploiement politique sécurité,non,,2025-07-11 7:02pm,En cours,Immédiate,Paul,Exploit,Important,2025-03-17 1:08am,2025-07-11 19:02:03.589125+02:00,timothee.foucart,exploit_ad_durci,Assurer le fonctionnement des systèmes d'information ,"Mettre en conformité les réseaux, logiciels et matériels",Mise en conformité et durcissement de l'AD,Conformité infrastructure
+Mise en production interne,,Mise en place système caméras piétons,"[10/07/2025 17:52]
+Cle carre a des accès sur camera station et le w800 / en utilisant guacamole. Elle doit proposer des modes opératoires adaptées à l'organisation pompier et compatible avec les fonctionnalités dont on dispose.
+On aura besoin de licences pour avoir une identification dynamique avec ad et rfid
+
+---
+
+[09/07/2025 08:26]
++ rdv Clea Carre pour montrer le système en place
+----
+RDV avec scc le 03072025 => négocier des licences bodyworn
+modification fw ( manqauit une route ? ) + ok manque le lien à l'AD
+impossible de mettre en oeuvre une procédure cadrée sans le logiciel adapté => tous les prérequis réseaux sont à revoir youpi
+
+12 6 : tentative de reconfiguration l'éappairage ne fonctionne pas abvec axys camera station, les camera et le dock ne sont pas reconnus
+---
+Essais du 11/06 : une heure et demi de test à la caserne, pas moyen d'appairer les caméras
+---
+suite réunion du 6/6 : faire des enregistrements puis rebrancher les caméras sur les socles pour vérifier que le transfert se fasse
+----
+Évaluer et déployer le système de caméras piétons Axis. En attente de la validation de la conf réseau
+ok pour la connexion matrice de flux à refaire 
+doc à complèter + voir avec Midgard comment on fait pour la suite => réunion le 05062025
+
+---
+
+RDV avec scc le 03072025 => négocier des licences bodyworn
++ contacter clea carre pour besançon centre
+modification fw ( manqauit une route ? ) + ok manque le lien à l'AD
+impossible de mettre en oeuvre une procédure cadrée sans le logiciel adapté => tous les prérequis réseaux sont à revoir youpi
+
+12 6 : tentative de reconfiguration l'éappairage ne fonctionne pas abvec axys camera station, les camera et le dock ne sont pas reconnus
+---
+Essais du 11/06 : une heure et demi de test à la caserne, pas moyen d'appairer les caméras
+---
+suite réunion du 6/6 : faire des enregistrements puis rebrancher les caméras sur les socles pour vérifier que le transfert se fasse
+----
+Évaluer et déployer le système de caméras piétons Axis. En attente de la validation de la conf réseau
+ok pour la connexion matrice de flux à refaire 
+doc à complèter + voir avec Midgard comment on fait pour la suite => réunion le 05062025",poc,"Chef SSIR, Réseau","Alex, Timothée",Élevé (2),Important,En cours,,2025-07-11 7:02pm,,,,Envoi du colis après réception bon d'envoi,Évolution applicative,Courte,Preuve de concept,non,,2025-07-11 7:02pm,En cours,Courte,"Alex, Timothée","Chef SSIR, Réseau",Important,2025-03-17 1:08am,2025-07-11 19:02:03.589223+02:00,timothee.foucart,rzo_suivi_anticipationactions,Assurer le fonctionnement des systèmes d'information ,"Mettre en conformité les réseaux, logiciels et matériels",Mise en place d'un outil de suivi et anticipation des actions,NexSIS-RRF
+AMOA et MCO limitée,,primo installation socle astre,"[09/07/2025 17:51]
+OK pour l'installation technique . J'ai demandé de virer le reverse proxy => on est en attente
++ il faut qu'on aille aux ateliers techniques
+Voir si on est ok pour une vm isolée, a priori le plus facile à gèrer
+résumé
+Préparation de l'infrastructure pour le nouveau logiciel finance
+exploit + bdd OK
+finalisation des comptes à faire + vm pour le stockage des pièces
+
+---
+
+[09/07/2025 17:50]
+OK pour l'installation technique . J'ai demandé de virer le reverse proxy => on est en attente
++ il faut qu'on aille aux ateliers techniques
+Voir si on est ok pour une vm isolée, a priori le plus facile à gèrer
+résumé
+Préparation de l'infrastructure pour le nouveau logiciel finance
+exploit + bdd OK
+finalisation des comptes à faire + vm pour le stockage des pièces
+
+---
+
+[09/07/2025 17:50]
+OK pour l'installation technique . J'ai demandé de virer le reverse proxy => on est en attente
++ il faut qu'on aille aux ateliers techniques
+Voir si on est ok pour une vm isolée, a priori le plus facile à gèrer
+résumé
+Préparation de l'infrastructure pour le nouveau logiciel finance
+exploit + bdd OK
+finalisation des comptes à faire + vm pour le stockage des pièces
+
+---
+
+[09/07/2025 17:50]
+OK pour l'installation technique . J'ai demandé de virer le reverse proxy => on est en attente
++ il faut qu'on aille aux ateliers techniques
+Voir si on est ok pour une vm isolée, a priori le plus facile à gèrer
+résumé
+Préparation de l'infrastructure pour le nouveau logiciel finance
+exploit + bdd OK
+finalisation des comptes à faire + vm pour le stockage des pièces
+
+---
+
+[09/07/2025 17:38]
+OK pour l'installation technique . J'ai demandé de virer le reverse proxy => on est en attente
++ il faut qu'on aille aux ateliers techniques
+Voir si on est ok pour une vm isolée, a priori le plus facile à gèrer
+résumé
+Préparation de l'infrastructure pour le nouveau logiciel finance
+exploit + bdd OK
+finalisation des comptes à faire + vm pour le stockage des pièces
+
+---
+
+[09/07/2025 13:50]
+OK pour l'installation technique . J'ai demandé de virer le reverse proxy => on est en attente
++ il faut qu'on aille aux ateliers techniques
+Voir si on est ok pour une vm isolée, a priori le plus facile à gèrer
+résumé
+Préparation de l'infrastructure pour le nouveau logiciel finance
+exploit + bdd OK
+finalisation des comptes à faire + vm pour le stockage des pièces
+
+---
+
+[09/07/2025 08:24]
+OK pour l'installation technique . J'ai demandé de virer le reverse proxy
++ il faut qu'on aille aux ateliers techniques
+Voir si on est ok pour une vm isolée, a priori le plus facile à gèrer
+résumé
+Préparation de l'infrastructure pour le nouveau logiciel finance
+exploit + bdd OK
+finalisation des comptes à faire + vm pour le stockage des pièces
+
+---
+
+OK pour l'installation technique . J'ai demandé de virer le reverse proxy
++ il faut qu'on aille aux ateliers techniques
+Voir si on est ok pour une vm isolée, a priori le plus facile à gèrer
+résumé
+Préparation de l'infrastructure pour le nouveau logiciel finance
+exploit + bdd OK
+finalisation des comptes à faire + vm pour le stockage des pièces",Identification prérequis,Chef SSIR,"Chloé, Isabelle, Théo, Timothée",Urgent (1),Important,Validation,,2025-07-11 7:02pm,,,,Architecture à valider : minimiser les VM mais aussi les problèmes de maintenance,Evolutions applicatives,Immédiate,Identification prérequis,non,,2025-07-11 7:02pm,Validation,Immédiate,"Chloé, Isabelle, Théo, Timothée",Chef SSIR,Important,2025-03-17 1:08am,2025-07-11 19:02:03.589321+02:00,timothee.foucart,tous_mcoamoa,Assurer la transition vers les systèmes d'information de demain,Mettre à jour le schéma directeur informatique,Prendre en compte les évolutions validées suite aux travaux des groupes,Continuité outils
+Rédaction documentation,,Charte correspondants,"Élaborer une charte pour les correspondants informatiques
+ok une première version est dans le dossier dta",Rédaction documentation,Chef SSIR,Timothée,Urgent (1),Important,Terminé,,2025-07-11 7:02pm,,2025-03-02,,Recherche une trame récente,,Immédiate,Élaboration règlement,non,,2025-07-11 7:02pm,Terminé,Immédiate,Timothée,Chef SSIR,Important,2025-03-17 1:08am,2025-07-11 19:02:03.589436+02:00,timothee.foucart,,Fonctionnement SI,Organisation,Création et animation du réseau des correspondants informatiques,Organisation
+Analyse et remédiation,,changement  flux mails RZO,"[11/07/2025 01:21 (Utilisateur)]
+Schéma toujours en cours. léger doute sur le smtp
+
+#faire un schéma propre du circuit mail
+#Nettoyer les règles firewall pour faciliter la migration
+ # nettoyer les configs o365 qui restent : ok
+#nettoyer les envois interne smtp en utilisant le nouveau relai smtp
+
+-------------------------------------------------------------
+@Alex : voir ça https://cyber.gouv.fr/sites/default/files/2016/08/np_nettoyage-politique-pare-feu.pdf
+ok j'ai refais un schéma à revoir
+
+---
+
+[09/07/2025 08:28]
+#faire un schéma propre du circuit mail
+#Nettoyer les règles firewall pour faciliter la migration
+ # nettoyer les configs o365 qui restent : ok
+#nettoyer les envois interne smtp en utilisant le nouveau relai smtp
+
+-------------------------------------------------------------
+@Alex : voir ça https://cyber.gouv.fr/sites/default/files/2016/08/np_nettoyage-politique-pare-feu.pdf
+ok j'ai refais un schéma à revoir
+
+---
+
+#faire un schéma propre du circuit mail
+#Nettoyer les règles firewall pour faciliter la migration
+@Alex : voir ça https://cyber.gouv.fr/sites/default/files/2016/08/np_nettoyage-politique-pare-feu.pdf
+ok j'ai refais un schéma à revoir",Analyse et remédiation,"Chef SSIR, Exploit, Réseau","Alex, Thomas, Timothée",Élevé (2),Important,En cours,,2025-07-11 7:02pm,,,,"analyse de l'existant
+préparer la cible
+identifier les éléments inutiles",infrastructure système,Moyenne,Analyse et remédiation,non,,2025-07-11 7:02pm,En cours,Moyenne,"Alex, Thomas, Timothée","Chef SSIR, Exploit, Réseau",Important,2025-03-17 1:08am,2025-07-11 19:02:03.589521+02:00,timothee.foucart,tous_veilletechno,Assurer la transition vers les systèmes d'information de demain,Mettre à jour le schéma directeur informatique,"Veiller à la cohérence du système, aux opérations de nettoyage et de documentation",Conformité infrastructure
+Analyse et remédiation,,SSO," a faire : Cluster pour fiabiliser keycloak ? A faire
+clarifier les notions et concepts oidc
+
+-----------------
+
+
+installation et mise en oeuvre keycloack OK 
+documentation ok
+bloqué sur le mode de fonctionnement derrière un proxy : ok débloqué mais à vérifier
+Mise en oeuvre OIDC : ok sur guacamole/ ok sur nextcloud
+
+
+",Déploiement politique sécurité,Chef SSIR,Gaël,Normal (3),Modéré,En cours,,2025-07-11 7:02pm,,,,a faire test,infrastructure système,Moyenne,,non,,2025-07-11 7:02pm,En cours,Moyenne,Gaël,Chef SSIR,Modéré,2025-03-19 3:14pm,2025-07-11 19:02:03.589610+02:00,timothee.foucart,,,,,
+Déploiement politique sécurité,,"sécurisation des serveurs exposés ( intranet eww, ext)","[09/07/2025 13:47]
+06/07/25 : remise derrière le kemp de eww.sdis25.fr
+Attention, didier ne doit pas gèrer les redirection vers le port 80 avec des rewrite url, j'ai modifié sa conf
+--------------
+possibilité de forcer une authentification keycloak ?
+pas d'avancées notables la configuration du serveur apache est en cause
+remédiation  - sécurisation
+prendre des notes
+et intranet ? (YS)
+
+---
+
+
+06/07/25 : remise derrière le kemp de eww.sdis25.fr
+Attention, didier ne doit pas gèrer les redirection vers le port 80 avec des rewrite url, j'ai modifié sa conf
+--------------
+possibilité de forcer une authentification keycloak ?
+pas d'avancées notables la configuration du serveur apache est en cause
+remédiation  - sécurisation
+prendre des notes
+et intranet ? (YS)","gestion des factures, suivi budget","Chef SSIR, Exploit, Réseau","Alex, Timothée",Faible (4),Mineur,En attente,,2025-07-11 7:02pm,,,,,conformité SSI,Longue,"""gestion des factures, suivi budget""",non,,2025-07-11 7:02pm,En attente,Longue,"Alex, Timothée","Chef SSIR, Exploit, Réseau",Mineur,2025-03-20 8:34am,2025-07-11 19:02:03.589700+02:00,timothee.foucart,rzo_conformite,Assurer le fonctionnement des systèmes d'information ,"Mettre en conformité les réseaux, logiciels et matériels","Suivi du plan d'action de l'audit réseau pour disposer d'une architecture réseau simplifiée, segmentée, exploitable et maintenable",
+Mise à jour,,Evolution Libriciel,"[09/07/2025 17:31]
+Mettre à jour les applications libriciel
+ged notamment , trouver un intégrateur
+
+---
+
+Mettre à jour les applications libriciel
+ged notamment , trouver un intégrateur",AMOA et MCO limitée,BDD,Isabelle,Élevé (2),Important,Validation,,2025-07-11 7:02pm,,,,audit du serveur actuel,,Moyenne,,non,,2025-07-11 7:02pm,Validation,Moyenne,Isabelle,BDD,Important,2025-03-20 8:40am,2025-07-11 19:02:03.589786+02:00,timothee.foucart,,,,,
+Qualification technique,,vérif vm finances ,refaire une passe avant les prestas sur les vm finances,,"Exploit, BDD",Théo,Normal (3),Mineur,Terminé,,2025-07-11 7:02pm,,,,,,Courte,,non,,2025-07-11 7:02pm,Terminé,Courte,Théo,"Exploit, BDD",Mineur,2025-03-26 11:07pm,2025-07-11 19:02:03.589873+02:00,timothee.foucart,,,,,
+Qualification technique,,marché libriciel,"marché libriciel à faire
+Isa a fait la mise en context => schéma à revoir
+les dossiers type sont dans le dta
+Utiliser le document de chantalou",,Chef SSIR,"Isabelle, Timothée",Normal (3),Mineur,En cours,,2025-07-11 7:02pm,,,,,Évolution applicative,Courte,,non,,2025-07-11 7:02pm,En cours,Courte,"Isabelle, Timothée",Chef SSIR,Mineur,2025-03-27 11:12am,2025-07-11 19:02:03.589957+02:00,timothee.foucart,,,,,
+,,vérif install ASTRESGF,"[11/07/2025 01:22 (Utilisateur)]
+vérification des serveurs => en attente bdd+ exploit
+vérifier la capacité à exploiter en arrêtant les vm dans une ordre aléatoire
+=> toujours en attanet de l'exploit : le périmètre applicatif n'est pas connu
+problème remonté au copil astre
+------------------
+suivi de l'install => ok
+ok séance de formation pour l'exploitation
+reste la vm à fournir ==> theo/exploit ok
+
+---
+
+[09/07/2025 08:24]
+vérification des serveurs => en attente bdd+ exploit
+vérifier la capacité à exploiter en arrêtant les vm dans une ordre aléatoire
+=> toujours en attanet de l'exploit : le périmètre applicatif n'est pas connu
+problème remonté au copil astre
+------------------
+suivi de l'install => ok
+ok séance de formation pour l'exploitation
+reste la vm à fournir ==> theo/exploit ok
+
+---
+
+vérification des serveurs => en attente bdd+ exploit
+vérifier la capacité à exploiter en arrêtant les vm dans une ordre aléatoire
+=> toujours en attanet de l'exploit : le périmètre applicatif n'est pas connu
+problème remonté au copil astre
+------------------
+suivi de l'install => ok
+ok séance de formation pour l'exploitation
+reste la vm à fournir ==> theo/exploit ok",,"BDD, Exploit","Chloé, Isabelle, Paul, Théo",Élevé (2),Important,Validation,,2025-07-11 7:02pm,,,,,Évolution applicative,Courte,,non,,2025-07-11 7:02pm,Validation,Courte,"Chloé, Isabelle, Paul, Théo","BDD, Exploit",Important,2025-04-06 5:45pm,2025-07-11 19:02:03.590050+02:00,timothee.foucart,,,,,
+,,rapport casdis,rendre rapport  casdis avant le 11/04,,Chef SSIR,Timothée,Normal (3),Mineur,Terminé,,2025-07-11 7:02pm,,,,,,Immédiate,,non,,2025-07-11 7:02pm,Terminé,Immédiate,Timothée,Chef SSIR,Mineur,2025-04-06 7:36pm,2025-07-11 19:02:03.590133+02:00,timothee.foucart,Mettre_en_place_Définir_les_budgets,Répondre aux demandes des métiers,Mettre en place les solutions NexSIS-RRF,Définir les budgets et échéances financières,
+,,guacamole,"[11/07/2025 01:05 (Utilisateur)]
+Manque la documentation d'install et la sauvegarde de base de donnée
+
+08/07/25
+ok l'accès à l'interface d'admin est impossible depuis l'extérieur : blocage par RP
+-------------------------------------
+02/07/2025
+le guacamole est recontruit en docker avec un authentification keycloak
+encore quelques problèmes de flux à résoudre => ok pour l'exposition
+
+----------------------------------
+Plantage de la base + reconstruction en cours
+donné accès à guillaume gilliot+ sylvain guy pour tests.
+Attention : ,aucune iudée de la charge, pour le moment ras
+en attente de retours
+
+---
+
+08/07/25
+ok l'accès à l'interface d'admin est impossible depuis l'extérieur : blocage par RP
+-------------------------------------
+02/07/2025
+le guacamole est recontruit en docker avec un authentification keycloak
+encore quelques problèmes de flux à résoudre => ok pour l'exposition
+
+----------------------------------
+Plantage de la base + reconstruction en cours
+donné accès à guillaume gilliot+ sylvain guy pour tests.
+Attention : ,aucune iudée de la charge, pour le moment ras
+en attente de retours",,Chef SSIR,"Chloé, Timothée",Élevé (2),Important,En cours,,2025-07-11 7:02pm,,,,,projet transverse,Moyenne,,non,,2025-07-11 7:02pm,En cours,Moyenne,"Chloé, Timothée",Chef SSIR,Important,2025-04-07 12:32pm,2025-07-11 19:02:03.590226+02:00,timothee.foucart,,,,,
+,,justifications variation budgets,"[09/07/2025 13:19]
+rendre un rapport sur les variations budgétaires 2023-2024
+=> à simplifier. commencé, pas fini
+ on fait le mort rien de plus à expliquer que l'année dernière
+
+---
+
+rendre un rapport sur les variations budgétaires 2023-2024
+=> à simplifier. commencé, pas fini
+ on fait le mort rien de plus à expliquer que l'année dernière",,Chef SSIR,Timothée,Urgent (1),Important,Terminé,,2025-07-11 7:02pm,,,,,,Immédiate,,non,,2025-07-11 7:02pm,Terminé,Immédiate,Timothée,Chef SSIR,Important,2025-04-10 8:27pm,2025-07-11 19:02:03.590311+02:00,timothee.foucart,Mettre_en_place_Définir_les_budgets,Répondre aux demandes des métiers,Mettre en place les solutions NexSIS-RRF,Définir les budgets et échéances financières,
+,,nextcloud avec SSO et OnlyOffice,"08/07/25 
+nextcloud.sdis25.fr
+Ok pour l'oidc+ nextcloud, bug bloquant avec une appli foireuse. recontruction depuis le départ
+OK pour nextcloud. a tester
+-------------------
+Toujours en test  + onlyoffice ok
+besoin de tester l'oidc avec keycloak
+possible de l'exposer mais besoin de l'exploit 
+doc à finir",,"Chef SSIR, Exploit, Réseau",,Élevé (2),Important,Validation,,2025-07-11 7:02pm,,,,,Évolution applicative,Moyenne,,non,,2025-07-11 7:02pm,Validation,Moyenne,,"Chef SSIR, Exploit, Réseau",Important,2025-04-10 8:28pm,2025-07-11 19:02:03.590385+02:00,timothee.foucart,GT_Bâtir_les_systèmes_Proposer_les_outils,Assurer la transition vers les systèmes d'information de demain,Bâtir les systèmes d'information de demain,"Proposer les outils de demain (informatique = cloud, outils de communication modernes, téléphonie)",
+,,sisprev v4,"[09/07/2025 13:49]
+Problème côté inetum : impossible de communiquer sur le sujet ?
+en attente de inetum ?
+
+---
+
+en attente de inetum ?",,Chef SSIR,"Théo, Timothée",Normal (3),Modéré,En attente,,2025-07-11 7:02pm,,,,,Évolution applicative,Courte,,non,,2025-07-11 7:02pm,En attente,Courte,"Théo, Timothée",Chef SSIR,Modéré,2025-04-10 8:30pm,2025-07-11 19:02:03.590472+02:00,timothee.foucart,,,,,
+,,décommissionnement o365,"remettre le relais smtp.sdis25.fr partout
+------------------------
+=> OK finir le nettoyage : il y a encore des traces d'o365 sur le serveur mail
+
+smtp => remplacer par le nouveau relai : où en est on ? paramétrage sans authentification
+
+configurations serveur :  ok = envoyé les trace tf/fait
+-------------------------------------------------------------------------------------------
+nettoyage ok côté réseau
+côôoté exploit : en attente mise en place de relai smtp
+--------------------
+Où en est-on ? qui est encore sur o365 ? apparemment ok personne n' est encore dessus
+OK problème identifié dans le relai mail=> ok pour le dkim le spf peut être allégé
++ possibilité de faire du smtp depuis dl'extérieur moyennant une identifications spéciffique
+=> reste à finaliser un schéma simple",,"Chef SSIR, Exploit","Alex, Théo, Timothée",Élevé (2),Important,En cours,,2025-07-11 7:02pm,,,,,infrastructure système,Moyenne,,non,,2025-07-11 7:02pm,En cours,Moyenne,"Alex, Théo, Timothée","Chef SSIR, Exploit",Important,2025-04-10 8:31pm,2025-07-11 19:02:03.590553+02:00,timothee.foucart,rzo_simplification_archi,Assurer le fonctionnement des systèmes d'information ,"Mettre en conformité les réseaux, logiciels et matériels","Simplification des architectures : internet, intranet, extranet, serveurs de fichiers, serveur mail…",
+,,gestion de formulaire internes,"trouver une solution de gestion des formulaires internalisé
+brickform ?",,Chef SSIR,Timothée,Élevé (2),Important,En cours,,2025-07-11 7:02pm,,,,,Évolution applicative,Moyenne,,non,,2025-07-11 7:02pm,En cours,Moyenne,Timothée,Chef SSIR,Important,2025-04-10 10:28pm,2025-07-11 19:02:03.590673+02:00,timothee.foucart,,,,,
+,,centralisation inventaire SSIR,"[11/07/2025 01:01 (Utilisateur)]
+évaluer les possibilités de rassembler l'inventaire radio/télécom vers glpi. Autre outil ? 
+Objectif : sortir d'excel
+Envisager des phases transitoires
+
+---
+
+évaluer les possibilités de rassembler l'inventaire radio/télécom vers glpi. Autre outil ? 
+Objectif : sortir d'excel
+Envisager des phases transitoires",,Réseau,"Alex, Thomas",Faible (4),Modéré,À faire,,2025-07-11 7:02pm,,,,,Projets transverses,Longue,,non,,2025-07-11 7:02pm,À faire,Longue,"Alex, Thomas",Réseau,Modéré,2025-04-11 8:41am,2025-07-11 19:02:03.590762+02:00,timothee.foucart,,,,,Organiser les modalités de saisines et le suivi des réponses du service aux sollicitations
+,,"Supervision, analyse : mise en place de grafana","[10/07/2025 17:49]
+installation de grafana, stabilisation de l'influxdb
+
+---
+
+installation de grafana, stabilisation de l'influxdb",,Chef SSIR,Timothée,Élevé (2),Important,À faire,"{""historique"":[{""statut"":""À faire"",""date_entree"":""2025-07-10T15:50:08.863Z"",""date_sortie"":null,""duree_minutes"":null,""utilisateur"":""Système"",""note"":""Déplacé par glisser-déposer"",""timestamp"":""2025-07-10T15:50:08.863Z""}],""version"":1}",2025-07-11 7:02pm,Backlog,,,,infrastructure système,Moyenne,,non,,2025-07-11 7:02pm,À faire,Moyenne,Timothée,Chef SSIR,Important,2025-04-11 8:53am,2025-07-11 19:02:03.590842+02:00,timothee.foucart,chefssir_supervision,Garantir la sécurité des systèmes d'information ,Surveiller les activités informatiques,Amélioration des outils de supervision,Surveiller les activités informatiques
+,,analyse intranet-extranet,"analyse de l'existant
+schema draw.io
+De belles avancées, déterminer la bonne ip pour intranet
+Toujours coincé par la config serveur",,Chef SSIR,"Alex, Timothée",Élevé (2),Important,En cours,,2025-07-11 7:02pm,,,,,Conformité SSI,Moyenne,,non,,2025-07-11 7:02pm,En cours,Moyenne,"Alex, Timothée",Chef SSIR,Important,2025-04-11 8:57am,2025-07-11 19:02:03.590927+02:00,timothee.foucart,chef_ssir_transmission_intranet,Répondre aux demandes des métiers,Pérenniser les outils à destination des métiers et utilisateurs,Transmission des connaissances d'exploitation et développement d'intranet,Pérenniser les outils à destination des métiers et utilisateurs
+,,marché réseau,"A transférer aux marchés
+----------------------------------------
+en cours ./ vérifier et corriger les articles du ccag tic => OK
++ Voir pour ajouter au moins une fois par mois  = > mise en place pilotage une fois  tous les deux mois et plus si besoin.
++ Vérifier les annexes => presque ok.
++ ajouter un modèle pour le suivi de projet ? attention à fixer des délais",,"Chef SSIR, Réseau","Alex, Timothée",Élevé (2),Important,Validation,,2025-07-11 7:02pm,,,,,,Courte,,non,,2025-07-11 7:02pm,Validation,Courte,"Alex, Timothée","Chef SSIR, Réseau",Important,2025-04-12 5:10pm,2025-07-11 19:02:03.591022+02:00,timothee.foucart,rzo_conformite,Assurer le fonctionnement des systèmes d'information ,"Mettre en conformité les réseaux, logiciels et matériels","Suivi du plan d'action de l'audit réseau pour disposer d'une architecture réseau simplifiée, segmentée, exploitable et maintenable","Mettre en conformité les réseaux, logiciels et matériels"
+,,config offline des 800+cam,"se mettre hors ligne et configurer les cameras ( sock +w800 )
+l'adressse par défaut est 19.168.0.90 => assigner les ip du vlande destination
+Ne pas mettre de dhcp sur les vlan camera",,"Chef SSIR, Réseau","Alex, Timothée",Urgent (1),Critique,Terminé,,2025-07-11 7:02pm,,,,,,Courte,,non,,2025-07-11 7:02pm,Terminé,Courte,"Alex, Timothée","Chef SSIR, Réseau",Critique,2025-04-13 3:57pm,2025-07-11 19:02:03.591126+02:00,timothee.foucart,rssi_exploit_inventaire_auto,Répondre aux demandes des métiers,Organiser les modalités de saisines et le suivi des réponses du service aux sollicitations,Mise en place d'un inventaire automatisé en lien avec un outil de déploiement des matériels,Organiser les modalités de saisines et le suivi des réponses du service aux sollicitations
+,,keycloak+ nextcloud,"une fois derrière le RP
+Essayer openid avec nextcloud
+problème sur le scope openid  
+POK il fallait changer le client openid attention, les mauvais clients ont flinbgué nextcloyud",,Chef SSIR,Timothée,Normal (3),Modéré,Validation,,2025-07-11 7:02pm,,,,,,Moyenne,,non,,2025-07-11 7:02pm,Validation,Moyenne,Timothée,Chef SSIR,Modéré,2025-04-13 4:02pm,2025-07-11 19:02:03.591209+02:00,timothee.foucart,exploit_acces_distants,Assurer le fonctionnement des systèmes d'information ,"Mettre en conformité les réseaux, logiciels et matériels","Sécurisation et homogénéisation des moyens d'accès distant (RDS, VPN, dotations en matériel portable)","Mettre en conformité les réseaux, logiciels et matériels"
+,,mise en prod bookstack,,,Exploit,Théo,Élevé (2),Important,Terminé,,2025-07-11 7:02pm,,,,,,Courte,,non,,2025-07-11 7:02pm,Terminé,Courte,Théo,Exploit,Important,2025-04-14 11:42am,2025-07-11 19:02:03.591303+02:00,timothee.foucart,exploit_CMDB,Assurer le fonctionnement des systèmes d'information ,Appliquer les dispositions organisationnelles des annexes 1 et 2,Établissement de procédures partagées (bonnes pratiques),Appliquer les dispositions organisationnelles des annexes 1 et 2
+,,Firewall,"OK pour la mise en marche planification en cours - tâche terminée
+firewall - préparation marché - ok avec caih
+point
+Revoir le doc à transmettre à didier",,Réseau,"Alex, Presta, Thomas, Timothée",Élevé (2),Important,Terminé,,2025-07-11 7:02pm,,,,,,Courte,,non,,2025-07-11 7:02pm,Terminé,Courte,"Alex, Presta, Thomas, Timothée",Réseau,Important,2025-04-22 9:55am,2025-07-11 19:02:03.591381+02:00,timothee.foucart,rzo_conformite,Assurer le fonctionnement des systèmes d'information ,"Mettre en conformité les réseaux, logiciels et matériels","Suivi du plan d'action de l'audit réseau pour disposer d'une architecture réseau simplifiée, segmentée, exploitable et maintenable","Mettre en conformité les réseaux, logiciels et matériels"
+,,"POC KVM proxmox, nouveau système de virtualisation","[11/07/2025 01:49 (Utilisateur)]
+paul/ mise en place d'un serveur pour déplacer les VM optimops
+
+---
+
+mise en place d'un lab proxmox ? avec  l'ancienne infra artemis
++ tf => se renseigner sur le matériel
+ négociation en cours avec scc
+
+récupèrer les serveurs inetum pour le lab proxmox : ??? en attente
+serveurs replacés en sgc : qui gère ?",,Exploit,Landry,Élevé (2),Important,À faire,,2025-07-11 7:02pm,,,,,infrastructure système,Courte,,non,,2025-07-11 7:02pm,À faire,Courte,Landry,Exploit,Important,2025-04-23 5:32pm,2025-07-11 19:02:03.591466+02:00,timothee.foucart,GT_Bâtir_les_systèmes_Proposer_les_outils,Assurer la transition vers les systèmes d'information de demain,Bâtir les systèmes d'information de demain,"Proposer les outils de demain (informatique = cloud, outils de communication modernes, téléphonie)",Mettre à jour le schéma directeur informatique
+,,nomenclatures,mise en place nomenclatures de nommage,,Exploit,Théo,Élevé (2),Important,Validation,,2025-07-11 7:02pm,,,,,,Courte,,non,,2025-07-11 7:02pm,Validation,Courte,Théo,Exploit,Important,2025-04-25 8:36pm,2025-07-11 19:02:03.591553+02:00,timothee.foucart,exploit_refonte_nomenclature,Assurer le fonctionnement des systèmes d'information ,Appliquer les dispositions organisationnelles des annexes 1 et 2,"Refonte et simplification des nomenclatures de groupes de sécurité et des groupes de distribution, et création de groupes, comptes, boîte mail ou liste de diffusion par le bureau exploitation.",Appliquer les dispositions organisationnelles des annexes 1 et 2
+,,nomenclature  AD goupes et listes mail - mise en oeuvre,"[09/07/2025 21:38]
+mise en œuvre de la nouvelle nomenclature, suppression de l'ancienne.
+relance CODIR par yvon.
+A planifier pour l'été
+
+---
+
+mise en œuvre de la nouvelle nomenclature, suppression de l'ancienne.
+relance CODIR par yvon.
+A planifier pour l'été",,Exploit,Théo,Normal (3),Important,En cours,,2025-07-11 7:02pm,,,,,conformité SSI,,,non,,2025-07-11 7:02pm,En cours,,Théo,Exploit,Important,2025-05-07 2:07pm,2025-07-11 19:02:03.591640+02:00,timothee.foucart,exploit_refonte_nomenclature,Assurer le fonctionnement des systèmes d'information ,Appliquer les dispositions organisationnelles des annexes 1 et 2,"Refonte et simplification des nomenclatures de groupes de sécurité et des groupes de distribution, et création de groupes, comptes, boîte mail ou liste de diffusion par le bureau exploitation.",Appliquer les dispositions organisationnelles des annexes 1 et 2
+,,supervision tomcat par jmx,"mettre en oeuvre une supervision des instances tomcat de production en d'appuyant sur jmx
+créer un serveur de test tomcat au besoin
+objectif : mesurer l'activité des tomcat
+ok les indicateurs sont mis ainsi que la sonde zabbix, reste à faire les indicateurs KPI",,BDD,"Chloé, Timothée",Élevé (2),Important,Terminé,,2025-07-11 7:02pm,,,,,,Moyenne,,non,,2025-07-11 7:02pm,Terminé,Moyenne,"Chloé, Timothée",BDD,Important,2025-05-07 11:05pm,2025-07-11 19:02:03.591755+02:00,timothee.foucart,chef_ssir_formationaux indicateurs,Garantir la sécurité des systèmes d'information ,Indicateurs de sécurité,Sensibilisation/formation à partir de ces indicateurs.,Indicateurs de sécurité
+,,Fiabilisation solution de gestion mot de passe coffre fort,"[10/07/2025 22:44]
+Paul : mise en place de bitwarden. A voir pour le coût. Attention à la possibilité d'un liaison ad
+
+Proposer une alternative à keepass, un plantage = pas possible = psono ? https://doc.psono.com/ (coût si liaison AD)
+Bitwarden ?
+toujours en attente d'une méthode claire = ?
+Besoin fonctionnel à qualifier précisément
+
+---
+
+proposer une alternative à keepass, un plantage = pas possible = psono ? https://doc.psono.com/ (coût si liaison AD)
+Bitwarden ?
+toujours en attente d'une méthode claire = ?
+Besoin fonctionnel à qualifier précisément",,Exploit,"Paul, Théo",Élevé (2),Important,À faire,,2025-07-11 7:02pm,,,,,Évolution applicative,Moyenne,,non,,2025-07-11 7:02pm,À faire,Moyenne,"Paul, Théo",Exploit,Important,2025-05-07 11:14pm,2025-07-11 19:02:03.591855+02:00,timothee.foucart,tous_nouveaux outils,Assurer la transition vers les systèmes d'information de demain,Mettre à jour le schéma directeur informatique,"Inclure les nouveaux outils, les solutions émergentes",Mettre à jour le schéma directeur informatique
+,,crimson déploiement,quel est le rôle du ssir ?,,"Chef SSIR, Exploit","Théo, Timothée",Normal (3),Modéré,En cours,,2025-07-11 7:02pm,,,,,Évolution applicative,Courte,,non,,2025-07-11 7:02pm,En cours,Courte,"Théo, Timothée","Chef SSIR, Exploit",Modéré,2025-06-06 1:47pm,2025-07-11 19:02:03.591936+02:00,timothee.foucart,Mettre_en_place_Prévoir_et_accompagner,Répondre aux demandes des métiers,Mettre en place les solutions NexSIS-RRF,Prévoir et accompagner les évolutions techniques,Mettre en place les solutions NexSIS-RRF
+,,artemis passage v2.8,"[09/07/2025 17:30]
+Revoir les dépendances et adhérences applicatives
+BO
+FMELOX
+Posgtres
+#-------------------------------------------------------------
+# Voir l'impact pour clarisse=> tf faire le point sur les version des applicatifs livrés.
+# fiche ope et etare anssi=> identifier le circuit technique
+# voir avec isa si le smbv1 peut être évincé pat sftp ? =>nas => faire l'inventaire.
+# ########
+faites l'inventaire
+####
+
+#prévu en octobre ?
+
+---
+
+[09/07/2025 17:30]
+Revoir les dépendances et adhérences applicatives
+BO
+FMELOX
+Posgtres
+#-------------------------------------------------------------
+# Voir l'impact pour clarisse=> tf faire le point sur les version des applicatifs livrés.
+# fiche ope et etare anssi=> identifier le circuit technique
+# voir avec isa si le smbv1 peut être évincé pat sftp ? =>nas => faire l'inventaire.
+# ########
+faites l'inventaire
+####
+
+#prévu en octobre ?
+
+---
+
+[09/07/2025 13:57]
+Revoir les dépendances et adhérences applicatives
+BO
+FMELOX
+Posgtres
+#-------------------------------------------------------------
+# Voir l'impact pour clarisse=> tf faire le point sur les version des applicatifs livrés.
+# fiche ope et etare anssi=> identifier le circuit technique
+# voir avec isa si le smbv1 peut être évincé pat sftp ? =>nas => faire l'inventaire.
+# ########
+faites l'inventaire
+####
+
+#prévu en octobre ?
+
+---
+
+[09/07/2025 13:46]
+Revoir les dépendances et adhérences applicatives
+BO
+FMELOX
+Posgtres
+#-------------------------------------------------------------
+# Voir l'impact pour clarisse=> tf faire le point sur les version des applicatifs livrés.
+# fiche ope et etare anssi=> identifier le circuit technique
+# voir avec isa si le smbv1 peut être évincé pat sftp ? =>nas => faire l'inventaire.
+# ########
+faites l'inventaire
+####
+
+#prévu en octobre ?
+
+---
+
+[09/07/2025 13:19]
+Revoir les dépendances et adhérences applicatives
+BO
+FMELOX
+Posgtres
+#-------------------------------------------------------------
+# Voir l'impact pour clarisse=> tf faire le point sur les version des applicatifs livrés.
+# fiche ope et etare anssi=> identifier le circuit technique
+# voir avec isa si le smbv1 peut être évincé pat sftp ? =>nas => faire l'inventaire.
+# ########
+faites l'inventaire
+####
+
+#prévu en octobre ?
+
+---
+
+[09/07/2025 13:18]
+Revoir les dépendances et adhérences applicatives
+BO
+FMELOX
+Posgtres
+#-------------------------------------------------------------
+# Voir l'impact pour clarisse=> tf faire le point sur les version des applicatifs livrés.
+# fiche ope et etare anssi=> identifier le circuit technique
+# voir avec isa si le smbv1 peut être évincé pat sftp ? =>nas => faire l'inventaire.
+# ########
+faites l'inventaire
+####
+
+#prévu en octobre ?
+
+---
+
+[09/07/2025 13:17]
+Revoir les dépendances et adhérences applicatives
+BO
+FMELOX
+Posgtres
+#-------------------------------------------------------------
+# Voir l'impact pour clarisse=> tf faire le point sur les version des applicatifs livrés.
+# fiche ope et etare anssi=> identifier le circuit technique
+# voir avec isa si le smbv1 peut être évincé pat sftp ? =>nas => faire l'inventaire.
+# ########
+faites l'inventaire
+####
+
+#prévu en octobre ?
+
+---
+
+[09/07/2025 13:17]
+Revoir les dépendances et adhérences applicatives
+BO
+FMELOX
+Posgtres
+#-------------------------------------------------------------
+# Voir l'impact pour clarisse=> tf faire le point sur les version des applicatifs livrés.
+# fiche ope et etare anssi=> identifier le circuit technique
+# voir avec isa si le smbv1 peut être évincé pat sftp ? =>nas => faire l'inventaire.
+# ########
+faites l'inventaire
+####
+
+#prévu en octobre ?
+
+---
+
+[09/07/2025 08:28]
+# Voir l'impact pour clarisse=> tf faire le point sur les version des applicatifs livrés.
+# fiche ope et etare anssi=> identifier le circuit technique
+# voir avec isa si le smbv1 peut être évincé pat sftp ? =>nas => faire l'inventaire.
+# ########
+faites l'inventaire
+####
+
+#prévu en octobre ?
+
+---
+
+[09/07/2025 08:26]
+# Voir l'impact pour clarisse=> tf faire le point sur les version des applicatifs livrés.
+# fiche ope et etare anssi=> identifier le circuit technique
+# voir avec isa si le smbv1 peut être évincé pat sftp ? =>nas => faire l'inventaire.
+# ########
+faites l'inventaire
+####
+
+#prévu en octobre ?
+
+---
+
+# Voir l'impact pour clarisse=> tf faire le point sur les version des applicatifs livrés.
+# fiche ope et etare anssi=> identifier le circuit technique
+# voir avec isa si le smbv1 peut être évincé pat sftp ? =>nas => faire l'inventaire.
+# ########
+faites l'inventaire
+####
+
+#prévu en octobre ?",,"Chef SSIR, Réseau","Chloé, Clarisse, Isabelle, Théo",Élevé (2),Important,En attente,,2025-07-11 7:02pm,,,,,Évolution applicative,Courte,,non,,2025-07-11 7:02pm,En attente,Courte,"Chloé, Clarisse, Isabelle, Théo","Chef SSIR, Réseau",Important,2025-06-06 1:48pm,2025-07-11 19:02:03.592015+02:00,timothee.foucart,chefssir_amoa,Répondre aux demandes des métiers,Pérenniser les outils à destination des métiers et utilisateurs,Aide à la maitrise d'ouvrage pour la continuité des outils et le support avec les fournisseurs de logiciels,Pérenniser les outils à destination des métiers et utilisateurs
+,,Gestion Oxio : migration QLIKSENSE - oracle - ETL,"OK ça semble clair, à planifier 
+Réunion avec Damien martin ok
+finir la migration BO
+Voir quel est le rôle de oxio dans la gestion du serveur ?",,BDD,"Chloé, Isabelle",Élevé (2),Important,En cours,,2025-07-11 7:02pm,,,,,Évolution applicative,Moyenne,,non,,2025-07-11 7:02pm,En cours,Moyenne,"Chloé, Isabelle",BDD,Important,2025-06-10 11:21am,2025-07-11 19:02:03.592111+02:00,timothee.foucart,chefssir_amoa,Répondre aux demandes des métiers,Pérenniser les outils à destination des métiers et utilisateurs,Aide à la maitrise d'ouvrage pour la continuité des outils et le support avec les fournisseurs de logiciels,Pérenniser les outils à destination des métiers et utilisateurs
+description,,Mise en place d'une GED,"emmanuel ciza prendre rdv ok => rechercher d'autres presta on peut déjà partir sur l'installation d'une ged + onlyoffice + lien Astre, Libriciel (Pastell, i-parapheur) + autres applicatifs (Maarch, ...?)
++ isa a un nouveau contact=> voir avec lui il est à l'ugap
+
+",,"BDD, Chef SSIR","Isabelle, Thomas",Élevé (2),Important,Validation,,2025-07-11 7:02pm,,,,,,Moyenne,,non,,2025-07-11 7:02pm,Validation,Moyenne,"Isabelle, Thomas","BDD, Chef SSIR",Important,2025-06-10 11:55am,2025-07-11 19:02:03.592200+02:00,timothee.foucart,tous_nouveaux outils,Assurer la transition vers les systèmes d'information de demain,Mettre à jour le schéma directeur informatique,"Inclure les nouveaux outils, les solutions émergentes",
+,,kemp upgrade et  résilience,"augmentation mémoire OK 
++ ajout de waf systématique
+
+Mise à jour firmware à planifier
+Mise en cluster possible , peut être se faire accompagner",,"Chef SSIR, Réseau",Alex,Normal (3),Modéré,En cours,,2025-07-11 7:02pm,,,,,infrastructure réseau,Moyenne,,non,,2025-07-11 7:02pm,En cours,Moyenne,Alex,"Chef SSIR, Réseau",Modéré,2025-06-10 4:16pm,2025-07-11 19:02:03.592288+02:00,timothee.foucart,chefssirssi_acces_distants,Assurer le fonctionnement des systèmes d'information ,"Mettre en conformité les réseaux, logiciels et matériels","Sécurisation et homogénéisation des moyens d'accès distant (RDS, VPN, dotations en matériel portable)","Mettre en conformité les réseaux, logiciels et matériels"
+,,supervision - détection pannes réseau,"écrire les conf ospf avec le sdis25
+vérifier les moyens de supervision ospf ?
+trinaps gère les routes",,Chef SSIR,Alex,Normal (3),Modéré,À faire,,2025-07-11 7:02pm,,,,,infrastructure réseau,Moyenne,,non,,2025-07-11 7:02pm,À faire,Moyenne,Alex,Chef SSIR,Modéré,2025-06-12 3:20pm,2025-07-11 19:02:03.592378+02:00,timothee.foucart,rzo_conformite,Assurer le fonctionnement des systèmes d'information ,"Mettre en conformité les réseaux, logiciels et matériels","Suivi du plan d'action de l'audit réseau pour disposer d'une architecture réseau simplifiée, segmentée, exploitable et maintenable",
+,,element - mise à niveau  interne ou hébergé,"problème avec le paypal haha, recgherche d'un gentil intermédiaire
+-----------------------
+Voir l'hébergement + lien avec passerelle sms :
+https://etke.cc/
+formule de ouf avec jitsee hébergé ailleurs : 94$/mois => 1200/an
+formule de ouf qu'on héberge :; 64$/mois
+probléme paiement paypal...
+
+https://datanauten.de/
+on est sur du 600€/an pas de jitsee
+https://communick.com/matrix
+tarification pas hyper claire demander à corinne si on peut payer en BTC ou en XMR
+https://shop.fairkom.net/warenkorb/
+propose des serveurs à 4000€/an
+https://element.io/pricing
+ok on est à 5€/user tout compris avec visio mais c'est pas clair 
+https://ossrox.org/
+Bon encore des nazis on est au moins à 1600€/mois pour 100utilisateurs
+",,"Chef SSIR, Exploit",Théo,Normal (3),Modéré,En cours,,2025-07-11 7:02pm,,,,,,Courte,,non,,2025-07-11 7:02pm,En cours,Courte,Théo,"Chef SSIR, Exploit",Modéré,2025-06-12 3:40pm,2025-07-11 19:02:03.592462+02:00,timothee.foucart,tous_nouveaux outils,Assurer la transition vers les systèmes d'information de demain,Mettre à jour le schéma directeur informatique,"Inclure les nouveaux outils, les solutions émergentes",Mettre à jour le schéma directeur informatique
+,,renouvellement copieurs,"commandes en attente ; réactivité du titulaire quasi nulle
+A relancer",,Exploit,,Normal (3),Modéré,Bloqué,,2025-07-11 7:02pm,,,,,,Moyenne,,non,,2025-07-11 7:02pm,Bloqué,Moyenne,,Exploit,Modéré,2025-06-18 9:19am,2025-07-11 19:02:03.592547+02:00,timothee.foucart,tous_mcoamoa,Assurer la transition vers les systèmes d'information de demain,Mettre à jour le schéma directeur informatique,Prendre en compte les évolutions validées suite aux travaux des groupes,Appliquer les dispositions organisationnelles des annexes 1 et 2
+,,pc cta hors cta - a finir,"pc cta hors cta seccor
+A finir, oui mais pas d'urgence le cta est fait => à virer ? plutôt de l'exploitation, pas un tâche déterminée dans le temps???
+c'est du courant, pas d'urgence à changer le cta est fait",,Exploit,,Normal (3),,Terminé,,2025-07-11 7:02pm,,,,,,,,non,,2025-07-11 7:02pm,Terminé,,,Exploit,,2025-06-18 9:27am,2025-07-11 19:02:03.592621+02:00,timothee.foucart,,,,,
+,,affichage dynamique,"[09/07/2025 13:48]
+Visiblement un problème à l'installation du serveur. En attente de l'identification dudit problème ?
+Telelogos a proposé son aide malgré que nous n'ayons pas d econtrat de maintenance
+
+---
+
+affichage dynamique priorité basse",,Exploit,,Faible (4),Mineur,Bloqué,,2025-07-11 7:02pm,,,,,infrastructure système,Moyenne,,non,,2025-07-11 7:02pm,Bloqué,Moyenne,,Exploit,Mineur,2025-06-18 9:40am,2025-07-11 19:02:03.592706+02:00,timothee.foucart,GT_Bâtir_les_systèmes_Proposer_les_outils,Assurer la transition vers les systèmes d'information de demain,Bâtir les systèmes d'information de demain,"Proposer les outils de demain (informatique = cloud, outils de communication modernes, téléphonie)",Appliquer les dispositions organisationnelles des annexes 1 et 2
+,,LAPS,"bloqué sur certains serveurs : identifier le problème ?
+pas prioritaire mais besoin d'un point sur la nature des blocages",,,Paul,Normal (3),Modéré,En cours,,2025-07-11 7:02pm,,,,,Conformité SSI,Moyenne,,non,,2025-07-11 7:02pm,En cours,Moyenne,Paul,,Modéré,2025-06-18 9:44am,2025-07-11 19:02:03.592793+02:00,timothee.foucart,,,,,
+,,décommissionnement de la pki,"virer l'ancien serveur antivirus et la pki windows
++ trouver une autre solution de PKI ???",,Exploit,Timothée,Normal (3),Modéré,À faire,,2025-07-11 7:02pm,,,,,infrastructure système,Moyenne,,non,,2025-07-11 7:02pm,À faire,Moyenne,Timothée,Exploit,Modéré,2025-06-18 9:46am,2025-07-11 19:02:03.592877+02:00,timothee.foucart,exploit_ad_durci,Assurer le fonctionnement des systèmes d'information ,"Mettre en conformité les réseaux, logiciels et matériels",Mise en conformité et durcissement de l'AD,
+,,changement arborescence du serveur de fichier,"[11/07/2025 01:36 (Utilisateur)]
+Pour suivi gsar informé du plan de classement aujourd'hui
+
+---
+
+[09/07/2025 13:51]
+Pour suivi gsar informé du plan de classement aujourd'hui
+
+---
+
+[09/07/2025 13:50]
+Pour suivi gsar informé du plan de classement aujourd'hui
+
+---
+
+blocage gsrh / => les voir => tf
+gsos => lionel / onillon => tf 
+log => pliage de poil de cul en 4 => tf
+sds => pas abordé
+gsaf => a voir 
+----
+attention nomenclature
+blocage ? 
+dir =>ok
+pas un gros chantier
+  en cours en attente",,Exploit,,Élevé (2),Important,Bloqué,,2025-07-11 7:02pm,,,,,infrastructure système,Moyenne,,non,,2025-07-11 7:02pm,Bloqué,Moyenne,,Exploit,Important,2025-06-18 10:08am,2025-07-11 19:02:03.592967+02:00,timothee.foucart,Mettre_en_place_Prévoir_et_accompagner,Répondre aux demandes des métiers,Mettre en place les solutions NexSIS-RRF,Prévoir et accompagner les évolutions techniques,
+,,archivage mail,"tf voit la faisabilité avec piller mail ; commencé mais doc pas hyper claire
++
+voir avec un intégrateur le coût d'un archivage mail
+en attente d'un retour après échange
+",,Chef SSIR,Timothée,Élevé (2),Important,À faire,,2025-07-11 7:02pm,,,,,infrastructure système,Moyenne,,non,,2025-07-11 7:02pm,À faire,Moyenne,Timothée,Chef SSIR,Important,2025-06-18 10:32am,2025-07-11 19:02:03.593053+02:00,timothee.foucart,,,,,
+,,kemp  - mise à jour ram pour avoir plus de waf,"à planifier
+sauvegarde arrêt augmenetation de 8 Go
+démarrage",,,,Normal (3),,Terminé,,2025-07-11 7:02pm,,2025-07-03,,,,,,non,,2025-07-11 7:02pm,Terminé,,,,,2025-07-03 9:43pm,2025-07-11 19:02:03.593131+02:00,timothee.foucart,,,,,
+,,suivi des tests réseau,"définir le périmètre et les inconnues
+définir les procédures de test impact utilisateurs et moyen de vérification
+préparer des sondes de supervision
+demander des compte-rendus",,Réseau,"Alex, Thomas",Élevé (2),Critique,À faire,,2025-07-11 7:02pm,,,,,infrastructure réseau,Moyenne,,non,,2025-07-11 7:02pm,À faire,Moyenne,"Alex, Thomas",Réseau,Critique,2025-07-03 9:51pm,2025-07-11 19:02:03.593215+02:00,timothee.foucart,,,,,
+,,marché resah apollo - famille,refourguer les code familles à c.Echennoz ?????? projet ??????????,,,,Normal (3),,Terminé,,2025-07-11 7:02pm,,,,,,,,non,,2025-07-11 7:02pm,Terminé,,,,,2025-07-03 9:54pm,2025-07-11 19:02:03.593305+02:00,timothee.foucart,,,,,
+,,migration vers apache hop,"migrer de talend vers apache hop 
+identifier les points bloquants et terminer les ticket d'assistance",,BDD,"Chloé, Isabelle",Normal (3),Modéré,En cours,,2025-07-11 7:02pm,,,,,Évolution applicative,Moyenne,,non,,2025-07-11 7:02pm,En cours,Moyenne,"Chloé, Isabelle",BDD,Modéré,2025-07-07 10:54am,2025-07-11 19:02:03.593374+02:00,timothee.foucart,,,,,

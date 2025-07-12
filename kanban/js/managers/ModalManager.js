@@ -16,6 +16,7 @@ import {
 } from '../utils/dom.js';
 
 import { TABLE_ID } from '../config/constants.js';
+import { getUserActionManager } from '../utils/UserActionManager.js';
 
 /**
  * Gestionnaire pour les modales et formulaires
@@ -463,12 +464,33 @@ export class ModalManager {
         const action = ['AddRecord', TABLE_ID, null, gristData];
         console.log('Action AddRecord complète:', action);
         result = await grist.docApi.applyUserActions([action]);
+        
+        // Enregistrer l'action utilisateur pour la création
+        const userActionManager = getUserActionManager();
+        if (userActionManager && result && result.retValues && result.retValues[0]) {
+          const newTaskId = result.retValues[0];
+          console.log('New task created with ID:', newTaskId);
+          await userActionManager.createTaskAction(newTaskId, gristData);
+        }
+        
         displaySuccess('Tâche créée avec succès');
       } else {
         // Mise à jour
         const action = ['UpdateRecord', TABLE_ID, this.currentTaskId, gristData];
         console.log('Action UpdateRecord complète:', action);
         result = await grist.docApi.applyUserActions([action]);
+        
+        // Enregistrer l'action utilisateur pour la mise à jour
+        const userActionManager = getUserActionManager();
+        if (userActionManager) {
+          await userActionManager.updateTaskAction(
+            this.currentTaskId, 
+            this.currentTask, 
+            gristData, 
+            'Task updated via modal'
+          );
+        }
+        
         displaySuccess('Tâche mise à jour avec succès');
       }
       
@@ -676,6 +698,12 @@ export class ModalManager {
     }
     
     try {
+      // Enregistrer l'action utilisateur avant la suppression
+      const userActionManager = getUserActionManager();
+      if (userActionManager && task) {
+        await userActionManager.deleteTaskAction(this.currentTaskId, task);
+      }
+      
       await grist.docApi.applyUserActions([
         ['RemoveRecord', TABLE_ID, this.currentTaskId]
       ]);

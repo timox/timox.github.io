@@ -1,0 +1,109 @@
+id2,task_id,action_type,timestamp,old_value,new_value,details
+1,1,create,2025-03-17T01:08:00Z,,Task created,Initial creation - Mise à jour RDS sécurisation accès rdp
+2,2,create,2025-07-11T01:23:00Z,,Task created,Initial creation - test
+3,3,create,2025-07-08T11:48:00Z,,Task created,Initial creation - Mise à jour Horoquartz
+4,4,create,2025-07-07T16:26:00Z,,Task created,Initial creation - client vpn fortinet
+5,5,create,2025-03-17T01:08:00Z,,Task created,Initial creation - Audit AD continu
+6,6,create,2025-03-17T01:08:00Z,,Task created,Initial creation - Politique mots de passe
+7,7,create,2025-03-17T01:08:00Z,,Task created,Initial creation - Mise en place système caméras piétons
+8,8,create,2025-03-17T01:08:00Z,,Task created,Initial creation - primo installation socle astre
+9,9,create,2025-03-17T01:08:00Z,,Task created,Initial creation - Charte correspondants
+10,10,create,2025-03-17T01:08:00Z,,Task created,Initial creation - changement flux mails RZO
+11,11,create,2025-03-19T15:14:00Z,,Task created,Initial creation - SSO
+12,12,create,2025-03-20T08:34:00Z,,Task created,Initial creation - sécurisation des serveurs exposés
+13,13,create,2025-03-20T08:40:00Z,,Task created,Initial creation - Evolution Libriciel
+14,14,create,2025-03-26T23:07:00Z,,Task created,Initial creation - vérif vm finances
+15,15,create,2025-03-27T11:12:00Z,,Task created,Initial creation - marché libriciel
+16,16,create,2025-04-06T17:45:00Z,,Task created,Initial creation - vérif install ASTRESGF
+17,17,create,2025-04-06T19:36:00Z,,Task created,Initial creation - rapport casdis
+18,18,create,2025-04-07T12:32:00Z,,Task created,Initial creation - guacamole
+19,19,create,2025-04-10T20:27:00Z,,Task created,Initial creation - justifications variation budgets
+20,20,create,2025-04-10T20:28:00Z,,Task created,Initial creation - nextcloud avec SSO et OnlyOffice
+21,21,create,2025-04-10T20:30:00Z,,Task created,Initial creation - sisprev v4
+22,22,create,2025-04-10T20:31:00Z,,Task created,Initial creation - décommissionnement o365
+23,23,create,2025-04-10T22:28:00Z,,Task created,Initial creation - gestion de formulaire internes
+24,24,create,2025-04-11T08:41:00Z,,Task created,Initial creation - centralisation inventaire SSIR
+25,25,create,2025-04-11T08:53:00Z,,Task created,Initial creation - Supervision analyse mise en place de grafana
+26,26,create,2025-04-11T08:57:00Z,,Task created,Initial creation - analyse intranet-extranet
+27,27,create,2025-04-12T17:10:00Z,,Task created,Initial creation - marché réseau
+28,28,create,2025-04-13T15:57:00Z,,Task created,Initial creation - config offline des 800+cam
+29,29,create,2025-04-13T16:02:00Z,,Task created,Initial creation - keycloak+ nextcloud
+30,30,create,2025-04-14T11:42:00Z,,Task created,Initial creation - mise en prod bookstack
+31,31,create,2025-04-22T09:55:00Z,,Task created,Initial creation - Firewall
+32,32,create,2025-04-23T17:32:00Z,,Task created,Initial creation - POC KVM proxmox nouveau système de virtualisation
+33,33,create,2025-04-25T20:36:00Z,,Task created,Initial creation - nomenclatures
+34,34,create,2025-05-07T14:07:00Z,,Task created,Initial creation - nomenclature AD goupes et listes mail - mise en oeuvre
+35,35,create,2025-05-07T23:05:00Z,,Task created,Initial creation - supervision tomcat par jmx
+36,36,create,2025-05-07T23:14:00Z,,Task created,Initial creation - Fiabilisation solution de gestion mot de passe coffre fort
+37,37,create,2025-06-06T13:47:00Z,,Task created,Initial creation - crimson déploiement
+38,38,create,2025-06-06T13:48:00Z,,Task created,Initial creation - artemis passage v2.8
+39,39,create,2025-06-10T11:21:00Z,,Task created,Initial creation - Gestion Oxio migration QLIKSENSE - oracle - ETL
+40,40,create,2025-06-10T11:55:00Z,,Task created,Initial creation - Mise en place d'une GED
+41,41,create,2025-06-10T16:16:00Z,,Task created,Initial creation - kemp upgrade et résilience
+42,42,create,2025-06-12T15:20:00Z,,Task created,Initial creation - supervision - détection pannes réseau
+43,43,create,2025-06-12T15:40:00Z,,Task created,Initial creation - element - mise à niveau interne ou hébergé
+44,44,create,2025-06-18T09:19:00Z,,Task created,Initial creation - renouvellement copieurs
+45,45,create,2025-06-18T09:27:00Z,,Task created,Initial creation - pc cta hors cta - a finir
+46,46,create,2025-06-18T09:40:00Z,,Task created,Initial creation - affichage dynamique
+47,47,create,2025-06-18T09:44:00Z,,Task created,Initial creation - LAPS
+48,48,create,2025-06-18T09:46:00Z,,Task created,Initial creation - décommissionnement de la pki
+49,49,create,2025-06-18T10:08:00Z,,Task created,Initial creation - changement arborescence du serveur de fichier
+50,50,create,2025-06-18T10:32:00Z,,Task created,Initial creation - archivage mail
+51,51,create,2025-07-03T21:43:00Z,,Task created,Initial creation - kemp mise à jour ram pour avoir plus de waf
+52,52,create,2025-07-03T21:51:00Z,,Task created,Initial creation - suivi des tests réseau
+53,53,create,2025-07-03T21:54:00Z,,Task created,Initial creation - marché resah apollo - famille
+54,54,create,2025-07-07T10:54:00Z,,Task created,Initial creation - migration vers apache hop
+55,1,update,2025-07-11T19:01:46Z,À faire,À faire,Task updated with recent modifications
+56,2,update,2025-07-11T19:01:50Z,Backlog,Backlog,Task updated with test notes
+57,3,update,2025-07-11T19:01:52Z,À faire,À faire,Task updated with Horoquartz progress
+58,4,update,2025-07-11T19:01:53Z,À faire,À faire,Task updated with VPN client status
+59,5,update,2025-07-11T19:02:03Z,Terminé,Terminé,Task completed - AD audit finished
+60,6,update,2025-07-11T19:02:03Z,En cours,En cours,Password policy implementation in progress
+61,7,update,2025-07-11T19:02:03Z,En cours,En cours,Camera system deployment ongoing
+62,8,update,2025-07-11T19:02:03Z,Validation,Validation,Astre installation ready for validation
+63,9,update,2025-07-11T19:02:03Z,Terminé,Terminé,Correspondents charter completed
+64,10,update,2025-07-11T19:02:03Z,En cours,En cours,Mail flow changes in progress
+65,11,update,2025-07-11T19:02:03Z,En cours,En cours,SSO implementation ongoing
+66,12,update,2025-07-11T19:02:03Z,En attente,En attente,Server security on hold
+67,13,update,2025-07-11T19:02:03Z,Validation,Validation,Libriciel evolution ready for validation
+68,14,update,2025-07-11T19:02:03Z,Terminé,Terminé,VM finance verification completed
+69,15,update,2025-07-11T19:02:03Z,En cours,En cours,Libriciel market process ongoing
+70,16,update,2025-07-11T19:02:03Z,Validation,Validation,ASTRESGF installation ready for validation
+71,17,update,2025-07-11T19:02:03Z,Terminé,Terminé,CASDIS report completed
+72,18,update,2025-07-11T19:02:03Z,En cours,En cours,Guacamole setup in progress
+73,19,update,2025-07-11T19:02:03Z,Terminé,Terminé,Budget justifications completed
+74,20,update,2025-07-11T19:02:03Z,Validation,Validation,Nextcloud SSO ready for validation
+75,21,update,2025-07-11T19:02:03Z,En attente,En attente,Sisprev v4 on hold
+76,22,update,2025-07-11T19:02:03Z,En cours,En cours,O365 decommissioning in progress
+77,23,update,2025-07-11T19:02:03Z,En cours,En cours,Internal forms management ongoing
+78,24,update,2025-07-11T19:02:03Z,À faire,À faire,SSIR inventory centralization to do
+79,25,update,2025-07-11T19:02:03Z,À faire,À faire,Grafana supervision setup to do
+80,26,update,2025-07-11T19:02:03Z,En cours,En cours,Intranet-extranet analysis ongoing
+81,27,update,2025-07-11T19:02:03Z,Validation,Validation,Network market ready for validation
+82,28,update,2025-07-11T19:02:03Z,Terminé,Terminé,Camera offline config completed
+83,29,update,2025-07-11T19:02:03Z,Validation,Validation,Keycloak nextcloud ready for validation
+84,30,update,2025-07-11T19:02:03Z,Terminé,Terminé,Bookstack production deployment completed
+85,31,update,2025-07-11T19:02:03Z,Terminé,Terminé,Firewall implementation completed
+86,32,update,2025-07-11T19:02:03Z,À faire,À faire,Proxmox POC to do
+87,33,update,2025-07-11T19:02:03Z,Validation,Validation,Nomenclatures ready for validation
+88,34,update,2025-07-11T19:02:03Z,En cours,En cours,AD nomenclature implementation ongoing
+89,35,update,2025-07-11T19:02:03Z,Terminé,Terminé,Tomcat JMX supervision completed
+90,36,update,2025-07-11T19:02:03Z,À faire,À faire,Password manager solution to do
+91,37,update,2025-07-11T19:02:03Z,En cours,En cours,Crimson deployment ongoing
+92,38,update,2025-07-11T19:02:03Z,En attente,En attente,Artemis v2.8 upgrade on hold
+93,39,update,2025-07-11T19:02:03Z,En cours,En cours,Oxio QLIKSENSE migration ongoing
+94,40,update,2025-07-11T19:02:03Z,Validation,Validation,GED implementation ready for validation
+95,41,update,2025-07-11T19:02:03Z,En cours,En cours,Kemp upgrade and resilience ongoing
+96,42,update,2025-07-11T19:02:03Z,À faire,À faire,Network failure detection supervision to do
+97,43,update,2025-07-11T19:02:03Z,En cours,En cours,Element upgrade ongoing
+98,44,update,2025-07-11T19:02:03Z,Bloqué,Bloqué,Copier renewal blocked
+99,45,update,2025-07-11T19:02:03Z,Terminé,Terminé,CTA PC configuration completed
+100,46,update,2025-07-11T19:02:03Z,Bloqué,Bloqué,Dynamic display blocked
+101,47,update,2025-07-11T19:02:03Z,En cours,En cours,LAPS implementation ongoing
+102,48,update,2025-07-11T19:02:03Z,À faire,À faire,PKI decommissioning to do
+103,49,update,2025-07-11T19:02:03Z,Bloqué,Bloqué,File server reorganization blocked
+104,50,update,2025-07-11T19:02:03Z,À faire,À faire,Mail archiving to do
+105,51,update,2025-07-11T19:02:03Z,Terminé,Terminé,Kemp RAM upgrade completed
+106,52,update,2025-07-11T19:02:03Z,À faire,À faire,Network testing monitoring to do
+107,53,update,2025-07-11T19:02:03Z,Terminé,Terminé,Apollo market family completed
+108,54,update,2025-07-11T19:02:03Z,En cours,En cours,Apache Hop migration ongoing
