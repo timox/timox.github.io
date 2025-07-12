@@ -470,10 +470,28 @@ export class ModalManager {
         if (userActionManager && result && result.retValues && result.retValues[0]) {
           const newTaskId = result.retValues[0];
           console.log('New task created with ID:', newTaskId);
-          await userActionManager.createTaskAction(newTaskId, gristData);
+          
+          // Capturer le contenu du champ description pour l'historique
+          const descriptionContent = getFieldValue('popup-description').trim();
+          if (descriptionContent) {
+            // Ajouter le contenu de description à l'historique
+            await userActionManager.addHistoryEntry(
+              newTaskId,
+              'create',
+              `Task created: ${gristData.titre || 'New task'} - ${descriptionContent}`,
+              '',
+              'Task created',
+              gristData.statut || 'À faire'
+            );
+          } else {
+            await userActionManager.createTaskAction(newTaskId, gristData);
+          }
         }
         
         displaySuccess('Tâche créée avec succès');
+        
+        // Vider le champ description après création
+        setFieldValue('popup-description', '');
       } else {
         // Mise à jour
         const action = ['UpdateRecord', TABLE_ID, this.currentTaskId, gristData];
@@ -483,15 +501,24 @@ export class ModalManager {
         // Enregistrer l'action utilisateur pour la mise à jour
         const userActionManager = getUserActionManager();
         if (userActionManager) {
+          // Capturer le contenu du champ description pour l'historique
+          const descriptionContent = getFieldValue('popup-description').trim();
+          const details = descriptionContent ? 
+            `Task updated: ${descriptionContent}` : 
+            'Task updated via modal';
+            
           await userActionManager.updateTaskAction(
             this.currentTaskId, 
             this.currentTask, 
             gristData, 
-            'Task updated via modal'
+            details
           );
         }
         
         displaySuccess('Tâche mise à jour avec succès');
+        
+        // Vider le champ description après mise à jour
+        setFieldValue('popup-description', '');
       }
       
       console.log('Résultat Grist:', result);
@@ -552,15 +579,10 @@ export class ModalManager {
     console.log('Qui (raw):', data.qui);
     console.log('Strategie_id (raw):', data.strategie_id);
     
-    // Description avec horodatage si modifiée
-    const newDescription = getFieldValue('popup-description').trim();
-    if (newDescription) {
-      const currentDescription = this.currentTask?.description || '';
-      data.description = this.kanban.addTimestampToDescription(currentDescription, newDescription);
-    } else {
-      data.description = this.currentTask?.description || '';
-    }
-    console.log('Description finale:', data.description);
+    // Description - conserver la description existante sans modification
+    // Le champ de saisie description n'est plus utilisé pour stocker les données
+    data.description = this.currentTask?.description || '';
+    console.log('Description conservée:', data.description);
     
     // Date d'échéance
     if (this.kanban.datePickerManager) {
@@ -979,8 +1001,8 @@ export class ModalManager {
     if (this.isNewTask) {
       // Vérifier si des champs ont été remplis
       const titre = getFieldValue('popup-titre').trim();
-      const description = getFieldValue('popup-description').trim();
-      return titre !== '' || description !== '';
+      // Ne plus vérifier le champ description pour les changements
+      return titre !== '';
     }
     
     if (!this.currentTask) return false;

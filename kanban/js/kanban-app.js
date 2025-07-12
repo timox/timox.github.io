@@ -24,7 +24,7 @@ import {
 } from './utils/dates.js';
 
 import { initUserActionManager, getUserActionManager } from './utils/UserActionManager.js';
-import { initNotesJsonMigrator } from './utils/NotesJsonMigrator.js';
+import { initNotesJsonMigrator, getNotesJsonMigrator } from './utils/NotesJsonMigrator.js';
 
 import {
   generateBureauBadges,
@@ -640,13 +640,25 @@ class KanbanManager {
 
   // Génération du bouton timeline
   generateTimelineButton(record) {
-    if (!record.description && !record.historique_statuts) return '';
+    // Compter les événements depuis les notes JSON (nouveau système)
+    let notesEventCount = 0;
+    if (record.notes) {
+      try {
+        const migrator = getNotesJsonMigrator();
+        if (migrator) {
+          const history = migrator.getHistory(record);
+          notesEventCount = Array.isArray(history) ? history.length : 0;
+        }
+      } catch (e) {
+        notesEventCount = 0;
+      }
+    }
     
-    // Compter les commentaires
+    // Compter les anciens commentaires (compatibilité)
     const commentCount = record.description ? 
       (record.description.match(/^\(.*\)$/gm) || []).length : 0;
     
-    // Compter les changements de statut
+    // Compter les changements de statut (ancien système)
     let statusChangeCount = 0;
     if (record.historique_statuts) {
       try {
@@ -657,7 +669,7 @@ class KanbanManager {
       }
     }
     
-    const totalEvents = commentCount + statusChangeCount;
+    const totalEvents = notesEventCount + commentCount + statusChangeCount;
     if (totalEvents === 0) return '';
     
     return `<button class="btn-timeline" title="Voir la timeline (${totalEvents} événement${totalEvents > 1 ? 's' : ''})" data-task-id="${record.id}">
@@ -1087,7 +1099,41 @@ class KanbanManager {
     const comments = [];
     const statusChanges = [];
     
-    // Parser les commentaires depuis la description
+    // Parser l'historique depuis le champ notes (nouveau système JSON)
+    if (task.notes) {
+      try {
+        // Utiliser le migrator pour lire l'historique
+        const migrator = getNotesJsonMigrator();
+        
+        if (migrator) {
+          const historyData = migrator.getHistory(task);
+          
+          if (Array.isArray(historyData)) {
+            historyData.forEach(entry => {
+              const historyEvent = {
+                type: entry.action === 'status_change' ? 'status' : 'comment',
+                timestamp: new Date(entry.timestamp).toLocaleString('fr-FR'),
+                content: entry.details,
+                user: entry.user || 'System',
+                action: entry.action,
+                status: entry.status
+              };
+              
+              if (entry.action === 'status_change') {
+                statusChanges.push(historyEvent);
+              } else {
+                comments.push(historyEvent);
+              }
+              events.push(historyEvent);
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Erreur lecture historique notes:', error);
+      }
+    }
+    
+    // Parser les anciens commentaires depuis la description (compatibilité)
     if (task.description) {
       const sections = task.description.split(/^---\s*$/gm);
       
@@ -1103,7 +1149,8 @@ class KanbanManager {
               type: 'comment',
               timestamp: timestampMatch[1],
               content: content,
-              user: this.extractUserFromTimestamp(timestampMatch[1])
+              user: this.extractUserFromTimestamp(timestampMatch[1]),
+              action: 'legacy_comment'
             };
             comments.push(comment);
             events.push(comment);
