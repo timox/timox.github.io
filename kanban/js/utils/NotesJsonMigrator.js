@@ -48,6 +48,12 @@ export class NotesJsonMigrator {
   async migrateAllRecords(records) {
     console.log('NotesJsonMigrator: Starting migration...');
     
+    // Vérifier que records est bien un array
+    if (!Array.isArray(records)) {
+      console.error('NotesJsonMigrator: Records is not an array:', typeof records);
+      return 0;
+    }
+    
     const toMigrate = [];
     
     // Identifier les enregistrements à migrer

@@ -213,15 +213,23 @@ class KanbanManager {
       const userActionManager = getUserActionManager();
       if (userActionManager && this.currentRecords?.length > 0) {
         console.log("Vérification migration des notes vers JSON...");
-        const migrated = await userActionManager.migrateAllTasks(records);
-        if (migrated > 0) {
-          console.log(`✅ Migration terminée: ${migrated} tâches migrées vers le format JSON.`);
-          // Recharger les données après migration
-          const updatedRecords = await grist.docApi.fetchTable(TABLE_ID);
-          this.currentRecords = this.mapGristRecords(updatedRecords);
-        } else {
-          console.log("✅ Aucune migration nécessaire - les notes sont déjà au format JSON.");
+        try {
+          // Passer les enregistrements mappés plutôt que les données brutes
+          const migrated = await userActionManager.migrateAllTasks(this.currentRecords);
+          if (migrated > 0) {
+            console.log(`✅ Migration terminée: ${migrated} tâches migrées vers le format JSON.`);
+            // Recharger les données après migration
+            const updatedRecords = await grist.docApi.fetchTable(TABLE_ID);
+            this.currentRecords = this.mapGristRecords(updatedRecords);
+          } else {
+            console.log("✅ Aucune migration nécessaire - les notes sont déjà au format JSON.");
+          }
+        } catch (migrationError) {
+          console.error("Erreur lors de la migration des notes:", migrationError);
+          // Continue without migration if it fails
         }
+      } else {
+        console.log("Migration skipped - no records available");
       }
 
       // Options Statiques
