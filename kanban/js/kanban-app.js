@@ -1215,7 +1215,9 @@ class KanbanManager {
       btnSave.addEventListener('click', (e) => {
         console.log('💾 Clic bouton sauvegarder');
         e.preventDefault();
-        this.saveTask();
+        if (this.modalManager) {
+          this.modalManager.saveTask();
+        }
       });
       console.log('✅ Event listener bouton sauvegarder attaché');
     } else {
@@ -1228,7 +1230,9 @@ class KanbanManager {
       btnDelete.addEventListener('click', (e) => {
         console.log('🗑️ Clic bouton supprimer');
         e.preventDefault();
-        this.deleteTask();
+        if (this.modalManager) {
+          this.modalManager.deleteTask();
+        }
       });
     }
 

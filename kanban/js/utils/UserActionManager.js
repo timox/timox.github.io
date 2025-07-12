@@ -40,9 +40,22 @@ export class UserActionManager {
    */
   async addHistoryEntry(taskId, action, details, oldValue = '', newValue = '', status = '') {
     try {
-      // Récupérer l'enregistrement actuel
-      const records = await this.grist.docApi.fetchTable(TABLE_ID);
-      const record = records.find(r => r.id === taskId);
+      // Récupérer l'enregistrement actuel depuis les données Grist
+      const gristData = await this.grist.docApi.fetchTable(TABLE_ID);
+      
+      // Mapper les données Grist vers un format utilisable
+      let record = null;
+      if (gristData && gristData.id && Array.isArray(gristData.id)) {
+        const index = gristData.id.findIndex(id => id === taskId);
+        if (index !== -1) {
+          record = {};
+          Object.keys(gristData).forEach(key => {
+            if (Array.isArray(gristData[key]) && gristData[key].length > index) {
+              record[key] = gristData[key][index];
+            }
+          });
+        }
+      }
       
       if (!record) {
         console.error(`UserActionManager: Task ${taskId} not found`);
@@ -185,8 +198,22 @@ export class UserActionManager {
    */
   async getTaskHistory(taskId) {
     try {
-      const records = await this.grist.docApi.fetchTable(TABLE_ID);
-      const record = records.find(r => r.id === taskId);
+      // Récupérer l'enregistrement actuel depuis les données Grist
+      const gristData = await this.grist.docApi.fetchTable(TABLE_ID);
+      
+      // Mapper les données Grist vers un format utilisable
+      let record = null;
+      if (gristData && gristData.id && Array.isArray(gristData.id)) {
+        const index = gristData.id.findIndex(id => id === taskId);
+        if (index !== -1) {
+          record = {};
+          Object.keys(gristData).forEach(key => {
+            if (Array.isArray(gristData[key]) && gristData[key].length > index) {
+              record[key] = gristData[key][index];
+            }
+          });
+        }
+      }
       
       if (!record) {
         return [];
