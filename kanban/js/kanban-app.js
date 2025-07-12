@@ -24,6 +24,7 @@ import {
 } from './utils/dates.js';
 
 import { initUserActionManager, getUserActionManager } from './utils/UserActionManager.js';
+import { initNotesJsonMigrator } from './utils/NotesJsonMigrator.js';
 
 import {
   generateBureauBadges,
@@ -182,9 +183,10 @@ class KanbanManager {
         grist.onRecords(this.handleGristUpdate.bind(this));
         console.log("Listener onRecords attaché.");
         
-        // Initialiser le gestionnaire d'actions utilisateur
+        // Initialiser le gestionnaire d'actions utilisateur et le migrateur
         initUserActionManager(grist);
-        console.log("UserActionManager initialisé.");
+        initNotesJsonMigrator(grist);
+        console.log("UserActionManager et NotesJsonMigrator initialisés.");
         
         setTimeout(() => {
           console.log("grist.ready OK.");
@@ -206,6 +208,21 @@ class KanbanManager {
       this.currentRecords = this.mapGristRecords(records);
       console.log("Données tâches mappées:", this.currentRecords.length, "enreg.");
       if (!this.currentRecords?.length) console.warn("Aucune donnée tâche Grist chargée.");
+
+      // Migrer les notes vers le format JSON si nécessaire
+      const userActionManager = getUserActionManager();
+      if (userActionManager && this.currentRecords?.length > 0) {
+        console.log("Vérification migration des notes vers JSON...");
+        const migrated = await userActionManager.migrateAllTasks(records);
+        if (migrated > 0) {
+          console.log(`✅ Migration terminée: ${migrated} tâches migrées vers le format JSON.`);
+          // Recharger les données après migration
+          const updatedRecords = await grist.docApi.fetchTable(TABLE_ID);
+          this.currentRecords = this.mapGristRecords(updatedRecords);
+        } else {
+          console.log("✅ Aucune migration nécessaire - les notes sont déjà au format JSON.");
+        }
+      }
 
       // Options Statiques
       this.gristOptions.statut = getDefaultStatuts();

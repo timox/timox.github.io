@@ -1,10 +1,11 @@
 // === utils/UserActionManager.js ===
-// Gestionnaire des actions utilisateur pour la table User_Actions2
+// Gestionnaire des actions utilisateur utilisant le champ notes en JSON
 
-import { USER_ACTIONS_TABLE } from '../config/constants.js';
+import { TABLE_ID } from '../config/constants.js';
+import { getNotesJsonMigrator } from './NotesJsonMigrator.js';
 
 /**
- * Gestionnaire des actions utilisateur
+ * Gestionnaire des actions utilisateur utilisant JSON dans le champ notes
  */
 export class UserActionManager {
   constructor(gristApi) {
@@ -12,155 +13,224 @@ export class UserActionManager {
   }
 
   /**
-   * Crée un enregistrement d'action utilisateur pour une nouvelle tâche
+   * Récupère l'utilisateur actuel depuis Grist
+   * @returns {string}
+   */
+  async getCurrentUser() {
+    try {
+      if (this.grist && this.grist.getUser) {
+        const user = await this.grist.getUser();
+        return user?.Name || 'Unknown User';
+      }
+    } catch (error) {
+      console.warn('UserActionManager: Could not get current user:', error);
+    }
+    return 'Unknown User';
+  }
+
+  /**
+   * Ajoute une entrée d'historique à une tâche
+   * @param {number} taskId - ID de la tâche
+   * @param {string} action - Type d'action (create, update, status_change, delete)
+   * @param {string} details - Détails de l'action
+   * @param {string} oldValue - Ancienne valeur
+   * @param {string} newValue - Nouvelle valeur
+   * @param {string} status - Statut actuel
+   * @returns {Promise<void>}
+   */
+  async addHistoryEntry(taskId, action, details, oldValue = '', newValue = '', status = '') {
+    try {
+      // Récupérer l'enregistrement actuel
+      const records = await this.grist.docApi.fetchTable(TABLE_ID);
+      const record = records.find(r => r.id === taskId);
+      
+      if (!record) {
+        console.error(`UserActionManager: Task ${taskId} not found`);
+        return;
+      }
+
+      const migrator = getNotesJsonMigrator();
+      if (!migrator) {
+        console.error('UserActionManager: NotesJsonMigrator not initialized');
+        return;
+      }
+
+      // Préparer l'entrée d'historique
+      const historyEntry = {
+        user: await this.getCurrentUser(),
+        action: action,
+        details: details,
+        oldValue: oldValue,
+        newValue: newValue,
+        status: status || record.statut
+      };
+
+      // Ajouter l'entrée via le migrator
+      await migrator.addHistoryEntry(record, historyEntry);
+
+      // Mettre à jour la date de dernière modification
+      await this.grist.docApi.applyUserActions([
+        ['UpdateRecord', TABLE_ID, taskId, { 
+          date_derniere_maj: new Date().toISOString(),
+          historique_statuts: action === 'status_change' ? new Date().toISOString() : record.historique_statuts
+        }]
+      ]);
+
+      console.log(`UserActionManager: Added ${action} history entry for task ${taskId}`);
+
+    } catch (error) {
+      console.error('UserActionManager: Error adding history entry:', error);
+    }
+  }
+
+  /**
+   * Enregistre la création d'une nouvelle tâche
    * @param {number} taskId - ID de la tâche créée
    * @param {Object} taskData - Données de la tâche
    * @returns {Promise<void>}
    */
   async createTaskAction(taskId, taskData) {
-    try {
-      const actionData = {
-        task_id: taskId,
-        action_type: 'create',
-        timestamp: new Date().toISOString(),
-        old_value: '',
-        new_value: 'Task created',
-        details: `Initial creation - ${taskData.titre || 'New task'}`
-        // user_name sera automatiquement rempli par la fonction _default_user_name de Grist
-      };
-
-      console.log('UserActionManager: Creating task action:', actionData);
-
-      await this.grist.docApi.applyUserActions([
-        ['AddRecord', USER_ACTIONS_TABLE, null, actionData]
-      ]);
-
-      console.log('UserActionManager: Task creation action recorded successfully');
-
-    } catch (error) {
-      console.error('UserActionManager: Error creating task action:', error);
-      // Ne pas faire échouer l'opération principale si l'enregistrement de l'action échoue
-    }
+    await this.addHistoryEntry(
+      taskId,
+      'create',
+      `Task created: ${taskData.titre || 'New task'}`,
+      '',
+      'Task created',
+      taskData.statut || 'À faire'
+    );
   }
 
   /**
-   * Crée un enregistrement d'action utilisateur pour une mise à jour de tâche
-   * @param {number} taskId - ID de la tâche mise à jour
+   * Enregistre la mise à jour d'une tâche
+   * @param {number} taskId - ID de la tâche
    * @param {Object} oldData - Anciennes données
    * @param {Object} newData - Nouvelles données
    * @param {string} details - Détails de la modification
    * @returns {Promise<void>}
    */
   async updateTaskAction(taskId, oldData, newData, details = 'Task updated') {
-    try {
-      const actionData = {
-        task_id: taskId,
-        action_type: 'update',
-        timestamp: new Date().toISOString(),
-        old_value: this.extractRelevantChanges(oldData),
-        new_value: this.extractRelevantChanges(newData),
-        details: details
-        // user_name sera automatiquement rempli par la fonction _default_user_name de Grist
-      };
-
-      console.log('UserActionManager: Creating update action:', actionData);
-
-      await this.grist.docApi.applyUserActions([
-        ['AddRecord', USER_ACTIONS_TABLE, null, actionData]
-      ]);
-
-      console.log('UserActionManager: Task update action recorded successfully');
-
-    } catch (error) {
-      console.error('UserActionManager: Error creating update action:', error);
-      // Ne pas faire échouer l'opération principale si l'enregistrement de l'action échoue
-    }
+    const changes = this.extractChanges(oldData, newData);
+    
+    await this.addHistoryEntry(
+      taskId,
+      'update',
+      details,
+      changes.oldValue,
+      changes.newValue,
+      newData.statut || oldData?.statut
+    );
   }
 
   /**
-   * Crée un enregistrement d'action utilisateur pour une suppression de tâche
-   * @param {number} taskId - ID de la tâche supprimée
-   * @param {Object} taskData - Données de la tâche supprimée
-   * @returns {Promise<void>}
-   */
-  async deleteTaskAction(taskId, taskData) {
-    try {
-      const actionData = {
-        task_id: taskId,
-        action_type: 'delete',
-        timestamp: new Date().toISOString(),
-        old_value: `Task: ${taskData.titre || 'Unknown'}`,
-        new_value: 'Task deleted',
-        details: `Task deleted - ${taskData.titre || 'Unknown task'}`
-        // user_name sera automatiquement rempli par la fonction _default_user_name de Grist
-      };
-
-      console.log('UserActionManager: Creating delete action:', actionData);
-
-      await this.grist.docApi.applyUserActions([
-        ['AddRecord', USER_ACTIONS_TABLE, null, actionData]
-      ]);
-
-      console.log('UserActionManager: Task deletion action recorded successfully');
-
-    } catch (error) {
-      console.error('UserActionManager: Error creating delete action:', error);
-      // Ne pas faire échouer l'opération principale si l'enregistrement de l'action échoue
-    }
-  }
-
-  /**
-   * Crée un enregistrement d'action pour un changement de statut
+   * Enregistre un changement de statut
    * @param {number} taskId - ID de la tâche
    * @param {string} oldStatus - Ancien statut
    * @param {string} newStatus - Nouveau statut
    * @returns {Promise<void>}
    */
   async statusChangeAction(taskId, oldStatus, newStatus) {
-    await this.updateTaskAction(
+    await this.addHistoryEntry(
       taskId,
-      { statut: oldStatus },
-      { statut: newStatus },
-      `Status changed from ${oldStatus} to ${newStatus}`
+      'status_change',
+      `Status changed from ${oldStatus} to ${newStatus}`,
+      oldStatus,
+      newStatus,
+      newStatus
     );
   }
 
-
   /**
-   * Extrait les changements pertinents d'un objet de données
-   * @param {Object} data - Données à extraire
-   * @returns {string}
+   * Enregistre la suppression d'une tâche
+   * @param {number} taskId - ID de la tâche
+   * @param {Object} taskData - Données de la tâche supprimée
+   * @returns {Promise<void>}
    */
-  extractRelevantChanges(data) {
-    if (!data) return '';
-
-    const relevantFields = ['statut', 'titre', 'description', 'bureau', 'qui', 'urgence', 'impact'];
-    const changes = [];
-
-    for (const field of relevantFields) {
-      if (data[field] !== undefined) {
-        changes.push(`${field}: ${data[field]}`);
-      }
-    }
-
-    return changes.join(', ');
+  async deleteTaskAction(taskId, taskData) {
+    await this.addHistoryEntry(
+      taskId,
+      'delete',
+      `Task deleted: ${taskData.titre || 'Unknown task'}`,
+      `Task: ${taskData.titre || 'Unknown'}`,
+      'Task deleted',
+      taskData.statut || 'Unknown'
+    );
   }
 
   /**
-   * Récupère l'historique des actions pour une tâche
+   * Extrait les changements significatifs entre deux objets
+   * @param {Object} oldData - Anciennes données
+   * @param {Object} newData - Nouvelles données
+   * @returns {Object} - {oldValue, newValue}
+   */
+  extractChanges(oldData, newData) {
+    const relevantFields = ['statut', 'titre', 'description', 'bureau', 'qui', 'urgence', 'impact', 'notes'];
+    const changes = [];
+
+    for (const field of relevantFields) {
+      if (oldData && newData && oldData[field] !== newData[field]) {
+        changes.push(`${field}: ${oldData[field]} → ${newData[field]}`);
+      }
+    }
+
+    return {
+      oldValue: changes.length > 0 ? changes.join(', ') : 'No changes detected',
+      newValue: 'Updated'
+    };
+  }
+
+  /**
+   * Récupère l'historique d'une tâche
    * @param {number} taskId - ID de la tâche
    * @returns {Promise<Array>}
    */
   async getTaskHistory(taskId) {
     try {
-      // Cette méthode nécessiterait l'accès aux données de la table User_Actions2
-      // Pour l'instant, on retourne un tableau vide
-      console.log('UserActionManager: Getting history for task:', taskId);
-      return [];
+      const records = await this.grist.docApi.fetchTable(TABLE_ID);
+      const record = records.find(r => r.id === taskId);
+      
+      if (!record) {
+        return [];
+      }
+
+      const migrator = getNotesJsonMigrator();
+      if (!migrator) {
+        return [];
+      }
+
+      return migrator.getHistory(record);
     } catch (error) {
       console.error('UserActionManager: Error getting task history:', error);
       return [];
     }
+  }
+
+  /**
+   * Récupère le contenu texte des notes d'une tâche
+   * @param {Object} record - Enregistrement de la tâche
+   * @returns {string}
+   */
+  getNotesContent(record) {
+    const migrator = getNotesJsonMigrator();
+    if (!migrator) {
+      return record.notes || '';
+    }
+    
+    return migrator.getContent(record);
+  }
+
+  /**
+   * Migre toutes les tâches vers le format JSON si nécessaire
+   * @param {Array} records - Liste des enregistrements
+   * @returns {Promise<number>}
+   */
+  async migrateAllTasks(records) {
+    const migrator = getNotesJsonMigrator();
+    if (!migrator) {
+      console.error('UserActionManager: NotesJsonMigrator not initialized');
+      return 0;
+    }
+
+    return await migrator.migrateAllRecords(records);
   }
 }
 

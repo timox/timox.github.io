@@ -30,7 +30,6 @@ export const DEFAULT_PROJETS = [];
 
 // === CONFIGURATION GRIST ===
 export const TABLE_ID = "Ssir_principale_task";
-export const USER_ACTIONS_TABLE = "User_Actions2";
 
 // === COLONNES REQUISES ET OPTIONNELLES ===
 export const REQUIRED_COLUMNS = [
