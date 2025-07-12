@@ -313,12 +313,13 @@ export class ModalManager {
     console.log('Task ID:', task?.id);
     console.log('Task type:', typeof task?.id);
     
-    this.isNewTask = !task;
+    this.isNewTask = !task || !task.id;
     this.currentTask = task;
     this.currentTaskId = task?.id || null;
     
     console.log('IsNewTask:', this.isNewTask);
     console.log('CurrentTaskId:', this.currentTaskId);
+    console.log('CurrentTask:', this.currentTask);
     
     // Mettre à jour le titre de la modal
     const modalTitle = document.getElementById('popup-tache-label');
@@ -350,10 +351,24 @@ export class ModalManager {
    */
   // === REMPLISSAGE DU FORMULAIRE CORRIGÉ ===
   populateTaskForm(tache, isNewTask) {
+    console.log('=== DEBUG: populateTaskForm ===');
+    console.log('Tache parameter:', tache);
+    console.log('isNewTask parameter:', isNewTask);
+    
     // S'assurer que tache est un objet
     if (!tache) {
       tache = {};
     }
+    
+    // Utiliser le paramètre isNewTask s'il est fourni
+    if (isNewTask !== undefined) {
+      console.log('Using isNewTask parameter:', isNewTask);
+      this.isNewTask = isNewTask;
+      this.currentTaskId = this.isNewTask ? null : (tache.id || null);
+      this.currentTask = this.isNewTask ? null : tache;
+    }
+    
+    console.log('Final state - isNewTask:', this.isNewTask, 'currentTaskId:', this.currentTaskId);
     
     // Champs de base
     setFieldValue('popup-titre', tache.titre || '');

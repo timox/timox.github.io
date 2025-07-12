@@ -188,6 +188,16 @@ class KanbanManager {
         initNotesJsonMigrator(grist);
         console.log("UserActionManager et NotesJsonMigrator initialisés.");
         
+        // Initialiser le nom d'utilisateur
+        const userActionManager = getUserActionManager();
+        if (userActionManager) {
+          userActionManager.initializeUser().then(userName => {
+            console.log("Nom d'utilisateur initialisé:", userName);
+          }).catch(error => {
+            console.error("Erreur lors de l'initialisation de l'utilisateur:", error);
+          });
+        }
+        
         setTimeout(() => {
           console.log("grist.ready OK.");
           resolve();

@@ -10,22 +10,87 @@ import { getNotesJsonMigrator } from './NotesJsonMigrator.js';
 export class UserActionManager {
   constructor(gristApi) {
     this.grist = gristApi;
+    this.cachedUserName = null; // Cache pour éviter les appels répétés
   }
 
   /**
-   * Récupère l'utilisateur actuel depuis Grist
+   * Récupère l'utilisateur actuel depuis Grist via un enregistrement tampon
    * @returns {string}
    */
   async getCurrentUser() {
-    try {
-      if (this.grist && this.grist.getUser) {
-        const user = await this.grist.getUser();
-        return user?.Name || 'Unknown User';
-      }
-    } catch (error) {
-      console.warn('UserActionManager: Could not get current user:', error);
+    // Utiliser le cache si disponible
+    if (this.cachedUserName) {
+      return this.cachedUserName;
     }
-    return 'Unknown User';
+    
+    try {
+      console.log('UserActionManager: Getting current user via buffer record...');
+      
+      // Créer un enregistrement temporaire pour déclencher le trigger user.Name
+      const tempRecord = await this.grist.docApi.applyUserActions([
+        ['AddRecord', TABLE_ID, null, {
+          titre: '___TEMP_USER_RECORD___',
+          statut: 'Backlog',
+          description: 'Temporary record to get user name',
+          bureau: ['L'],
+          qui: ['L'],
+          urgence: 'Longue',
+          impact: 'Mineur'
+        }]
+      ]);
+      
+      if (!tempRecord || !tempRecord.retValues || !tempRecord.retValues[0]) {
+        console.warn('UserActionManager: Failed to create temp record');
+        return 'Unknown User';
+      }
+      
+      const tempRecordId = tempRecord.retValues[0];
+      console.log('UserActionManager: Created temp record with ID:', tempRecordId);
+      
+      // Attendre un peu pour que le trigger se déclenche
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Récupérer l'enregistrement avec le nom d'utilisateur
+      const gristData = await this.grist.docApi.fetchTable(TABLE_ID);
+      let userName = 'Unknown User';
+      
+      if (gristData && gristData.id && Array.isArray(gristData.id)) {
+        const index = gristData.id.findIndex(id => id === tempRecordId);
+        if (index !== -1 && gristData.Cree_par && gristData.Cree_par[index]) {
+          userName = gristData.Cree_par[index];
+          console.log('UserActionManager: Found user name:', userName);
+        }
+      }
+      
+      // Supprimer l'enregistrement temporaire
+      try {
+        await this.grist.docApi.applyUserActions([
+          ['RemoveRecord', TABLE_ID, tempRecordId]
+        ]);
+        console.log('UserActionManager: Deleted temp record');
+      } catch (deleteError) {
+        console.warn('UserActionManager: Failed to delete temp record:', deleteError);
+      }
+      
+      // Mettre en cache le nom d'utilisateur
+      this.cachedUserName = userName;
+      return userName;
+      
+    } catch (error) {
+      console.error('UserActionManager: Error getting current user:', error);
+      return 'Unknown User';
+    }
+  }
+
+  /**
+   * Initialise et met en cache le nom d'utilisateur
+   * @returns {Promise<string>}
+   */
+  async initializeUser() {
+    console.log('UserActionManager: Initializing user...');
+    const userName = await this.getCurrentUser();
+    console.log('UserActionManager: User initialized:', userName);
+    return userName;
   }
 
   /**
