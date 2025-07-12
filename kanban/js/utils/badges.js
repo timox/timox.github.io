@@ -43,7 +43,7 @@ export function generateSingleBureauBadge(bureau, isCompact = false) {
   const normalizedName = normalizeBureauName(bureau);
   const icon = getBureauIcon(bureau);
   const badgeClass = `bureau-badge bureau-${normalizedName}`;
-  const displayName = bureau.length > 8 && isCompact ? bureau.substring(0, 6) + '.' : bureau;
+  const displayName = bureau; // Suppression de la troncature pour éviter les problèmes de filtres
   
   return `
     <span class="${badgeClass}" title="Bureau lead: ${bureau}">

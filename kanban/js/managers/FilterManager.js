@@ -71,7 +71,8 @@ export class FilterManager {
       filterQui: document.getElementById('filter-qui'),
       filterProjet: document.getElementById('filter-projet'),
       filterStatut: document.getElementById('filter-statut'),
-      showTermine: document.getElementById('show-termine')
+      showTermine: document.getElementById('show-termine'),
+      clearFiltersBtn: document.getElementById('btn-clear-filters')
     };
     
     // Logging des éléments trouvés/manquants
@@ -137,6 +138,15 @@ export class FilterManager {
     if (this.elements.showTermine) {
       this.elements.showTermine.addEventListener('change', (e) => {
         this.showTermine = e.target.checked;
+        this.applyFilters();
+      });
+    }
+    
+    // Bouton pour effacer tous les filtres
+    if (this.elements.clearFiltersBtn) {
+      this.elements.clearFiltersBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.clearAllFilters();
         this.applyFilters();
       });
     }

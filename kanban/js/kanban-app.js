@@ -902,7 +902,7 @@ class KanbanManager {
           return html;
         }).join('');
         const count = boardRecords.length;
-        const isHidden = (count === 0 && statut.id !== 'Terminé' && this.showTermine);
+        const isHidden = (count === 0) || (statut.id === 'Terminé' && !this.showTermine);
         const hiddenClass = isHidden ? ' board-hidden' : '';
 
         console.log(`Items HTML pour ${statut.id}: ${itemsHTML.length} caractères`);

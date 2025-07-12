@@ -135,7 +135,7 @@ export class UserActionManager {
 
       // Préparer l'entrée d'historique
       const historyEntry = {
-        user: await this.getCurrentUser(),
+        user: this.cachedUserName || 'User', // Utiliser le cache ou un nom par défaut
         action: action,
         details: details,
         oldValue: oldValue,
