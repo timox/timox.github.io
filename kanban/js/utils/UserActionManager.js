@@ -224,13 +224,17 @@ export class UserActionManager {
    * @returns {Promise<number>}
    */
   async migrateAllTasks(records) {
+    console.log('UserActionManager: migrateAllTasks called with', records?.length, 'records');
     const migrator = getNotesJsonMigrator();
     if (!migrator) {
       console.error('UserActionManager: NotesJsonMigrator not initialized');
       return 0;
     }
 
-    return await migrator.migrateAllRecords(records);
+    console.log('UserActionManager: calling migrator.migrateAllRecords');
+    const result = await migrator.migrateAllRecords(records);
+    console.log('UserActionManager: migration result:', result);
+    return result;
   }
 }
 

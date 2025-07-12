@@ -211,8 +211,12 @@ class KanbanManager {
 
       // Migrer les notes vers le format JSON si nécessaire
       const userActionManager = getUserActionManager();
+      console.log("UserActionManager available:", !!userActionManager);
+      console.log("Current records count:", this.currentRecords?.length);
+      
       if (userActionManager && this.currentRecords?.length > 0) {
-        console.log("Vérification migration des notes vers JSON...");
+        console.log("Starting migration check for", this.currentRecords.length, "records");
+        console.log("Sample record:", this.currentRecords[0]);
         try {
           // Passer les enregistrements mappés plutôt que les données brutes
           const migrated = await userActionManager.migrateAllTasks(this.currentRecords);
@@ -229,7 +233,7 @@ class KanbanManager {
           // Continue without migration if it fails
         }
       } else {
-        console.log("Migration skipped - no records available");
+        console.log("Migration skipped - no userActionManager or no records available");
       }
 
       // Options Statiques

@@ -58,7 +58,9 @@ export class NotesJsonMigrator {
     
     // Identifier les enregistrements à migrer
     for (const record of records) {
+      console.log(`Record ${record.id}: notes = "${record.notes}", type = ${typeof record.notes}, isJson = ${this.isJsonFormat(record.notes)}`);
       if (record.notes && !this.isJsonFormat(record.notes)) {
+        console.log(`Will migrate record ${record.id}`);
         toMigrate.push(record);
       }
     }
