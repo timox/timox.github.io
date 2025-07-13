@@ -54,6 +54,8 @@ import {
 import { FilterManager } from './managers/FilterManager.js';
 import { ViewModeManager } from './managers/ViewModeManager.js';
 import { ModalManager } from './managers/ModalManager.js';
+import { HistoryManager } from './managers/HistoryManager.js';
+import { DatePickerManager } from './managers/DatePickerManager.js';
 import { GristManager } from './managers/GristManager.js';
 
 // === CONSTANTES ===
@@ -100,6 +102,8 @@ class KanbanManager {
     this.filterManager = null;
     this.viewModeManager = null;
     this.modalManager = null;
+    this.historyManager = null;
+    this.datePickerManager = null;
     this.gristManager = null;
     
     this.init();
@@ -169,6 +173,12 @@ class KanbanManager {
     
     // Manager des modales
     this.modalManager = new ModalManager(this);
+    
+    // Manager de l'historique
+    this.historyManager = new HistoryManager(this);
+    
+    // Manager du sélecteur de dates
+    this.datePickerManager = new DatePickerManager(this);
     
     // Manager Grist
     this.gristManager = new GristManager(this);

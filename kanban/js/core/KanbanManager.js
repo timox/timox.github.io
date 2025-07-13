@@ -15,7 +15,7 @@ import { CardRenderer } from '../renderers/CardRenderer.js';
 import { BoardRenderer } from '../renderers/BoardRenderer.js';
 
 // Importation du gestionnaire Grist
-import { GristManager } from './GristManager.js';
+import { GristManager } from '../managers/GristManager.js';
 
 /**
  * Orchestrateur principal de l'application Kanban (version all�g�e)

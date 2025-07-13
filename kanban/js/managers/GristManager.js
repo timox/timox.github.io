@@ -1,4 +1,4 @@
-// === core/GristManager.js ===
+// === managers/GristManager.js ===
 // Interface pour l'API Grist et la gestion des données
 
 import { TABLE_ID, REQUIRED_COLUMNS, OPTIONAL_COLUMNS } from '../config/constants.js';

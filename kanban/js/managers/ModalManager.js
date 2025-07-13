@@ -861,7 +861,7 @@ export class ModalManager {
     
     // Ajouter le projet à la liste
     const updatedProjects = [...currentProjects, newProjectName].sort();
-    this.gristOptions.projet = updatedProjects;
+    this.kanban.gristOptions.projet = updatedProjects;
     
     // Mettre à jour le select
     populateSelect('popup-projet', updatedProjects, true);
