@@ -106,8 +106,10 @@ export class HistoryManager {
   renderTaskHistory(task) {
     // CRITIQUE: Sauvegarder la tâche courante pour les boutons d'action
     this.currentTaskHistory = task;
+    console.log('HistoryManager: Tâche sélectionnée pour historique:', task?.id, task?.titre);
     
     const historyData = this.parseTaskHistory(task);
+    console.log('HistoryManager: Historique parsé:', historyData.comments?.length, 'commentaires');
     
     this.renderHistoryStats(historyData);
     this.renderHistoryTimeline(historyData);
@@ -451,6 +453,7 @@ export class HistoryManager {
     
     // Générer un ID unique pour le commentaire basé sur le timestamp
     const commentId = `comment-${entry.timestamp.replace(/[^\d]/g, '')}`;
+    console.log('HistoryManager: Rendu commentaire avec bouton édition:', commentId);
     
     return `
       <div class="timeline-entry timeline-entry-comment" data-comment-id="${commentId}">
