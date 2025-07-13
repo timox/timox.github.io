@@ -373,10 +373,9 @@ export class ModalManager {
     // Champs de base
     setFieldValue('popup-titre', tache.titre || '');
     
-    // Description - extraire la dernière version si horodatée
-    const latestDescription = tache.description ? 
-      this.kanban.getLatestDescription(tache.description) : '';
-    setFieldValue('popup-description', latestDescription);
+    // Description - TOUJOURS VIDE pour saisie de nouveaux commentaires
+    // Les anciens commentaires sont visibles dans l'historique, pas dans la zone de saisie
+    setFieldValue('popup-description', '');
     
     // Statut (lecture seule)
     const statut = tache.statut || (isNewTask ? 'Backlog' : '');

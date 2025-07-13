@@ -1547,12 +1547,17 @@ class KanbanManager {
 
   // === MÉTHODES DE FILTRAGE ET TRI ===
   filterRecords(records) {
+    // CRITIQUE: Filtrer d'abord les enregistrements temporaires système
+    const filteredTempRecords = records.filter(r => {
+      return r && r.titre !== '___TEMP_USER_RECORD___';
+    });
+    
     const { bureau, qui, projet, statut } = this.filters;
     if (!bureau && !qui && !projet && !statut) {
-      return records;
+      return filteredTempRecords;
     }
     console.log("Application filtres:", this.filters);
-    return records.filter(r => {
+    return filteredTempRecords.filter(r => {
       const matchBureau = !bureau || this.nettoyerListe(r.bureau).includes(bureau);
       const matchQui = !qui || this.nettoyerListe(r.qui).includes(qui);
       const matchProjet = !projet || r.projet === projet;

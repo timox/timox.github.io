@@ -38,11 +38,11 @@ js/
 
 ## ⚠️ ZONES CRITIQUES - NE PAS CASSER
 
-### 1. 🚨 Enregistrements Temporaires (Anti-Doublons)
-**Fichier**: `kanban-app.js:1467-1475` et `UserActionManager.js:32-42`
+### 1. 🚨 Enregistrements Temporaires (Anti-Doublons) - ✅ DOUBLE FILTRAGE
+**Fichiers**: `kanban-app.js:1467-1475`, `kanban-app.js:1552-1555` et `UserActionManager.js:32-42`
 
 ```javascript
-// CRITIQUE: Filtrage des enregistrements temporaires
+// CRITIQUE 1: Filtrage dans handleGristUpdate (onRecords)
 if (gristRecords && Array.isArray(gristRecords)) {
   const hasTempRecord = gristRecords.some(record => 
     record && record.titre === '___TEMP_USER_RECORD___'  // ⚠️ String exact requis
@@ -52,12 +52,18 @@ if (gristRecords && Array.isArray(gristRecords)) {
     return; // OBLIGATOIRE pour éviter les doublons
   }
 }
+
+// CRITIQUE 2: Filtrage dans filterRecords (rendu visuel) - AJOUTÉ 2025-01-13
+const filteredTempRecords = records.filter(r => {
+  return r && r.titre !== '___TEMP_USER_RECORD___';
+});
 ```
 
-**Règles**:
+**Règles CRITIQUES**:
 - ❌ Ne JAMAIS changer la string `'___TEMP_USER_RECORD___'`
-- ❌ Ne JAMAIS supprimer ce filtrage
+- ❌ Ne JAMAIS supprimer l'un de ces deux filtrages
 - ⚠️ UserActionManager.js crée ces enregistrements pour récupérer le nom d'utilisateur
+- 🔥 **NOUVEAU**: Double filtrage obligatoire (onRecords + rendu visuel)
 
 ### 2. 🚨 Système d'Imports (Dépendances Circulaires)
 **Problèmes fréquents**:
@@ -87,6 +93,27 @@ this.kanban.gristOptions.projet = updatedProjects;
 ```
 
 **Règle**: Toujours passer par `this.kanban.` pour accéder aux propriétés partagées.
+
+### 4. 🚨 Gestion du Champ Description (Commentaires) - ✅ NOUVEAU
+**Fichier**: `ModalManager.js:376-379`
+
+```javascript
+// ❌ ANCIEN CODE (causait confusion):
+const latestDescription = tache.description ? 
+  this.kanban.getLatestDescription(tache.description) : '';
+setFieldValue('popup-description', latestDescription);
+
+// ✅ NOUVEAU CODE (2025-01-13):
+// Description - TOUJOURS VIDE pour saisie de nouveaux commentaires
+// Les anciens commentaires sont visibles dans l'historique, pas dans la zone de saisie
+setFieldValue('popup-description', '');
+```
+
+**Règles CRITIQUES**:
+- ❌ Ne JAMAIS remplir le champ description avec les anciens commentaires
+- ✅ Le champ description doit TOUJOURS être vide pour la saisie
+- 📝 Les anciens commentaires sont visibles via l'historique (bouton timeline)
+- 💾 Les nouveaux commentaires sont sauvés dans le système JSON (`notes`)
 
 ---
 
@@ -158,6 +185,8 @@ try {
   if (this.kanban.signalLocalUpdate) {
     this.kanban.signalLocalUpdate(); // ⚠️ Évite les cascades
   }
+  // NOUVEAU: Vider le champ description après sauvegarde
+  setFieldValue('popup-description', ''); // ⚠️ Obligatoire pour commentaires
 } catch (error) {
   console.error('Erreur:', error);
   displayError(`Erreur: ${error.message}`);
@@ -183,6 +212,25 @@ if (this.taskModal) {
 // Puis nettoyer les références
 this.currentTaskId = null;
 this.currentTask = null;
+
+// NOUVEAU: Vider le champ description
+setFieldValue('popup-description', '');
+```
+
+### 4. 🆕 Interface d'Édition de Commentaires - AJOUTÉ 2025-01-13
+```javascript
+// ✅ PATTERN OBLIGATOIRE pour HistoryManager:
+// 1. Initialisation dans init()
+this.setupCommentEditWidget();
+
+// 2. Création automatique du widget HTML
+this.createCommentEditWidget(); // Crée le DOM si inexistant
+
+// 3. Structure du widget
+<div id="comment-edit-widget" class="comment-edit-overlay">
+  <textarea id="comment-edit-text"></textarea>
+  <button id="btn-save-comment-edit">Sauvegarder</button>
+</div>
 ```
 
 ---
@@ -203,6 +251,8 @@ record.titre           // Colonne Grist exacte
 record.statut          // Colonne Grist exacte  
 record.bureau          // Colonne Grist exacte (format liste)
 record.qui             // Colonne Grist exacte (format liste)
+record.notes           // NOUVEAU: Système JSON pour commentaires
+record.description     // LEGACY: Anciens commentaires (ne plus remplir)
 ```
 
 ### 3. ❌ Modification des Timeouts
@@ -224,6 +274,10 @@ await new Promise(resolve => setTimeout(resolve, 200)); // Délai temp record
 - [ ] ✅ Drag & drop change le statut
 - [ ] ✅ Aucune erreur 404 sur les imports
 - [ ] ✅ Console sans erreurs critiques
+- [ ] 🆕 **Champ description VIDE à l'ouverture de tâches existantes**
+- [ ] 🆕 **Aucun enregistrement `___TEMP_USER_RECORD___` visible**
+- [ ] 🆕 **Boutons d'édition (✏️) visibles dans l'historique des tâches**
+- [ ] 🆕 **Widget d'édition s'ouvre lors du clic sur ✏️**
 
 ### Commandes de Test Rapide:
 ```javascript
@@ -253,7 +307,9 @@ window.kanbanManager.getApplicationState(); // Vérifier l'init
 ## 🆘 Guide de Dépannage Rapide
 
 ### Problème: Doublons de Tâches
-→ Vérifier le filtrage `___TEMP_USER_RECORD___` dans `handleGristUpdate()`
+→ Vérifier le **DOUBLE** filtrage `___TEMP_USER_RECORD___` :
+  1. Dans `handleGristUpdate()` (onRecords)
+  2. Dans `filterRecords()` (rendu visuel) ⚠️ NOUVEAU
 
 ### Problème: Modale ne se ferme pas
 → Vérifier les références `this.kanban.currentRecords` vs `this.currentRecords`
@@ -267,7 +323,55 @@ window.kanbanManager.getApplicationState(); // Vérifier l'init
 ### Problème: UserActionManager fails
 → Vérifier que la colonne `Cree_par` existe dans Grist
 
+### 🆕 Problème: Anciens commentaires dans la zone de saisie
+→ Vérifier que `populateTaskForm()` met `setFieldValue('popup-description', '')`
+
+### 🆕 Problème: Boutons d'édition de commentaires invisibles
+→ Vérifier que `setupCommentEditWidget()` est appelé dans `HistoryManager.init()`
+
+### 🆕 Problème: Widget d'édition ne s'ouvre pas
+→ Vérifier que `createCommentEditWidget()` crée bien le DOM `comment-edit-widget`
+
 ---
 
-*Dernière mise à jour: 2025-01-13*
-*Version: 1.0 - Documentation Anti-Régression*
+*Dernière mise à jour: 2025-01-13 - 18:00*
+*Version: 1.1 - Corrections Majeures Appliquées*
+
+---
+
+## 📈 **Changelog Version 1.1** - 2025-01-13
+
+### 🔧 **Corrections Critiques Appliquées**
+
+#### 1. **Filtrage Double Anti-Doublons** ✅
+- **Ajout**: Filtrage des `___TEMP_USER_RECORD___` dans `filterRecords()` (rendu)
+- **Localisation**: `kanban-app.js:1552-1555`
+- **Impact**: Élimine les doublons visuels dans l'interface
+
+#### 2. **Champ Description Toujours Vide** ✅  
+- **Modification**: `populateTaskForm()` dans `ModalManager.js`
+- **Changement**: `setFieldValue('popup-description', '')` systématique
+- **Impact**: Zone de saisie propre pour nouveaux commentaires
+
+#### 3. **Interface d'Édition de Commentaires** ✅
+- **Ajout**: `setupCommentEditWidget()` dans `HistoryManager.init()`
+- **Ajout**: `createCommentEditWidget()` - création automatique du DOM
+- **Ajout**: Styles CSS pour le widget modal d'édition
+- **Impact**: Édition complète des commentaires via boutons ✏️
+
+#### 4. **Validation Système Notes JSON** ✅
+- **Vérification**: Système `UserActionManager` → champ `notes` (JSON)
+- **Migration**: Ancien système `description` → Nouveau système `notes`
+- **Impact**: Persistance moderne et édition des commentaires
+
+### 🚀 **Nouvelles Fonctionnalités**
+- **Widget d'édition modal** avec overlay + styles CSS
+- **Boutons d'édition** (✏️) dans l'historique des tâches
+- **Filtrage intelligent** des enregistrements système
+- **Zone de saisie propre** pour nouveaux commentaires
+
+### ⚠️ **Points de Vigilance Ajoutés**
+- Double filtrage obligatoire pour les enregistrements temporaires
+- Champ description ne doit JAMAIS être pré-rempli
+- Widget d'édition doit être initialisé dans `HistoryManager`
+- Styles CSS auto-créés pour éviter les dépendances externes

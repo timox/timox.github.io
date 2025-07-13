@@ -28,6 +28,7 @@ export class HistoryManager {
    */
   init() {
     this.setupEventListeners();
+    this.setupCommentEditWidget();
     console.log('HistoryManager: Gestionnaire d\'historique initialisé');
   }
   
@@ -656,6 +657,9 @@ export class HistoryManager {
   setupCommentEditWidget() {
     this.currentEditingComment = null;
     
+    // Créer le widget d'édition s'il n'existe pas
+    this.createCommentEditWidget();
+    
     // Écouteur pour les boutons d'édition
     document.addEventListener('click', (e) => {
       if (e.target.matches('.btn-edit-comment, .btn-edit-comment *')) {
@@ -708,6 +712,130 @@ export class HistoryManager {
         this.closeCommentEditWidget();
       }
     });
+  }
+  
+  /**
+   * Crée le widget d'édition de commentaire dans le DOM
+   */
+  createCommentEditWidget() {
+    // Vérifier si le widget existe déjà
+    if (document.getElementById('comment-edit-widget')) {
+      return;
+    }
+    
+    // Créer le HTML du widget
+    const widgetHTML = `
+      <div id="comment-edit-widget" class="comment-edit-overlay" style="display: none;">
+        <div class="comment-edit-modal">
+          <div class="comment-edit-header">
+            <h5><i class="bi bi-pencil me-2"></i>Édition de commentaire</h5>
+            <button type="button" id="btn-close-comment-edit" class="btn-close" aria-label="Fermer">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          
+          <div class="comment-edit-body">
+            <div class="mb-2">
+              <small class="text-muted">Date: <span id="comment-edit-date"></span></small>
+            </div>
+            <textarea id="comment-edit-text" class="form-control" rows="4" 
+                      placeholder="Modifiez votre commentaire..."></textarea>
+          </div>
+          
+          <div class="comment-edit-footer">
+            <button type="button" id="btn-cancel-comment-edit" class="btn btn-secondary">
+              <i class="bi bi-x-circle me-1"></i>Annuler
+            </button>
+            <button type="button" id="btn-save-comment-edit" class="btn btn-primary">
+              <i class="bi bi-check-circle me-1"></i>Sauvegarder
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Ajouter au body
+    document.body.insertAdjacentHTML('beforeend', widgetHTML);
+    
+    // Ajouter les styles CSS
+    this.addCommentEditStyles();
+  }
+  
+  /**
+   * Ajoute les styles CSS pour le widget d'édition
+   */
+  addCommentEditStyles() {
+    const styleId = 'comment-edit-styles';
+    if (document.getElementById(styleId)) {
+      return;
+    }
+    
+    const styles = `
+      <style id="${styleId}">
+        .comment-edit-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(0, 0, 0, 0.5);
+          z-index: 1050;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .comment-edit-modal {
+          background: white;
+          border-radius: 8px;
+          max-width: 500px;
+          width: 90%;
+          max-height: 80vh;
+          overflow-y: auto;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .comment-edit-header {
+          padding: 1rem;
+          border-bottom: 1px solid #dee2e6;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        
+        .comment-edit-header h5 {
+          margin: 0;
+          color: #333;
+        }
+        
+        .comment-edit-body {
+          padding: 1rem;
+        }
+        
+        .comment-edit-footer {
+          padding: 1rem;
+          border-top: 1px solid #dee2e6;
+          display: flex;
+          justify-content: flex-end;
+          gap: 0.5rem;
+        }
+        
+        .btn-close {
+          background: none;
+          border: none;
+          font-size: 1.5rem;
+          cursor: pointer;
+          color: #6c757d;
+        }
+        
+        .btn-close:hover {
+          color: #000;
+        }
+      </style>
+    `;
+    
+    document.head.insertAdjacentHTML('beforeend', styles);
+  }
   }
   
   /**
