@@ -52,7 +52,7 @@ export class LoggerManager {
     } catch (e) {
       // Ignore localStorage errors
     }
-    return LOG_LEVELS.INFO; // Par défaut
+    return LOG_LEVELS.ERROR; // Par défaut - mode silencieux
   }
   
   /**

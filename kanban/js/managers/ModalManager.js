@@ -517,15 +517,25 @@ export class ModalManager {
         if (userActionManager) {
           // Capturer le contenu du champ description pour l'historique
           const descriptionContent = getFieldValue('popup-description').trim();
-          const details = descriptionContent ? 
-            `Task updated: ${descriptionContent}` : 
-            'Task updated via modal';
-            
+          
+          if (descriptionContent) {
+            // Si il y a un commentaire, l'ajouter spécifiquement à l'historique
+            await userActionManager.addHistoryEntry(
+              this.currentTaskId,
+              'comment',
+              `Commentaire ajouté: ${descriptionContent}`,
+              '',
+              descriptionContent,
+              gristData.statut || this.currentTask?.statut
+            );
+          }
+          
+          // Ensuite, enregistrer les autres changements
           await userActionManager.updateTaskAction(
             this.currentTaskId, 
             this.currentTask, 
             gristData, 
-            details
+            'Task updated via modal'
           );
         }
         

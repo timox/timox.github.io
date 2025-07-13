@@ -254,8 +254,15 @@ export class ViewModeManager {
       }
     }
     
-    // Masquer toutes les colonnes sauf celle en focus
-    this.showOnlyFocusColumn(this.focusColumn);
+    // CRITIQUE: Forcer un refresh du kanban pour appliquer les filtres correctly
+    if (this.kanban.refreshKanban) {
+      this.kanban.refreshKanban();
+    }
+    
+    // Attendre que le DOM soit mis à jour, puis masquer les colonnes
+    setTimeout(() => {
+      this.showOnlyFocusColumn(this.focusColumn);
+    }, 100);
     
     // Ajuster la disposition - une seule colonne centrée
     container.style.gridTemplateColumns = '1fr';

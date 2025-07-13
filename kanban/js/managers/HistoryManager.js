@@ -126,9 +126,30 @@ export class HistoryManager {
       }
     }
     
-    // Parser les commentaires depuis la description
+    // Parser les commentaires depuis la description (ancien système)
     if (task.description) {
-      comments = this.parseCommentsFromDescription(task.description);
+      const oldComments = this.parseCommentsFromDescription(task.description);
+      comments = comments.concat(oldComments);
+    }
+    
+    // Parser les commentaires depuis les notes JSON (nouveau système)
+    if (task.notes) {
+      try {
+        const notesData = JSON.parse(task.notes);
+        if (notesData && notesData.history && Array.isArray(notesData.history)) {
+          // Filtrer et convertir les entrées de type 'comment'
+          const jsonComments = notesData.history
+            .filter(entry => entry.action === 'comment')
+            .map(entry => ({
+              timestamp: entry.timestamp,
+              content: entry.newValue || entry.details,
+              user: entry.user || 'Utilisateur'
+            }));
+          comments = comments.concat(jsonComments);
+        }
+      } catch (error) {
+        console.warn('HistoryManager: Erreur parsing notes JSON:', error);
+      }
     }
     
     // Calculer les statistiques
