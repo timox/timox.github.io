@@ -11,6 +11,7 @@ import {
 
 import { displayError, displaySuccess } from '../utils/dom.js';
 import { TABLE_ID } from '../config/constants.js';
+import { createModuleLogger } from '../utils/LoggerManager.js';
 
 /**
  * Gestionnaire pour l'historique des tâches et commentaires
@@ -19,6 +20,7 @@ export class HistoryManager {
   constructor(kanbanManager) {
     this.kanban = kanbanManager;
     this.currentTaskHistory = null;
+    this.logger = createModuleLogger('HistoryManager');
     
     this.init();
   }
@@ -29,7 +31,7 @@ export class HistoryManager {
   init() {
     this.setupEventListeners();
     this.setupCommentEditWidget();
-    console.log('HistoryManager: Gestionnaire d\'historique initialisé');
+    this.logger.info('History manager initialized');
   }
   
   /**
@@ -124,13 +126,7 @@ export class HistoryManager {
     let history = [];
     let comments = [];
     
-    console.log('HistoryManager: Parsing task data:', {
-      id: task.id,
-      titre: task.titre,
-      hasHistoriqueStatuts: !!task.historique_statuts,
-      hasNotes: !!task.notes,
-      hasDescription: !!task.description
-    });
+    this.logger?.debug('Parsing task history', task.id);
     
     // Parser l'historique des statuts
     if (task.historique_statuts) {
@@ -138,10 +134,10 @@ export class HistoryManager {
         const historyData = JSON.parse(task.historique_statuts);
         if (historyData && historyData.historique) {
           history = historyData.historique;
-          console.log('HistoryManager: Historique statuts trouvé:', history.length, 'entrées');
+          this.logger?.debug('Status history found:', history.length, 'entries');
         }
       } catch (error) {
-        console.warn('HistoryManager: Erreur parsing historique_statuts:', error);
+        this.logger?.warn('Error parsing historique_statuts:', error);
       }
     }
     
@@ -151,25 +147,47 @@ export class HistoryManager {
       comments = comments.concat(oldComments);
     }
     
-    // Parser les commentaires depuis les notes JSON (nouveau système)
+    // Parser les entrées depuis les notes JSON (nouveau système)
     if (task.notes) {
       try {
         const notesData = JSON.parse(task.notes);
-        console.log('HistoryManager: Notes JSON trouvées:', notesData);
+        // Notes trouvées
         if (notesData && notesData.history && Array.isArray(notesData.history)) {
-          // Filtrer et convertir les entrées de type 'comment'
-          const jsonComments = notesData.history
-            .filter(entry => entry.action === 'comment')
-            .map(entry => ({
-              timestamp: entry.timestamp,
-              content: entry.newValue || entry.details,
-              user: entry.user || 'Utilisateur'
-            }));
-          console.log('HistoryManager: Commentaires JSON trouvés:', jsonComments.length);
-          comments = comments.concat(jsonComments);
+          
+          // Traiter chaque entrée selon son type d'action
+          notesData.history.forEach(entry => {
+            if (entry.action === 'comment') {
+              // Ajouter aux commentaires
+              comments.push({
+                timestamp: entry.timestamp,
+                content: entry.newValue || entry.details,
+                user: entry.user || 'Utilisateur'
+              });
+            } else if (entry.action === 'status_change') {
+              // Ajouter aux changements de statut
+              history.push({
+                timestamp: entry.timestamp,
+                statut: entry.status,
+                date_entree: entry.timestamp,
+                note: entry.details,
+                user: entry.user || 'Utilisateur'
+              });
+            } else if (entry.action === 'update') {
+              // Ajouter aux mises à jour générales
+              history.push({
+                timestamp: entry.timestamp,
+                statut: entry.status || task.statut,
+                date_entree: entry.timestamp,
+                note: `Mise à jour: ${entry.details}`,
+                user: entry.user || 'Utilisateur'
+              });
+            }
+          });
+          
+          this.logger?.debug('JSON history found:', history.length, 'entries,', comments.length, 'comments');
         }
       } catch (error) {
-        console.warn('HistoryManager: Erreur parsing notes JSON:', error);
+        this.logger?.warn('Error parsing notes JSON:', error);
       }
     }
     

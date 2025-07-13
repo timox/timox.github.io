@@ -237,7 +237,23 @@ this.createCommentEditWidget(); // Crée le DOM si inexistant
 
 ## 🚨 Pièges Courants lors de Refactoring
 
-### 1. ❌ Suppression de console.log Critiques
+### 1. ❌ Utilisation Directe de console.log et Suppression de Logs Critiques
+
+#### Règle Logger Obligatoire:
+```javascript
+// ❌ INTERDIT: console.log direct
+console.log('HistoryManager: Data parsed'); // Non contrôlable
+
+// ✅ OBLIGATOIRE: Utiliser le système de logger avec niveaux
+this.logger.debug('Data parsed');     // Contrôlable via niveau DEBUG
+this.logger.info('Important action'); // Niveau INFO  
+this.logger.error('Critical error');  // Niveau ERROR
+
+// Initialisation dans constructor:
+this.logger = createModuleLogger('ModuleName');
+```
+
+#### Logs de Production Critiques:
 ```javascript
 // ❌ NE PAS SUPPRIMER ces logs, ils sont utilisés pour debug production:
 console.log("onRecords ignoré (enregistrement temporaire système)");
