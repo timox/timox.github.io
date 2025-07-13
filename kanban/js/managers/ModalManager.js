@@ -100,6 +100,14 @@ export class ModalManager {
       });
     }
     
+    // Bouton voir historique des commentaires
+    const btnViewHistory = document.getElementById('btn-view-comment-history');
+    if (btnViewHistory) {
+      btnViewHistory.addEventListener('click', () => {
+        this.viewCommentHistory();
+      });
+    }
+    
     // Raccourcis clavier
     document.addEventListener('keydown', (e) => {
       if ((e.key === 'n' || e.key === 'N') && !e.target.matches('input, textarea')) {
@@ -1142,5 +1150,22 @@ export class ModalManager {
     this.currentTaskId = null;
     
     console.log('ModalManager: Ressources nettoyées');
+  }
+  
+  /**
+   * Ouvre l'historique des commentaires de la tâche courante
+   */
+  viewCommentHistory() {
+    if (!this.currentTaskId) {
+      displayError('Aucune tâche sélectionnée');
+      return;
+    }
+    
+    // Utiliser le HistoryManager pour ouvrir l'historique
+    if (this.kanban.historyManager) {
+      this.kanban.historyManager.openTaskHistory(this.currentTaskId);
+    } else {
+      displayError('Gestionnaire d\'historique non disponible');
+    }
   }
 }
