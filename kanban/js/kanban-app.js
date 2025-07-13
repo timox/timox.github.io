@@ -1020,31 +1020,12 @@ class KanbanManager {
 
   // === GESTION DE LA MODAL TIMELINE ===
   openTimelineModal(taskId) {
-    const task = this.currentRecords.find(r => r.id === taskId);
-    if (!task) {
-      displayError('Tâche non trouvée');
-      return;
+    // REDIRECTION: Utiliser le HistoryManager qui a le système complet avec boutons d'édition
+    if (this.historyManager) {
+      this.historyManager.openTaskHistory(taskId);
+    } else {
+      displayError('Gestionnaire d\'historique non disponible');
     }
-
-    if (!this.historyModal) {
-      displayError('Modal timeline non disponible');
-      return;
-    }
-
-    // Mettre à jour le titre
-    const modalTitle = document.getElementById('history-modal-label');
-    if (modalTitle) {
-      modalTitle.innerHTML = `
-        <i class="bi bi-clock-history me-2"></i>
-        Historique - Tâche #${taskId}: ${task.titre}
-      `;
-    }
-
-    // Générer le contenu
-    this.renderTimelineContent(task);
-    
-    // Ouvrir la modal
-    this.historyModal.show();
   }
 
   renderTimelineContent(task) {
