@@ -727,7 +727,7 @@ export class ModalManager {
       return;
     }
     
-    const task = this.currentRecords.find(r => r.id === this.currentTaskId);
+    const task = this.kanban.currentRecords?.find(r => r.id === this.currentTaskId);
     const taskTitle = task?.titre || 'cette tâche';
     
     if (!confirmAction(`Êtes-vous sûr de vouloir supprimer "${taskTitle}" ?`)) {

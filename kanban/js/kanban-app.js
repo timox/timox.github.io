@@ -71,6 +71,7 @@ class KanbanManager {
     this.historyModalElement =null;
     this.currentTaskId = null;
     this.isUpdating = false;
+    this.isRefreshing = false;
     this.canEdit = true;
     this.gristOptions = {};
     this.strategiesData = [];
@@ -821,8 +822,16 @@ class KanbanManager {
 
   // === RENDU DU KANBAN CORRIGÉ ===
   refreshKanban() {
+    // Éviter les appels multiples simultanés
+    if (this.isRefreshing) {
+      console.log("refreshKanban ignoré (déjà en cours)");
+      return;
+    }
+    this.isRefreshing = true;
+    
     if (!this.kanbanContainer) {
       console.error("Conteneur Kanban principal manquant !");
+      this.isRefreshing = false;
       return;
     }
     
@@ -928,6 +937,9 @@ class KanbanManager {
     this.kanbanContainer.innerHTML = kanbanHTML || '<div style="padding: 20px; color: grey;">Aucune tâche à afficher.</div>';
     
     console.log('Vérification après injection:', this.kanbanContainer.innerHTML.length, 'caractères');
+    
+    // Marquer le refresh comme terminé
+    this.isRefreshing = false;
     
     // Initialiser Sortable
     this.kanbanContainer.querySelectorAll('.kanban-items-container').forEach(container => {
