@@ -124,12 +124,21 @@ export class HistoryManager {
     let history = [];
     let comments = [];
     
+    console.log('HistoryManager: Parsing task data:', {
+      id: task.id,
+      titre: task.titre,
+      hasHistoriqueStatuts: !!task.historique_statuts,
+      hasNotes: !!task.notes,
+      hasDescription: !!task.description
+    });
+    
     // Parser l'historique des statuts
     if (task.historique_statuts) {
       try {
         const historyData = JSON.parse(task.historique_statuts);
         if (historyData && historyData.historique) {
           history = historyData.historique;
+          console.log('HistoryManager: Historique statuts trouvé:', history.length, 'entrées');
         }
       } catch (error) {
         console.warn('HistoryManager: Erreur parsing historique_statuts:', error);
@@ -146,6 +155,7 @@ export class HistoryManager {
     if (task.notes) {
       try {
         const notesData = JSON.parse(task.notes);
+        console.log('HistoryManager: Notes JSON trouvées:', notesData);
         if (notesData && notesData.history && Array.isArray(notesData.history)) {
           // Filtrer et convertir les entrées de type 'comment'
           const jsonComments = notesData.history
@@ -155,6 +165,7 @@ export class HistoryManager {
               content: entry.newValue || entry.details,
               user: entry.user || 'Utilisateur'
             }));
+          console.log('HistoryManager: Commentaires JSON trouvés:', jsonComments.length);
           comments = comments.concat(jsonComments);
         }
       } catch (error) {
@@ -869,6 +880,19 @@ export class HistoryManager {
         
         .btn-close:hover {
           color: #000;
+        }
+        
+        .btn-edit-comment {
+          font-size: 0.8rem;
+          padding: 0.25rem 0.5rem;
+          margin-left: 0.5rem;
+          line-height: 1;
+        }
+        
+        .timeline-status {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
         }
       </style>
     `;
