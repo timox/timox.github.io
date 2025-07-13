@@ -332,6 +332,8 @@
   <!-- Script de debug (développement seulement) -->
   <script>
     // Mise à jour du panneau de debug
+    // Debug info function (commenté avec le panel debug)
+    /*
     function updateDebugInfo() {
       if (window.kanbanManager) {
         document.getElementById('current-mode').textContent = window.kanbanManager.viewMode || '-';
@@ -342,6 +344,7 @@
     
     // Mise à jour périodique du debug
     setInterval(updateDebugInfo, 2000);
+    */
     
     // Raccourcis clavier globaux
     document.addEventListener('keydown', (e) => {
@@ -367,7 +370,7 @@
       console.log('🔧 Debug disponible:');
       console.log('  - window.kanbanManager : Instance principale');
       console.log('  - window.KanbanApp : Utilitaires exposés');
-      console.log('  - updateDebugInfo() : Mise à jour debug');
+      console.log('  - logger.setLogLevel(\"INFO\") : Activer logs détaillés');
       console.log('');
       console.log('⌨️  Raccourcis:');
       console.log('  - R : Recharger le kanban');

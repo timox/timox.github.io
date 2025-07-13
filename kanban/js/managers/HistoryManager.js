@@ -40,6 +40,10 @@ export class HistoryManager {
     const btnShowComments = document.getElementById('btn-show-comments-only');
     if (btnShowComments) {
       btnShowComments.addEventListener('click', () => {
+        if (!this.currentTaskHistory) {
+          console.warn('HistoryManager: Aucune tâche sélectionnée pour afficher les commentaires');
+          return;
+        }
         this.showAllComments();
       });
     }
@@ -48,6 +52,10 @@ export class HistoryManager {
     const btnExportTask = document.getElementById('btn-export-task-history');
     if (btnExportTask) {
       btnExportTask.addEventListener('click', () => {
+        if (!this.currentTaskHistory) {
+          console.warn('HistoryManager: Aucune tâche sélectionnée pour exporter');
+          return;
+        }
         this.exportTaskHistory();
       });
     }
@@ -452,7 +460,7 @@ export class HistoryManager {
           <button class="btn btn-sm btn-outline-secondary btn-edit-comment" 
                   data-comment-id="${commentId}"
                   title="Éditer ce commentaire">
-            <i class="bi bi-pencil"></i>
+            ✏️
           </button>
         </div>
         <div class="timeline-dates">
@@ -692,6 +700,7 @@ export class HistoryManager {
         
         const button = e.target.closest('.btn-edit-comment');
         const commentId = button.dataset.commentId;
+        console.log('HistoryManager: Clic sur bouton édition commentaire:', commentId);
         this.openCommentEditWidget(commentId);
       }
     });
@@ -744,8 +753,11 @@ export class HistoryManager {
   createCommentEditWidget() {
     // Vérifier si le widget existe déjà
     if (document.getElementById('comment-edit-widget')) {
+      console.log('HistoryManager: Widget d\'édition existe déjà');
       return;
     }
+    
+    console.log('HistoryManager: Création du widget d\'édition de commentaires');
     
     // Créer le HTML du widget
     const widgetHTML = `
