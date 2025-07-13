@@ -726,6 +726,10 @@ export class ModalManager {
    */
    // === SUPPRESSION DE TÂCHE ===
   async deleteTask() {
+    console.log('🗑️ Début suppression - TaskId:', this.currentTaskId);
+    console.log('🗑️ Kanban référence:', !!this.kanban);
+    console.log('🗑️ TaskModal référence:', !!this.taskModal);
+    
     if (!this.currentTaskId) {
       displayError('Aucune tâche sélectionnée pour suppression');
       return;
@@ -735,8 +739,11 @@ export class ModalManager {
     const taskTitle = task?.titre || 'cette tâche';
     
     if (!confirmAction(`Êtes-vous sûr de vouloir supprimer "${taskTitle}" ?`)) {
+      console.log('🗑️ Suppression annulée par l\'utilisateur');
       return;
     }
+    
+    console.log('🗑️ Suppression confirmée pour:', taskTitle);
     
     try {
       // Enregistrer l'action utilisateur avant la suppression
@@ -749,18 +756,34 @@ export class ModalManager {
         ['RemoveRecord', TABLE_ID, this.currentTaskId]
       ]);
       
+      // Fermer la modal d'abord
+      if (this.taskModal) {
+        this.taskModal.hide();
+      }
+      
       displaySuccess('Tâche supprimée avec succès');
       
-      // Signaler la mise à jour locale
-      if (this.kanban.signalLocalUpdate) {
+      // Signaler la mise à jour locale pour éviter les triggers onRecords inutiles
+      if (this.kanban && this.kanban.signalLocalUpdate) {
         this.kanban.signalLocalUpdate();
       }
       
-      // Fermer la modal et rafraîchir
-      if (this.modal) {
-        this.modal.hide();
-      }
-      this.refreshKanban();
+      // Nettoyer les références
+      this.currentTaskId = null;
+      this.currentTask = null;
+      this.isNewTask = false;
+      
+      // Rafraîchir le kanban avec un petit délai pour laisser la modal se fermer
+      setTimeout(() => {
+        if (this.kanban && this.kanban.refreshKanban) {
+          console.log('🗑️ Rafraîchissement du kanban...');
+          this.kanban.refreshKanban();
+        } else {
+          console.error('Impossible de rafraîchir le kanban: référence manquante');
+          // Fallback: recharger la page si le kanban n'est pas accessible
+          window.location.reload();
+        }
+      }, 100);
       
     } catch (error) {
       console.error('Erreur suppression:', error);
