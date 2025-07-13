@@ -836,7 +836,6 @@ export class HistoryManager {
     
     document.head.insertAdjacentHTML('beforeend', styles);
   }
-  }
   
   /**
    * Ouvre le widget d'édition pour un commentaire

@@ -3,6 +3,7 @@
 
 import { TABLE_ID } from '../config/constants.js';
 import { getNotesJsonMigrator } from './NotesJsonMigrator.js';
+import { createModuleLogger } from './LoggerManager.js';
 
 /**
  * Gestionnaire des actions utilisateur utilisant JSON dans le champ notes
@@ -11,6 +12,7 @@ export class UserActionManager {
   constructor(gristApi) {
     this.grist = gristApi;
     this.cachedUserName = null; // Cache pour éviter les appels répétés
+    this.logger = createModuleLogger('UserActionManager');
   }
 
   /**
@@ -24,7 +26,7 @@ export class UserActionManager {
     }
     
     try {
-      console.log('UserActionManager: Getting current user via buffer record...');
+      this.logger.debug('Récupération utilisateur via enregistrement tampon...');
       
       // Créer un enregistrement temporaire pour déclencher le trigger user.Name
       const tempRecord = await this.grist.docApi.applyUserActions([
@@ -40,12 +42,12 @@ export class UserActionManager {
       ]);
       
       if (!tempRecord || !tempRecord.retValues || !tempRecord.retValues[0]) {
-        console.warn('UserActionManager: Failed to create temp record');
+        this.logger.warn('Impossible de créer l\'enregistrement temporaire');
         return 'Unknown User';
       }
       
       const tempRecordId = tempRecord.retValues[0];
-      console.log('UserActionManager: Created temp record with ID:', tempRecordId);
+      this.logger.debug('Enregistrement temporaire créé:', tempRecordId);
       
       // Attendre un peu pour que le trigger se déclenche
       await new Promise(resolve => setTimeout(resolve, 200));
@@ -58,7 +60,7 @@ export class UserActionManager {
         const index = gristData.id.findIndex(id => id === tempRecordId);
         if (index !== -1 && gristData.Cree_par && gristData.Cree_par[index]) {
           userName = gristData.Cree_par[index];
-          console.log('UserActionManager: Found user name:', userName);
+          this.logger.debug('Nom utilisateur trouvé:', userName);
         }
       }
       
@@ -67,9 +69,9 @@ export class UserActionManager {
         await this.grist.docApi.applyUserActions([
           ['RemoveRecord', TABLE_ID, tempRecordId]
         ]);
-        console.log('UserActionManager: Deleted temp record');
+        this.logger.debug('Enregistrement temporaire supprimé');
       } catch (deleteError) {
-        console.warn('UserActionManager: Failed to delete temp record:', deleteError);
+        this.logger.warn('Impossible de supprimer l\'enreg. temp.:', deleteError);
       }
       
       // Mettre en cache le nom d'utilisateur
@@ -87,9 +89,9 @@ export class UserActionManager {
    * @returns {Promise<string>}
    */
   async initializeUser() {
-    console.log('UserActionManager: Initializing user...');
+    this.logger.info('Initialisation utilisateur...');
     const userName = await this.getCurrentUser();
-    console.log('UserActionManager: User initialized:', userName);
+    this.logger.info('Utilisateur initialisé:', userName);
     return userName;
   }
 
@@ -129,7 +131,7 @@ export class UserActionManager {
 
       const migrator = getNotesJsonMigrator();
       if (!migrator) {
-        console.error('UserActionManager: NotesJsonMigrator not initialized');
+        this.logger.error('NotesJsonMigrator non initialisé');
         return;
       }
 
@@ -154,7 +156,7 @@ export class UserActionManager {
         }]
       ]);
 
-      console.log(`UserActionManager: Added ${action} history entry for task ${taskId}`);
+      this.logger.debug(`Entrée historique ajoutée: ${action} pour tâche ${taskId}`);
 
     } catch (error) {
       console.error('UserActionManager: Error adding history entry:', error);
@@ -191,7 +193,7 @@ export class UserActionManager {
     
     // N'ajouter à l'historique QUE s'il y a des changements réels
     if (changes.hasChanges) {
-      console.log('UserActionManager: Changements détectés, ajout à l\'historique:', changes.oldValue);
+      this.logger.debug('Changements détectés, ajout historique:', changes.oldValue);
       await this.addHistoryEntry(
         taskId,
         'update',
@@ -201,7 +203,7 @@ export class UserActionManager {
         newData.statut || oldData?.statut
       );
     } else {
-      console.log('UserActionManager: Aucun changement détecté, pas d\'ajout à l\'historique');
+      this.logger.debug('Aucun changement détecté, pas d\'ajout historique');
     }
   }
 
@@ -337,16 +339,16 @@ export class UserActionManager {
    * @returns {Promise<number>}
    */
   async migrateAllTasks(records) {
-    console.log('UserActionManager: migrateAllTasks called with', records?.length, 'records');
+    this.logger.debug(`Migration demandée pour ${records?.length} enregistrements`);
     const migrator = getNotesJsonMigrator();
     if (!migrator) {
       console.error('UserActionManager: NotesJsonMigrator not initialized');
       return 0;
     }
 
-    console.log('UserActionManager: calling migrator.migrateAllRecords');
+    this.logger.debug('Lancement migration via migrator...');
     const result = await migrator.migrateAllRecords(records);
-    console.log('UserActionManager: migration result:', result);
+    this.logger.debug('Résultat migration:', result);
     return result;
   }
 }

@@ -25,6 +25,7 @@ import {
 
 import { initUserActionManager, getUserActionManager } from './utils/UserActionManager.js';
 import { initNotesJsonMigrator, getNotesJsonMigrator } from './utils/NotesJsonMigrator.js';
+import { initLogger, createModuleLogger } from './utils/LoggerManager.js';
 
 import {
   generateBureauBadges,
@@ -66,6 +67,10 @@ let projetsDynamiques = [];
 // === CLASSE KANBANMANAGER CORRIGÉE ===
 class KanbanManager {
   constructor() {
+    // Initialiser le logger en premier
+    initLogger();
+    this.logger = createModuleLogger('KanbanManager');
+    
     // Propriétés principales
     this.kanbanContainer = document.getElementById('kanban-container');
     this.currentRecords = [];
@@ -188,29 +193,29 @@ class KanbanManager {
 
   async waitForGristReady() {
     return new Promise((resolve) => {
-      console.log("Attente grist.ready...");
+      this.logger.info("Attente de l'initialisation Grist...");
       try {
         grist.ready({ requiredAccess: 'full' });
         grist.onRecords(this.handleGristUpdate.bind(this));
-        console.log("Listener onRecords attaché.");
+        this.logger.info("Listener onRecords attaché.");
         
         // Initialiser le gestionnaire d'actions utilisateur et le migrateur
         initUserActionManager(grist);
         initNotesJsonMigrator(grist);
-        console.log("UserActionManager et NotesJsonMigrator initialisés.");
+        this.logger.info("UserActionManager et NotesJsonMigrator initialisés.");
         
         // Initialiser le nom d'utilisateur
         const userActionManager = getUserActionManager();
         if (userActionManager) {
           userActionManager.initializeUser().then(userName => {
-            console.log("Nom d'utilisateur initialisé:", userName);
+            this.logger.debug("Nom d'utilisateur initialisé:", userName);
           }).catch(error => {
             console.error("Erreur lors de l'initialisation de l'utilisateur:", error);
           });
         }
         
         setTimeout(() => {
-          console.log("grist.ready OK.");
+          this.logger.info("Grist initialisé avec succès.");
           resolve();
         }, 50);
       } catch (err) {
@@ -222,39 +227,39 @@ class KanbanManager {
 
   // === CHARGEMENT DES DONNÉES CORRIGÉ (BASÉ SUR OLD EXAMPLE) ===
   async loadGristDataAndOptions() {
-    console.log("Chargement données Grist (Tâches et Options)...");
+    this.logger.info("Chargement des données depuis Grist...");
     try {
       // Charger les tâches principales
       const records = await grist.docApi.fetchTable(TABLE_ID);
       this.currentRecords = this.mapGristRecords(records);
-      console.log("Données tâches mappées:", this.currentRecords.length, "enreg.");
+      this.logger.info(`Données mappées: ${this.currentRecords.length} tâches`);
       if (!this.currentRecords?.length) console.warn("Aucune donnée tâche Grist chargée.");
 
       // Migrer les notes vers le format JSON si nécessaire
       const userActionManager = getUserActionManager();
-      console.log("UserActionManager available:", !!userActionManager);
-      console.log("Current records count:", this.currentRecords?.length);
+      this.logger.debug("UserActionManager disponible:", !!userActionManager);
+      this.logger.debug("Nombre d'enregistrements:", this.currentRecords?.length);
       
       if (userActionManager && this.currentRecords?.length > 0) {
-        console.log("Starting migration check for", this.currentRecords.length, "records");
-        console.log("Sample record:", this.currentRecords[0]);
+        this.logger.debug(`Vérification migration pour ${this.currentRecords.length} enregistrements`);
+        this.logger.debug("Exemple d'enregistrement:", this.currentRecords[0]);
         try {
           // Passer les enregistrements mappés plutôt que les données brutes
           const migrated = await userActionManager.migrateAllTasks(this.currentRecords);
           if (migrated > 0) {
-            console.log(`✅ Migration terminée: ${migrated} tâches migrées vers le format JSON.`);
+            this.logger.info(`Migration terminée: ${migrated} tâches migrées vers JSON`);
             // Recharger les données après migration
             const updatedRecords = await grist.docApi.fetchTable(TABLE_ID);
             this.currentRecords = this.mapGristRecords(updatedRecords);
           } else {
-            console.log("✅ Aucune migration nécessaire - les notes sont déjà au format JSON.");
+            this.logger.debug("Aucune migration nécessaire - notes déjà en JSON");
           }
         } catch (migrationError) {
           console.error("Erreur lors de la migration des notes:", migrationError);
           // Continue without migration if it fails
         }
       } else {
-        console.log("Migration skipped - no userActionManager or no records available");
+        this.logger.debug("Migration ignorée - pas de gestionnaire ou d'enregistrements");
       }
 
       // Options Statiques
@@ -834,7 +839,7 @@ class KanbanManager {
   refreshKanban() {
     // Éviter les appels multiples simultanés
     if (this.isRefreshing) {
-      console.log("refreshKanban ignoré (déjà en cours)");
+      this.logger.debug("RefreshKanban ignoré (déjà en cours)");
       return;
     }
     this.isRefreshing = true;
@@ -845,19 +850,19 @@ class KanbanManager {
       return;
     }
     
-    console.log("Rafraîchissement Kanban (Génération HTML + Sortable)...");
-    console.log("Nombre d'enregistrements disponibles:", this.currentRecords?.length || 0);
+    this.logger.debug("Rafraîchissement Kanban en cours...");
+    this.logger.debug(`Enregistrements disponibles: ${this.currentRecords?.length || 0}`);
     
     // Filtrer les enregistrements
     const filteredRecords = this.filterRecords(this.currentRecords || []);
-    console.log(`Refresh - ${filteredRecords.length} enregistrements après filtrage.`);
+    this.logger.debug(`Filtrage: ${filteredRecords.length} enregistrements retenus`);
     
     if (filteredRecords.length > 0) {
-      console.log("Exemple d'enregistrement:", filteredRecords[0]);
+      this.logger.debug("Exemple d'enregistrement:", filteredRecords[0]);
     }
     
     const statutsToShow = this.showTermine ? STATUTS : STATUTS.filter(s => s.id !== 'Terminé');
-    console.log("Statuts à afficher:", statutsToShow.map(s => s.id));
+    this.logger.debug("Statuts à afficher:", statutsToShow.map(s => s.id));
     
     this.sortableInstances.forEach(s => s.destroy());
     this.sortableInstances = [];
@@ -1455,11 +1460,11 @@ class KanbanManager {
   // === GESTION DES MISES À JOUR GRIST ===
   handleGristUpdate(gristRecords, mappings = null) {
     if (this.isUpdating) {
-      console.log("onRecords ignoré (verrou)");
+      this.logger.debug("onRecords ignoré (verrou de mise à jour)");
       return;
     }
     if (this.ignoreNextOnRecords) {
-      console.log("onRecords ignoré (flag)");
+      this.logger.debug("onRecords ignoré (flag ignoreNext)");
       this.ignoreNextOnRecords = false;
       return;
     }
@@ -1470,17 +1475,17 @@ class KanbanManager {
         record && record.titre === '___TEMP_USER_RECORD___'
       );
       if (hasTempRecord) {
-        console.log("onRecords ignoré (enregistrement temporaire système)");
+        this.logger.debug("onRecords ignoré (enregistrement temporaire)");
         return;
       }
     }
     
-    console.log("MAJ Grist (onRecords):", gristRecords ? 'Données' : 'Pas');
+    this.logger.info("Mise à jour Grist détectée");
     this.isUpdating = true;
     
-    console.log("Stratégie: Re-fetch");
+    this.logger.debug("Stratégie: Re-fetch des données");
     grist.docApi.fetchTable(TABLE_ID).then(fresh => {
-      console.log("Données re-fetchées.");
+      this.logger.debug("Données re-fetchées avec succès");
       this.currentRecords = this.mapGristRecords(fresh);
       this.refreshKanban();
       
