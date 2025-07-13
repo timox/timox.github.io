@@ -232,12 +232,15 @@ let loggerInstance = null;
 export function initLogger() {
   if (!loggerInstance) {
     loggerInstance = new LoggerManager();
-    
-    // Exposer dans window pour usage console
-    if (typeof window !== 'undefined') {
-      window.logger = loggerInstance;
-    }
   }
+  
+  // Toujours exposer dans window pour usage console
+  if (typeof window !== 'undefined') {
+    window.logger = loggerInstance;
+    console.log('%c[LOGGER] Logger exposé globalement - Tapez logger.showHelp() pour commencer', 
+                'color: #0066cc; font-weight: bold');
+  }
+  
   return loggerInstance;
 }
 

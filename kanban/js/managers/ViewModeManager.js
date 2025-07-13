@@ -2,6 +2,7 @@
 // Gestionnaire pour les modes de vue du Kanban (Compact, Détaillé, Focus)
 
 import { VIEW_MODES } from '../config/constants.js';
+import { createModuleLogger } from '../utils/LoggerManager.js';
 
 /**
  * Gestionnaire pour les modes de vue du Kanban
@@ -11,6 +12,7 @@ export class ViewModeManager {
     this.kanban = kanbanManager;
     this.currentMode = VIEW_MODES.COMPACT;
     this.focusColumn = null;
+    this.logger = createModuleLogger('ViewModeManager');
     
     this.init();
   }
@@ -22,7 +24,7 @@ export class ViewModeManager {
     this.createViewModeControls();
     this.setupEventListeners();
     this.loadSavedViewMode();
-    console.log('ViewModeManager: Gestionnaire de modes de vue initialisé');
+    this.logger.info('Gestionnaire de modes de vue initialisé');
   }
   
   /**
@@ -30,10 +32,16 @@ export class ViewModeManager {
    */
   createViewModeControls() {
     const controlsContainer = document.querySelector('.kanban-controls .row');
-    if (!controlsContainer) return;
+    if (!controlsContainer) {
+      this.logger.error('Conteneur des contrôles kanban introuvable');
+      return;
+    }
     
     // Vérifier si les contrôles existent déjà
-    if (document.getElementById('view-mode-controls')) return;
+    if (document.getElementById('view-mode-controls')) {
+      this.logger.debug('Contrôles de vue déjà créés');
+      return;
+    }
     
     const viewModeCol = document.createElement('div');
     viewModeCol.className = 'col-md-12 mb-2';
@@ -61,6 +69,7 @@ export class ViewModeManager {
     
     // Insérer au début du container
     controlsContainer.insertBefore(viewModeCol, controlsContainer.firstChild);
+    this.logger.info('Contrôles de vue créés et insérés dans le DOM');
   }
   
   /**
@@ -150,7 +159,12 @@ export class ViewModeManager {
    */
   applyViewMode(mode, previousMode) {
     const container = this.kanban.kanbanContainer;
-    if (!container) return;
+    if (!container) {
+      this.logger.error('Conteneur kanban introuvable pour appliquer le mode de vue');
+      return;
+    }
+    
+    this.logger.info(`Application du mode de vue: ${mode}`);
     
     // Nettoyer les classes de mode précédentes
     container.classList.remove('kanban-compact', 'kanban-detailed', 'kanban-focus');
@@ -165,6 +179,8 @@ export class ViewModeManager {
       case VIEW_MODES.FOCUS:
         this.applyFocusMode(previousMode);
         break;
+      default:
+        this.logger.error(`Mode de vue inconnu: ${mode}`);
     }
     
     // Rafraîchir le kanban avec le nouveau mode
@@ -184,10 +200,15 @@ export class ViewModeManager {
     // Masquer la navigation focus si elle existe
     this.hideFocusNavigation();
     
-    // Ajuster la disposition en grille
-    container.style.gridTemplateColumns = 'repeat(auto-fit, minmax(220px, 1fr))';
-    container.style.gap = '0.75rem';
-    container.style.height = 'calc(100vh - 200px)';
+    // Réinitialiser les styles inline pour laisser le CSS prendre le contrôle
+    container.style.gridTemplateColumns = '';
+    container.style.gap = '';
+    container.style.height = '';
+    
+    // Afficher toutes les colonnes
+    this.showAllColumns();
+    
+    this.logger.info('Mode compact appliqué - toutes colonnes visibles, disposition compacte');
   }
   
   /**
@@ -200,10 +221,15 @@ export class ViewModeManager {
     // Masquer la navigation focus si elle existe
     this.hideFocusNavigation();
     
-    // Ajuster la disposition en grille
-    container.style.gridTemplateColumns = 'repeat(auto-fit, minmax(280px, 1fr))';
-    container.style.gap = '1rem';
-    container.style.height = 'auto';
+    // Réinitialiser les styles inline pour laisser le CSS prendre le contrôle
+    container.style.gridTemplateColumns = '';
+    container.style.gap = '';
+    container.style.height = '';
+    
+    // Afficher toutes les colonnes
+    this.showAllColumns();
+    
+    this.logger.info('Mode détaillé appliqué - toutes colonnes visibles, disposition élargie');
   }
   
   /**
@@ -217,15 +243,27 @@ export class ViewModeManager {
     // Créer la navigation focus
     this.createFocusNavigation();
     
-    // Si pas de colonne focus définie, choisir la première
+    // Si pas de colonne focus définie, choisir la première colonne disponible
     if (!this.focusColumn) {
-      this.focusColumn = 'Backlog';
+      const firstColumn = container.querySelector('.kanban-board');
+      if (firstColumn) {
+        const titleElement = firstColumn.querySelector('.kanban-board-title');
+        this.focusColumn = titleElement ? titleElement.textContent.trim() : 'Backlog';
+      } else {
+        this.focusColumn = 'Backlog';
+      }
     }
     
-    // Ajuster la disposition
+    // Masquer toutes les colonnes sauf celle en focus
+    this.showOnlyFocusColumn(this.focusColumn);
+    
+    // Ajuster la disposition - une seule colonne centrée
     container.style.gridTemplateColumns = '1fr';
     container.style.gap = '1rem';
     container.style.height = 'calc(100vh - 250px)';
+    container.style.justifyContent = 'center';
+    
+    this.logger.info(`Mode focus appliqué - colonne "${this.focusColumn}" seule visible`);
   }
   
   /**
@@ -301,11 +339,14 @@ export class ViewModeManager {
       }
     });
     
-    // Rafraîchir en mode focus
-    if (this.currentMode === VIEW_MODES.FOCUS && this.kanban.refreshKanban) {
-      this.kanban.focusColumn = columnId;
-      this.kanban.refreshKanban();
+    // Si on est en mode focus, changer immédiatement la colonne affichée
+    if (this.currentMode === VIEW_MODES.FOCUS) {
+      this.showOnlyFocusColumn(columnId);
+      this.logger.info(`Colonne focus changée vers: ${columnId}`);
     }
+    
+    // Mettre à jour aussi dans kanban pour compatibilité
+    this.kanban.focusColumn = columnId;
   }
   
   /**
@@ -360,6 +401,40 @@ export class ViewModeManager {
     }
   }
   
+  /**
+   * Affiche toutes les colonnes
+   */
+  showAllColumns() {
+    const columns = this.kanban.kanbanContainer.querySelectorAll('.kanban-board');
+    columns.forEach(column => {
+      column.style.display = '';
+    });
+    this.logger.debug('Toutes les colonnes affichées');
+  }
+  
+  /**
+   * Affiche seulement la colonne en focus
+   * @param {string} focusColumnName - Nom de la colonne à afficher
+   */
+  showOnlyFocusColumn(focusColumnName) {
+    const columns = this.kanban.kanbanContainer.querySelectorAll('.kanban-board');
+    
+    columns.forEach(column => {
+      const titleElement = column.querySelector('.kanban-board-title');
+      const columnName = titleElement ? titleElement.textContent.trim() : '';
+      
+      if (columnName === focusColumnName) {
+        column.style.display = '';
+        column.style.maxWidth = '600px';
+        column.style.margin = '0 auto';
+      } else {
+        column.style.display = 'none';
+      }
+    });
+    
+    this.logger.debug(`Seule la colonne "${focusColumnName}" est affichée`);
+  }
+
   /**
    * Obtient le mode de vue actuel
    * @returns {string} Mode de vue actuel

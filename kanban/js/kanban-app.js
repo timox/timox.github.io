@@ -68,8 +68,13 @@ let projetsDynamiques = [];
 class KanbanManager {
   constructor() {
     // Initialiser le logger en premier
-    initLogger();
+    const logger = initLogger();
     this.logger = createModuleLogger('KanbanManager');
+    
+    // Exposer le logger globalement pour usage console
+    if (typeof window !== 'undefined') {
+      window.logger = logger;
+    }
     
     // Propriétés principales
     this.kanbanContainer = document.getElementById('kanban-container');
@@ -1246,32 +1251,9 @@ class KanbanManager {
       console.error('❌ Bouton nouvelle tâche non trouvé !');
     }
 
-    // Bouton sauvegarder
-    const btnSave = document.getElementById('btn-save-task');
-    if (btnSave) {
-      btnSave.addEventListener('click', (e) => {
-        console.log('💾 Clic bouton sauvegarder');
-        e.preventDefault();
-        if (this.modalManager) {
-          this.modalManager.saveTask();
-        }
-      });
-      console.log('✅ Event listener bouton sauvegarder attaché');
-    } else {
-      console.warn('⚠️ Bouton sauvegarder non trouvé');
-    }
+    // Bouton sauvegarder - GÉRÉ PAR ModalManager.js (éviter duplication)
 
-    // Bouton supprimer
-    const btnDelete = document.getElementById('btn-delete-task');
-    if (btnDelete) {
-      btnDelete.addEventListener('click', (e) => {
-        console.log('🗑️ Clic bouton supprimer');
-        e.preventDefault();
-        if (this.modalManager) {
-          this.modalManager.deleteTask();
-        }
-      });
-    }
+    // Bouton supprimer - GÉRÉ PAR ModalManager.js (éviter duplication)
 
     // Bouton export historique
     const btnExportHistory = document.getElementById('btn-export-history');
@@ -1285,13 +1267,8 @@ class KanbanManager {
 
    
 
-    // Raccourcis clavier
+    // Raccourcis clavier - RACCOURCI 'N' GÉRÉ PAR ModalManager.js (éviter duplication)
     document.addEventListener('keydown', (e) => {
-      if ((e.key === 'n' || e.key === 'N') && !e.target.matches('input, textarea')) {
-        console.log('⌨️ Raccourci N pour nouvelle tâche');
-        e.preventDefault();
-        this.openPopup();
-      }
       if (e.key === 'r' || e.key === 'R') {
         if (!e.target.matches('input, textarea')) {
           e.preventDefault();
@@ -1300,24 +1277,7 @@ class KanbanManager {
       }
     });
 
-    // Timeline modal buttons
-    const btnShowCommentsOnly = document.getElementById('btn-show-comments-only');
-    if (btnShowCommentsOnly) {
-      btnShowCommentsOnly.addEventListener('click', (e) => {
-        e.preventDefault();
-        // Toggle affichage des commentaires seulement
-        this.toggleCommentsOnlyView();
-      });
-    }
-
-    const btnExportTaskHistory = document.getElementById('btn-export-task-history');
-    if (btnExportTaskHistory) {
-      btnExportTaskHistory.addEventListener('click', (e) => {
-        e.preventDefault();
-        // Exporter l'historique de la tâche
-        this.exportCurrentTaskHistory();
-      });
-    }
+    // Timeline modal buttons - GÉRÉS PAR HistoryManager.js (éviter duplication)
 
     // Force timeline modal close buttons to work
     const timelineCloseButtons = document.querySelectorAll('#history-modal [data-bs-dismiss="modal"]');

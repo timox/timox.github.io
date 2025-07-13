@@ -96,6 +96,9 @@ export class HistoryManager {
    * @param {object} task - Données de la tâche
    */
   renderTaskHistory(task) {
+    // CRITIQUE: Sauvegarder la tâche courante pour les boutons d'action
+    this.currentTaskHistory = task;
+    
     const historyData = this.parseTaskHistory(task);
     
     this.renderHistoryStats(historyData);

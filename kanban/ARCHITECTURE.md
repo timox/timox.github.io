@@ -332,10 +332,62 @@ window.kanbanManager.getApplicationState(); // Vérifier l'init
 ### 🆕 Problème: Widget d'édition ne s'ouvre pas
 → Vérifier que `createCommentEditWidget()` crée bien le DOM `comment-edit-widget`
 
+### 🚨 Problème: Erreur de syntaxe "unexpected token: '{'"
+→ Vérifier les accolades fermantes en trop après modification de code
+→ Ligne type: `} }` (double accolade fermante)
+
+### 🚨 Problème: Double création de tâches (AUDIT COMPLET FAIT)
+→ **CAUSES MULTIPLES IDENTIFIÉES**:
+  - Écouteurs dupliqués sur boutons (kanban-app.js + ModalManager.js)
+  - Raccourci 'N' dupliqué (kanban-app.js + ModalManager.js)  
+  - Fichier legacy `js/tmp` avec code conflictuel
+→ **SOLUTIONS APPLIQUÉES**:
+  - Supprimé écouteurs redondants dans kanban-app.js
+  - Désactivé fichier `js/tmp` → `js/tmp.disabled`
+  - Créé checklist de vérification `VERIFICATION_ANTI_DUPLICATION.md`
+→ **RÈGLE ABSOLUE**: Un seul gestionnaire par action, dans ModalManager.js
+
 ---
 
-*Dernière mise à jour: 2025-01-13 - 18:00*
-*Version: 1.1 - Corrections Majeures Appliquées*
+*Dernière mise à jour: 2025-01-13 - 19:30*
+*Version: 1.2 - Système de Logs + Corrections Critiques*
+
+---
+
+## 📈 **Changelog Version 1.2** - 2025-01-13
+
+### 🔧 **Nouvelles Fonctionnalités**
+
+#### 1. **Système de Logs Intelligent** ✅
+- **Ajout**: `LoggerManager.js` avec 5 niveaux de logs (CRITICAL→DEBUG)
+- **Fonctionnalité**: Anti-spam, filtres par module, sauvegarde préférences
+- **Intégration**: KanbanManager et UserActionManager utilisent le nouveau système
+- **Contrôle**: Interface console simple (`logger.setLogLevel('ERROR')`)
+- **Impact**: Réduction massive du bruit de debug, focus sur l'essentiel
+
+#### 2. **Correction Erreur de Syntaxe** ✅
+- **Problème**: `Uncaught SyntaxError: unexpected token: '{'` dans HistoryManager.js:845
+- **Cause**: Accolade fermante en trop (`} }`) ligne 839
+- **Solution**: Suppression accolade supplémentaire
+- **Impact**: Application se charge sans erreur de syntaxe
+
+#### 3. **Correction Double Création de Tâches (AUDIT COMPLET)** ✅
+- **Problème**: Chaque clic créait 2+ tâches identiques (25+ versions!)
+- **Causes multiples**: 
+  - Écouteurs dupliqués sur boutons (kanban-app.js + ModalManager.js)
+  - Raccourci 'N' dupliqué (kanban-app.js + ModalManager.js)
+  - Fichier legacy `js/tmp` avec code conflictuel
+- **Solutions**: 
+  - Suppression tous écouteurs redondants
+  - Désactivation `js/tmp` → `js/tmp.disabled`  
+  - Checklist vérification `VERIFICATION_ANTI_DUPLICATION.md`
+- **Impact**: UNE SEULE tâche créée par action
+
+### 🎯 **Améliorations**
+- **Logs colorés** dans la console pour lecture facile
+- **Documentation** complète dans `LOGGING_GUIDE.md`
+- **Intégration** transparente avec l'existant
+- **Contrôle granulaire** du debug par module
 
 ---
 
@@ -375,3 +427,4 @@ window.kanbanManager.getApplicationState(); // Vérifier l'init
 - Champ description ne doit JAMAIS être pré-rempli
 - Widget d'édition doit être initialisé dans `HistoryManager`
 - Styles CSS auto-créés pour éviter les dépendances externes
+- **CRITIQUE**: Toujours vérifier les accolades fermantes après édition de code

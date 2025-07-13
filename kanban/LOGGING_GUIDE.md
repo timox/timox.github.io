@@ -5,7 +5,9 @@ Ce système intelligent de logs élimine le bruit excessif des messages de debug
 
 ## 🚀 Utilisation Rapide
 
-Ouvrez la console du navigateur (F12) et utilisez ces commandes :
+Ouvrez la console du navigateur (F12). Le logger sera automatiquement disponible dès le chargement de l'application.
+
+**Si `logger is not defined`**, rechargez la page d'abord, puis utilisez ces commandes :
 
 ### Réduire le Bruit de Debug
 ```javascript
@@ -85,6 +87,27 @@ logger.setLogLevel('ERROR')  // Silence total sauf erreurs
 logger.setLogLevel('INFO')
 logger.clearModuleFilters()
 logger.resetLogCounts()
+```
+
+## 🚨 Dépannage Rapide
+
+### Erreur: "logger is not defined"
+```javascript
+// 1. Rechargez la page (F5)
+// 2. Attendez le message: "[LOGGER] Logger exposé globalement"
+// 3. Puis utilisez: logger.showHelp()
+
+// Si ça ne fonctionne toujours pas:
+window.logger.showHelp()
+```
+
+### Vérifier que le Logger Fonctionne
+```javascript
+// Cette commande doit afficher les statistiques
+logger.showStats()
+
+// Cette commande doit réduire les logs immédiatement
+logger.setLogLevel('ERROR')
 ```
 
 ---
