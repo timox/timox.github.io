@@ -532,8 +532,12 @@ export class ModalManager {
         
         displaySuccess('Tâche mise à jour avec succès');
         
-        // Vider le champ description après mise à jour
-        setFieldValue('popup-description', '');
+        // Vider le champ description après mise à jour seulement si c'était un commentaire d'historique
+        const descriptionContent = getFieldValue('popup-description').trim();
+        if (descriptionContent && descriptionContent.length > 0) {
+          // Si il y avait du contenu dans description, c'était probablement un commentaire d'historique
+          setFieldValue('popup-description', '');
+        }
       }
       
       console.log('Résultat Grist:', result);

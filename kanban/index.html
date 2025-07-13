@@ -269,6 +269,39 @@
         <div class="modal-body">
           <div id="history-stats" class="history-stats"></div>
           <div id="history-timeline" class="history-timeline"></div>
+          
+          <!-- Widget d'édition de commentaire (hidden par défaut) -->
+          <div id="comment-edit-widget" class="comment-edit-widget" style="display: none;">
+            <div class="comment-edit-overlay">
+              <div class="comment-edit-box">
+                <div class="comment-edit-header">
+                  <h6><i class="bi bi-pencil-square me-2"></i>Éditer le commentaire</h6>
+                  <button type="button" class="btn-close btn-close-sm" id="btn-close-comment-edit"></button>
+                </div>
+                <div class="comment-edit-body">
+                  <div class="mb-3">
+                    <label for="comment-edit-text" class="form-label">Texte du commentaire</label>
+                    <textarea class="form-control" id="comment-edit-text" rows="4" 
+                              placeholder="Modifiez votre commentaire..."></textarea>
+                  </div>
+                  <div class="comment-edit-info">
+                    <small class="text-muted">
+                      <i class="bi bi-info-circle me-1"></i>
+                      Commentaire créé le <span id="comment-edit-date"></span>
+                    </small>
+                  </div>
+                </div>
+                <div class="comment-edit-footer">
+                  <button type="button" class="btn btn-sm btn-secondary" id="btn-cancel-comment-edit">
+                    <i class="bi bi-x-circle me-1"></i>Annuler
+                  </button>
+                  <button type="button" class="btn btn-sm btn-primary" id="btn-save-comment-edit">
+                    <i class="bi bi-check2-circle me-1"></i>Sauvegarder
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-info" id="btn-show-comments-only">

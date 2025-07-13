@@ -10,6 +10,7 @@ import {
 } from '../utils/dates.js';
 
 import { displayError, displaySuccess } from '../utils/dom.js';
+import { TABLE_ID } from '../config/constants.js';
 
 /**
  * Gestionnaire pour l'historique des tâches et commentaires
@@ -49,6 +50,9 @@ export class HistoryManager {
         this.exportTaskHistory();
       });
     }
+    
+    // Widget d'édition de commentaire
+    this.setupCommentEditWidget();
     
     // Écouteurs pour les boutons d'historique sur les cartes
     document.addEventListener('click', (e) => {
@@ -412,18 +416,26 @@ export class HistoryManager {
     const userInfo = entry.user ? ` par ${entry.user}` : '';
     const latestBadge = entry.isLatest ? '<span class="badge bg-primary ms-2">Dernier</span>' : '';
     
+    // Générer un ID unique pour le commentaire basé sur le timestamp
+    const commentId = `comment-${entry.timestamp.replace(/[^\d]/g, '')}`;
+    
     return `
-      <div class="timeline-entry">
+      <div class="timeline-entry timeline-entry-comment" data-comment-id="${commentId}">
         <div class="timeline-status">
           <i class="bi bi-chat-square-text text-info"></i>
           Commentaire${latestBadge}
+          <button class="btn btn-sm btn-outline-secondary btn-edit-comment" 
+                  data-comment-id="${commentId}"
+                  title="Éditer ce commentaire">
+            <i class="bi bi-pencil"></i>
+          </button>
         </div>
         <div class="timeline-dates">
           <i class="bi bi-calendar3"></i>
           ${formattedDate}${userInfo}
         </div>
         <div class="timeline-comment">
-          <div class="comment-content">${entry.content}</div>
+          <div class="comment-content" data-original="${entry.content.replace(/"/g, '&quot;')}">${entry.content}</div>
         </div>
       </div>
     `;
@@ -636,6 +648,330 @@ export class HistoryManager {
     });
     
     return csv;
+  }
+  
+  /**
+   * Configure le widget d'édition de commentaire
+   */
+  setupCommentEditWidget() {
+    this.currentEditingComment = null;
+    
+    // Écouteur pour les boutons d'édition
+    document.addEventListener('click', (e) => {
+      if (e.target.matches('.btn-edit-comment, .btn-edit-comment *')) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const button = e.target.closest('.btn-edit-comment');
+        const commentId = button.dataset.commentId;
+        this.openCommentEditWidget(commentId);
+      }
+    });
+    
+    // Bouton fermer
+    const btnClose = document.getElementById('btn-close-comment-edit');
+    if (btnClose) {
+      btnClose.addEventListener('click', () => {
+        this.closeCommentEditWidget();
+      });
+    }
+    
+    // Bouton annuler
+    const btnCancel = document.getElementById('btn-cancel-comment-edit');
+    if (btnCancel) {
+      btnCancel.addEventListener('click', () => {
+        this.closeCommentEditWidget();
+      });
+    }
+    
+    // Bouton sauvegarder
+    const btnSave = document.getElementById('btn-save-comment-edit');
+    if (btnSave) {
+      btnSave.addEventListener('click', () => {
+        this.saveCommentEdit();
+      });
+    }
+    
+    // Fermer avec l'overlay
+    const overlay = document.querySelector('.comment-edit-overlay');
+    if (overlay) {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          this.closeCommentEditWidget();
+        }
+      });
+    }
+    
+    // Fermer avec Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.isCommentEditOpen()) {
+        this.closeCommentEditWidget();
+      }
+    });
+  }
+  
+  /**
+   * Ouvre le widget d'édition pour un commentaire
+   * @param {string} commentId - ID du commentaire
+   */
+  openCommentEditWidget(commentId) {
+    const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
+    if (!commentElement) {
+      console.error('Commentaire non trouvé:', commentId);
+      return;
+    }
+    
+    const contentElement = commentElement.querySelector('.comment-content');
+    const originalContent = contentElement.dataset.original || contentElement.textContent;
+    const dateElement = commentElement.querySelector('.timeline-dates');
+    const dateText = dateElement.textContent.trim();
+    
+    // Stocker les informations du commentaire en cours d'édition
+    this.currentEditingComment = {
+      id: commentId,
+      element: commentElement,
+      originalContent: originalContent
+    };
+    
+    // Remplir le widget
+    document.getElementById('comment-edit-text').value = originalContent;
+    document.getElementById('comment-edit-date').textContent = dateText;
+    
+    // Afficher le widget
+    const widget = document.getElementById('comment-edit-widget');
+    widget.style.display = 'block';
+    
+    // Focus sur le textarea
+    setTimeout(() => {
+      document.getElementById('comment-edit-text').focus();
+    }, 100);
+  }
+  
+  /**
+   * Ferme le widget d'édition
+   */
+  closeCommentEditWidget() {
+    const widget = document.getElementById('comment-edit-widget');
+    widget.style.display = 'none';
+    
+    this.currentEditingComment = null;
+    
+    // Nettoyer le formulaire
+    document.getElementById('comment-edit-text').value = '';
+    document.getElementById('comment-edit-date').textContent = '';
+  }
+  
+  /**
+   * Vérifie si le widget d'édition est ouvert
+   * @returns {boolean}
+   */
+  isCommentEditOpen() {
+    const widget = document.getElementById('comment-edit-widget');
+    return widget && widget.style.display === 'block';
+  }
+  
+  /**
+   * Sauvegarde les modifications du commentaire
+   */
+  async saveCommentEdit() {
+    if (!this.currentEditingComment) {
+      console.error('Aucun commentaire en cours d\'édition');
+      return;
+    }
+    
+    const newContent = document.getElementById('comment-edit-text').value.trim();
+    
+    if (!newContent) {
+      displayError('Le commentaire ne peut pas être vide');
+      return;
+    }
+    
+    if (newContent === this.currentEditingComment.originalContent) {
+      console.log('Aucune modification détectée');
+      this.closeCommentEditWidget();
+      return;
+    }
+    
+    try {
+      // Extraire l'ID de la tâche du commentId
+      const taskId = this.currentTaskHistory?.id;
+      if (!taskId) {
+        throw new Error('ID de tâche non trouvé');
+      }
+      
+      // Désactiver le bouton de sauvegarde et afficher un loader
+      const saveBtn = document.getElementById('btn-save-comment-edit');
+      const originalText = saveBtn.innerHTML;
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Sauvegarde...';
+      
+      try {
+        // Sauvegarder dans Grist
+        await this.updateCommentInGrist(taskId, this.currentEditingComment.id, newContent);
+        
+        // Mise à jour dans l'interface
+        const contentElement = this.currentEditingComment.element.querySelector('.comment-content');
+        contentElement.textContent = newContent;
+        contentElement.dataset.original = newContent;
+        
+        // Ajouter une indication visuelle que le commentaire a été modifié
+        const timelineEntry = this.currentEditingComment.element;
+        timelineEntry.classList.add('comment-edited');
+        
+        // Ajouter un badge "Modifié" si pas déjà présent
+        const statusDiv = timelineEntry.querySelector('.timeline-status');
+        if (!statusDiv.querySelector('.badge-edited')) {
+          const editedBadge = document.createElement('span');
+          editedBadge.className = 'badge bg-warning ms-2 badge-edited';
+          editedBadge.textContent = 'Modifié';
+          statusDiv.appendChild(editedBadge);
+        }
+        
+        displaySuccess('Commentaire mis à jour avec succès');
+        this.closeCommentEditWidget();
+        
+      } finally {
+        // Restaurer le bouton
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalText;
+      }
+      
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde du commentaire:', error);
+      
+      // Afficher un message d'erreur détaillé selon le type d'erreur
+      let errorMessage = 'Erreur lors de la sauvegarde';
+      if (error.message.includes('non trouvé')) {
+        errorMessage = 'Tâche non trouvée dans la base de données';
+      } else if (error.message.includes('applyUserActions')) {
+        errorMessage = 'Erreur de connexion à Grist. Vérifiez votre connexion.';
+      } else if (error.message.includes('JSON')) {
+        errorMessage = 'Erreur de format des données. Contactez l\'administrateur.';
+      }
+      
+      displayError(errorMessage);
+    }
+  }
+  
+  /**
+   * Met à jour un commentaire dans Grist
+   * @param {number} taskId - ID de la tâche
+   * @param {string} commentId - ID du commentaire
+   * @param {string} newContent - Nouveau contenu
+   */
+  async updateCommentInGrist(taskId, commentId, newContent) {
+    try {
+      // Récupérer la tâche actuelle depuis Grist
+      const gristData = await grist.docApi.fetchTable(TABLE_ID);
+      
+      // Trouver l'enregistrement
+      const index = gristData.id.findIndex(id => id === taskId);
+      if (index === -1) {
+        throw new Error(`Tâche ${taskId} non trouvée`);
+      }
+      
+      const currentNotes = gristData.notes[index];
+      let notesData;
+      
+      // Parser les notes JSON
+      if (currentNotes && typeof currentNotes === 'string' && currentNotes.trim().startsWith('{')) {
+        try {
+          notesData = JSON.parse(currentNotes);
+        } catch (parseError) {
+          console.warn('Erreur parsing JSON, création nouvelle structure:', parseError);
+          notesData = { content: currentNotes || "", history: [] };
+        }
+      } else {
+        notesData = { content: currentNotes || "", history: [] };
+      }
+      
+      // Assurer que l'historique existe
+      if (!Array.isArray(notesData.history)) {
+        notesData.history = [];
+      }
+      
+      // Extraire le timestamp du commentId pour trouver l'entrée à modifier
+      const commentTimestamp = commentId.replace('comment-', '');
+      let entryFound = false;
+      
+      // Chercher et modifier l'entrée d'historique correspondante
+      for (let i = 0; i < notesData.history.length; i++) {
+        const entry = notesData.history[i];
+        const entryTimestamp = entry.timestamp.replace(/[^\d]/g, '');
+        
+        // Comparer les timestamps (on prend les premiers caractères pour éviter les problèmes de précision)
+        if (entryTimestamp.substring(0, 12) === commentTimestamp.substring(0, 12)) {
+          // Vérifier que c'est bien un commentaire (pas un changement de statut)
+          if (entry.action === 'create' || entry.action === 'update') {
+            console.log('Modification du commentaire trouvé:', entry);
+            notesData.history[i].details = newContent;
+            
+            // Ajouter une marque d'édition
+            notesData.history[i].edited = new Date().toISOString();
+            notesData.history[i].editedBy = await this.getCurrentUser();
+            
+            entryFound = true;
+            break;
+          }
+        }
+      }
+      
+      if (!entryFound) {
+        console.warn('Entrée de commentaire non trouvée, ajout d\'une nouvelle entrée');
+        
+        // Ajouter une nouvelle entrée d'historique pour la modification
+        notesData.history.push({
+          timestamp: new Date().toISOString(),
+          user: await this.getCurrentUser(),
+          action: 'update',
+          details: `Commentaire modifié: ${newContent}`,
+          status: gristData.statut[index] || 'Unknown'
+        });
+      }
+      
+      // Limiter l'historique à 50 entrées
+      if (notesData.history.length > 50) {
+        notesData.history = notesData.history.slice(-50);
+      }
+      
+      // Sauvegarder dans Grist
+      const updatedNotes = JSON.stringify(notesData);
+      console.log('Sauvegarde des notes mises à jour:', updatedNotes);
+      
+      await grist.docApi.applyUserActions([
+        ['UpdateRecord', TABLE_ID, taskId, { 
+          notes: updatedNotes,
+          date_derniere_maj: new Date().toISOString()
+        }]
+      ]);
+      
+      console.log('Commentaire mis à jour avec succès dans Grist');
+      
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour du commentaire dans Grist:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Récupère l'utilisateur actuel
+   * @returns {Promise<string>}
+   */
+  async getCurrentUser() {
+    try {
+      const userActionManager = this.kanban.getUserActionManager ? 
+        this.kanban.getUserActionManager() : 
+        window.getUserActionManager?.();
+        
+      if (userActionManager && userActionManager.cachedUserName) {
+        return userActionManager.cachedUserName;
+      }
+      
+      return 'User';
+    } catch (error) {
+      console.warn('Impossible de récupérer l\'utilisateur actuel:', error);
+      return 'User';
+    }
   }
   
   /**

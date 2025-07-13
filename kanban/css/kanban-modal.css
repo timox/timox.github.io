@@ -1,302 +1,279 @@
-/* === css/kanban-modal.css === */
+/* === CSS Modal Styles - Kanban App === */
+/* Styles spécifiques pour les modales de l'application Kanban */
 
-/* === Modal principale === */
-.modal-content {
-  background-color: var(--kanban-card-bg);
-  border: 1px solid var(--kanban-border);
-  color: var(--kanban-text);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-  min-height: 80vh;
-}
-
-.modal-header {
-  background: linear-gradient(135deg, #6f42c1, #007bff);
-  color: white;
-  border-radius: 16px 16px 0 0;
-  padding: 1.5rem;
-}
-
-.modal-body {
-  padding: 2rem;
-  max-height: calc(90vh - 200px);
-  overflow-y: auto;
-}
-
-.modal-footer {
-  background: #f8f9fa;
-  border-radius: 0 0 16px 16px;
-  padding: 1.25rem 2rem;
-}
-
+/* === Popup Tâche === */
 .modal-xl {
   max-width: 1300px;
 }
 
-.modal-body .form-label {
+.modal-content {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  background: linear-gradient(135deg, #6c757d, #495057);
+  color: white;
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+  padding: 1.5rem;
+}
+
+.modal-title {
   font-weight: 600;
-  margin-bottom: 0.75rem;
+  font-size: 1.25rem;
+}
+
+.modal-body {
+  padding: 2rem;
+  overflow-y: auto;
+  max-height: 70vh;
+}
+
+.form-label {
+  font-weight: 600;
   color: #495057;
+  margin-bottom: 0.5rem;
 }
 
-.modal-body .form-control,
-.modal-body .form-select {
-  padding: 0.75rem;
-  font-size: 1rem;
+.form-control:focus, .form-select:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
-.modal-body textarea.form-control {
-  min-height: 120px;
+.form-text {
+  font-size: 0.875rem;
+  color: #6c757d;
 }
 
-.modal-body .row.g-3 > * {
-  margin-bottom: 1.25rem;
+/* === Popup Responsive === */
+@media (max-width: 768px) {
+  .modal-xl {
+    margin: 0.5rem;
+    max-width: calc(100% - 1rem);
+  }
+  
+  .modal-body {
+    padding: 1rem;
+    max-height: 60vh;
+  }
+  
+  .col-md-6 {
+    margin-bottom: 1rem;
+  }
 }
 
-/* === Champs stratégie plus larges === */
-#strategie-objectif, 
-#strategie-sous-objectif, 
-#strategie-action {
+/* === Sélecteurs de stratégie === */
+.strategy-selects {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.strategy-select {
   min-width: 320px !important;
   max-width: 400px !important;
-  font-size: 0.95rem !important;
-  padding: 0.8rem !important;
-  min-height: 140px !important;
-  border: 1px solid #ced4da !important;
-  border-radius: 6px !important;
+  font-size: 0.875rem;
 }
 
-.input-group.mb-2.flex-nowrap {
-  gap: 1.2rem !important;
-  justify-content: space-between !important;
-  align-items: flex-start !important;
+.strategy-description {
+  background: #e3f2fd;
+  border: 1px solid #bbdefb;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: #1565c0;
 }
 
-/* === Historique des descriptions === */
-.description-history {
-  max-height: 300px;
-  overflow-y: auto;
+.strategy-label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+  display: block;
 }
 
-.description-entry {
-  border-left: 3px solid #dee2e6;
-  padding-left: 1rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
+/* === Date Picker Styles === */
+.date-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.description-entry.latest {
-  border-left-color: #28a745;
-  background: #f8fff9;
-  padding: 0.75rem;
-  border-radius: 0.25rem;
-}
-
-.description-entry.historical {
-  border-left-color: #6c757d;
-  opacity: 0.8;
-}
-
-.description-entry.legacy {
-  border-left-color: #ffc107;
-  background: #fffef8;
-  padding: 0.5rem;
-  border-radius: 0.25rem;
-}
-
-.description-timestamp {
-  font-size: 0.85rem;
-  color: #6c757d;
+.date-status {
+  font-size: 0.875rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
   font-weight: 500;
-  margin-bottom: 0.25rem;
 }
 
-.description-entry.latest .description-timestamp {
+.date-status.date-proche {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.date-status.date-depassee {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.date-status.date-normale {
+  background: #d4edda;
   color: #155724;
+  border: 1px solid #c3e6cb;
 }
 
-.description-content {
-  white-space: pre-wrap;
-  font-size: 0.9rem;
-  line-height: 1.4;
+/* === Progress Bar dans la modal === */
+.progress {
+  height: 8px;
+  background-color: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
 }
 
-.description-history-content {
-  max-height: 250px;
-  overflow-y: auto;
-}
-
-#popup-description {
-  min-height: 100px;
+.progress-bar {
+  transition: width 0.6s ease;
+  background: linear-gradient(90deg, #007bff, #0056b3);
 }
 
 /* === Modal Historique === */
-.history-modal .modal-dialog {
-  max-width: 1100px !important;
+.history-modal .modal-content {
+  background: #f8f9fa;
 }
 
-.history-timeline {
+.history-modal .modal-header {
+  background: linear-gradient(135deg, #343a40, #212529);
+}
+
+.history-modal .modal-body {
+  max-height: 75vh;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+/* === Timeline Styles === */
+.timeline-container {
   position: relative;
-  padding-left: 3rem !important;
-  width: 100%;
-  margin-top: 1rem !important;
+  padding: 1rem 0;
 }
 
-.history-timeline::before {
-  content: '';
+.timeline-line {
   position: absolute;
-  left: 1rem !important;
+  left: 1.5rem;
   top: 0;
   bottom: 0;
   width: 3px !important;
-  background: linear-gradient(to bottom, #007bff, #28a745) !important;
-  border-radius: 2px !important;
+  background: linear-gradient(180deg, #007bff, #6610f2) !important;
+  border-radius: 1.5px;
 }
 
 .timeline-entry {
   position: relative;
+  padding-left: 4rem;
+  margin-bottom: 2rem;
   background: white;
-  border: 1px solid #e9ecef;
-  border-radius: 12px !important;
-  padding: 1.5rem !important;
-  margin-bottom: 1.5rem !important;
-  box-shadow: 0 3px 6px rgba(0,0,0,0.08) !important;
-  width: calc(100% - 1rem) !important;
-  margin-left: 0.5rem !important;
-  box-sizing: border-box;
-  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+  border-radius: 8px;
+  padding: 1.5rem;
+  padding-left: 4rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border-left: 4px solid #007bff;
+  transition: all 0.3s ease;
 }
 
 .timeline-entry:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 5px 12px rgba(0,0,0,0.12) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
 }
 
 .timeline-entry::before {
   content: '';
   position: absolute;
-  left: -2.8rem !important;
-  top: 1.5rem !important;
-  width: 16px !important;
+  left: -2.8rem;
+  top: 1.5rem;
+  width: calc(100% - 1rem) !important;
   height: 16px !important;
   background: #007bff;
+  border: 3px solid white;
   border-radius: 50%;
-  border: 4px solid white !important;
-  box-shadow: 0 0 0 3px #007bff !important;
-  z-index: 2 !important;
+  box-shadow: 0 0 0 3px #007bff;
+  z-index: 2;
 }
 
-.timeline-entry.current::before {
-  background: #28a745 !important;
-  box-shadow: 0 0 0 3px #28a745 !important;
-  animation: pulse 2s infinite !important;
+.timeline-entry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
 }
 
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 3px #28a745; }
-  50% { box-shadow: 0 0 0 6px rgba(40, 167, 69, 0.4); }
-  100% { box-shadow: 0 0 0 3px #28a745; }
-}
-
-.timeline-status {
-  font-weight: 700 !important;
-  color: #495057;
-  margin-bottom: 0.8rem !important;
-  font-size: 1.2rem !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 0.5rem !important;
-}
-
-.timeline-dates {
-  color: #6c757d;
-  font-size: 0.95rem !important;
-  margin-bottom: 0.6rem !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 0.5rem !important;
-}
-
-.timeline-duration {
-  color: #007bff;
-  font-size: 0.95rem !important;
-  font-weight: 600 !important;
-  margin-bottom: 0.8rem !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 0.5rem !important;
-}
-
-.timeline-note {
-  background: #fff3cd;
-  border: 1px solid #ffeaa7;
-  border-radius: 6px !important;
-  padding: 0.8rem !important;
-  font-size: 0.9rem;
-  font-style: italic;
-  margin-top: 0.8rem !important;
-  border-left: 4px solid #ffc107 !important;
-}
-
-/* === Commentaires dans la timeline === */
-.timeline-comments {
-  background: linear-gradient(135deg, #f8f9fa, #e9ecef) !important;
-  border: 1px solid #dee2e6 !important;
-  border-radius: 8px !important;
-  padding: 1rem !important;
-  margin-top: 1rem !important;
-}
-
-.timeline-comments-title {
-  font-weight: 600 !important;
-  color: #495057;
-  margin-bottom: 0.8rem !important;
-  font-size: 0.95rem !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 0.5rem !important;
-}
-
-.timeline-comment {
-  background: white !important;
-  border-left: 4px solid #007bff !important;
-  padding: 0.8rem !important;
-  margin-bottom: 0.8rem !important;
-  border-radius: 0 6px 6px 0 !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
-}
-
-.timeline-comment:last-child {
-  margin-bottom: 0 !important;
-}
-
-.comment-timestamp {
-  font-size: 0.85rem !important;
+.timeline-entry-timestamp {
+  font-size: 0.875rem;
   color: #6c757d;
   font-weight: 500;
-  margin-bottom: 0.4rem !important;
 }
 
-.comment-content {
-  white-space: pre-wrap !important;
-  line-height: 1.5 !important;
+.timeline-entry-user {
+  font-weight: 600;
   color: #495057;
-  font-size: 0.9rem !important;
+  margin-bottom: 0.25rem;
 }
 
-/* === Statistiques améliorées === */
+.timeline-entry-action {
+  font-size: 0.875rem;
+  color: #007bff;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.timeline-entry-details {
+  color: #495057;
+  line-height: 1.6;
+  margin-bottom: 0.5rem;
+}
+
+.timeline-entry-status {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* === Status Colors === */
+.status-backlog { background: #f8f9fa; color: #6c757d; }
+.status-a-faire { background: #cce5ff; color: #0066cc; }
+.status-en-cours { background: #ffe6cc; color: #cc6600; }
+.status-en-attente { background: #fff2cc; color: #b3a000; }
+.status-bloque { background: #ffcccc; color: #cc0000; }
+.status-validation { background: #e6ccff; color: #6600cc; }
+.status-termine { background: #ccffcc; color: #00cc00; }
+
+/* === Statistiques === */
 .history-stats {
-  background: linear-gradient(135deg, #f8f9fa, #e9ecef) !important;
-  border-radius: 12px !important;
-  padding: 1.5rem !important;
-  margin-bottom: 2rem !important;
-  border: 1px solid #dee2e6 !important;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .stat-item {
   text-align: center;
-  padding: 1rem !important;
+  padding: 1rem;
+  border-radius: 6px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
 }
 
 .stat-value {
@@ -367,23 +344,127 @@
 .strategy-detail {
   padding: 0.5rem;
   background: #ffffff;
-  border-radius: 4px;
-  border: 1px solid #e9ecef;
-  margin-top: 0.25rem;
-  min-height: 2rem;
-  font-style: italic;
+  border-left: 3px solid #007bff;
+  margin-bottom: 0.5rem;
+  border-radius: 0 4px 4px 0;
+}
+
+.strategy-detail strong {
   color: #495057;
 }
 
-.strategy-detail:empty::before {
-  content: "Non défini";
-  color: #6c757d;
-  font-style: italic;
+/* === Widget d'édition de commentaire === */
+.comment-edit-widget {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1060; /* Au-dessus de la modal d'historique */
 }
 
-#popup-strategie {
-  background-image: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIGZpbGw9IiMwMDdiZmYiIHZpZXdCb3g9IjAgMCAxNiAxNiI+PHBhdGggZD0iTTggMEE4IDggMCAxIDAgOCAxNkE4IDggMCAwIDAgOCAwem0wIDFhNyA3IDAgMSAxIDAgMTRBNyA3IDAgMCAxIDggMXoiLz48L3N2Zz4=");
-  background-repeat: no-repeat;
-  background-position: calc(100% - 2rem) center;
-  background-size: 1rem;
+.comment-edit-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+
+.comment-edit-box {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow: hidden;
+  animation: comment-edit-slide-in 0.2s ease-out;
+}
+
+@keyframes comment-edit-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.comment-edit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #dee2e6;
+  background: #f8f9fa;
+}
+
+.comment-edit-header h6 {
+  margin: 0;
+  font-weight: 600;
+  color: #495057;
+  flex: 1;
+}
+
+.comment-edit-body {
+  padding: 1.25rem;
+}
+
+.comment-edit-info {
+  margin-top: 0.75rem;
+}
+
+.comment-edit-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid #dee2e6;
+  background: #f8f9fa;
+}
+
+.btn-close-sm {
+  font-size: 0.875rem;
+  padding: 0.25rem;
+}
+
+/* Animation pour les boutons d'édition dans la timeline */
+.timeline-entry-comment .btn-edit-comment {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.timeline-entry:hover .btn-edit-comment {
+  opacity: 1;
+}
+
+.btn-edit-comment {
+  font-size: 0.75rem;
+  padding: 0.125rem 0.375rem;
+  margin-left: 0.5rem;
+  border-radius: 4px;
+}
+
+/* Styles pour les commentaires modifiés */
+.timeline-entry.comment-edited {
+  border-left-color: #ffc107;
+  background: #fffbf0;
+}
+
+.badge-edited {
+  font-size: 0.65rem;
+}
+
+/* Loading state pour le bouton de sauvegarde */
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
 }

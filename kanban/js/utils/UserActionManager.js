@@ -189,14 +189,20 @@ export class UserActionManager {
   async updateTaskAction(taskId, oldData, newData, details = 'Task updated') {
     const changes = this.extractChanges(oldData, newData);
     
-    await this.addHistoryEntry(
-      taskId,
-      'update',
-      details,
-      changes.oldValue,
-      changes.newValue,
-      newData.statut || oldData?.statut
-    );
+    // N'ajouter à l'historique QUE s'il y a des changements réels
+    if (changes.hasChanges) {
+      console.log('UserActionManager: Changements détectés, ajout à l\'historique:', changes.oldValue);
+      await this.addHistoryEntry(
+        taskId,
+        'update',
+        details,
+        changes.oldValue,
+        changes.newValue,
+        newData.statut || oldData?.statut
+      );
+    } else {
+      console.log('UserActionManager: Aucun changement détecté, pas d\'ajout à l\'historique');
+    }
   }
 
   /**
@@ -238,21 +244,36 @@ export class UserActionManager {
    * Extrait les changements significatifs entre deux objets
    * @param {Object} oldData - Anciennes données
    * @param {Object} newData - Nouvelles données
-   * @returns {Object} - {oldValue, newValue}
+   * @returns {Object} - {hasChanges, oldValue, newValue}
    */
   extractChanges(oldData, newData) {
-    const relevantFields = ['statut', 'titre', 'description', 'bureau', 'qui', 'urgence', 'impact', 'notes'];
+    const relevantFields = ['statut', 'titre', 'description', 'bureau', 'qui', 'urgence', 'impact', 'projet'];
     const changes = [];
 
     for (const field of relevantFields) {
-      if (oldData && newData && oldData[field] !== newData[field]) {
-        changes.push(`${field}: ${oldData[field]} → ${newData[field]}`);
+      const oldValue = oldData?.[field];
+      const newValue = newData?.[field];
+      
+      // Comparaison approfondie pour les tableaux (bureau, qui)
+      if (Array.isArray(oldValue) && Array.isArray(newValue)) {
+        // Comparer les tableaux en tant que chaînes triées pour éviter les faux positifs
+        const oldStr = oldValue.slice().sort().join(',');
+        const newStr = newValue.slice().sort().join(',');
+        if (oldStr !== newStr) {
+          changes.push(`${field}: [${oldValue.join(', ')}] → [${newValue.join(', ')}]`);
+        }
+      } else {
+        // Comparaison normale pour les autres types
+        if (oldValue !== newValue) {
+          changes.push(`${field}: "${oldValue}" → "${newValue}"`);
+        }
       }
     }
 
     return {
+      hasChanges: changes.length > 0,
       oldValue: changes.length > 0 ? changes.join(', ') : 'No changes detected',
-      newValue: 'Updated'
+      newValue: changes.length > 0 ? 'Updated' : 'No changes'
     };
   }
 
