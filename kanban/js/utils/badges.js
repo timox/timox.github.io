@@ -237,10 +237,31 @@ export function generateAllTaskBadges(task, isCompact = false) {
     }),
     responsables: generateResponsablesBadges(task.qui),
     urgenceImpact: generateUrgenceImpactBadge(task.urgence, task.impact),
-    history: task.historique_statuts ? generateHistoryBadge(
-      JSON.parse(task.historique_statuts)?.historique?.length || 0,
-      task.id
-    ) : ''
+    history: (() => {
+      let count = 0;
+      
+      // Compter les entrées d'historique de statuts
+      if (task.historique_statuts) {
+        try {
+          const historyData = JSON.parse(task.historique_statuts);
+          count += historyData?.historique?.length || 0;
+        } catch (e) {
+          // Ignore les erreurs de parsing
+        }
+      }
+      
+      // Compter les entrées dans les notes JSON
+      if (task.notes) {
+        try {
+          const notesData = JSON.parse(task.notes);
+          count += notesData?.history?.length || 0;
+        } catch (e) {
+          // Ignore les erreurs de parsing
+        }
+      }
+      
+      return count > 0 ? generateHistoryBadge(count, task.id) : '';
+    })()
   };
   
   return badges;

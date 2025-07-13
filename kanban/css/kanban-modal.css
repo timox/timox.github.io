@@ -195,8 +195,8 @@
   position: absolute;
   left: -2.8rem;
   top: 1.5rem;
-  width: calc(100% - 1rem) !important;
-  height: 16px !important;
+  width: 16px;
+  height: 16px;
   background: #007bff;
   border: 3px solid white;
   border-radius: 50%;
