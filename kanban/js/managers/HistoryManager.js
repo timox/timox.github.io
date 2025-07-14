@@ -164,21 +164,28 @@ export class HistoryManager {
                 user: entry.user || 'Utilisateur'
               });
             } else if (entry.action === 'status_change') {
-              // Ajouter aux changements de statut
-              history.push({
-                timestamp: entry.timestamp,
-                statut: entry.status,
-                date_entree: entry.timestamp,
-                note: entry.details,
-                user: entry.user || 'Utilisateur'
-              });
-            } else if (entry.action === 'update') {
+              // Filtrer les changements de statut invalides (même statut)
+              const isValidStatusChange = entry.details && 
+                !entry.details.match(/from (.+) to \1$/); // Regex pour détecter "from X to X"
+              
+              if (isValidStatusChange) {
+                history.push({
+                  timestamp: entry.timestamp,
+                  statut: entry.status,
+                  date_entree: entry.timestamp,
+                  note: entry.details,
+                  user: entry.user || 'Utilisateur'
+                });
+              } else {
+                this.logger?.debug('Changement de statut invalide ignoré:', entry.details);
+              }
+            } else if (entry.action === 'update' || entry.action === 'field_change') {
               // Ajouter aux mises à jour générales
               history.push({
                 timestamp: entry.timestamp,
                 statut: entry.status || task.statut,
                 date_entree: entry.timestamp,
-                note: `Mise à jour: ${entry.details}`,
+                note: entry.action === 'field_change' ? entry.details : `Mise à jour: ${entry.details}`,
                 user: entry.user || 'Utilisateur'
               });
             }
@@ -415,8 +422,19 @@ export class HistoryManager {
    */
   renderStatusChangeEntry(entry, isCurrent = false) {
     const currentClass = isCurrent ? 'current' : '';
-    const statusIcon = this.getStatusIcon(entry.statut);
-    const formattedDate = formatDate(entry.timestamp, {
+    
+    // Déterminer l'icône selon le type d'action
+    let statusIcon;
+    if (entry.note && entry.note.includes('modifié')) {
+      // C'est un changement de champ, pas de statut
+      statusIcon = this.getFieldChangeIcon(entry.note);
+    } else {
+      // C'est un vrai changement de statut
+      statusIcon = this.getStatusIcon(entry.statut);
+    }
+    
+    // Formatage direct sans normalizeDate pour préserver l'heure
+    const formattedDate = new Date(entry.timestamp).toLocaleDateString('fr-FR', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -468,7 +486,8 @@ export class HistoryManager {
    * @returns {string} HTML de l'entrée
    */
   renderCommentEntry(entry) {
-    const formattedDate = formatDate(entry.timestamp, {
+    // Formatage direct sans normalizeDate pour préserver l'heure
+    const formattedDate = new Date(entry.timestamp).toLocaleDateString('fr-FR', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -504,6 +523,26 @@ export class HistoryManager {
         </div>
       </div>
     `;
+  }
+  
+  /**
+   * Retourne l'icône appropriée pour un changement de champ
+   * @param {string} note - Note décrivant le changement
+   * @returns {string} HTML de l'icône
+   */
+  getFieldChangeIcon(note) {
+    if (note.includes('Titre')) return '<i class="bi bi-card-text text-primary"></i>';
+    if (note.includes('Projet')) return '<i class="bi bi-folder text-info"></i>';
+    if (note.includes('Équipe') || note.includes('bureau')) return '<i class="bi bi-people text-success"></i>';
+    if (note.includes('Responsables') || note.includes('qui')) return '<i class="bi bi-person-badge text-warning"></i>';
+    if (note.includes('Urgence')) return '<i class="bi bi-exclamation-triangle text-danger"></i>';
+    if (note.includes('Impact')) return '<i class="bi bi-lightning text-warning"></i>';
+    if (note.includes('stratégique') || note.includes('Objectif')) return '<i class="bi bi-bullseye text-primary"></i>';
+    if (note.includes('Date')) return '<i class="bi bi-calendar-event text-info"></i>';
+    if (note.includes('Description')) return '<i class="bi bi-file-text text-secondary"></i>';
+    
+    // Icône par défaut pour les autres changements
+    return '<i class="bi bi-pencil-square text-muted"></i>';
   }
   
   /**

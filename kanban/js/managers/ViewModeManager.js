@@ -246,20 +246,19 @@ export class ViewModeManager {
     const container = this.kanban.kanbanContainer;
     container.classList.add('kanban-focus');
     
+    this.logger.debug('Application du mode focus...');
+    
     // Créer la navigation focus
     this.createFocusNavigation();
     
     // Si pas de colonne focus définie, choisir la première colonne avec des tâches
     if (!this.focusColumn) {
-      this.focusColumn = this.findFirstColumnWithTasks() || 'Backlog';
+      this.focusColumn = this.findFirstColumnWithTasks() || 'À faire';
+      this.logger.debug(`Colonne focus automatique: ${this.focusColumn}`);
     }
     
     // Pas de refresh ici - sera fait par applyViewMode()
-    
-    // Attendre que le DOM soit mis à jour, puis masquer les colonnes
-    setTimeout(() => {
-      this.showOnlyFocusColumn(this.focusColumn);
-    }, 150);
+    this.logger.debug(`Focus mode configuré pour colonne: ${this.focusColumn}`);
     
     // Ajuster la disposition - une seule colonne centrée
     container.style.gridTemplateColumns = '1fr';
@@ -430,6 +429,13 @@ export class ViewModeManager {
     this.refreshTimeout = setTimeout(() => {
       if (this.kanban.refreshKanban) {
         this.kanban.refreshKanban();
+        
+        // Appliquer le mode focus APRÈS le refresh si nécessaire
+        if (this.currentMode === VIEW_MODES.FOCUS && this.focusColumn) {
+          setTimeout(() => {
+            this.showOnlyFocusColumn(this.focusColumn);
+          }, 100);
+        }
       }
       this.refreshTimeout = null;
     }, 50);
@@ -492,22 +498,42 @@ export class ViewModeManager {
    * @param {string} focusColumnName - Nom de la colonne à afficher
    */
   showOnlyFocusColumn(focusColumnName) {
-    const columns = this.kanban.kanbanContainer.querySelectorAll('.kanban-board');
+    const container = this.kanban.kanbanContainer;
+    if (!container) {
+      this.logger.error('Container kanban introuvable pour le mode focus');
+      return;
+    }
+    
+    const columns = container.querySelectorAll('.kanban-board');
+    this.logger.debug(`Mode focus: recherche colonne "${focusColumnName}" parmi ${columns.length} colonnes`);
+    
+    let foundColumn = false;
     
     columns.forEach(column => {
       const titleElement = column.querySelector('.kanban-board-title');
       const columnName = titleElement ? titleElement.textContent.trim() : '';
       
+      this.logger.debug(`Comparaison: "${columnName}" === "${focusColumnName}" ?`, columnName === focusColumnName);
+      
       if (columnName === focusColumnName) {
-        column.style.display = '';
+        column.style.display = 'block';
         column.style.maxWidth = '600px';
         column.style.margin = '0 auto';
+        foundColumn = true;
+        this.logger.debug(`Colonne "${columnName}" affichée en mode focus`);
       } else {
         column.style.display = 'none';
+        this.logger.debug(`Colonne "${columnName}" masquée`);
       }
     });
     
-    this.logger.debug(`Seule la colonne "${focusColumnName}" est affichée`);
+    if (!foundColumn) {
+      this.logger.warn(`Colonne focus "${focusColumnName}" non trouvée! Affichage de toutes les colonnes.`);
+      // Si la colonne focus n'est pas trouvée, afficher toutes les colonnes
+      columns.forEach(column => {
+        column.style.display = 'block';
+      });
+    }
   }
 
   /**

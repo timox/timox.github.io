@@ -181,7 +181,7 @@ export class UserActionManager {
   }
 
   /**
-   * Enregistre la mise à jour d'une tâche
+   * Enregistre la mise à jour d'une tâche avec détails spécifiques
    * @param {number} taskId - ID de la tâche
    * @param {Object} oldData - Anciennes données
    * @param {Object} newData - Nouvelles données
@@ -193,17 +193,60 @@ export class UserActionManager {
     
     // N'ajouter à l'historique QUE s'il y a des changements réels
     if (changes.hasChanges) {
+      // Générer des détails plus spécifiques selon les changements
+      const specificDetails = this.generateSpecificDetails(changes.detailedChanges);
+      
       this.logger.debug('Changements détectés, ajout historique:', changes.oldValue);
       await this.addHistoryEntry(
         taskId,
-        'update',
-        details,
+        'field_change',
+        specificDetails,
         changes.oldValue,
         changes.newValue,
         newData.statut || oldData?.statut
       );
     } else {
       this.logger.debug('Aucun changement détecté, pas d\'ajout historique');
+    }
+  }
+  
+  /**
+   * Génère des détails spécifiques selon le type de changement
+   * @param {Array} detailedChanges - Liste des changements détaillés
+   * @returns {string} Description spécifique du changement
+   */
+  generateSpecificDetails(detailedChanges) {
+    if (!detailedChanges || detailedChanges.length === 0) {
+      return 'Task updated';
+    }
+    
+    const changeTypeLabels = {
+      'titre': 'Titre modifié',
+      'description': 'Description mise à jour',
+      'projet': 'Projet changé',
+      'bureau': 'Équipe modifiée',
+      'qui': 'Responsables modifiés',
+      'urgence': 'Urgence modifiée',
+      'impact': 'Impact modifié',
+      'strategie_objectif': 'Objectif stratégique modifié',
+      'strategie_sous_objectif': 'Sous-objectif stratégique modifié',
+      'strategie_action': 'Action stratégique modifiée',
+      'date_debut': 'Date de début modifiée',
+      'date_echeance': 'Date d\'échéance modifiée'
+    };
+    
+    const changeDescriptions = detailedChanges.map(change => {
+      const field = change.field;
+      const label = changeTypeLabels[field] || `${field} modifié`;
+      return `${label}: ${change.oldValue} → ${change.newValue}`;
+    });
+    
+    if (changeDescriptions.length === 1) {
+      return changeDescriptions[0];
+    } else if (changeDescriptions.length <= 3) {
+      return changeDescriptions.join('; ');
+    } else {
+      return `Plusieurs champs modifiés: ${changeDescriptions.slice(0, 2).join(', ')} et ${changeDescriptions.length - 2} autres`;
     }
   }
 
@@ -215,6 +258,12 @@ export class UserActionManager {
    * @returns {Promise<void>}
    */
   async statusChangeAction(taskId, oldStatus, newStatus) {
+    // Ne pas enregistrer si le statut n'a pas vraiment changé
+    if (oldStatus === newStatus) {
+      this.logger.debug(`Pas de changement de statut pour tâche ${taskId}: ${oldStatus} -> ${newStatus}`);
+      return;
+    }
+    
     await this.addHistoryEntry(
       taskId,
       'status_change',
@@ -249,8 +298,13 @@ export class UserActionManager {
    * @returns {Object} - {hasChanges, oldValue, newValue}
    */
   extractChanges(oldData, newData) {
-    const relevantFields = ['statut', 'titre', 'description', 'bureau', 'qui', 'urgence', 'impact', 'projet'];
+    const relevantFields = [
+      'statut', 'titre', 'description', 'bureau', 'qui', 'urgence', 'impact', 'projet',
+      'strategie_objectif', 'strategie_sous_objectif', 'strategie_action',
+      'date_debut', 'date_echeance'
+    ];
     const changes = [];
+    const detailedChanges = [];
 
     for (const field of relevantFields) {
       const oldValue = oldData?.[field];
@@ -262,12 +316,26 @@ export class UserActionManager {
         const oldStr = oldValue.slice().sort().join(',');
         const newStr = newValue.slice().sort().join(',');
         if (oldStr !== newStr) {
-          changes.push(`${field}: [${oldValue.join(', ')}] → [${newValue.join(', ')}]`);
+          const oldDisplay = oldValue.join(', ') || 'aucun';
+          const newDisplay = newValue.join(', ') || 'aucun';
+          changes.push(`${field}: [${oldDisplay}] → [${newDisplay}]`);
+          detailedChanges.push({
+            field,
+            oldValue: oldDisplay,
+            newValue: newDisplay
+          });
         }
       } else {
         // Comparaison normale pour les autres types
         if (oldValue !== newValue) {
-          changes.push(`${field}: "${oldValue}" → "${newValue}"`);
+          const oldDisplay = oldValue || 'aucune';
+          const newDisplay = newValue || 'aucune';
+          changes.push(`${field}: "${oldDisplay}" → "${newDisplay}"`);
+          detailedChanges.push({
+            field,
+            oldValue: oldDisplay,
+            newValue: newDisplay
+          });
         }
       }
     }
@@ -275,7 +343,8 @@ export class UserActionManager {
     return {
       hasChanges: changes.length > 0,
       oldValue: changes.length > 0 ? changes.join(', ') : 'No changes detected',
-      newValue: changes.length > 0 ? 'Updated' : 'No changes'
+      newValue: changes.length > 0 ? 'Updated' : 'No changes',
+      detailedChanges
     };
   }
 
