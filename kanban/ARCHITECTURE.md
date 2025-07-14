@@ -25,7 +25,8 @@ js/
 │   └── BoardRenderer.js       # Colonnes et layout
 ├── utils/                     # 🛠️ Utilitaires
 │   ├── UserActionManager.js   # Actions utilisateur & historique JSON
-│   ├── NotesJsonMigrator.js   # Migration notes
+│   ├── NotesJsonMigrator.js   # Migration notes  
+│   ├── LoggerManager.js       # Système de logs avec niveaux
 │   ├── dom.js                 # Manipulation DOM
 │   ├── dates.js               # Gestion dates
 │   └── badges.js              # Génération badges
@@ -165,12 +166,108 @@ if (!this.isNewTask && (!this.currentTaskId || this.currentTaskId === null)) {
 }
 ```
 
-### 3. Gestion de l'Historique JSON
-**Fichier**: `HistoryManager.js:880-954`
+### 3. Gestion de l'Historique JSON - **SYSTÈME COMPLET REVISÉ**
+**Fichiers**: `HistoryManager.js`, `UserActionManager.js`
+
+#### 🆕 **Nouveautés 2025-07-14**: Tracking Complet des Changements
 ```javascript
-// CRITIQUE: Structure JSON des notes
-notesData = { content: "", history: [] };
-// ⚠️ Cette structure est OBLIGATOIRE pour la compatibilité
+// ✅ NOUVEAU: Tracking automatique de tous les champs importants
+const relevantFields = [
+  'statut', 'titre', 'description', 'bureau', 'qui', 'urgence', 'impact', 'projet',
+  'strategie_objectif', 'strategie_sous_objectif', 'strategie_action',
+  'date_debut', 'date_echeance'
+];
+
+// ✅ NOUVEAU: Messages spécifiques selon le type de changement
+"Projet changé: Ancien Projet → Nouveau Projet"
+"Urgence modifiée: Faible → Élevée"  
+"Responsables modifiés: Jean → Jean, Marie"
+
+// ✅ NOUVEAU: Prévention des changements invalides
+if (oldStatus === newStatus) {
+  return; // Ne pas enregistrer "Status changed from À faire to À faire"
+}
+```
+
+#### Structure JSON des notes (OBLIGATOIRE):
+```javascript
+notesData = { 
+  content: "", 
+  history: [
+    {
+      timestamp: "2025-07-14T10:30:00.000Z", // ✅ CORRIGÉ: Vraies heures
+      user: "utilisateur",
+      action: "field_change", // NOUVEAU: Type spécifique
+      details: "Projet changé: Ancien → Nouveau", // NOUVEAU: Message spécifique
+      status: "En cours"
+    }
+  ]
+};
+```
+
+### 4. Modes de Vue - **LOGIQUE REVISÉE**
+**Fichier**: `ViewModeManager.js`
+
+#### 🆕 **Nouveautés 2025-07-14**: Gestion Intelligente des Colonnes
+```javascript
+// ✅ NOUVEAU: Masquage automatique des colonnes vides
+hideEmptyColumns() {
+  // Masque les colonnes sans tâches, sauf si toutes sont vides
+}
+
+// ✅ NOUVEAU: Mode focus intelligent avec fallback
+if (!this.focusColumn) {
+  this.focusColumn = this.findFirstColumnWithTasks() || 'À faire';
+}
+
+// ✅ NOUVEAU: Synchronisation des refreshs
+refreshWithSync() {
+  // Évite les rafraichissements multiples avec timeout de 50ms
+  // Applique le mode focus APRÈS le refresh
+}
+```
+
+#### Logs de Debug Obligatoires:
+```javascript
+// ✅ OBLIGATOIRE: Logs détaillés pour debugging mode focus
+this.logger.debug(`Mode focus: recherche colonne "${focusColumnName}" parmi ${columns.length} colonnes`);
+this.logger.debug(`Comparaison: "${columnName}" === "${focusColumnName}" ?`, columnName === focusColumnName);
+```
+
+---
+
+## 📊 Système de Logs - **NOUVEAU**
+**Fichier**: `LoggerManager.js`
+
+### Niveaux de Log (Ordre d'importance):
+1. **CRITICAL** - Erreurs bloquantes
+2. **ERROR** - Erreurs importantes  
+3. **WARN** - Avertissements
+4. **INFO** - Informations générales
+5. **DEBUG** - Debug détaillé
+
+### Utilisation Obligatoire:
+```javascript
+// ✅ OBLIGATOIRE: Initialiser dans constructor
+import { createModuleLogger } from '../utils/LoggerManager.js';
+this.logger = createModuleLogger('ModuleName');
+
+// ✅ OBLIGATOIRE: Utiliser au lieu de console.log
+this.logger.debug('Data parsed', data.length);
+this.logger.info('Operation completed');
+this.logger.error('Critical error:', error);
+
+// ❌ INTERDIT: console.log direct (non contrôlable)
+console.log('HistoryManager: Data parsed'); // INTERDIT
+```
+
+### Contrôle via Console:
+```javascript
+// Changer le niveau de log globalement
+logger.setLevel('ERROR'); // Ne montrer que ERROR et CRITICAL
+
+// Debug spécifique d'un module
+logger.setModuleLevel('HistoryManager', 'DEBUG');
 ```
 
 ---

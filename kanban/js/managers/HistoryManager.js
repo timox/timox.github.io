@@ -277,13 +277,26 @@ export class HistoryManager {
     comments.forEach(comment => {
       timeline.push({
         type: 'comment',
-        timestamp: comment.timestamp,
+        timestamp: new Date(comment.timestamp), // S'assurer que c'est un objet Date
         ...comment
       });
     });
     
-    // Trier par timestamp (plus récent en premier)
-    return timeline.sort((a, b) => b.timestamp - a.timestamp);
+    // Trier par timestamp chronologique (plus récent en premier)
+    // En cas d'égalité, donner priorité aux commentaires
+    return timeline.sort((a, b) => {
+      const timeA = a.timestamp.getTime();
+      const timeB = b.timestamp.getTime();
+      
+      if (timeA === timeB) {
+        // En cas d'égalité, commentaires en premier
+        if (a.type === 'comment' && b.type !== 'comment') return -1;
+        if (b.type === 'comment' && a.type !== 'comment') return 1;
+        return 0;
+      }
+      
+      return timeB - timeA; // Plus récent en premier
+    });
   }
   
   /**

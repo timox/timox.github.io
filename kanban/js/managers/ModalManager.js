@@ -536,15 +536,27 @@ export class ModalManager {
               descriptionContent,
               gristData.statut || this.currentTask?.statut
             );
+            
+            // Créer une copie des données SANS la description pour éviter les doublons
+            const dataWithoutComment = { ...gristData };
+            delete dataWithoutComment.description;
+            
+            // Enregistrer les autres changements sans le commentaire
+            await userActionManager.updateTaskAction(
+              this.currentTaskId, 
+              this.currentTask, 
+              dataWithoutComment, 
+              'Task updated via modal'
+            );
+          } else {
+            // Pas de commentaire, enregistrer normalement les changements
+            await userActionManager.updateTaskAction(
+              this.currentTaskId, 
+              this.currentTask, 
+              gristData, 
+              'Task updated via modal'
+            );
           }
-          
-          // Ensuite, enregistrer les autres changements
-          await userActionManager.updateTaskAction(
-            this.currentTaskId, 
-            this.currentTask, 
-            gristData, 
-            'Task updated via modal'
-          );
         }
         
         displaySuccess('Tâche mise à jour avec succès');
