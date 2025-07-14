@@ -186,7 +186,9 @@ export class ViewModeManager {
     // Rafraîchir le kanban avec le nouveau mode
     if (this.kanban.refreshKanban) {
       this.kanban.viewMode = mode;
-      this.kanban.refreshKanban();
+      
+      // Rafraichissement synchronisé
+      this.refreshWithSync();
     }
   }
   
@@ -205,10 +207,12 @@ export class ViewModeManager {
     container.style.gap = '';
     container.style.height = '';
     
-    // Afficher toutes les colonnes
-    this.showAllColumns();
+    // Masquer les colonnes vides
+    setTimeout(() => {
+      this.hideEmptyColumns();
+    }, 100);
     
-    this.logger.info('Mode compact appliqué - toutes colonnes visibles, disposition compacte');
+    this.logger.info('Mode compact appliqué - colonnes vides masquées');
   }
   
   /**
@@ -226,10 +230,12 @@ export class ViewModeManager {
     container.style.gap = '';
     container.style.height = '';
     
-    // Afficher toutes les colonnes
-    this.showAllColumns();
+    // Masquer les colonnes vides
+    setTimeout(() => {
+      this.hideEmptyColumns();
+    }, 100);
     
-    this.logger.info('Mode détaillé appliqué - toutes colonnes visibles, disposition élargie');
+    this.logger.info('Mode détaillé appliqué - colonnes vides masquées');
   }
   
   /**
@@ -243,26 +249,17 @@ export class ViewModeManager {
     // Créer la navigation focus
     this.createFocusNavigation();
     
-    // Si pas de colonne focus définie, choisir la première colonne disponible
+    // Si pas de colonne focus définie, choisir la première colonne avec des tâches
     if (!this.focusColumn) {
-      const firstColumn = container.querySelector('.kanban-board');
-      if (firstColumn) {
-        const titleElement = firstColumn.querySelector('.kanban-board-title');
-        this.focusColumn = titleElement ? titleElement.textContent.trim() : 'Backlog';
-      } else {
-        this.focusColumn = 'Backlog';
-      }
+      this.focusColumn = this.findFirstColumnWithTasks() || 'Backlog';
     }
     
-    // CRITIQUE: Forcer un refresh du kanban pour appliquer les filtres correctly
-    if (this.kanban.refreshKanban) {
-      this.kanban.refreshKanban();
-    }
+    // Pas de refresh ici - sera fait par applyViewMode()
     
     // Attendre que le DOM soit mis à jour, puis masquer les colonnes
     setTimeout(() => {
       this.showOnlyFocusColumn(this.focusColumn);
-    }, 100);
+    }, 150);
     
     // Ajuster la disposition - une seule colonne centrée
     container.style.gridTemplateColumns = '1fr';
@@ -365,6 +362,77 @@ export class ViewModeManager {
     if (!this.kanban.currentRecords) return 0;
     
     return this.kanban.currentRecords.filter(record => record.statut === status).length;
+  }
+  
+  /**
+   * Trouve la première colonne qui a des tâches
+   * @returns {string|null} Nom de la première colonne avec des tâches
+   */
+  findFirstColumnWithTasks() {
+    if (!this.kanban.currentRecords) return null;
+    
+    const statusOrder = ['Backlog', 'À faire', 'En cours', 'Bloqué', 'En test', 'Terminé'];
+    
+    for (const status of statusOrder) {
+      if (this.getTaskCountForStatus(status) > 0) {
+        return status;
+      }
+    }
+    
+    return null;
+  }
+  
+  /**
+   * Masque toutes les colonnes vides (sauf si toutes sont vides)
+   */
+  hideEmptyColumns() {
+    const container = this.kanban.kanbanContainer;
+    if (!container) return;
+    
+    const columns = container.querySelectorAll('.kanban-board');
+    let visibleCount = 0;
+    let totalCount = 0;
+    
+    columns.forEach(column => {
+      const titleElement = column.querySelector('.kanban-board-title');
+      const columnName = titleElement ? titleElement.textContent.trim() : '';
+      const taskCount = this.getTaskCountForStatus(columnName);
+      
+      totalCount++;
+      
+      if (taskCount > 0) {
+        column.style.display = '';
+        visibleCount++;
+      } else {
+        column.style.display = 'none';
+      }
+    });
+    
+    // Si toutes les colonnes sont vides, afficher toutes les colonnes
+    if (visibleCount === 0 && totalCount > 0) {
+      columns.forEach(column => {
+        column.style.display = '';
+      });
+    }
+    
+    this.logger.debug(`Colonnes visibles: ${visibleCount}/${totalCount}`);
+  }
+  
+  /**
+   * Rafraichit le kanban de manière synchronisée
+   */
+  refreshWithSync() {
+    // Éviter les rafraichissements multiples rapprochés
+    if (this.refreshTimeout) {
+      clearTimeout(this.refreshTimeout);
+    }
+    
+    this.refreshTimeout = setTimeout(() => {
+      if (this.kanban.refreshKanban) {
+        this.kanban.refreshKanban();
+      }
+      this.refreshTimeout = null;
+    }, 50);
   }
   
   /**
