@@ -152,14 +152,27 @@ export class NotesJsonMigrator {
       };
     }
 
-    // Ajouter l'entrée d'historique
-    notesData.history.push({
+    // Créer l'entrée d'historique
+    const newHistoryEntry = {
       timestamp: new Date().toISOString(),
       user: historyEntry.user || 'System',
       action: historyEntry.action || 'update',
       details: historyEntry.details || '',
       status: historyEntry.status || record.statut
-    });
+    };
+    
+    // Ajouter les champs spécifiques si présents
+    if (historyEntry.oldValue) newHistoryEntry.oldValue = historyEntry.oldValue;
+    if (historyEntry.newValue) newHistoryEntry.newValue = historyEntry.newValue;
+    
+    // Ajouter l'entrée d'historique
+    notesData.history.push(newHistoryEntry);
+    
+    // ✅ NOUVEAU: Synchroniser content avec le dernier commentaire
+    if (historyEntry.action === 'comment' && historyEntry.newValue) {
+      notesData.content = historyEntry.newValue;
+      console.log(`NotesJsonMigrator: Synchronizing content with latest comment for record ${record.id}`);
+    }
 
     // Limiter l'historique à 50 entrées pour éviter que les notes deviennent trop volumineuses
     if (notesData.history.length > 50) {
@@ -214,6 +227,60 @@ export class NotesJsonMigrator {
     }
     
     return record.notes;
+  }
+  
+  /**
+   * Synchronise le content avec le dernier commentaire pour tous les enregistrements
+   * @param {Array} records - Liste des enregistrements
+   * @returns {Promise<number>} - Nombre d'enregistrements synchronisés
+   */
+  async synchronizeAllContent(records) {
+    console.log('NotesJsonMigrator: Démarrage synchronisation content...');
+    
+    if (!Array.isArray(records)) {
+      console.error('NotesJsonMigrator: Records is not an array:', typeof records);
+      return 0;
+    }
+    
+    let synchronized = 0;
+    
+    for (const record of records) {
+      if (record.notes && this.isJsonFormat(record.notes)) {
+        try {
+          const notesData = JSON.parse(record.notes);
+          
+          // Trouver le dernier commentaire
+          if (notesData.history && Array.isArray(notesData.history)) {
+            const comments = notesData.history
+              .filter(entry => entry.action === 'comment')
+              .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            if (comments.length > 0) {
+              const latestComment = comments[0].newValue || '';
+              
+              // Synchroniser seulement si différent
+              if (notesData.content !== latestComment) {
+                notesData.content = latestComment;
+                
+                await this.grist.docApi.applyUserActions([
+                  ['UpdateRecord', TABLE_ID, record.id, { 
+                    notes: JSON.stringify(notesData, null, 2) 
+                  }]
+                ]);
+                
+                synchronized++;
+                console.log(`NotesJsonMigrator: Synchronisé record ${record.id}`);
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`NotesJsonMigrator: Erreur synchronisation record ${record.id}:`, error);
+        }
+      }
+    }
+    
+    console.log(`NotesJsonMigrator: Synchronisation terminée. ${synchronized} enregistrements synchronisés.`);
+    return synchronized;
   }
 }
 

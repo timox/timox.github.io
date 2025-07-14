@@ -495,8 +495,49 @@ window.kanbanManager.getApplicationState(); // Vérifier l'init
 
 ---
 
-*Dernière mise à jour: 2025-01-13 - 19:30*
-*Version: 1.2 - Système de Logs + Corrections Critiques*
+## 🔄 **Migration et Nettoyage des Données**
+
+### ⚠️ **IMPORTANT: Problème de Synchronisation notes.content**
+
+**Problème identifié :**
+- `notes.content` n'est PAS synchronisé avec les nouveaux commentaires
+- Seul `notes.history` est mis à jour avec les commentaires récents
+- Cause des résumés de descriptions vides/obsolètes
+
+**Actions requises (dans l'ordre) :**
+1. ✅ **Corriger la synchronisation** : Mettre à jour `notes.content` avec le dernier commentaire
+2. ⏳ **Vérifier migration complète** : S'assurer que toutes les données `description` sont migrées
+3. ⏳ **Supprimer colonne description** : Une fois migration 100% terminée
+
+**Structure JSON optimale :**
+```javascript
+{
+  "content": "Dernier commentaire actuel",  // ← Toujours synchronisé
+  "history": [                              // ← Historique complet
+    { "action": "comment", "newValue": "Dernier commentaire actuel", ... },
+    { "action": "comment", "newValue": "Commentaire précédent", ... }
+  ]
+}
+```
+
+### 🎯 **Plan de Migration**
+
+**Phase 1 : Correction Système**
+- Modifier `UserActionManager.addHistoryEntry()` pour synchroniser `content`
+- Mettre à jour `NotesJsonMigrator.addHistoryEntry()` pour synchroniser `content`
+
+**Phase 2 : Validation**
+- Vérifier que tous les enregistrements `description` sont migrés vers `notes`
+- Tester que `notes.content` est toujours synchronisé
+
+**Phase 3 : Nettoyage**
+- Supprimer la colonne `description` de la table Grist
+- Nettoyer les références `record.description` dans le code
+
+---
+
+*Dernière mise à jour: 2025-07-14 - Notes Migration*
+*Version: 1.3 - Système de Logs + Migration Notes*
 
 ---
 

@@ -420,6 +420,25 @@ export class UserActionManager {
     this.logger.debug('Résultat migration:', result);
     return result;
   }
+  
+  /**
+   * Synchronise le content avec le dernier commentaire pour toutes les tâches
+   * @param {Array} records - Liste des enregistrements
+   * @returns {Promise<number>}
+   */
+  async synchronizeAllContent(records) {
+    this.logger.debug(`Synchronisation content demandée pour ${records?.length} enregistrements`);
+    const migrator = getNotesJsonMigrator();
+    if (!migrator) {
+      console.error('UserActionManager: NotesJsonMigrator not initialized');
+      return 0;
+    }
+
+    this.logger.debug('Lancement synchronisation via migrator...');
+    const result = await migrator.synchronizeAllContent(records);
+    this.logger.debug('Résultat synchronisation:', result);
+    return result;
+  }
 }
 
 // Instance singleton

@@ -212,41 +212,30 @@ export class CardRenderer {
   generateDescriptionResume(record) {
     let latestDesc = '';
     
-    // Essayer d'abord le nouveau système JSON (notes)
+    // Strategy 1: Utiliser notes.content (maintenant synchronisé avec le dernier commentaire)
     if (record.notes) {
       try {
         const notesData = JSON.parse(record.notes);
-        
-        // Chercher le dernier commentaire dans l'historique
-        if (notesData && notesData.history && Array.isArray(notesData.history)) {
-          const comments = notesData.history
-            .filter(entry => entry.action === 'comment')
-            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-          
-          if (comments.length > 0) {
-            latestDesc = comments[0].newValue || comments[0].details || '';
-          }
-        }
-        
-        // Si pas de commentaires dans l'historique, utiliser le contenu
-        if (!latestDesc && notesData.content) {
+        if (notesData && notesData.content) {
           latestDesc = notesData.content;
         }
       } catch (error) {
-        // Ignorer les erreurs JSON
+        // Erreur JSON, continuer avec l'ancien système
       }
     }
     
-    // Fallback vers l'ancien système si pas de contenu JSON
+    // Strategy 2: Fallback vers l'ancien système (description)
     if (!latestDesc && record.description) {
       latestDesc = this.kanban.getLatestDescription 
         ? this.kanban.getLatestDescription(record.description)
         : record.description;
     }
     
-    if (!latestDesc || !latestDesc.trim()) return '';
+    if (!latestDesc || !latestDesc.trim()) {
+      return '';
+    }
     
-    // Tronquer à 80 caractères pour le résumé
+    // Tronquer à 12 mots pour le résumé
     const mots = latestDesc.split(/\s+/).slice(0, 12);
     const resume = mots.join(' ');
     const isTruncated = latestDesc.split(/\s+/).length > 12;
