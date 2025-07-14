@@ -254,6 +254,29 @@ export class HistoryManager {
   }
   
   /**
+   * Convertit un timestamp en objet Date valide
+   * @param {*} timestamp - Timestamp à convertir
+   * @returns {Date} Objet Date valide
+   */
+  normalizeTimestamp(timestamp) {
+    if (!timestamp) return new Date();
+    
+    // Déjà un objet Date
+    if (timestamp instanceof Date) {
+      return isNaN(timestamp.getTime()) ? new Date() : timestamp;
+    }
+    
+    // String ou nombre
+    if (typeof timestamp === 'string' || typeof timestamp === 'number') {
+      const date = new Date(timestamp);
+      return isNaN(date.getTime()) ? new Date() : date;
+    }
+    
+    // Fallback
+    return new Date();
+  }
+  
+  /**
    * Fusionne l'historique des statuts et les commentaires
    * @param {Array} history - Historique des statuts
    * @param {Array} comments - Commentaires
@@ -267,7 +290,7 @@ export class HistoryManager {
       if (entry.timestamp) {
         timeline.push({
           type: 'status_change',
-          timestamp: new Date(entry.timestamp),
+          timestamp: this.normalizeTimestamp(entry.timestamp),
           ...entry
         });
       }
@@ -277,7 +300,7 @@ export class HistoryManager {
     comments.forEach(comment => {
       timeline.push({
         type: 'comment',
-        timestamp: new Date(comment.timestamp), // S'assurer que c'est un objet Date
+        timestamp: this.normalizeTimestamp(comment.timestamp),
         ...comment
       });
     });
