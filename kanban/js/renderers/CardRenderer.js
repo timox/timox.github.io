@@ -216,7 +216,20 @@ export class CardRenderer {
     if (record.notes) {
       try {
         const notesData = JSON.parse(record.notes);
-        if (notesData && notesData.content) {
+        
+        // Chercher le dernier commentaire dans l'historique
+        if (notesData && notesData.history && Array.isArray(notesData.history)) {
+          const comments = notesData.history
+            .filter(entry => entry.action === 'comment')
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+          
+          if (comments.length > 0) {
+            latestDesc = comments[0].newValue || comments[0].details || '';
+          }
+        }
+        
+        // Si pas de commentaires dans l'historique, utiliser le contenu
+        if (!latestDesc && notesData.content) {
           latestDesc = notesData.content;
         }
       } catch (error) {
