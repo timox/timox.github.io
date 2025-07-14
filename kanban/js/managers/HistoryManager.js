@@ -539,7 +539,10 @@ export class HistoryManager {
     const latestBadge = entry.isLatest ? '<span class="badge bg-primary ms-2">Dernier</span>' : '';
     
     // Générer un ID unique pour le commentaire basé sur le timestamp
-    const commentId = `comment-${entry.timestamp.replace(/[^\d]/g, '')}`;
+    const timestampString = entry.timestamp instanceof Date ? 
+      entry.timestamp.toISOString() : 
+      String(entry.timestamp);
+    const commentId = `comment-${timestampString.replace(/[^\d]/g, '')}`;
     console.log('HistoryManager: Rendu commentaire avec bouton édition:', commentId);
     
     return `
