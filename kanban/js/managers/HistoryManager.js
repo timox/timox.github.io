@@ -344,14 +344,21 @@ export class HistoryManager {
     };
     
     if (history.length > 0) {
-      // Date de création (premier statut)
-      const firstEntry = history[history.length - 1];
+      // Trier l'historique par timestamp pour avoir le bon ordre chronologique
+      const sortedHistory = [...history].sort((a, b) => {
+        const timeA = new Date(a.timestamp).getTime();
+        const timeB = new Date(b.timestamp).getTime();
+        return timeA - timeB; // Plus ancien en premier
+      });
+      
+      // Date de création (premier statut chronologique)
+      const firstEntry = sortedHistory[0];
       if (firstEntry.timestamp) {
         stats.creationDate = new Date(firstEntry.timestamp);
       }
       
-      // Dernière modification (dernier statut)
-      const lastEntry = history[0];
+      // Dernière modification (dernier statut chronologique)
+      const lastEntry = sortedHistory[sortedHistory.length - 1];
       if (lastEntry.timestamp) {
         stats.lastModified = new Date(lastEntry.timestamp);
       }

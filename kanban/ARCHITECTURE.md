@@ -170,26 +170,59 @@ if (!this.isNewTask && (!this.currentTaskId || this.currentTaskId === null)) {
 **Fichiers**: `HistoryManager.js`, `UserActionManager.js`
 
 #### 🆕 **Nouveautés 2025-07-14**: Tracking Complet des Changements
-```javascript
-// ✅ NOUVEAU: Tracking automatique de tous les champs importants
-const relevantFields = [
-  'statut', 'titre', 'description', 'bureau', 'qui', 'urgence', 'impact', 'projet',
-  'strategie_objectif', 'strategie_sous_objectif', 'strategie_action',
-  'date_debut', 'date_echeance'
-];
 
+##### 📋 **Champs Automatiquement Trackés** (UserActionManager.js:301-305)
+```javascript
+// ✅ OBLIGATOIRE: Ces 13 champs déclenchent des entrées d'historique
+const relevantFields = [
+  'statut',                    // Statut de la tâche
+  'titre',                     // Titre de la tâche
+  'description',               // Description/commentaires
+  'bureau',                    // Équipe/Bureau (tableau)
+  'qui',                       // Responsables (tableau)
+  'urgence',                   // Niveau d'urgence
+  'impact',                    // Niveau d'impact
+  'projet',                    // Projet associé
+  'strategie_objectif',        // Objectif stratégique
+  'strategie_sous_objectif',   // Sous-objectif stratégique
+  'strategie_action',          // Action stratégique
+  'date_debut',                // Date de début
+  'date_echeance'              // Date d'échéance
+];
+```
+
+##### 🔍 **Logique de Détection des Changements**
+```javascript
+// ✅ TABLEAUX (bureau, qui): Comparaison triée pour éviter faux positifs
+const oldStr = oldValue.slice().sort().join(',');
+const newStr = newValue.slice().sort().join(',');
+if (oldStr !== newStr) { /* changement détecté */ }
+
+// ✅ AUTRES CHAMPS: Comparaison directe
+if (oldValue !== newValue) { /* changement détecté */ }
+
+// ✅ AFFICHAGE: Valeurs vides → "aucune" ou "aucun"
+const display = value || 'aucune';
+```
+
+##### 💬 **Messages Générés Automatiquement**
+```javascript
 // ✅ NOUVEAU: Messages spécifiques selon le type de changement
 "Projet changé: Ancien Projet → Nouveau Projet"
 "Urgence modifiée: Faible → Élevée"  
 "Responsables modifiés: Jean → Jean, Marie"
+"Équipe modifiée: [Dev] → [Dev, Test]"
+"Date d'échéance modifiée: 2025-01-15 → 2025-01-20"
 
-// ✅ NOUVEAU: Prévention des changements invalides
+// ✅ PRÉVENTION: Changements invalides ignorés
 if (oldStatus === newStatus) {
   return; // Ne pas enregistrer "Status changed from À faire to À faire"
 }
 ```
 
-#### Structure JSON des notes (OBLIGATOIRE):
+**⚠️ IMPORTANT**: Seuls ces 13 champs génèrent des entrées d'historique. Les autres champs (comme `id`, `date_creation`, etc.) sont ignorés.
+
+##### 📝 **Structure JSON des Notes** (OBLIGATOIRE):
 ```javascript
 notesData = { 
   content: "", 

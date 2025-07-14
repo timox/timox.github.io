@@ -111,7 +111,7 @@ export class CardRenderer {
     }, false);
     
     // Résumé de description
-    const resumeDesc = this.generateDescriptionResume(record.description);
+    const resumeDesc = this.generateDescriptionResume(record);
     
     // Container des dates
     const datesElement = generateDatesContainer({
@@ -206,18 +206,32 @@ export class CardRenderer {
   
   /**
    * Génère le résumé de description
-   * @param {string} description - Description complète
+   * @param {object} record - Données de la tâche
    * @returns {string} HTML du résumé
    */
-  generateDescriptionResume(description) {
-    if (!description) return '';
+  generateDescriptionResume(record) {
+    let latestDesc = '';
     
-    // Extraire la dernière description si elle est horodatée
-    const latestDesc = this.kanban.getLatestDescription 
-      ? this.kanban.getLatestDescription(description)
-      : description;
+    // Essayer d'abord le nouveau système JSON (notes)
+    if (record.notes) {
+      try {
+        const notesData = JSON.parse(record.notes);
+        if (notesData && notesData.content) {
+          latestDesc = notesData.content;
+        }
+      } catch (error) {
+        // Ignorer les erreurs JSON
+      }
+    }
     
-    if (!latestDesc.trim()) return '';
+    // Fallback vers l'ancien système si pas de contenu JSON
+    if (!latestDesc && record.description) {
+      latestDesc = this.kanban.getLatestDescription 
+        ? this.kanban.getLatestDescription(record.description)
+        : record.description;
+    }
+    
+    if (!latestDesc || !latestDesc.trim()) return '';
     
     // Tronquer à 80 caractères pour le résumé
     const mots = latestDesc.split(/\s+/).slice(0, 12);
