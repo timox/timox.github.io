@@ -159,7 +159,7 @@ export class HistoryManager {
             if (entry.action === 'comment') {
               // Ajouter aux commentaires
               comments.push({
-                timestamp: entry.timestamp,
+                timestamp: this.normalizeTimestamp(entry.timestamp),
                 content: entry.newValue || entry.details,
                 user: entry.user || 'Utilisateur'
               });
@@ -169,10 +169,11 @@ export class HistoryManager {
                 !entry.details.match(/from (.+) to \1$/); // Regex pour détecter "from X to X"
               
               if (isValidStatusChange) {
+                const normalizedTimestamp = this.normalizeTimestamp(entry.timestamp);
                 history.push({
-                  timestamp: entry.timestamp,
+                  timestamp: normalizedTimestamp,
                   statut: entry.status,
-                  date_entree: entry.timestamp,
+                  date_entree: normalizedTimestamp,
                   note: entry.details,
                   user: entry.user || 'Utilisateur'
                 });
@@ -181,10 +182,11 @@ export class HistoryManager {
               }
             } else if (entry.action === 'update' || entry.action === 'field_change') {
               // Ajouter aux mises à jour générales
+              const normalizedTimestamp = this.normalizeTimestamp(entry.timestamp);
               history.push({
-                timestamp: entry.timestamp,
+                timestamp: normalizedTimestamp,
                 statut: entry.status || task.statut,
-                date_entree: entry.timestamp,
+                date_entree: normalizedTimestamp,
                 note: entry.action === 'field_change' ? entry.details : `Mise à jour: ${entry.details}`,
                 user: entry.user || 'Utilisateur'
               });
@@ -240,7 +242,7 @@ export class HistoryManager {
           const timestamp = parseTimestamp(firstLine);
           
           comments.push({
-            timestamp: timestamp || new Date(),
+            timestamp: this.normalizeTimestamp(timestamp),
             timestampStr,
             user: userStr,
             content,
@@ -290,7 +292,7 @@ export class HistoryManager {
       if (entry.timestamp) {
         timeline.push({
           type: 'status_change',
-          timestamp: this.normalizeTimestamp(entry.timestamp),
+          timestamp: entry.timestamp, // Déjà normalisé dans parseTaskHistory
           ...entry
         });
       }
@@ -300,7 +302,7 @@ export class HistoryManager {
     comments.forEach(comment => {
       timeline.push({
         type: 'comment',
-        timestamp: this.normalizeTimestamp(comment.timestamp),
+        timestamp: comment.timestamp, // Déjà normalisé dans parseTaskHistory
         ...comment
       });
     });
@@ -308,8 +310,9 @@ export class HistoryManager {
     // Trier par timestamp chronologique (plus récent en premier)
     // En cas d'égalité, donner priorité aux commentaires
     return timeline.sort((a, b) => {
-      const timeA = a.timestamp.getTime();
-      const timeB = b.timestamp.getTime();
+      // Sécurité supplémentaire : vérifier que timestamp est bien un objet Date
+      const timeA = (a.timestamp instanceof Date) ? a.timestamp.getTime() : new Date(a.timestamp).getTime();
+      const timeB = (b.timestamp instanceof Date) ? b.timestamp.getTime() : new Date(b.timestamp).getTime();
       
       if (timeA === timeB) {
         // En cas d'égalité, commentaires en premier
