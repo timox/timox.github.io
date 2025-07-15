@@ -173,9 +173,9 @@ export class UserActionManager {
     await this.addHistoryEntry(
       taskId,
       'create',
-      `Task created: ${taskData.titre || 'New task'}`,
+      `Tâche créée: ${taskData.titre || 'Nouvelle tâche'}`,
       '',
-      'Task created',
+      `Tâche créée: ${taskData.titre || 'Nouvelle tâche'}`,
       taskData.statut || 'À faire'
     );
   }
@@ -196,15 +196,20 @@ export class UserActionManager {
       // Générer des détails plus spécifiques selon les changements
       const specificDetails = this.generateSpecificDetails(changes.detailedChanges);
       
-      this.logger.debug('Changements détectés, ajout historique:', changes.oldValue);
-      await this.addHistoryEntry(
-        taskId,
-        'field_change',
-        specificDetails,
-        changes.oldValue,
-        changes.newValue,
-        newData.statut || oldData?.statut
-      );
+      // Ne créer l'entrée d'historique que si il y a des détails réels
+      if (specificDetails) {
+        this.logger.debug('Changements détectés, ajout historique:', changes.oldValue);
+        await this.addHistoryEntry(
+          taskId,
+          'field_change',
+          specificDetails,
+          changes.oldValue,
+          changes.newValue,
+          newData.statut || oldData?.statut
+        );
+      } else {
+        this.logger.debug('Changements détectés mais pas significatifs, pas d\'ajout historique');
+      }
     } else {
       this.logger.debug('Aucun changement détecté, pas d\'ajout historique');
     }
@@ -238,8 +243,30 @@ export class UserActionManager {
     const changeDescriptions = detailedChanges.map(change => {
       const field = change.field;
       const label = changeTypeLabels[field] || `${field} modifié`;
-      return `${label}: ${change.oldValue} → ${change.newValue}`;
-    });
+      
+      // Formatter les valeurs pour éviter "aucune → aucune"
+      const formatValue = (value) => {
+        if (value === null || value === undefined || value === '') {
+          return 'aucune';
+        }
+        return value;
+      };
+      
+      const oldVal = formatValue(change.oldValue);
+      const newVal = formatValue(change.newValue);
+      
+      // Ignorer les changements où les valeurs sont identiques
+      if (oldVal === newVal) {
+        return null;
+      }
+      
+      return `${label}: ${oldVal} → ${newVal}`;
+    }).filter(Boolean); // Supprimer les null
+    
+    // Si aucun changement réel après filtrage, ne pas créer d'entrée d'historique
+    if (changeDescriptions.length === 0) {
+      return null;
+    }
     
     if (changeDescriptions.length === 1) {
       return changeDescriptions[0];

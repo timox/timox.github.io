@@ -495,18 +495,20 @@ export class ModalManager {
           
           // Capturer le contenu du champ description pour l'historique
           const descriptionContent = getFieldValue('popup-description').trim();
+          
+          // Toujours créer une entrée de création de tâche
+          await userActionManager.createTaskAction(newTaskId, gristData);
+          
+          // Si il y a un commentaire, l'ajouter comme commentaire séparé
           if (descriptionContent) {
-            // Ajouter le contenu de description à l'historique
             await userActionManager.addHistoryEntry(
               newTaskId,
-              'create',
-              `Task created: ${gristData.titre || 'New task'} - ${descriptionContent}`,
+              'comment',
+              `Commentaire initial: ${descriptionContent}`,
               '',
-              'Task created',
+              descriptionContent,
               gristData.statut || 'À faire'
             );
-          } else {
-            await userActionManager.createTaskAction(newTaskId, gristData);
           }
         }
         
