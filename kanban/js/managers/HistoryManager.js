@@ -157,10 +157,27 @@ export class HistoryManager {
           // Traiter chaque entrée selon son type d'action
           notesData.history.forEach(entry => {
             if (entry.action === 'comment') {
+              // Extraire le contenu du commentaire de façon sûre
+              let commentContent = entry.newValue || entry.details || '';
+              
+              // Si c'est du JSON, essayer de l'extraire proprement
+              if (commentContent.startsWith('{') && commentContent.includes('"content"')) {
+                try {
+                  const jsonData = JSON.parse(commentContent);
+                  commentContent = jsonData.content || commentContent;
+                } catch (e) {
+                  // Si parsing échoue, utiliser le contenu brut
+                  console.warn('Failed to parse comment JSON:', e);
+                }
+              }
+              
+              // Nettoyer les préfixes comme "Commentaire ajouté:"
+              commentContent = commentContent.replace(/^Commentaire ajouté:\s*/, '');
+              
               // Ajouter aux commentaires
               comments.push({
                 timestamp: this.normalizeTimestamp(entry.timestamp),
-                content: entry.newValue || entry.details,
+                content: commentContent,
                 user: entry.user || 'Utilisateur'
               });
             } else if (entry.action === 'status_change') {

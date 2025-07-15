@@ -528,6 +528,10 @@ export class ModalManager {
           // Capturer le contenu du champ description pour l'historique
           const descriptionContent = getFieldValue('popup-description').trim();
           
+          // Créer une copie des données SANS la description pour éviter les doublons
+          const dataWithoutComment = { ...gristData };
+          delete dataWithoutComment.description;
+          
           if (descriptionContent) {
             // Si il y a un commentaire, l'ajouter spécifiquement à l'historique
             await userActionManager.addHistoryEntry(
@@ -538,27 +542,15 @@ export class ModalManager {
               descriptionContent,
               gristData.statut || this.currentTask?.statut
             );
-            
-            // Créer une copie des données SANS la description pour éviter les doublons
-            const dataWithoutComment = { ...gristData };
-            delete dataWithoutComment.description;
-            
-            // Enregistrer les autres changements sans le commentaire
-            await userActionManager.updateTaskAction(
-              this.currentTaskId, 
-              this.currentTask, 
-              dataWithoutComment, 
-              'Task updated via modal'
-            );
-          } else {
-            // Pas de commentaire, enregistrer normalement les changements
-            await userActionManager.updateTaskAction(
-              this.currentTaskId, 
-              this.currentTask, 
-              gristData, 
-              'Task updated via modal'
-            );
           }
+          
+          // Enregistrer les autres changements (seulement si il y en a)
+          await userActionManager.updateTaskAction(
+            this.currentTaskId, 
+            this.currentTask, 
+            dataWithoutComment, 
+            'Task updated via modal'
+          );
         }
         
         displaySuccess('Tâche mise à jour avec succès');
