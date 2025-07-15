@@ -528,10 +528,6 @@ export class ModalManager {
           // Capturer le contenu du champ description pour l'historique
           const descriptionContent = getFieldValue('popup-description').trim();
           
-          // Créer une copie des données SANS la description pour éviter les doublons
-          const dataWithoutComment = { ...gristData };
-          delete dataWithoutComment.description;
-          
           if (descriptionContent) {
             // Si il y a un commentaire, l'ajouter spécifiquement à l'historique
             await userActionManager.addHistoryEntry(
@@ -542,15 +538,29 @@ export class ModalManager {
               descriptionContent,
               gristData.statut || this.currentTask?.statut
             );
+            
+            // Ne pas traiter les autres changements si c'est juste un commentaire
+            // Vérifier si les autres champs ont réellement changé
+            const hasOtherChanges = this.hasSignificantChanges(this.currentTask, gristData, ['description']);
+            
+            if (hasOtherChanges) {
+              // Il y a d'autres changements en plus du commentaire
+              await userActionManager.updateTaskAction(
+                this.currentTaskId, 
+                this.currentTask, 
+                gristData, 
+                'Task updated via modal'
+              );
+            }
+          } else {
+            // Pas de commentaire, enregistrer normalement les changements
+            await userActionManager.updateTaskAction(
+              this.currentTaskId, 
+              this.currentTask, 
+              gristData, 
+              'Task updated via modal'
+            );
           }
-          
-          // Enregistrer les autres changements (seulement si il y en a)
-          await userActionManager.updateTaskAction(
-            this.currentTaskId, 
-            this.currentTask, 
-            dataWithoutComment, 
-            'Task updated via modal'
-          );
         }
         
         displaySuccess('Tâche mise à jour avec succès');
@@ -1173,5 +1183,45 @@ export class ModalManager {
     } else {
       displayError('Gestionnaire d\'historique non disponible');
     }
+  }
+  
+  /**
+   * Vérifie si il y a des changements significatifs autres que les champs exclus
+   * @param {object} oldData - Anciennes données
+   * @param {object} newData - Nouvelles données
+   * @param {Array} excludeFields - Champs à exclure de la comparaison
+   * @returns {boolean} True si il y a des changements significatifs
+   */
+  hasSignificantChanges(oldData, newData, excludeFields = []) {
+    if (!oldData || !newData) return false;
+    
+    const relevantFields = [
+      'titre', 'statut', 'projet', 'urgence', 'impact', 'bureau', 'qui', 
+      'strategie_id', 'date_debut', 'date_echeance'
+    ];
+    
+    // Filtrer les champs exclus
+    const fieldsToCheck = relevantFields.filter(field => !excludeFields.includes(field));
+    
+    for (const field of fieldsToCheck) {
+      const oldValue = oldData[field];
+      const newValue = newData[field];
+      
+      // Comparaison spéciale pour les tableaux
+      if (Array.isArray(oldValue) && Array.isArray(newValue)) {
+        const oldStr = oldValue.slice().sort().join(',');
+        const newStr = newValue.slice().sort().join(',');
+        if (oldStr !== newStr) {
+          return true;
+        }
+      } else {
+        // Comparaison normale
+        if (oldValue !== newValue) {
+          return true;
+        }
+      }
+    }
+    
+    return false;
   }
 }

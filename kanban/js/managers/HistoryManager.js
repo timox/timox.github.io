@@ -160,11 +160,14 @@ export class HistoryManager {
               // Extraire le contenu du commentaire de façon sûre
               let commentContent = entry.newValue || entry.details || '';
               
-              // Si c'est du JSON, essayer de l'extraire proprement
+              // CAS SPÉCIFIQUE MIGRATION: Si c'est du JSON complet, extraire le content
               if (commentContent.startsWith('{') && commentContent.includes('"content"')) {
                 try {
                   const jsonData = JSON.parse(commentContent);
-                  commentContent = jsonData.content || commentContent;
+                  if (jsonData.content) {
+                    commentContent = jsonData.content;
+                    console.warn('Migration: JSON comment extracted', entry.timestamp);
+                  }
                 } catch (e) {
                   // Si parsing échoue, utiliser le contenu brut
                   console.warn('Failed to parse comment JSON:', e);
@@ -173,6 +176,13 @@ export class HistoryManager {
               
               // Nettoyer les préfixes comme "Commentaire ajouté:"
               commentContent = commentContent.replace(/^Commentaire ajouté:\s*/, '');
+              
+              // Si après extraction il reste du JSON, c'est un cas problématique mais on garde l'info
+              if (commentContent.startsWith('{') && commentContent.includes('"timestamp"')) {
+                console.warn('Problematic JSON comment preserved for user review:', entry.timestamp);
+                // On garde le commentaire mais on le marque comme problématique
+                commentContent = `[MIGRATION] Données à vérifier: ${commentContent.substring(0, 100)}...`;
+              }
               
               // Ajouter aux commentaires
               comments.push({
