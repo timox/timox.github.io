@@ -181,15 +181,24 @@ export class HistoryManager {
                 this.logger?.debug('Changement de statut invalide ignoré:', entry.details);
               }
             } else if (entry.action === 'update' || entry.action === 'field_change') {
-              // Ajouter aux mises à jour générales
-              const normalizedTimestamp = this.normalizeTimestamp(entry.timestamp);
-              history.push({
-                timestamp: normalizedTimestamp,
-                statut: entry.status || task.statut,
-                date_entree: normalizedTimestamp,
-                note: entry.action === 'field_change' ? entry.details : `Mise à jour: ${entry.details}`,
-                user: entry.user || 'Utilisateur'
-              });
+              // Filtrer les doublons de commentaires (éviter "Commentaire modifié:")
+              const isCommentUpdate = entry.details && 
+                (entry.details.includes('Commentaire modifié:') || 
+                 entry.details.includes('Commentaire ajouté:'));
+              
+              if (!isCommentUpdate) {
+                // Ajouter aux mises à jour générales (sauf commentaires)
+                const normalizedTimestamp = this.normalizeTimestamp(entry.timestamp);
+                history.push({
+                  timestamp: normalizedTimestamp,
+                  statut: entry.status || task.statut,
+                  date_entree: normalizedTimestamp,
+                  note: entry.action === 'field_change' ? entry.details : `Mise à jour: ${entry.details}`,
+                  user: entry.user || 'Utilisateur'
+                });
+              } else {
+                this.logger?.debug('Doublon de commentaire ignoré dans update:', entry.details);
+              }
             }
           });
           
