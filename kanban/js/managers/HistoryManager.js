@@ -1199,17 +1199,35 @@ export class HistoryManager {
       const commentTimestamp = commentId.replace('comment-', '');
       let entryFound = false;
       
+      console.log('updateCommentInGrist - Recherche du commentaire:', commentId);
+      console.log('updateCommentInGrist - Timestamp recherché:', commentTimestamp);
+      console.log('updateCommentInGrist - Entrées d\'historique disponibles:', notesData.history.length);
+      
       // Chercher et modifier l'entrée d'historique correspondante
       for (let i = 0; i < notesData.history.length; i++) {
         const entry = notesData.history[i];
         const entryTimestamp = entry.timestamp.replace(/[^\d]/g, '');
         
+        console.log(`updateCommentInGrist - Entrée ${i}: action=${entry.action}, timestamp=${entryTimestamp.substring(0, 12)}`);
+        
         // Comparer les timestamps (on prend les premiers caractères pour éviter les problèmes de précision)
         if (entryTimestamp.substring(0, 12) === commentTimestamp.substring(0, 12)) {
-          // Vérifier que c'est bien un commentaire (pas un changement de statut)
-          if (entry.action === 'create' || entry.action === 'update') {
+          // Vérifier que c'est bien un commentaire
+          if (entry.action === 'comment' || entry.action === 'create' || entry.action === 'update') {
             console.log('Modification du commentaire trouvé:', entry);
-            notesData.history[i].details = newContent;
+            
+            // Modifier le contenu selon le format
+            if (entry.newValue) {
+              notesData.history[i].newValue = newContent;
+            }
+            if (entry.details) {
+              notesData.history[i].details = newContent;
+            }
+            
+            // Mettre à jour le content principal si c'est le commentaire le plus récent
+            if (i === notesData.history.length - 1) {
+              notesData.content = newContent;
+            }
             
             // Ajouter une marque d'édition
             notesData.history[i].edited = new Date().toISOString();
