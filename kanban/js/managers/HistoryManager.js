@@ -141,11 +141,8 @@ export class HistoryManager {
       }
     }
     
-    // Parser les commentaires depuis la description (ancien système)
-    if (task.description) {
-      const oldComments = this.parseCommentsFromDescription(task.description);
-      comments = comments.concat(oldComments);
-    }
+    // ANCIEN SYSTÈME SUPPRIMÉ: Ne plus parser les commentaires depuis description
+    // Tous les commentaires doivent maintenant être dans notes.history
     
     // Parser les entrées depuis les notes JSON (nouveau système)
     if (task.notes) {
@@ -251,45 +248,8 @@ export class HistoryManager {
     };
   }
   
-  /**
-   * Parse les commentaires depuis la description
-   * @param {string} description - Description avec commentaires horodatés
-   * @returns {Array} Liste des commentaires
-   */
-  parseCommentsFromDescription(description) {
-    if (!description) return [];
-    
-    const comments = [];
-    const sections = description.split(/^---\s*$/gm);
-    
-    sections.forEach((section, index) => {
-      const lines = section.trim().split('\n');
-      if (lines.length === 0) return;
-      
-      const firstLine = lines[0].trim();
-      const timestampMatch = firstLine.match(/^\((\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2})(\s*\([^)]+\))?\)$/);
-      
-      if (timestampMatch) {
-        const timestampStr = timestampMatch[1];
-        const userStr = timestampMatch[2] ? timestampMatch[2].slice(2, -1) : null; // Enlever " (" et ")"
-        const content = lines.slice(1).join('\n').trim();
-        
-        if (content) {
-          const timestamp = parseTimestamp(firstLine);
-          
-          comments.push({
-            timestamp: this.normalizeTimestamp(timestamp),
-            timestampStr,
-            user: userStr,
-            content,
-            isLatest: index === 0
-          });
-        }
-      }
-    });
-    
-    return comments.sort((a, b) => b.timestamp - a.timestamp);
-  }
+  // FONCTION SUPPRIMÉE: parseCommentsFromDescription()
+  // Les commentaires sont maintenant exclusivement dans notes.history
   
   /**
    * Convertit un timestamp en objet Date valide

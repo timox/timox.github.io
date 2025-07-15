@@ -631,10 +631,8 @@ export class ModalManager {
     console.log('Qui (raw):', data.qui);
     console.log('Strategie_id (raw):', data.strategie_id);
     
-    // Description - conserver la description existante sans modification
-    // Le champ de saisie description n'est plus utilisé pour stocker les données
-    data.description = this.currentTask?.description || '';
-    console.log('Description conservée:', data.description);
+    // CHAMP DESCRIPTION SUPPRIMÉ - Tous les commentaires sont maintenant dans notes.history
+    // Le champ de saisie popup-description sert uniquement pour les nouveaux commentaires
     
     // Date d'échéance
     if (this.kanban.datePickerManager) {

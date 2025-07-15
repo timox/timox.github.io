@@ -212,7 +212,7 @@ export class CardRenderer {
   generateDescriptionResume(record) {
     let latestDesc = '';
     
-    // Strategy 1: Utiliser notes.content (maintenant synchronisé avec le dernier commentaire)
+    // Utiliser UNIQUEMENT notes.content (synchronisé avec le dernier commentaire)
     if (record.notes) {
       try {
         const notesData = JSON.parse(record.notes);
@@ -220,15 +220,9 @@ export class CardRenderer {
           latestDesc = notesData.content;
         }
       } catch (error) {
-        // Erreur JSON, continuer avec l'ancien système
+        console.warn('CardRenderer: Error parsing notes JSON for record', record.id);
+        return '';
       }
-    }
-    
-    // Strategy 2: Fallback vers l'ancien système (description)
-    if (!latestDesc && record.description) {
-      latestDesc = this.kanban.getLatestDescription 
-        ? this.kanban.getLatestDescription(record.description)
-        : record.description;
     }
     
     if (!latestDesc || !latestDesc.trim()) {

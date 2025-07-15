@@ -616,9 +616,19 @@ class KanbanManager {
         strategie_action: strategyInfo?.action
       }) : '';
 
-    // Description résumée
-    const resumeDesc = record.description ? 
-      `<div class="desc-resume">${this.getLatestDescription(record.description).substring(0, 80)}${record.description.length > 80 ? '…' : ''}</div>` : '';
+    // Description résumée depuis notes.content
+    let resumeDesc = '';
+    if (record.notes) {
+      try {
+        const notesData = JSON.parse(record.notes);
+        if (notesData && notesData.content) {
+          const content = notesData.content.substring(0, 80);
+          resumeDesc = `<div class="desc-resume">${content}${notesData.content.length > 80 ? '…' : ''}</div>`;
+        }
+      } catch (error) {
+        // Ignore JSON parse errors
+      }
+    }
     
     // Dates
     const datesElement = generateDatesContainer({
@@ -685,9 +695,7 @@ class KanbanManager {
       }
     }
     
-    // Compter les anciens commentaires (compatibilité)
-    const commentCount = record.description ? 
-      (record.description.match(/^\(.*\)$/gm) || []).length : 0;
+    // ANCIEN SYSTÈME SUPPRIMÉ: Plus de comptage des commentaires depuis description
     
     // Compter les changements de statut (ancien système)
     let statusChangeCount = 0;
