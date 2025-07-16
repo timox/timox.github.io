@@ -696,6 +696,7 @@ class KanbanManager {
     }
     
     // ANCIEN SYSTÈME SUPPRIMÉ: Plus de comptage des commentaires depuis description
+    const commentCount = 0; // Fixé à 0 car plus de comptage depuis description
     
     // Compter les changements de statut (ancien système)
     let statusChangeCount = 0;
