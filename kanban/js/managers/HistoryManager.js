@@ -283,9 +283,29 @@ export class HistoryManager {
   mergeHistoryAndComments(history, comments) {
     const timeline = [];
     
-    // Ajouter les changements de statut
+    // Filtrer les entrées techniques inutiles pour l'utilisateur
+    const isUserRelevant = (entry) => {
+      if (!entry.note && !entry.details) return false;
+      
+      const content = entry.note || entry.details || '';
+      
+      // Masquer les changements techniques automatiques
+      const technicalPatterns = [
+        /Date d'échéance modifiée:/,
+        /Date de début modifiée:/,
+        /Priorité modifiée:/,
+        /Assigné à modifiée:/,
+        /field_change/,
+        /Description mise à jour/,
+        /Commentaire modifié:/
+      ];
+      
+      return !technicalPatterns.some(pattern => pattern.test(content));
+    };
+    
+    // Ajouter les changements de statut (seulement ceux pertinents)
     history.forEach(entry => {
-      if (entry.timestamp) {
+      if (entry.timestamp && isUserRelevant(entry)) {
         timeline.push({
           type: 'status_change',
           timestamp: entry.timestamp, // Déjà normalisé dans parseTaskHistory
