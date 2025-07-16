@@ -1190,7 +1190,9 @@ export class HistoryManager {
       console.log('updateCommentInGrist - Timestamp recherché:', commentTimestamp);
       console.log('updateCommentInGrist - Entrées d\'historique disponibles:', notesData.history.length);
       
-      // Chercher et modifier l'entrée d'historique correspondante
+      // CORRECTION: Gérer les commentaires anciens (dans content) ET nouveaux (dans history)
+      
+      // 1. Chercher dans l'historique JSON (nouveau système)
       for (let i = 0; i < notesData.history.length; i++) {
         const entry = notesData.history[i];
         const entryTimestamp = entry.timestamp.replace(/[^\d]/g, '');
@@ -1201,7 +1203,7 @@ export class HistoryManager {
         if (entryTimestamp.substring(0, 12) === commentTimestamp.substring(0, 12)) {
           // Vérifier que c'est bien un commentaire
           if (entry.action === 'comment' || entry.action === 'create' || entry.action === 'update') {
-            console.log('Modification du commentaire trouvé:', entry);
+            console.log('Modification du commentaire trouvé dans history:', entry);
             
             // Modifier le contenu selon le format
             if (entry.newValue) {
@@ -1223,6 +1225,30 @@ export class HistoryManager {
             entryFound = true;
             break;
           }
+        }
+      }
+      
+      // 2. Si pas trouvé dans history, chercher dans content (ancien système avec ---)
+      if (!entryFound && notesData.content && notesData.content.includes('---')) {
+        console.log('Recherche dans content (ancien système avec ---)');
+        
+        // Détecter si le commentaire à modifier est dans content (ancien format)
+        const contentParts = notesData.content.split('\n---\n');
+        if (contentParts.length > 1) {
+          // Remplacer le premier commentaire (celui qui sera affiché)
+          console.log('Remplacement du commentaire principal dans content');
+          contentParts[0] = newContent;
+          notesData.content = contentParts.join('\n---\n');
+          entryFound = true;
+          
+          // Ajouter une entrée d'historique pour tracer la modification
+          notesData.history.push({
+            timestamp: new Date().toISOString(),
+            user: await this.getCurrentUser(),
+            action: 'update',
+            details: `Commentaire modifié: ${newContent}`,
+            status: gristData.statut[index] || 'Unknown'
+          });
         }
       }
       
