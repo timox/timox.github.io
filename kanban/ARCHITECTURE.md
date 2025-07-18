@@ -37,6 +37,64 @@ js/
 
 ---
 
+## 🔧 **STRUCTURE JSON UNIFIÉE POUR L'HISTORIQUE** - VERSION 2025-07-16
+
+### **Structure Définitive du Champ `notes`** :
+```javascript
+{
+  "entries": [
+    {
+      "id": "uuid-unique",               // ID unique pour édition
+      "timestamp": "2025-07-16T10:30:00.000Z",
+      "user": "nom_utilisateur",
+      "type": "field_change" | "comment" | "creation" | "status_change",
+      "changes": [                       // Toujours un tableau
+        {
+          "field": "titre",
+          "value": "Nouveau titre",
+          "previous": "Ancien titre"     // Pour récupération historique
+        },
+        {
+          "field": "statut", 
+          "value": "En cours",
+          "previous": "À faire"
+        }
+      ],
+      "comment": "Commentaire utilisateur", // Optionnel - seulement si type="comment"
+      "editable": true | false            // Seuls les commentaires sont éditables
+    }
+  ]
+}
+```
+
+### **Types d'Entrées** :
+- **`field_change`** : Modification d'attributs (titre, urgence, bureau, etc.)
+- **`comment`** : Commentaire utilisateur (éditable uniquement)
+- **`creation`** : Création de tâche
+- **`status_change`** : Changement de statut (drag & drop)
+
+### **Champs Trackés** (tous les changements significatifs) :
+```javascript
+[
+  'titre', 'statut', 'bureau', 'qui', 'urgence', 'impact', 'projet',
+  'strategie_id', 'date_debut', 'date_echeance', 'date_derniere_maj'
+  // ❌ 'description' IGNORÉ (legacy)
+  // ❌ 'strategie_*' auto-computed depuis strategie_id
+]
+```
+
+### **Règles Critiques** :
+1. **Pas de doublon** : Sauvegarder sans changement = pas d'entrée historique
+2. **Historique unifié** : Commentaires ET changements dans la même structure
+3. **Récupération** : Anciennes valeurs via `previous` dans l'historique
+4. **Édition** : Seuls les commentaires (type="comment") sont éditables
+
+### **Problème de Migration** :
+- **Perdu** : Historique mélangé avec commentaires dans ancien JSON
+- **Solution** : Nouvelle structure claire sans ambiguïté
+
+---
+
 ## ⚠️ ZONES CRITIQUES - NE PAS CASSER
 
 ### 1. 🚨 Enregistrements Temporaires (Anti-Doublons) - ✅ DOUBLE FILTRAGE

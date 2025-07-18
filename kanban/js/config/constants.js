@@ -15,7 +15,7 @@ export const STATUTS = [
 // === DONNÉES DE BASE ===
 export const DEFAULT_BUREAUX = [
   'Exploit', 'Réseau', 'BDD', 'Chef SSIR', 'SIG',
-  'NEXSIS-RRF', 'COMSIC', 'RSSI', 'DPO'
+  'NEXSIS-RRF', 'COMSIC', 'RSSI', 'DPO', 'CGSSI'
 ];
 
 export const DEFAULT_RESPONSABLES = [
