@@ -100,13 +100,24 @@ export class ModalManager {
       });
     }
     
-    // Bouton toggle accordéon historique des commentaires
-    const btnToggleHistory = document.getElementById('btn-toggle-comment-history');
-    if (btnToggleHistory) {
-      btnToggleHistory.addEventListener('click', () => {
+    // Bouton toggle accordéon historique des commentaires (délégation d'événements)
+    document.addEventListener('click', (e) => {
+      if (e.target.matches('#btn-toggle-comment-history, #btn-toggle-comment-history *')) {
+        console.log('ModalManager: Clic sur bouton toggle historique');
+        // Laisser Bootstrap gérer l'accordéon, mais charger les données
+        setTimeout(() => {
+          this.loadCommentHistoryInAccordion();
+        }, 100); // Petit délai pour laisser Bootstrap ouvrir l'accordéon
+      }
+    });
+    
+    // Écouteur pour quand l'accordéon s'ouvre (événement Bootstrap)
+    document.addEventListener('shown.bs.collapse', (e) => {
+      if (e.target.id === 'comment-history-accordion') {
+        console.log('ModalManager: Accordéon historique ouvert');
         this.loadCommentHistoryInAccordion();
-      });
-    }
+      }
+    });
     
     // Raccourcis clavier
     document.addEventListener('keydown', (e) => {
@@ -909,14 +920,21 @@ export class ModalManager {
    * Charge l'historique des commentaires dans l'accordéon de la modale
    */
   loadCommentHistoryInAccordion() {
+    console.log('ModalManager: loadCommentHistoryInAccordion appelée');
+    console.log('ModalManager: currentTask:', this.currentTask);
+    console.log('ModalManager: historyManager:', this.kanban.historyManager);
+    
     if (!this.currentTask) {
       console.warn('ModalManager: Aucune tâche courante pour charger l\'historique');
+      this.showAccordionError('Aucune tâche sélectionnée');
       return;
     }
 
     // Obtenir les données d'historique via HistoryManager
     if (this.kanban.historyManager) {
+      console.log('ModalManager: Parsing historique pour tâche ID:', this.currentTask.id);
       const historyData = this.kanban.historyManager.parseTaskHistory(this.currentTask);
+      console.log('ModalManager: Données historique reçues:', historyData);
       this.renderCommentHistoryInAccordion(historyData);
     } else {
       console.error('HistoryManager non disponible');
