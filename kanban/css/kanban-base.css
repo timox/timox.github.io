@@ -279,7 +279,8 @@ body {
 .item-title {
   font-weight: 600;
   margin-bottom: 0.5rem;
-  color: var(--kanban-text);
+  color: #2c3e50; /* Couleur plus distincte pour le titre */
+  font-size: 1.05rem; /* Légèrement plus grand pour plus de présence */
 }
 
 /* === Cartes Compactes === */
@@ -323,6 +324,7 @@ body {
   padding: 2px 4px;
   border-radius: 4px;
   transition: background-color 0.2s ease;
+  color: #2c3e50; /* Même couleur que le titre normal pour la cohérence */
 }
 
 .compact-title:hover {
@@ -348,9 +350,9 @@ body {
 
 /* === Bouton Historique === */
 .btn-history {
-  background: #e3f2fd;
-  color: #1976d2;
-  border: 1px solid #90caf9;
+  background: #e8f5e8;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
   border-radius: 12px;
   padding: 0.2rem 0.5rem;
   font-size: 0.75rem;
@@ -359,13 +361,15 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
+  font-weight: 500;
 }
 
 .btn-history:hover {
-  background: #bbdefb;
-  border-color: #64b5f6;
+  background: #c8e6c9;
+  border-color: #81c784;
   transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(25, 118, 210, 0.2);
+  box-shadow: 0 2px 4px rgba(46, 125, 50, 0.2);
+  color: #1b5e20;
 }
 
 /* === Drag & Drop === */
@@ -828,9 +832,9 @@ body {
 
 /* Bouton Timeline sur les cartes */
 .btn-timeline {
-  background: #e3f2fd;
-  color: #1976d2;
-  border: 1px solid #90caf9;
+  background: #f3e5f5;
+  color: #7b1fa2;
+  border: 1px solid #ce93d8;
   border-radius: 12px;
   padding: 0.2rem 0.5rem;
   font-size: 0.75rem;
@@ -841,14 +845,15 @@ body {
   gap: 0.3rem;
   text-decoration: none;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  font-weight: 500;
 }
 
 .btn-timeline:hover {
-  background: #bbdefb;
-  border-color: #64b5f6;
+  background: #e1bee7;
+  border-color: #ba68c8;
   transform: translateY(-1px);
-  box-shadow: 0 2px 5px rgba(25, 118, 210, 0.2);
-  color: #1565c0;
+  box-shadow: 0 2px 5px rgba(123, 31, 162, 0.2);
+  color: #4a148c;
 }
 
 .btn-timeline:active {
