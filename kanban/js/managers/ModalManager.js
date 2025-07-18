@@ -955,26 +955,63 @@ export class ModalManager {
       return;
     }
 
-    const { comments, timeline } = historyData;
+    const { comments, timeline, history } = historyData;
     
-    // Mettre à jour le badge de comptage
-    commentCountBadge.textContent = comments.length;
-    commentCountBadge.className = comments.length > 0 ? 'badge bg-info ms-2' : 'badge bg-secondary ms-2';
+    // Compter total des entrées (commentaires + modifications)
+    const totalEntries = comments.length + history.length;
+    
+    // Mettre à jour le badge de comptage  
+    commentCountBadge.textContent = totalEntries;
+    commentCountBadge.className = totalEntries > 0 ? 'badge bg-info ms-2' : 'badge bg-secondary ms-2';
 
-    if (comments.length === 0) {
+    if (totalEntries === 0) {
       accordionContent.innerHTML = `
         <div class="text-center text-muted py-3">
           <i class="bi bi-chat-square fs-4"></i>
-          <p class="mt-2">Aucun commentaire trouvé</p>
-          <small>Les commentaires apparaîtront ici une fois ajoutés</small>
+          <p class="mt-2">Aucun historique trouvé</p>
+          <small>Les commentaires et modifications apparaîtront ici</small>
         </div>
       `;
       return;
     }
 
-    // Construire le HTML des commentaires avec styles compacts
-    let commentsHTML = '';
+    // Construire le HTML avec commentaires ET modifications
+    let historyHTML = '';
     
+    // Ajouter les modifications (read-only)
+    history.forEach((change) => {
+      const formattedDate = new Date(change.timestamp).toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      const userInfo = change.user ? ` par ${change.user}` : '';
+      
+      historyHTML += `
+        <div class="history-item mb-3 p-3 border rounded bg-light">
+          <div class="history-header d-flex justify-content-between align-items-start mb-2">
+            <div class="history-meta">
+              <small class="text-muted">
+                <i class="bi bi-arrow-right-circle me-1"></i>${formattedDate}${userInfo}
+                <span class="badge bg-secondary ms-2">Modification</span>
+              </small>
+            </div>
+            <div class="text-muted">
+              <i class="bi bi-lock" title="Lecture seule"></i>
+            </div>
+          </div>
+          <div class="history-content text-muted">
+            <strong>${change.statut}</strong>
+            ${change.note ? `<br><small>${change.note}</small>` : ''}
+          </div>
+        </div>
+      `;
+    });
+    
+    // Ajouter les commentaires (éditables)
     comments.forEach((comment, index) => {
       const formattedDate = new Date(comment.timestamp).toLocaleDateString('fr-FR', {
         day: '2-digit',
@@ -994,12 +1031,12 @@ export class ModalManager {
         String(comment.timestamp);
       const commentId = `comment-${timestampString.replace(/[^\d]/g, '')}`;
       
-      commentsHTML += `
+      historyHTML += `
         <div class="comment-item mb-3 p-3 border rounded" data-comment-id="${commentId}">
           <div class="comment-header d-flex justify-content-between align-items-start mb-2">
             <div class="comment-meta">
               <small class="text-muted">
-                <i class="bi bi-clock me-1"></i>${formattedDate}${userInfo}
+                <i class="bi bi-chat me-1"></i>${formattedDate}${userInfo}
                 ${latestBadge}
               </small>
             </div>
@@ -1016,7 +1053,79 @@ export class ModalManager {
       `;
     });
 
-    accordionContent.innerHTML = commentsHTML;
+    // Combiner et trier par timeline chronologique
+    const allEntries = [...timeline].sort((a, b) => {
+      const timeA = new Date(a.timestamp).getTime();
+      const timeB = new Date(b.timestamp).getTime();
+      return timeB - timeA; // Plus récent en premier
+    });
+
+    // Construire le HTML final trié
+    let finalHTML = '';
+    allEntries.forEach((entry, index) => {
+      const formattedDate = new Date(entry.timestamp).toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      const userInfo = entry.user ? ` par ${entry.user}` : '';
+      const isLatest = index === 0;
+
+      if (entry.type === 'comment') {
+        // Commentaire (éditable)
+        const latestBadge = isLatest ? '<span class="badge bg-success ms-2">Récent</span>' : '';
+        const timestampString = entry.timestamp instanceof Date ? 
+          entry.timestamp.toISOString() : String(entry.timestamp);
+        const commentId = `comment-${timestampString.replace(/[^\d]/g, '')}`;
+        
+        finalHTML += `
+          <div class="comment-item mb-3 p-3 border rounded" data-comment-id="${commentId}">
+            <div class="comment-header d-flex justify-content-between align-items-start mb-2">
+              <div class="comment-meta">
+                <small class="text-muted">
+                  <i class="bi bi-chat me-1"></i>${formattedDate}${userInfo}
+                  ${latestBadge}
+                </small>
+              </div>
+              <button class="btn btn-sm btn-outline-secondary btn-edit-comment" 
+                      data-comment-id="${commentId}"
+                      title="Éditer ce commentaire">
+                <i class="bi bi-pencil"></i>
+              </button>
+            </div>
+            <div class="comment-content" data-original="${entry.content.replace(/"/g, '&quot;')}">
+              ${entry.content}
+            </div>
+          </div>
+        `;
+      } else {
+        // Modification (read-only)
+        finalHTML += `
+          <div class="history-item mb-3 p-3 border rounded bg-light">
+            <div class="history-header d-flex justify-content-between align-items-start mb-2">
+              <div class="history-meta">
+                <small class="text-muted">
+                  <i class="bi bi-arrow-right-circle me-1"></i>${formattedDate}${userInfo}
+                  <span class="badge bg-secondary ms-2">Modification</span>
+                </small>
+              </div>
+              <div class="text-muted">
+                <i class="bi bi-lock" title="Lecture seule"></i>
+              </div>
+            </div>
+            <div class="history-content text-muted">
+              <strong>${entry.statut || 'Changement'}</strong>
+              ${entry.note ? `<br><small>${entry.note}</small>` : ''}
+            </div>
+          </div>
+        `;
+      }
+    });
+
+    accordionContent.innerHTML = finalHTML;
     
     console.log('ModalManager: Historique des commentaires chargé dans accordéon:', comments.length, 'commentaires');
   }

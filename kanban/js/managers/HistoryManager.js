@@ -851,13 +851,22 @@ export class HistoryManager {
     
     // Écouteur pour les boutons d'édition
     document.addEventListener('click', (e) => {
+      console.log('HistoryManager: Clic détecté sur:', e.target);
+      
       if (e.target.matches('.btn-edit-comment, .btn-edit-comment *')) {
         e.preventDefault();
         e.stopPropagation();
+        console.log('HistoryManager: Clic sur bouton édition détecté');
         
         const button = e.target.closest('.btn-edit-comment');
+        if (!button) {
+          console.error('HistoryManager: Bouton .btn-edit-comment non trouvé');
+          return;
+        }
+        
         const commentId = button.dataset.commentId;
         console.log('HistoryManager: Clic sur bouton édition commentaire:', commentId);
+        console.log('HistoryManager: Bouton trouvé:', button);
         this.openCommentEditWidget(commentId);
       }
     });
@@ -1048,9 +1057,14 @@ export class HistoryManager {
    * @param {string} commentId - ID du commentaire
    */
   openCommentEditWidget(commentId) {
+    console.log('HistoryManager: openCommentEditWidget appelé avec ID:', commentId);
     const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
+    console.log('HistoryManager: Element commentaire trouvé:', commentElement);
+    
     if (!commentElement) {
-      console.error('Commentaire non trouvé:', commentId);
+      console.error('HistoryManager: Commentaire non trouvé pour ID:', commentId);
+      console.log('HistoryManager: Éléments avec data-comment-id disponibles:', 
+        document.querySelectorAll('[data-comment-id]'));
       return;
     }
     
