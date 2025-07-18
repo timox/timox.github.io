@@ -1,0 +1,470 @@
+/* === CSS Modal Styles - Kanban App === */
+/* Styles spécifiques pour les modales de l'application Kanban */
+
+/* === Popup Tâche === */
+.modal-xl {
+  max-width: 1300px;
+}
+
+.modal-content {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  background: linear-gradient(135deg, #6c757d, #495057);
+  color: white;
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+  padding: 1.5rem;
+}
+
+.modal-title {
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+.modal-body {
+  padding: 2rem;
+  overflow-y: auto;
+  max-height: 70vh;
+}
+
+.form-label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-text {
+  font-size: 0.875rem;
+  color: #6c757d;
+}
+
+/* === Popup Responsive === */
+@media (max-width: 768px) {
+  .modal-xl {
+    margin: 0.5rem;
+    max-width: calc(100% - 1rem);
+  }
+  
+  .modal-body {
+    padding: 1rem;
+    max-height: 60vh;
+  }
+  
+  .col-md-6 {
+    margin-bottom: 1rem;
+  }
+}
+
+/* === Sélecteurs de stratégie === */
+.strategy-selects {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.strategy-select {
+  min-width: 320px !important;
+  max-width: 400px !important;
+  font-size: 0.875rem;
+}
+
+.strategy-description {
+  background: #e3f2fd;
+  border: 1px solid #bbdefb;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: #1565c0;
+}
+
+.strategy-label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+/* === Date Picker Styles === */
+.date-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.date-status {
+  font-size: 0.875rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+}
+
+.date-status.date-proche {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.date-status.date-depassee {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.date-status.date-normale {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+/* === Progress Bar dans la modal === */
+.progress {
+  height: 8px;
+  background-color: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  transition: width 0.6s ease;
+  background: linear-gradient(90deg, #007bff, #0056b3);
+}
+
+/* === Modal Historique === */
+.history-modal .modal-content {
+  background: #f8f9fa;
+}
+
+.history-modal .modal-header {
+  background: linear-gradient(135deg, #343a40, #212529);
+}
+
+.history-modal .modal-body {
+  max-height: 75vh;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+/* === Timeline Styles === */
+.timeline-container {
+  position: relative;
+  padding: 1rem 0;
+}
+
+.timeline-line {
+  position: absolute;
+  left: 1.5rem;
+  top: 0;
+  bottom: 0;
+  width: 3px !important;
+  background: linear-gradient(180deg, #007bff, #6610f2) !important;
+  border-radius: 1.5px;
+}
+
+.timeline-entry {
+  position: relative;
+  padding-left: 4rem;
+  margin-bottom: 2rem;
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  padding-left: 4rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border-left: 4px solid #007bff;
+  transition: all 0.3s ease;
+}
+
+.timeline-entry:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.timeline-entry::before {
+  content: '';
+  position: absolute;
+  left: -2.8rem;
+  top: 1.5rem;
+  width: 16px;
+  height: 16px;
+  background: #007bff;
+  border: 3px solid white;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px #007bff;
+  z-index: 2;
+}
+
+.timeline-entry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.timeline-entry-timestamp {
+  font-size: 0.875rem;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.timeline-entry-user {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.25rem;
+}
+
+.timeline-entry-action {
+  font-size: 0.875rem;
+  color: #007bff;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.timeline-entry-details {
+  color: #495057;
+  line-height: 1.6;
+  margin-bottom: 0.5rem;
+}
+
+.timeline-entry-status {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* === Status Colors === */
+.status-backlog { background: #f8f9fa; color: #6c757d; }
+.status-a-faire { background: #cce5ff; color: #0066cc; }
+.status-en-cours { background: #ffe6cc; color: #cc6600; }
+.status-en-attente { background: #fff2cc; color: #b3a000; }
+.status-bloque { background: #ffcccc; color: #cc0000; }
+.status-validation { background: #e6ccff; color: #6600cc; }
+.status-termine { background: #ccffcc; color: #00cc00; }
+
+/* === Statistiques === */
+.history-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.stat-item {
+  text-align: center;
+  padding: 1rem;
+  border-radius: 6px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+}
+
+.stat-value {
+  font-size: 2rem !important;
+  font-weight: 700 !important;
+  color: #007bff;
+  display: block;
+  line-height: 1.2 !important;
+}
+
+.stat-label {
+  font-size: 0.9rem !important;
+  color: #6c757d;
+  font-weight: 500;
+  margin-top: 0.5rem !important;
+}
+
+/* === Tous les commentaires === */
+.all-comments-container {
+  max-height: 500px !important;
+  overflow-y: auto !important;
+  padding-right: 0.5rem !important;
+}
+
+.comment-item {
+  background: white !important;
+  border: 1px solid #e9ecef !important;
+  border-radius: 8px !important;
+  padding: 1.2rem !important;
+  margin-bottom: 1rem !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+}
+
+.comment-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 0.8rem !important;
+  padding-bottom: 0.8rem !important;
+  border-bottom: 1px solid #f1f3f4 !important;
+}
+
+.comment-status {
+  font-size: 0.85rem !important;
+  padding: 0.3rem 0.8rem !important;
+}
+
+.comment-timestamp {
+  font-size: 0.85rem !important;
+  color: #6c757d;
+}
+
+/* === Bouton Export === */
+.btn-export-history {
+  background: #28a745;
+  border-color: #28a745;
+}
+
+.btn-export-history:hover {
+  background: #218838;
+  border-color: #1e7e34;
+}
+
+.strategy-details {
+  margin-top: 1rem;
+}
+
+.strategy-detail {
+  padding: 0.5rem;
+  background: #ffffff;
+  border-left: 3px solid #007bff;
+  margin-bottom: 0.5rem;
+  border-radius: 0 4px 4px 0;
+}
+
+.strategy-detail strong {
+  color: #495057;
+}
+
+/* === Widget d'édition de commentaire === */
+.comment-edit-widget {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1060; /* Au-dessus de la modal d'historique */
+}
+
+.comment-edit-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+
+.comment-edit-box {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow: hidden;
+  animation: comment-edit-slide-in 0.2s ease-out;
+}
+
+@keyframes comment-edit-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.comment-edit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #dee2e6;
+  background: #f8f9fa;
+}
+
+.comment-edit-header h6 {
+  margin: 0;
+  font-weight: 600;
+  color: #495057;
+  flex: 1;
+}
+
+.comment-edit-body {
+  padding: 1.25rem;
+}
+
+.comment-edit-info {
+  margin-top: 0.75rem;
+}
+
+.comment-edit-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid #dee2e6;
+  background: #f8f9fa;
+}
+
+.btn-close-sm {
+  font-size: 0.875rem;
+  padding: 0.25rem;
+}
+
+/* Animation pour les boutons d'édition dans la timeline */
+.timeline-entry-comment .btn-edit-comment {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.timeline-entry:hover .btn-edit-comment {
+  opacity: 1;
+}
+
+.btn-edit-comment {
+  font-size: 0.75rem;
+  padding: 0.125rem 0.375rem;
+  margin-left: 0.5rem;
+  border-radius: 4px;
+}
+
+/* Styles pour les commentaires modifiés */
+.timeline-entry.comment-edited {
+  border-left-color: #ffc107;
+  background: #fffbf0;
+}
+
+.badge-edited {
+  font-size: 0.65rem;
+}
+
+/* Loading state pour le bouton de sauvegarde */
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}

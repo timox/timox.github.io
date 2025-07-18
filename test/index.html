@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Tableau Kanban - Version Modulaire</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  
+  <!-- CSS modulaire (inchangé) -->
+  <link rel="stylesheet" href="css/kanban-base.css">
+  <link rel="stylesheet" href="css/kanban-modal.css">
+  <link rel="stylesheet" href="css/kanban-responsive.css">
+</head>
+<body>
+  <div class="container-fluid">
+    <!-- Header -->
+    <div class="kanban-header">
+      <div class="container-fluid">
+        <div class="row align-items-center">
+          <div class="col">
+            <h1 class="h3 mb-0">
+              <i class="bi bi-kanban me-2"></i>
+              Tableau Kanban
+              <small class="text-muted ms-2">(Version Modulaire)</small>
+            </h1>
+          </div>
+          <div class="col-auto">
+            <button type="button" class="btn btn-info me-2" id="btn-export-history" aria-label="Exporter l'historique">
+              <i class="bi bi-download me-2"></i>Exporter Historique
+            </button>
+            <button type="button" class="btn btn-primary" id="btn-nouvelle-tache" aria-label="Créer une nouvelle tâche">
+              <i class="bi bi-plus-lg me-2"></i>Nouvelle Tâche
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="container-fluid">
+      <div class="kanban-controls">
+        <div class="row g-3 align-items-center">
+          <!-- Boutons de mode de vue (sera injecté par JS) -->
+          <div class="col-md-3">
+            <div class="input-group">
+              <input type="text" class="form-control" id="search-input" placeholder="Rechercher..." aria-label="Rechercher des tâches">
+              <button class="btn btn-outline-secondary" type="button" id="btn-clear-filters" title="Effacer tous les filtres">
+                <i class="bi bi-x-circle"></i>
+              </button>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <select class="form-select" id="filter-bureau" aria-label="Filtrer par bureau"></select>
+          </div>
+          <div class="col-md-2">
+            <select class="form-select" id="filter-qui" aria-label="Filtrer par responsable"></select>
+          </div>
+          <div class="col-md-2">
+            <select class="form-select" id="filter-projet" aria-label="Filtrer par projet"></select>
+          </div>
+          <div class="col-md-2">
+            <select class="form-select" id="filter-statut" aria-label="Filtrer par statut"></select>
+          </div>
+          <div class="col-md-1">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="show-termine" checked>
+              <label class="form-check-label" for="show-termine">Terminés</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error Container -->
+    <div id="error-container" role="alert" aria-live="polite"></div>
+
+    <!-- Loading Spinner -->
+    <div class="loading-spinner" id="loading-spinner" style="display:none;">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Chargement...</span>
+      </div>
+      <p class="mt-2">Chargement du Kanban...</p>
+    </div>
+
+    <!-- Kanban Container -->
+    <div class="container-fluid">
+      <div id="kanban-container" class="kanban-container" role="main" aria-label="Tableau Kanban"></div>
+    </div>
+
+    <!-- Debug Panel (commenté - réactiver au besoin)
+    <div class="debug-panel" style="position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; padding: 10px; border-radius: 5px; font-size: 12px; z-index: 9999;">
+      <div><strong>Debug Info:</strong></div>
+      <div id="debug-mode">Mode: <span id="current-mode">-</span></div>
+      <div id="debug-tasks">Tâches: <span id="task-count">-</span></div>
+      <div id="debug-user">Utilisateur: <span id="current-user">-</span></div>
+    </div>
+    -->
+
+    <!-- Keyboard Shortcuts -->
+    <div class="keyboard-shortcuts">
+      <div><kbd>N</kbd> Nouvelle tâche</div>
+      <div><kbd>F</kbd> Focus recherche</div>
+      <div><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> Modes de vue</div>
+      <div><kbd>R</kbd> Recharger</div>
+    </div>
+  </div>
+
+<!-- Modal Tâche corrigée avec stratégies et couleurs -->
+<div class="modal fade" id="popup-tache" tabindex="-1" aria-labelledby="popup-tache-label" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="popup-tache-label">
+          <i class="bi bi-card-checklist me-2"></i>Détails Tâche
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <div class="modal-body">
+        <form id="task-form" novalidate>
+          <div class="row g-3">
+            <div class="col-12">
+              <label for="popup-titre" class="form-label">Titre *</label>
+              <input type="text" class="form-control" id="popup-titre" required>
+            </div>
+            <div class="col-12">
+              <label for="popup-description" class="form-label">
+                Description / Commentaires
+                <small class="text-muted">(Un horodatage sera automatiquement ajouté)</small>
+              </label>
+              <textarea class="form-control" id="popup-description" rows="4" 
+                        placeholder="Décrivez la tâche, les blocages, les actions réalisées..."></textarea>
+              <div class="description-help">
+                <button type="button" class="btn btn-outline-info btn-sm" id="btn-view-comment-history">
+                  <i class="bi bi-clock-history me-1"></i>Voir l'historique des commentaires
+                </button>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label for="popup-statut-text" class="form-label">Statut *</label>
+              <input type="text" class="form-control" id="popup-statut-text" readonly required>
+            </div>
+            <div class="col-md-4">
+              <label for="popup-projet" class="form-label">Projet</label>
+              <div class="input-group">
+                <select class="form-select" id="popup-projet"></select>
+                <input type="text" class="form-control" id="projet-ajout" placeholder="Ajouter projet">
+                <button class="btn btn-outline-secondary" type="button" id="btn-ajout-projet">
+                  <i class="bi bi-plus"></i>
+                </button>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label for="popup-urgence" class="form-label">Urgence & Impact</label>
+              <div class="input-group">
+                <select class="form-select" id="popup-urgence">
+                  <option value="">-- Urgence --</option>
+                </select>
+                <select class="form-select" id="popup-impact">
+                  <option value="">-- Impact --</option>
+                </select>
+              </div>
+            </div>
+            
+            <!-- SECTION STRATÉGIE CORRIGÉE -->
+            <div class="col-12">
+              <label class="form-label">
+                <i class="bi bi-bullseye me-2"></i>Stratégie
+                <small class="text-muted">(Optionnel - Alignement stratégique)</small>
+              </label>
+              
+              <!-- Select stratégie depuis Grist -->
+              <div class="mb-3">
+                <select class="form-select" id="popup-strategie">
+                  <option value="">-- Choisir une stratégie --</option>
+                </select>
+                <div class="form-text">Sélectionnez une stratégie depuis la base de données</div>
+              </div>
+              
+              <!-- Détails de la stratégie sélectionnée -->
+              <div class="strategy-details" id="strategy-details" style="display: none;">
+                <div class="card bg-light">
+                  <div class="card-body">
+                    <h6 class="card-title">Détails de la stratégie sélectionnée:</h6>
+                    <div class="row">
+                      <div class="col-md-4">
+                        <strong>Objectif:</strong>
+                        <div id="popup-strategie-objectif" class="strategy-detail"></div>
+                      </div>
+                      <div class="col-md-4">
+                        <strong>Sous-objectif:</strong>
+                        <div id="popup-strategie-sous-objectif" class="strategy-detail"></div>
+                      </div>
+                      <div class="col-md-4">
+                        <strong>Action:</strong>
+                        <div id="popup-strategie-action" class="strategy-detail"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Champs cachés pour la compatibilité -->
+              <input type="hidden" id="popup-strategie-objectif-hidden">
+              <input type="hidden" id="popup-strategie-sous-objectif-hidden">
+              <input type="hidden" id="popup-strategie-action-hidden">
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label">
+                <i class="bi bi-calendar-event me-2"></i>Date butoir
+                <small class="text-muted ms-2">(Optionnelle)</small>
+              </label>
+              <div class="input-group">
+                <input type="text" class="form-control" id="popup-delai" 
+                       placeholder="Cliquer pour choisir une date..." 
+                       aria-label="Date butoir" readonly>
+                <button class="btn btn-outline-secondary" type="button" id="btn-clear-date" 
+                        title="Supprimer la date" style="display: none;">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+                <button class="btn btn-outline-primary" type="button" id="btn-pick-date" 
+                        title="Choisir une date">
+                  <i class="bi bi-calendar3"></i>
+                </button>
+              </div>
+              <div class="form-text">
+                <span id="date-status" class="text-muted">Aucune date définie</span>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label for="popup-bureau" class="form-label">Bureaux</label>
+              <select class="form-select" id="popup-bureau" multiple size="4"></select>
+              <div class="form-text">Maintenez Ctrl pour sélectionner plusieurs bureaux</div>
+            </div>
+            <div class="col-md-6">
+              <label for="popup-qui" class="form-label">Responsables</label>
+              <select class="form-select" id="popup-qui" multiple size="4"></select>
+              <div class="form-text">Maintenez Ctrl pour sélectionner plusieurs responsables</div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger me-auto" id="btn-delete-task" style="display: none;">
+          <i class="bi bi-trash me-2"></i>Supprimer
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-x-circle me-2"></i>Annuler
+        </button>
+        <button type="button" class="btn btn-primary" id="btn-save-task">
+          <i class="bi bi-check2-circle me-2"></i>Sauvegarder
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <!-- Modal Historique (identique à l'original) -->
+  <div class="modal fade history-modal" id="history-modal" tabindex="-1" aria-labelledby="history-modal-label" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="history-modal-label">
+            <i class="bi bi-clock-history me-2"></i>Historique de la tâche
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        </div>
+        <div class="modal-body">
+          <div id="history-stats" class="history-stats"></div>
+          <div id="history-timeline" class="history-timeline"></div>
+          
+          <!-- Widget d'édition de commentaire (hidden par défaut) -->
+          <div id="comment-edit-widget" class="comment-edit-widget" style="display: none;">
+            <div class="comment-edit-overlay">
+              <div class="comment-edit-box">
+                <div class="comment-edit-header">
+                  <h6><i class="bi bi-pencil-square me-2"></i>Éditer le commentaire</h6>
+                  <button type="button" class="btn-close btn-close-sm" id="btn-close-comment-edit"></button>
+                </div>
+                <div class="comment-edit-body">
+                  <div class="mb-3">
+                    <label for="comment-edit-text" class="form-label">Texte du commentaire</label>
+                    <textarea class="form-control" id="comment-edit-text" rows="4" 
+                              placeholder="Modifiez votre commentaire..."></textarea>
+                  </div>
+                  <div class="comment-edit-info">
+                    <small class="text-muted">
+                      <i class="bi bi-info-circle me-1"></i>
+                      Commentaire créé le <span id="comment-edit-date"></span>
+                    </small>
+                  </div>
+                </div>
+                <div class="comment-edit-footer">
+                  <button type="button" class="btn btn-sm btn-secondary" id="btn-cancel-comment-edit">
+                    <i class="bi bi-x-circle me-1"></i>Annuler
+                  </button>
+                  <button type="button" class="btn btn-sm btn-primary" id="btn-save-comment-edit">
+                    <i class="bi bi-check2-circle me-1"></i>Sauvegarder
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-info" id="btn-show-comments-only">
+            <i class="bi bi-chat-square-text me-2"></i>Voir tous les commentaires
+          </button>
+          <button type="button" class="btn btn-success" id="btn-export-task-history">
+            <i class="bi bi-download me-2"></i>Exporter cette tâche
+          </button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Fermer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Scripts externes -->
+  <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/fr.js"></script>
+  
+  <!-- Application Kanban modulaire -->
+  <script type="module" src="js/kanban-app.js"></script>
+  
+  <!-- Script de debug (développement seulement) -->
+  <script>
+    // Mise à jour du panneau de debug
+    // Debug info function (commenté avec le panel debug)
+    /*
+    function updateDebugInfo() {
+      if (window.kanbanManager) {
+        document.getElementById('current-mode').textContent = window.kanbanManager.viewMode || '-';
+        document.getElementById('task-count').textContent = window.kanbanManager.currentRecords?.length || '0';
+        document.getElementById('current-user').textContent = window.kanbanManager.currentUser || 'Non détecté';
+      }
+    }
+    
+    // Mise à jour périodique du debug
+    setInterval(updateDebugInfo, 2000);
+    */
+    
+    // Raccourcis clavier globaux
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'r' || e.key === 'R') {
+        if (!e.target.matches('input, textarea') && window.kanbanManager) {
+          e.preventDefault();
+          window.kanbanManager.refreshKanban();
+          console.log('🔄 Kanban rechargé manuellement');
+        }
+      }
+    });
+    
+    // Console helpers pour le développement
+    window.addEventListener('load', () => {
+      console.log('🚀 KANBAN MODULAIRE CHARGÉ');
+      console.log('📚 Modules disponibles:');
+      console.log('  - config/constants.js');
+      console.log('  - utils/dates.js');
+      console.log('  - utils/badges.js');
+      console.log('  - utils/dom.js');
+      console.log('  - kanban-app.js');
+      console.log('');
+      console.log('🔧 Debug disponible:');
+      console.log('  - window.kanbanManager : Instance principale');
+      console.log('  - window.KanbanApp : Utilitaires exposés');
+      console.log('  - logger.setLogLevel(\"INFO\") : Activer logs détaillés');
+      console.log('');
+      console.log('⌨️  Raccourcis:');
+      console.log('  - R : Recharger le kanban');
+      console.log('  - N : Nouvelle tâche');
+      console.log('  - F : Focus recherche');
+    });
+  </script>
+</body>
+</html>
