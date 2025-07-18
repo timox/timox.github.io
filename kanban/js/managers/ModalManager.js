@@ -100,11 +100,11 @@ export class ModalManager {
       });
     }
     
-    // Bouton voir historique des commentaires
-    const btnViewHistory = document.getElementById('btn-view-comment-history');
-    if (btnViewHistory) {
-      btnViewHistory.addEventListener('click', () => {
-        this.viewCommentHistory();
+    // Bouton toggle accordéon historique des commentaires
+    const btnToggleHistory = document.getElementById('btn-toggle-comment-history');
+    if (btnToggleHistory) {
+      btnToggleHistory.addEventListener('click', () => {
+        this.loadCommentHistoryInAccordion();
       });
     }
     
@@ -384,6 +384,9 @@ export class ModalManager {
     // Description - TOUJOURS VIDE pour saisie de nouveaux commentaires
     // Les anciens commentaires sont visibles dans l'historique, pas dans la zone de saisie
     setFieldValue('popup-description', '');
+    
+    // Réinitialiser l'accordéon historique
+    this.resetCommentHistoryAccordion();
     
     // Statut (lecture seule)
     const statut = tache.statut || (isNewTask ? 'Backlog' : '');
@@ -900,6 +903,160 @@ export class ModalManager {
     setFieldValue('projet-ajout', '');
     
     displaySuccess(`Projet "${newProjectName}" ajouté`);
+  }
+
+  /**
+   * Charge l'historique des commentaires dans l'accordéon de la modale
+   */
+  loadCommentHistoryInAccordion() {
+    if (!this.currentTask) {
+      console.warn('ModalManager: Aucune tâche courante pour charger l\'historique');
+      return;
+    }
+
+    // Obtenir les données d'historique via HistoryManager
+    if (this.kanban.historyManager) {
+      const historyData = this.kanban.historyManager.parseTaskHistory(this.currentTask);
+      this.renderCommentHistoryInAccordion(historyData);
+    } else {
+      console.error('HistoryManager non disponible');
+      this.showAccordionError('Gestionnaire d\'historique non disponible');
+    }
+  }
+
+  /**
+   * Rend l'historique des commentaires dans l'accordéon
+   * @param {object} historyData - Données d'historique parsées
+   */
+  renderCommentHistoryInAccordion(historyData) {
+    const accordionContent = document.getElementById('comment-history-content');
+    const commentCountBadge = document.getElementById('comment-count-badge');
+    
+    if (!accordionContent || !commentCountBadge) {
+      console.error('Éléments accordéon non trouvés');
+      return;
+    }
+
+    const { comments, timeline } = historyData;
+    
+    // Mettre à jour le badge de comptage
+    commentCountBadge.textContent = comments.length;
+    commentCountBadge.className = comments.length > 0 ? 'badge bg-info ms-2' : 'badge bg-secondary ms-2';
+
+    if (comments.length === 0) {
+      accordionContent.innerHTML = `
+        <div class="text-center text-muted py-3">
+          <i class="bi bi-chat-square fs-4"></i>
+          <p class="mt-2">Aucun commentaire trouvé</p>
+          <small>Les commentaires apparaîtront ici une fois ajoutés</small>
+        </div>
+      `;
+      return;
+    }
+
+    // Construire le HTML des commentaires avec styles compacts
+    let commentsHTML = '';
+    
+    comments.forEach((comment, index) => {
+      const formattedDate = new Date(comment.timestamp).toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      const isLatest = index === 0; // Le plus récent en premier
+      const latestBadge = isLatest ? '<span class="badge bg-success ms-2">Récent</span>' : '';
+      const userInfo = comment.user ? ` par ${comment.user}` : '';
+      
+      // Génerer un ID unique pour le commentaire
+      const timestampString = comment.timestamp instanceof Date ? 
+        comment.timestamp.toISOString() : 
+        String(comment.timestamp);
+      const commentId = `comment-${timestampString.replace(/[^\d]/g, '')}`;
+      
+      commentsHTML += `
+        <div class="comment-item mb-3 p-3 border rounded" data-comment-id="${commentId}">
+          <div class="comment-header d-flex justify-content-between align-items-start mb-2">
+            <div class="comment-meta">
+              <small class="text-muted">
+                <i class="bi bi-clock me-1"></i>${formattedDate}${userInfo}
+                ${latestBadge}
+              </small>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary btn-edit-comment" 
+                    data-comment-id="${commentId}"
+                    title="Éditer ce commentaire">
+              <i class="bi bi-pencil"></i>
+            </button>
+          </div>
+          <div class="comment-content" data-original="${comment.content.replace(/"/g, '&quot;')}">
+            ${comment.content}
+          </div>
+        </div>
+      `;
+    });
+
+    accordionContent.innerHTML = commentsHTML;
+    
+    console.log('ModalManager: Historique des commentaires chargé dans accordéon:', comments.length, 'commentaires');
+  }
+
+  /**
+   * Affiche une erreur dans l'accordéon
+   * @param {string} errorMessage - Message d'erreur
+   */
+  showAccordionError(errorMessage) {
+    const accordionContent = document.getElementById('comment-history-content');
+    const commentCountBadge = document.getElementById('comment-count-badge');
+    
+    if (accordionContent) {
+      accordionContent.innerHTML = `
+        <div class="text-center text-danger py-3">
+          <i class="bi bi-exclamation-triangle fs-4"></i>
+          <p class="mt-2">${errorMessage}</p>
+        </div>
+      `;
+    }
+    
+    if (commentCountBadge) {
+      commentCountBadge.textContent = '!';
+      commentCountBadge.className = 'badge bg-danger ms-2';
+    }
+  }
+
+  /**
+   * Réinitialise l'accordéon historique des commentaires
+   */
+  resetCommentHistoryAccordion() {
+    const accordionContent = document.getElementById('comment-history-content');
+    const commentCountBadge = document.getElementById('comment-count-badge');
+    const accordion = document.getElementById('comment-history-accordion');
+    
+    // Réinitialiser le contenu
+    if (accordionContent) {
+      accordionContent.innerHTML = `
+        <div class="text-center text-muted py-3">
+          <i class="bi bi-clock-history fs-4"></i>
+          <p class="mt-2">Chargement de l'historique...</p>
+        </div>
+      `;
+    }
+    
+    // Réinitialiser le badge
+    if (commentCountBadge) {
+      commentCountBadge.textContent = '0';
+      commentCountBadge.className = 'badge bg-secondary ms-2';
+    }
+    
+    // Fermer l'accordéon s'il est ouvert
+    if (accordion && accordion.classList.contains('show')) {
+      const bsCollapse = bootstrap.Collapse.getInstance(accordion);
+      if (bsCollapse) {
+        bsCollapse.hide();
+      }
+    }
   }
 
   /**

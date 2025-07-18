@@ -94,10 +94,31 @@ export class HistoryManager {
     
     this.currentTaskHistory = task;
     
-    if (this.kanban.modalManager) {
-      this.kanban.modalManager.openHistoryModal(taskId);
+    // Vérifier si la tâche est déjà ouverte dans la modale de détail
+    const taskModal = document.getElementById('popup-tache');
+    const isTaskModalOpen = taskModal && taskModal.classList.contains('show');
+    const currentTaskIdInModal = this.kanban.modalManager?.currentTaskId;
+    
+    if (isTaskModalOpen && currentTaskIdInModal === taskId) {
+      // Utiliser l'accordéon dans la modale de détail
+      console.log('HistoryManager: Utilisation accordéon dans modale de détail');
+      if (this.kanban.modalManager) {
+        this.kanban.modalManager.loadCommentHistoryInAccordion();
+        
+        // Ouvrir l'accordéon automatiquement
+        const accordion = document.getElementById('comment-history-accordion');
+        if (accordion && !accordion.classList.contains('show')) {
+          const bsCollapse = new bootstrap.Collapse(accordion, { show: true });
+        }
+      }
     } else {
-      this.renderTaskHistory(task);
+      // Utiliser la modale historique séparée (comportement original)
+      console.log('HistoryManager: Utilisation modale historique séparée');
+      if (this.kanban.modalManager) {
+        this.kanban.modalManager.openHistoryModal(taskId);
+      } else {
+        this.renderTaskHistory(task);
+      }
     }
   }
   
