@@ -34,19 +34,25 @@ Application Kanban web pour gestion des tâches SSIR avec :
 **Migration** : `description` → `notes` (JSON structuré)
 ```javascript
 {
-  "entries": [
+  "content": "Contenu principal de la tâche",
+  "history": [
     {
-      "id": "uuid",
-      "timestamp": "2025-07-16T10:30:00.000Z", 
-      "user": "nom_utilisateur",
-      "type": "field_change|comment|creation|status_change",
-      "changes": [{"field": "titre", "value": "nouveau", "previous": "ancien"}],
-      "comment": "Commentaire utilisateur",
-      "editable": true|false
+      "timestamp": "2025-07-16T10:30:00.000Z",
+      "user": "nom_utilisateur", 
+      "action": "status_change|comment|creation|field_change",
+      "details": "Description de l'action ou commentaire",
+      "from": "ancien_statut",
+      "to": "nouveau_statut"
     }
   ]
 }
 ```
+
+**Structure réelle** :
+- `content` : Contenu principal/description de la tâche
+- `history` : Tableau des actions et commentaires chronologiques
+- Chaque entrée d'historique contient : timestamp, user, action, details
+- Actions possibles : status_change, comment, creation, field_change
 
 ### 3. Champ description (IMPORTANT)
 **RÈGLE** : Le champ description doit TOUJOURS être vide à l'ouverture
