@@ -871,8 +871,8 @@ export class HistoryManager {
       }
     });
     
-    // Bouton fermer
-    const btnClose = document.getElementById('btn-close-comment-edit');
+    // Bouton fermer (IDs uniques pour accordéon)
+    const btnClose = document.getElementById('accordion-btn-close-comment-edit');
     if (btnClose) {
       btnClose.addEventListener('click', () => {
         this.closeCommentEditWidget();
@@ -880,7 +880,7 @@ export class HistoryManager {
     }
     
     // Bouton annuler
-    const btnCancel = document.getElementById('btn-cancel-comment-edit');
+    const btnCancel = document.getElementById('accordion-btn-cancel-comment-edit');
     if (btnCancel) {
       btnCancel.addEventListener('click', () => {
         this.closeCommentEditWidget();
@@ -888,15 +888,18 @@ export class HistoryManager {
     }
     
     // Bouton sauvegarder
-    const btnSave = document.getElementById('btn-save-comment-edit');
+    const btnSave = document.getElementById('accordion-btn-save-comment-edit');
     if (btnSave) {
       btnSave.addEventListener('click', () => {
+        console.log('HistoryManager: Bouton sauvegarder cliqué, this:', this);
         this.saveCommentEdit();
       });
+    } else {
+      console.error('HistoryManager: Bouton accordion-btn-save-comment-edit non trouvé');
     }
     
-    // Fermer avec l'overlay
-    const overlay = document.querySelector('.comment-edit-overlay');
+    // Fermer avec l'overlay (seulement celui de l'accordéon)
+    const overlay = document.querySelector('#accordion-comment-edit-widget .comment-edit-overlay');
     if (overlay) {
       overlay.addEventListener('click', (e) => {
         if (e.target === overlay) {
@@ -918,37 +921,37 @@ export class HistoryManager {
    */
   createCommentEditWidget() {
     // Vérifier si le widget existe déjà
-    if (document.getElementById('comment-edit-widget')) {
-      console.log('HistoryManager: Widget d\'édition existe déjà');
+    if (document.getElementById('accordion-comment-edit-widget')) {
+      console.log('HistoryManager: Widget d\'édition accordéon existe déjà');
       return;
     }
     
-    console.log('HistoryManager: Création du widget d\'édition de commentaires');
+    console.log('HistoryManager: Création du widget d\'édition de commentaires pour accordéon');
     
-    // Créer le HTML du widget
+    // Créer le HTML du widget avec IDs uniques
     const widgetHTML = `
-      <div id="comment-edit-widget" class="comment-edit-overlay" style="display: none;">
+      <div id="accordion-comment-edit-widget" class="comment-edit-overlay" style="display: none;">
         <div class="comment-edit-modal">
           <div class="comment-edit-header">
             <h5><i class="bi bi-pencil me-2"></i>Édition de commentaire</h5>
-            <button type="button" id="btn-close-comment-edit" class="btn-close" aria-label="Fermer">
+            <button type="button" id="accordion-btn-close-comment-edit" class="btn-close" aria-label="Fermer">
               <span aria-hidden="true">&times;</span>
             </button>
           </div>
           
           <div class="comment-edit-body">
             <div class="mb-2">
-              <small class="text-muted">Date: <span id="comment-edit-date"></span></small>
+              <small class="text-muted">Date: <span id="accordion-comment-edit-date"></span></small>
             </div>
-            <textarea id="comment-edit-text" class="form-control" rows="4" 
+            <textarea id="accordion-comment-edit-text" class="form-control" rows="4" 
                       placeholder="Modifiez votre commentaire..."></textarea>
           </div>
           
           <div class="comment-edit-footer">
-            <button type="button" id="btn-cancel-comment-edit" class="btn btn-secondary">
+            <button type="button" id="accordion-btn-cancel-comment-edit" class="btn btn-secondary">
               <i class="bi bi-x-circle me-1"></i>Annuler
             </button>
-            <button type="button" id="btn-save-comment-edit" class="btn btn-primary">
+            <button type="button" id="accordion-btn-save-comment-edit" class="btn btn-primary">
               <i class="bi bi-check-circle me-1"></i>Sauvegarder
             </button>
           </div>
@@ -1083,17 +1086,30 @@ export class HistoryManager {
       originalContent: originalContent
     };
     
-    // Remplir le widget
-    document.getElementById('comment-edit-text').value = originalContent;
-    document.getElementById('comment-edit-date').textContent = dateText;
+    // Remplir le widget (IDs uniques pour accordéon)
+    const textArea = document.getElementById('accordion-comment-edit-text');
+    const dateSpan = document.getElementById('accordion-comment-edit-date');
+    
+    if (!textArea || !dateSpan) {
+      console.error('HistoryManager: Éléments du widget accordéon non trouvés');
+      return;
+    }
+    
+    textArea.value = originalContent;
+    dateSpan.textContent = dateText;
     
     // Afficher le widget
-    const widget = document.getElementById('comment-edit-widget');
+    const widget = document.getElementById('accordion-comment-edit-widget');
+    if (!widget) {
+      console.error('HistoryManager: Widget accordéon non trouvé');
+      return;
+    }
+    
     widget.style.display = 'block';
     
     // Focus sur le textarea
     setTimeout(() => {
-      document.getElementById('comment-edit-text').focus();
+      textArea.focus();
     }, 100);
   }
   
@@ -1101,14 +1117,19 @@ export class HistoryManager {
    * Ferme le widget d'édition
    */
   closeCommentEditWidget() {
-    const widget = document.getElementById('comment-edit-widget');
-    widget.style.display = 'none';
+    const widget = document.getElementById('accordion-comment-edit-widget');
+    if (widget) {
+      widget.style.display = 'none';
+    }
     
     this.currentEditingComment = null;
     
-    // Nettoyer le formulaire
-    document.getElementById('comment-edit-text').value = '';
-    document.getElementById('comment-edit-date').textContent = '';
+    // Nettoyer le formulaire (IDs uniques pour accordéon)
+    const textArea = document.getElementById('accordion-comment-edit-text');
+    const dateSpan = document.getElementById('accordion-comment-edit-date');
+    
+    if (textArea) textArea.value = '';
+    if (dateSpan) dateSpan.textContent = '';
   }
   
   /**
@@ -1116,7 +1137,7 @@ export class HistoryManager {
    * @returns {boolean}
    */
   isCommentEditOpen() {
-    const widget = document.getElementById('comment-edit-widget');
+    const widget = document.getElementById('accordion-comment-edit-widget');
     return widget && widget.style.display === 'block';
   }
   
@@ -1124,12 +1145,21 @@ export class HistoryManager {
    * Sauvegarde les modifications du commentaire
    */
   async saveCommentEdit() {
+    console.log('HistoryManager: saveCommentEdit appelé');
+    console.log('HistoryManager: currentEditingComment:', this.currentEditingComment);
+    
     if (!this.currentEditingComment) {
-      console.error('Aucun commentaire en cours d\'édition');
+      console.error('HistoryManager: Aucun commentaire en cours d\'édition');
+      console.log('HistoryManager: État du widget:', {
+        widgetVisible: document.getElementById('comment-edit-widget')?.style.display,
+        textareaValue: document.getElementById('comment-edit-text')?.value,
+        dateText: document.getElementById('comment-edit-date')?.textContent
+      });
+      displayError('Erreur: Aucun commentaire sélectionné pour édition');
       return;
     }
     
-    const newContent = document.getElementById('comment-edit-text').value.trim();
+    const newContent = document.getElementById('accordion-comment-edit-text').value.trim();
     
     if (!newContent) {
       displayError('Le commentaire ne peut pas être vide');
@@ -1150,7 +1180,7 @@ export class HistoryManager {
       }
       
       // Désactiver le bouton de sauvegarde et afficher un loader
-      const saveBtn = document.getElementById('btn-save-comment-edit');
+      const saveBtn = document.getElementById('accordion-btn-save-comment-edit');
       const originalText = saveBtn.innerHTML;
       saveBtn.disabled = true;
       saveBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Sauvegarde...';
