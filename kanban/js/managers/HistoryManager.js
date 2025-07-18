@@ -1056,8 +1056,11 @@ export class HistoryManager {
     
     const contentElement = commentElement.querySelector('.comment-content');
     const originalContent = contentElement.dataset.original || contentElement.textContent;
-    const dateElement = commentElement.querySelector('.timeline-dates');
-    const dateText = dateElement.textContent.trim();
+    
+    // Chercher l'élément de date (compatible modale historique ET accordéon)
+    const dateElement = commentElement.querySelector('.timeline-dates') || 
+                       commentElement.querySelector('.comment-meta');
+    const dateText = dateElement ? dateElement.textContent.trim() : 'Date inconnue';
     
     // Stocker les informations du commentaire en cours d'édition
     this.currentEditingComment = {
