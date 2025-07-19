@@ -390,11 +390,15 @@ export class ViewModeManager {
     }
     
     this.refreshTimeout = setTimeout(() => {
-      if (this.kanban.refreshKanban) {
+      // CORRIGÉ: Utiliser applyFilters() pour préserver l'état des filtres
+      if (this.kanban.filterManager && this.kanban.filterManager.applyFilters) {
+        this.kanban.filterManager.applyFilters();
+      } else if (this.kanban.refreshKanban) {
         this.kanban.refreshKanban();
+      }
         
-        // Appliquer le mode focus APRÈS le refresh si nécessaire
-        if (this.currentMode === VIEW_MODES.FOCUS && this.focusColumn) {
+      // Appliquer le mode focus APRÈS le refresh si nécessaire
+      if (this.currentMode === VIEW_MODES.FOCUS && this.focusColumn) {
           setTimeout(() => {
             this.showOnlyFocusColumn(this.focusColumn);
           }, 100);
