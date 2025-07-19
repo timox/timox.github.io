@@ -3,6 +3,7 @@
 
 import { VIEW_MODES, STATUTS } from '../config/constants.js';
 import { displayError, displaySuccess, toggleLoadingSpinner } from '../utils/dom.js';
+import { STRATEGY_DATA, convertToGristFormat } from '../config/strategyDataHardcoded.js';
 
 // Importation des managers
 import { DatePickerManager } from '../managers/DatePickerManager.js';
@@ -176,8 +177,8 @@ export class KanbanManager {
     try {
       console.log('KanbanManager: Chargement des données stratégiques intégrées...');
       
-      // Importer les données intégrées
-      const { STRATEGY_DATA, convertToGristFormat } = await import('../config/strategyDataHardcoded.js');
+      // Utiliser les données importées statiquement
+      console.log('KanbanManager: STRATEGY_DATA disponible:', STRATEGY_DATA?.length);
       
       // Convertir au format Grist pour compatibilité avec mapStrategyRecords
       const strategyRecords = convertToGristFormat(STRATEGY_DATA);
