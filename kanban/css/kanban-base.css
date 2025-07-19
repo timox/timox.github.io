@@ -25,8 +25,8 @@ body {
 .kanban-header {
   background: var(--kanban-card-bg);
   border-bottom: 1px solid var(--kanban-border);
-  padding: 1rem 0;
-  margin-bottom: 1rem;
+  padding: 0.5rem 0;
+  margin-bottom: 0.75rem;
   box-shadow: var(--kanban-shadow);
 }
 
@@ -209,11 +209,14 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  color: var(--kanban-text);
+  font-weight: 600;
 }
 
 .board-count {
   background: var(--kanban-text-muted);
   color: var(--kanban-card-bg);
+  border: none;
   border-radius: 50%;
   width: 24px;
   height: 24px;
@@ -222,6 +225,18 @@ body {
   justify-content: center;
   font-size: 0.75rem;
   font-weight: 500;
+  cursor: pointer;
+  transition: var(--kanban-transition);
+}
+
+.board-count:hover {
+  background: var(--kanban-text);
+  transform: scale(1.1);
+}
+
+.board-count.active {
+  background: #007bff;
+  color: white;
 }
 
 .kanban-board-body {

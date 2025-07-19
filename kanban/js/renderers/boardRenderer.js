@@ -192,7 +192,12 @@ export class BoardRenderer {
             ${statut.libelle}
           </span>
           <div class="board-meta">
-            <span class="board-count" title="${count} tâche${count !== 1 ? 's' : ''}">${count}</span>
+            <button class="board-count" 
+                    data-status="${statut.id}" 
+                    title="Filtrer par ${statut.libelle} (${count} tâche${count !== 1 ? 's' : ''})"
+                    aria-label="Filtrer par ${statut.libelle}">
+              ${count}
+            </button>
             ${performanceIndicators}
           </div>
         </div>
