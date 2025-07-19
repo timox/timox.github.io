@@ -187,6 +187,21 @@ export function convertToGristFormat(data) {
   return gristFormat;
 }
 
+// === CONFIGURATION LOGS (PRODUCTION) ===
+export const LOG_CONFIG = {
+  PRODUCTION: true,  // Mode production : logs réduits
+  LEVEL: 'ERROR',    // ERROR, WARN, INFO, DEBUG
+  MODULES: {
+    // Modules autorisés à logger en production
+    'kanban-app': 'ERROR',
+    'KanbanManager': 'ERROR', 
+    'GristManager': 'WARN',
+    'ViewModeManager': 'ERROR',
+    'FilterManager': 'ERROR',
+    'ModalManager': 'ERROR'
+  }
+};
+
 // === VALIDATION ===
 export const isValidStatut = (statut) => STATUTS.some(s => s.id === statut);
 export const isValidPriority = (priority) => Object.values(PRIORITY_LEVELS).includes(priority);
