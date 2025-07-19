@@ -543,6 +543,17 @@ export class FilterManager {
   }
   
   /**
+   * Met à jour un filtre spécifique
+   * @param {string} filterName - Nom du filtre
+   * @param {string} value - Valeur du filtre
+   */
+  setFilter(filterName, value) {
+    this.filters[filterName] = value;
+    this.updateInterfaceFromState();
+    this.applyFilters();
+  }
+  
+  /**
    * Exporte l'état des filtres
    * @returns {object} État des filtres
    */

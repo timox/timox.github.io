@@ -685,10 +685,48 @@ export class BoardRenderer {
       });
     });
     
+    // Écouteurs pour les badges de count (filtres par statut)
+    container.querySelectorAll('.board-count').forEach(badge => {
+      badge.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const statut = e.currentTarget.dataset.status;
+        
+        if (this.kanban.filterManager) {
+          // Toggle du filtre statut
+          const currentStatut = this.kanban.filterManager.filters.statut;
+          const newStatut = currentStatut === statut ? '' : statut;
+          
+          // Mettre à jour le filtre
+          this.kanban.filterManager.setFilter('statut', newStatut);
+          
+          // Mettre à jour l'interface
+          this.updateBadgeStates(container, newStatut);
+        }
+      });
+    });
+    
     // Support des raccourcis clavier dans les colonnes
     container.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         this.handleKeyboardNavigation(e);
+      }
+    });
+  }
+  
+  /**
+   * Met à jour l'état visuel des badges selon le filtre actif
+   * @param {HTMLElement} container - Container principal
+   * @param {string} activeStatut - Statut actuellement filtré
+   */
+  updateBadgeStates(container, activeStatut) {
+    container.querySelectorAll('.board-count').forEach(badge => {
+      const statut = badge.dataset.status;
+      if (activeStatut && statut === activeStatut) {
+        badge.classList.add('active');
+      } else {
+        badge.classList.remove('active');
       }
     });
   }
