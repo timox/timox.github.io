@@ -1081,6 +1081,8 @@ export class ModalManager {
           entry.timestamp.toISOString() : String(entry.timestamp);
         const commentId = `comment-${timestampString.replace(/[^\d]/g, '')}`;
         
+        console.log('ModalManager: Génération commentaire ID:', commentId, 'pour timestamp:', timestampString);
+        
         finalHTML += `
           <div class="comment-item mb-3 p-3 border rounded" data-comment-id="${commentId}">
             <div class="comment-header d-flex justify-content-between align-items-start mb-2">
