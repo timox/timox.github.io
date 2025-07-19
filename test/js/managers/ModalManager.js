@@ -154,6 +154,12 @@ export class ModalManager {
     }
     
     // Vérifier si on a des données Grist disponibles
+    console.log('ModalManager: Vérification strategyData:', {
+      exists: !!this.kanban.strategyData,
+      length: this.kanban.strategyData?.length || 0,
+      sample: this.kanban.strategyData?.[0]
+    });
+    
     if (this.kanban.strategyData && this.kanban.strategyData.length > 0) {
       console.log('ModalManager: Génération interface accordéon depuis Grist');
       this.renderStrategyAccordion(strategyBrowser);
@@ -339,175 +345,6 @@ export class ModalManager {
         Veuillez vérifier la connexion ou contacter l'administrateur.</p>
       </div>
     `;
-  }
-        'Migration Cloud': [
-          'Audit Infrastructure Existante',
-          'Sélection Fournisseur Cloud',
-          'Planification Migration',
-          'Migration Pilot',
-          'Migration Production',
-          'Optimisation Coûts Cloud',
-          'Formation Équipes Cloud',
-          'Monitoring Cloud Native'
-        ],
-        'Virtualisation': [
-          'Évaluation Serveurs Physiques',
-          'Choix Solution Virtualisation',
-          'Déploiement Hyperviseur',
-          'Migration Applications Legacy',
-          'Optimisation Ressources VM',
-          'Backup Machines Virtuelles',
-          'Monitoring Infrastructure Virtuelle'
-        ],
-        'Automatisation': [
-          'Identification Processus Manuels',
-          'Sélection Outils Automatisation',
-          'Développement Scripts',
-          'Tests Automatisation',
-          'Déploiement Production',
-          'Formation Équipes',
-          'Amélioration Continue'
-        ],
-        'Authentification Multi-Facteur': [
-          'Choix Solution AMF',
-          'Pilot Groupe Test',
-          'Déploiement Phases',
-          'Formation Utilisateurs',
-          'Support Utilisateurs',
-          'Monitoring Authentifications',
-          'Optimisation UX'
-        ],
-        'Optimisation Base de Données': [
-          'Audit Performance BDD',
-          'Optimisation Requêtes',
-          'Indexation Intelligente',
-          'Partitionnement Tables',
-          'Optimisation Mémoire',
-          'Monitoring Temps Réponse',
-          'Maintenance Préventive'
-        ],
-        'Conformité RGPD': [
-          'Audit Données Personnelles',
-          'Cartographie Traitements',
-          'Mise à Jour Mentions Légales',
-          'Procédures Exercice Droits',
-          'Formation RGPD',
-          'Outils Anonymisation',
-          'Documentation Conformité'
-        ],
-        'Plan de Reprise d\'Activité': [
-          'Analyse Impact Business',
-          'Identification Risques',
-          'Définition RTO/RPO',
-          'Procédures Reprise',
-          'Tests PRA Réguliers',
-          'Formation Équipes Crise',
-          'Amélioration Continue PRA'
-        ]
-      };
-    }
-    
-    // Peupler la liste des objectifs
-    populateSelect('popup-strategie-objectif', strategieObjectifs, true, '-- Choisir un objectif --');
-    
-    // Écouteur pour les sous-objectifs
-    const objectifSelect = document.getElementById('popup-strategie-objectif');
-    if (objectifSelect) {
-      objectifSelect.addEventListener('change', (e) => {
-        const selectedObjectif = e.target.value;
-        const sousObjectifs = strategieSousObjectifs[selectedObjectif] || [];
-        populateSelect('popup-strategie-sous-objectif', sousObjectifs, true, '-- Choisir un sous-objectif --');
-        
-        // Activer/désactiver la liste des sous-objectifs
-        const sousObjectifSelect = document.getElementById('popup-strategie-sous-objectif');
-        if (sousObjectifSelect) {
-          sousObjectifSelect.disabled = !selectedObjectif || sousObjectifs.length === 0;
-        }
-        
-        // Vider et désactiver les actions quand l'objectif change
-        populateSelect('popup-strategie-action', [], true, '-- Choisir d\'abord un sous-objectif --');
-        const actionSelect = document.getElementById('popup-strategie-action');
-        if (actionSelect) {
-          actionSelect.disabled = true;
-        }
-        
-        // Masquer les détails et vider strategie_id
-        this.hideStrategyDetails();
-        setFieldValue('popup-strategie-id', '');
-      });
-    }
-    
-    // Écouteur pour les actions
-    const sousObjectifSelect = document.getElementById('popup-strategie-sous-objectif');
-    if (sousObjectifSelect) {
-      sousObjectifSelect.addEventListener('change', (e) => {
-        const selectedSousObjectif = e.target.value;
-        const actions = strategieActions[selectedSousObjectif] || [];
-        populateSelect('popup-strategie-action', actions, true, '-- Choisir une action --');
-        
-        // Activer/désactiver la liste des actions
-        const actionSelect = document.getElementById('popup-strategie-action');
-        if (actionSelect) {
-          actionSelect.disabled = !selectedSousObjectif || actions.length === 0;
-        }
-        
-        // Masquer les détails et vider strategie_id
-        this.hideStrategyDetails();
-        setFieldValue('popup-strategie-id', '');
-      });
-    }
-    
-    // Écouteur pour la sélection finale d'action
-    const actionSelect = document.getElementById('popup-strategie-action');
-    if (actionSelect) {
-      actionSelect.addEventListener('change', (e) => {
-        const selectedAction = e.target.value;
-        if (selectedAction) {
-          this.findAndSetStrategyId();
-        } else {
-          this.hideStrategyDetails();
-          setFieldValue('popup-strategie-id', '');
-        }
-      });
-    }
-  }
-  
-  /**
-   * Trouve et définit le strategie_id basé sur la sélection complète
-   */
-  findAndSetStrategyId() {
-    const objectif = getFieldValue('popup-strategie-objectif');
-    const sousObjectif = getFieldValue('popup-strategie-sous-objectif');
-    const action = getFieldValue('popup-strategie-action');
-    
-    if (!objectif || !sousObjectif || !action) {
-      this.hideStrategyDetails();
-      return;
-    }
-    
-    // Rechercher dans les données Grist la combinaison objectif + sous-objectif + action
-    if (this.kanban.strategyData && this.kanban.strategyData.length > 0) {
-      const strategy = this.kanban.strategyData.find(s => 
-        s.objectif === objectif && 
-        s.sous_objectif === sousObjectif && 
-        s.action === action
-      );
-      
-      if (strategy) {
-        // Définir le strategie_id trouvé
-        setFieldValue('popup-strategie-id', strategy.id);
-        
-        // Afficher les détails
-        this.updateStrategyDetails(strategy);
-      } else {
-        console.warn('Stratégie non trouvée pour:', { objectif, sousObjectif, action });
-        this.hideStrategyDetails();
-        setFieldValue('popup-strategie-id', '');
-      }
-    } else {
-      console.warn('Données stratégiques non disponibles');
-      this.hideStrategyDetails();
-    }
   }
   
   /**
