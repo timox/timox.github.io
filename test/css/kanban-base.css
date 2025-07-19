@@ -700,14 +700,48 @@ body {
 .board-hidden { display: none; }
 
 /* === Classes par statut avec couleurs titres === */
-.status-backlog .board-title { color: #6c757d; }
-.status-todo .board-title { color: #0dcaf0; }
-.status-progress .board-title { color: #fd7e14; }
-.status-waiting .board-title { color: #ffc107; }
-.status-blocked .board-title { color: #dc3545; }
-.status-validation .board-title { color: #6f42c1; }
-.status-done .board-title { color: #198754; }
-.status-unknown .board-title { color: var(--kanban-text); }
+.status-backlog .board-title { 
+  color: #6c757d; 
+  font-weight: 700;
+}
+.status-todo .board-title { 
+  color: #0ea5e9; 
+  font-weight: 700;
+}
+.status-progress .board-title { 
+  color: #f97316; 
+  font-weight: 700;
+}
+.status-waiting .board-title { 
+  color: #eab308; 
+  font-weight: 700;
+}
+.status-blocked .board-title { 
+  color: #ef4444; 
+  font-weight: 700;
+}
+.status-validation .board-title { 
+  color: #8b5cf6; 
+  font-weight: 700;
+}
+.status-done .board-title { 
+  color: #22c55e; 
+  font-weight: 700;
+}
+.status-unknown .board-title { 
+  color: var(--kanban-text); 
+  font-weight: 700;
+}
+
+/* === Classes par statut avec bordures colorées plus visibles === */
+.status-backlog { border-top: 4px solid #6c757d; }
+.status-todo { border-top: 4px solid #0ea5e9; }
+.status-progress { border-top: 4px solid #f97316; }
+.status-waiting { border-top: 4px solid #eab308; }
+.status-blocked { border-top: 4px solid #ef4444; }
+.status-validation { border-top: 4px solid #8b5cf6; }
+.status-done { border-top: 4px solid #22c55e; }
+.status-unknown { border-top: 4px solid #6c757d; }
 
 /* === Mode Focus (simplifié) === */
 /* Navigation focus supprimée - utilise maintenant le filtre statut directement */

@@ -59,6 +59,7 @@ kanban/
 - ✅ Mode focus simplifié (filtre statut uniquement)  
 - ✅ Comptages badges corrects
 - ✅ Colonnes vides masquées en mode compact
+- ✅ Système de coloration des colonnes par statut
 - ✅ Architecture modulaire complète
 
 ---
