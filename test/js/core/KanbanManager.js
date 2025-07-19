@@ -1,9 +1,8 @@
 // === core/KanbanManager.js ===
 // Orchestrateur principal all�g� pour l'application Kanban
 
-import { VIEW_MODES, STATUTS } from '../config/constants.js';
+import { VIEW_MODES, STATUTS, STRATEGY_DATA, convertToGristFormat } from '../config/constants.js';
 import { displayError, displaySuccess, toggleLoadingSpinner } from '../utils/dom.js';
-import { STRATEGY_DATA, convertToGristFormat } from '../config/strategyDataHardcoded.js';
 
 // Importation des managers
 import { DatePickerManager } from '../managers/DatePickerManager.js';
