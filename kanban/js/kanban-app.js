@@ -1507,17 +1507,34 @@ class KanbanManager {
       return r && r.titre !== '___TEMP_USER_RECORD___';
     });
     
-    const { bureau, qui, projet, statut } = this.filters;
-    if (!bureau && !qui && !projet && !statut) {
-      return filteredTempRecords;
-    }
+    const { bureau, qui, projet, statut, search } = this.filters;
+    
+    // Appliquer tous les filtres (y compris la recherche textuelle)
     console.log("Application filtres:", this.filters);
     return filteredTempRecords.filter(r => {
+      // Filtres dropdown
       const matchBureau = !bureau || this.nettoyerListe(r.bureau).includes(bureau);
       const matchQui = !qui || this.nettoyerListe(r.qui).includes(qui);
       const matchProjet = !projet || r.projet === projet;
       const matchStatut = !statut || r.statut === statut;
-      return matchBureau && matchQui && matchProjet && matchStatut;
+      
+      // Recherche textuelle
+      let matchSearch = true;
+      if (search && search.trim() !== '') {
+        const searchableText = [
+          r.titre || '',
+          r.description || '',
+          r.projet || '',
+          r.strategie_objectif || '',
+          r.strategie_sous_objectif || '',
+          r.strategie_action || '',
+          r.notes || ''
+        ].join(' ').toLowerCase();
+        
+        matchSearch = searchableText.includes(search.toLowerCase().trim());
+      }
+      
+      return matchBureau && matchQui && matchProjet && matchStatut && matchSearch;
     });
   }
 
