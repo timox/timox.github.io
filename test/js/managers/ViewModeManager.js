@@ -185,8 +185,6 @@ export class ViewModeManager {
     
     // Rafraîchir le kanban avec le nouveau mode
     if (this.kanban.refreshKanban) {
-      this.kanban.viewMode = mode;
-      
       // Rafraichissement synchronisé
       this.refreshWithSync();
     }

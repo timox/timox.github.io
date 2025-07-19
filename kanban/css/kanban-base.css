@@ -649,6 +649,16 @@ body {
 .board-termine { border-top: 4px solid #198754; }
 .board-hidden { display: none; }
 
+/* === Classes par statut avec couleurs titres === */
+.status-backlog .board-title { color: #6c757d; }
+.status-todo .board-title { color: #0dcaf0; }
+.status-progress .board-title { color: #fd7e14; }
+.status-waiting .board-title { color: #ffc107; }
+.status-blocked .board-title { color: #dc3545; }
+.status-validation .board-title { color: #6f42c1; }
+.status-done .board-title { color: #198754; }
+.status-unknown .board-title { color: var(--kanban-text); }
+
 /* === Mode Focus === */
 .focus-navigation {
   display: flex;

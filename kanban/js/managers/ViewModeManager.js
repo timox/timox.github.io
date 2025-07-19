@@ -185,6 +185,11 @@ export class ViewModeManager {
     if (this.kanban.refreshKanban) {
       this.kanban.viewMode = mode;
       
+      // Mettre à jour les options de filtrage selon le mode
+      if (this.kanban.filterManager && this.kanban.filterManager.updateForViewMode) {
+        this.kanban.filterManager.updateForViewMode();
+      }
+      
       // Rafraichissement synchronisé
       this.refreshWithSync();
     }
@@ -244,10 +249,10 @@ export class ViewModeManager {
     const container = this.kanban.kanbanContainer;
     container.classList.add('kanban-focus');
     
-    this.logger.debug('Application du mode focus...');
+    this.logger.debug('Application du mode focus simplifié...');
     
-    // Créer la navigation focus
-    this.createFocusNavigation();
+    // SIMPLIFIÉ: Pas de navigation focus custom, utilise le filtre statut uniquement
+    this.hideFocusNavigation();
     
     // Si pas de colonne focus définie, choisir la première colonne avec des tâches
     if (!this.focusColumn) {
@@ -261,6 +266,12 @@ export class ViewModeManager {
       this.logger.debug(`Synchronisation focusColumn: ${this.focusColumn}`);
     }
     
+    // SIMPLIFIÉ: Appliquer le filtre statut directement via FilterManager
+    if (this.kanban.filterManager) {
+      this.kanban.filterManager.setFilter('statut', this.focusColumn);
+      this.logger.debug(`Filtre statut appliqué: ${this.focusColumn}`);
+    }
+    
     // Pas de refresh ici - sera fait par applyViewMode()
     this.logger.debug(`Focus mode configuré pour colonne: ${this.focusColumn}`);
     
@@ -270,7 +281,7 @@ export class ViewModeManager {
     container.style.height = 'calc(100vh - 250px)';
     container.style.justifyContent = 'center';
     
-    this.logger.info(`Mode focus appliqué - colonne "${this.focusColumn}" seule visible`);
+    this.logger.info(`Mode focus simplifié appliqué - statut "${this.focusColumn}" filtré`);
   }
   
   /**
@@ -341,18 +352,12 @@ export class ViewModeManager {
     // CORRECTION: Synchroniser avec le kanban principal
     this.kanban.focusColumn = columnId;
     
-    // Mettre à jour les boutons de navigation
-    document.querySelectorAll('.focus-nav-btn').forEach(btn => {
-      btn.classList.remove('active');
-      if (btn.dataset.column === columnId) {
-        btn.classList.add('active');
-      }
-    });
-    
-    // Si on est en mode focus, changer immédiatement la colonne affichée
+    // SIMPLIFIÉ: Si on est en mode focus, appliquer le filtre statut directement
     if (this.currentMode === VIEW_MODES.FOCUS) {
-      this.showOnlyFocusColumn(columnId);
-      this.logger.info(`Colonne focus changée vers: ${columnId}`);
+      if (this.kanban.filterManager) {
+        this.kanban.filterManager.setFilter('statut', columnId);
+        this.logger.info(`Filtre statut appliqué en mode focus: ${columnId}`);
+      }
     }
   }
   

@@ -201,11 +201,16 @@ export class FilterManager {
   populateSelect(selectElement, options, allText) {
     selectElement.innerHTML = '';
     
-    // Option "Tous"
-    const allOption = document.createElement('option');
-    allOption.value = '';
-    allOption.textContent = allText;
-    selectElement.appendChild(allOption);
+    // Option "Tous" - désactiver en mode focus pour le filtre statut
+    const isStatusSelect = selectElement.id === 'filter-statut';
+    const isFocusMode = this.kanban.viewModeManager && this.kanban.viewModeManager.currentMode === 'focus';
+    
+    if (!isStatusSelect || !isFocusMode) {
+      const allOption = document.createElement('option');
+      allOption.value = '';
+      allOption.textContent = allText;
+      selectElement.appendChild(allOption);
+    }
     
     // Ajouter les options
     options.forEach(option => {
@@ -511,6 +516,23 @@ export class FilterManager {
   updateFilterOptions() {
     if (this.isInitialized) {
       this.populateFilterOptions();
+    }
+  }
+
+  /**
+   * Met à jour les options lors d'un changement de mode de vue
+   */
+  updateForViewMode() {
+    if (this.isInitialized) {
+      this.populateFilterOptions();
+      
+      // En mode focus, s'assurer qu'un statut est sélectionné
+      const isFocusMode = this.kanban.viewModeManager && this.kanban.viewModeManager.currentMode === 'focus';
+      if (isFocusMode && !this.filters.statut) {
+        // Choisir le premier statut disponible ou celui du focus
+        const focusColumn = this.kanban.viewModeManager.focusColumn || 'À faire';
+        this.setFilter('statut', focusColumn);
+      }
     }
   }
   

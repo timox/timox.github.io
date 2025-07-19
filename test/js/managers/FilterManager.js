@@ -279,7 +279,7 @@ export class FilterManager {
       
       // Filtre statut - Ignoré en mode focus car la colonne focus gère déjà le filtrage
       if (this.filters.statut && this.filters.statut.trim() !== '' && 
-          this.kanban.viewMode !== 'focus' && record.statut !== this.filters.statut) {
+          !this.kanban.viewModeManager?.isMode('focus') && record.statut !== this.filters.statut) {
         return false;
       }
       

@@ -93,8 +93,8 @@ class KanbanManager {
     // CORRIGÉ: Propriétés pour les filtres et vues (utilisées par les managers)
     this.filters = { bureau: '', qui: '', projet: '', statut: '', search: '' };
     this.showTermine = true;
-    this.viewMode = VIEW_MODES.COMPACT;
-    this.focusColumn = null;
+    // Le mode de vue est géré par ViewModeManager
+    // La colonne focus est gérée par ViewModeManager
     this.expandedCards = new Set();
     
     // Gestion utilisateur
@@ -634,10 +634,10 @@ class KanbanManager {
     const datesElement = generateDatesContainer({
       date_debut: record.date_debut,
       date_echeance: record.date_echeance
-    }, this.viewMode === VIEW_MODES.COMPACT);
+    }, this.viewModeManager?.isMode(VIEW_MODES.COMPACT) || false);
     
     // Badges bureaux
-    const bureauBadges = generateBureauBadges(record.bureau, this.viewMode === VIEW_MODES.COMPACT);
+    const bureauBadges = generateBureauBadges(record.bureau, this.viewModeManager?.isMode(VIEW_MODES.COMPACT) || false);
     
     // Badges responsables
     const responsablesBadges = generateResponsablesBadges(record.qui);
@@ -649,7 +649,7 @@ class KanbanManager {
     const hasDateDebutClass = record.date_debut ? 'has-debut' : '';
     
     // CORRIGÉ: Classe selon le mode de vue
-    const cardClass = this.viewMode === VIEW_MODES.COMPACT ? 'kanban-item-compact' : 'kanban-item';
+    const cardClass = this.viewModeManager?.isMode(VIEW_MODES.COMPACT) ? 'kanban-item-compact' : 'kanban-item';
     
     return `<div class="kanban-item ${cardClass} ${hasEcheanceClass} ${hasDateDebutClass}" data-id="${record.id}">
       <div class="drag-handle">
@@ -881,17 +881,14 @@ class KanbanManager {
     this.sortableInstances.forEach(s => s.destroy());
     this.sortableInstances = [];
     
-    // CORRIGÉ: Appliquer les classes du mode de vue
+    // Le ViewModeManager gère les classes CSS
     let kanbanHTML = '';
-    const modeClass = this.viewMode === VIEW_MODES.COMPACT ? 'kanban-compact' : 
-                     this.viewMode === VIEW_MODES.DETAILED ? 'kanban-detailed' : 
-                     'kanban-focus';
-    
-    this.kanbanContainer.className = `kanban-container ${modeClass}`;
+    const currentMode = this.viewModeManager?.getCurrentMode() || VIEW_MODES.COMPACT;
     
     // Mode focus : afficher une seule colonne
-    if (this.viewMode === VIEW_MODES.FOCUS && this.focusColumn) {
-      const focusStatut = STATUTS.find(s => s.id === this.focusColumn);
+    const focusColumn = this.viewModeManager?.getFocusColumn();
+    if (currentMode === VIEW_MODES.FOCUS && focusColumn) {
+      const focusStatut = STATUTS.find(s => s.id === focusColumn);
       if (focusStatut) {
         const boardRecords = filteredRecords.filter(r => 
           r.statut === focusStatut.id && 

@@ -889,7 +889,7 @@ class KanbanManager {
     
     this.kanbanContainer.className = `kanban-container ${modeClass}`;
     
-    // Mode focus : afficher une seule colonne
+    // Mode focus : afficher une seule colonne centrée
     if (this.viewMode === VIEW_MODES.FOCUS && this.focusColumn) {
       const focusStatut = STATUTS.find(s => s.id === this.focusColumn);
       if (focusStatut) {
@@ -904,20 +904,24 @@ class KanbanManager {
         const itemsHTML = boardRecords.map(record => this.createTaskElementHTML(record)).join('');
         const count = boardRecords.length;
 
+        // CORRIGÉ: Une seule colonne centrée en mode focus
         kanbanHTML = `
-          <div class="kanban-board focus-board" data-status-id="${focusStatut.id}">
+          <div class="kanban-board kanban-board-title focus-board" data-status-id="${focusStatut.id}" style="max-width: 600px; margin: 0 auto;">
             <div class="kanban-board-header">
-              <span>${focusStatut.libelle}</span>
-              <span class="badge badge-secondary count-badge ml-2">${count}</span>
+              <span class="board-title">
+                ${this.getStatusIcon(focusStatut.id)}
+                ${focusStatut.libelle}
+              </span>
+              <button class="board-count" data-status="${focusStatut.id}" title="Filtrer par ${focusStatut.libelle}">${count}</button>
             </div>
-            <div class="kanban-items-container" data-status-id="${focusStatut.id}">
+            <div class="kanban-board-body" data-status="${focusStatut.id}">
               ${itemsHTML}
             </div>
           </div>
         `;
       }
     } else {
-      // Mode normal : afficher toutes les colonnes
+      // Mode normal : afficher toutes les colonnes avec masquage des vides
       statutsToShow.forEach(statut => {
         const boardId = statut.classe;
         const boardRecords = filteredRecords.filter(r => r.statut === statut.id);
@@ -940,8 +944,12 @@ class KanbanManager {
           return html;
         }).join('');
         const count = boardRecords.length;
-        const isHidden = (count === 0) || (statut.id === 'Terminé' && !this.showTermine);
+        
+        // CORRIGÉ: Masquer TOUTES les colonnes vides en mode compact
+        const isHidden = (this.viewMode === VIEW_MODES.COMPACT && count === 0) || 
+                         (statut.id === 'Terminé' && !this.showTermine);
         const hiddenClass = isHidden ? ' board-hidden' : '';
+        const statusClass = this.getStatusClass(statut.id);
 
         console.log(`Items HTML pour ${statut.id}: ${itemsHTML.length} caractères`);
         if (count > 0 && itemsHTML.length === 0) {
@@ -949,12 +957,15 @@ class KanbanManager {
         }
 
         kanbanHTML += `
-          <div class="kanban-board${hiddenClass}" data-status-id="${statut.id}" data-board-class="${statut.classe}">
-            <div class="kanban-board-header entete-${statut.classe}">
-              <span>${statut.libelle}</span>
-              <span class="badge badge-secondary count-badge ml-2">${count}</span>
+          <div class="kanban-board${hiddenClass} ${statusClass}" data-status="${statut.id}">
+            <div class="kanban-board-header">
+              <span class="board-title">
+                ${this.getStatusIcon(statut.id)}
+                ${statut.libelle}
+              </span>
+              <button class="board-count" data-status="${statut.id}" title="Filtrer par ${statut.libelle}">${count}</button>
             </div>
-            <div class="kanban-items-container" data-status-id="${statut.id}">
+            <div class="kanban-board-body" data-status="${statut.id}">
               ${itemsHTML}
             </div>
           </div>
@@ -971,7 +982,7 @@ class KanbanManager {
     this.isRefreshing = false;
     
     // Initialiser Sortable
-    this.kanbanContainer.querySelectorAll('.kanban-items-container').forEach(container => {
+    this.kanbanContainer.querySelectorAll('.kanban-board-body').forEach(container => {
       const sortableInstance = Sortable.create(container, {
         group: 'kanban-tasks',
         animation: 150,
@@ -985,8 +996,75 @@ class KanbanManager {
       this.sortableInstances.push(sortableInstance);
     });
     
-    // Attacher les événements
+    // Attacher les événements pour les badges cliquables
     this.attachCardEventListeners();
+    this.attachBadgeEventListeners();
+  }
+
+  // === MÉTHODES UTILITAIRES POUR LE RENDU ===
+  getStatusIcon(statusId) {
+    const icons = {
+      'Backlog': '<i class="bi bi-list-ul"></i>',
+      'À faire': '<i class="bi bi-calendar-plus"></i>',
+      'En cours': '<i class="bi bi-play-circle"></i>',
+      'En attente': '<i class="bi bi-pause-circle"></i>',
+      'Bloqué': '<i class="bi bi-x-octagon"></i>',
+      'Validation': '<i class="bi bi-check-circle"></i>',
+      'Terminé': '<i class="bi bi-check-circle-fill"></i>'
+    };
+    
+    return icons[statusId] || '<i class="bi bi-circle"></i>';
+  }
+
+  getStatusClass(statusId) {
+    const classes = {
+      'Backlog': 'status-backlog',
+      'À faire': 'status-todo', 
+      'En cours': 'status-progress',
+      'En attente': 'status-waiting',
+      'Bloqué': 'status-blocked',
+      'Validation': 'status-validation',
+      'Terminé': 'status-done'
+    };
+    
+    return classes[statusId] || 'status-unknown';
+  }
+
+  // === GESTION DES ÉVÉNEMENTS BADGES ===
+  attachBadgeEventListeners() {
+    // Écouteurs pour les badges de count (filtres par statut)
+    this.kanbanContainer.querySelectorAll('.board-count').forEach(badge => {
+      badge.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const statut = e.currentTarget.dataset.status;
+        
+        if (this.filterManager) {
+          // Toggle du filtre statut
+          const currentStatut = this.filterManager.filters.statut;
+          const newStatut = currentStatut === statut ? '' : statut;
+          
+          // Mettre à jour le filtre
+          this.filterManager.setFilter('statut', newStatut);
+          
+          // Mettre à jour l'interface
+          this.updateBadgeStates(newStatut);
+        }
+      });
+    });
+  }
+
+  // Met à jour l'état visuel des badges selon le filtre actif
+  updateBadgeStates(activeStatut) {
+    this.kanbanContainer.querySelectorAll('.board-count').forEach(badge => {
+      const statut = badge.dataset.status;
+      if (activeStatut && statut === activeStatut) {
+        badge.classList.add('active');
+      } else {
+        badge.classList.remove('active');
+      }
+    });
   }
 
   // NOUVEAU: Tri des enregistrements

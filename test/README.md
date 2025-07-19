@@ -8,16 +8,20 @@ Application web de gestion de tâches en mode Kanban intégrée avec Grist. Perm
 
 ### ✨ Gestion des Tâches
 - **Tableau Kanban** avec colonnes de statut (Backlog, À faire, En cours, En attente, Bloqué, Validation, Terminé)
+- **Icônes Bootstrap** pour chaque statut avec codes couleur
 - **Drag & Drop** pour changer le statut des tâches
 - **Création/Édition** de tâches avec formulaire complet
 - **Suppression** de tâches avec confirmation
 - **Assignation** multi-bureaux et multi-responsables
+- **3 modes de vue** : Compact, Détaillé, Focus
 
 ### 🔍 Filtres et Recherche
 - **Recherche textuelle** dans titre, description, et champs stratégiques
 - **Filtres par**: Bureau, Responsable, Projet, Statut
 - **Masquage/Affichage** des tâches terminées
-- **Filtres rapides** (mes tâches, tâches urgentes, etc.)
+- **Mode Focus** avec navigation entre colonnes
+- **Colonnes vides** automatiquement repliées (40px de largeur)
+- **Exclusion automatique** des enregistrements temporaires
 
 ### 📊 Priorités et Stratégies
 - **Calcul automatique** des priorités (matrice Urgence/Impact)
@@ -146,6 +150,9 @@ export const DEFAULT_BUREAUX = [
 ### Raccourcis Clavier
 - **N**: Nouvelle tâche
 - **F**: Focus sur recherche
+- **1**: Mode Compact
+- **2**: Mode Détaillé  
+- **3**: Mode Focus
 - **R**: Recharger le kanban
 - **Échap**: Fermer les modales
 
@@ -228,12 +235,16 @@ console.log(kanbanManager.currentRecords);
 - **Dernière mise à jour**: Juillet 2025
 - **Statut**: Production
 
-### Fonctionnalités Récentes
-- ✅ Correction erreur Grist sandbox
-- ✅ Amélioration format timestamps
-- ✅ Optimisation gestionnaires
-- ✅ Debugging avancé
-- ✅ Compatibilité schéma Grist
+### Fonctionnalités Récentes (Juillet 2025)
+- ✅ **Système d'icônes Bootstrap** pour les statuts (remplacement des emojis)
+- ✅ **Mode Focus** amélioré avec colonnes vides repliées automatiquement
+- ✅ **Filtrage des enregistrements temporaires** (___TEMP_USER_RECORD___)
+- ✅ **Largeur dynamique des colonnes** vides (40px en mode compact/détaillé)
+- ✅ **Navigation focus** avec boutons et compteurs de tâches
+- ✅ **CSS responsive** pour colonnes vides avec data-empty
+- ✅ **Suppression bouton Export History** de l'interface
+- ✅ **Correction bugs filtres** entre modes focus et statut
+- ✅ **Auto-sélection première colonne** avec tâches en mode focus
 
 ### Roadmap
 - 🔄 Implémentation complète User_Actions2
@@ -241,6 +252,33 @@ console.log(kanbanManager.currentRecords);
 - 🔄 Export avancé
 - 🔄 Notifications temps réel
 - 🔄 Mode mobile optimisé
+
+## 🔧 Problèmes Résolus (Juillet 2025)
+
+### Icons Bootstrap intégrés
+- **Problème**: Les icônes emoji n'étaient pas cohérents entre navigateurs
+- **Solution**: Remplacement par le système d'icônes Bootstrap avec classes CSS
+- **Fichiers**: `js/config/constants.js`, `index.html` (CDN Bootstrap Icons)
+
+### Mode Focus optimisé
+- **Problème**: Les colonnes vides prenaient trop de place et masquaient le titre
+- **Solution**: Système data-empty avec CSS pour replier automatiquement à 40px
+- **Fichiers**: `css/kanban-base.css`, `js/kanban-app.js`
+
+### Filtrage des enregistrements temporaires
+- **Problème**: Les enregistrements ___TEMP_USER_RECORD___ étaient comptés dans le Backlog
+- **Solution**: Exclusion automatique dans toutes les fonctions de comptage
+- **Fichiers**: `js/managers/ViewModeManager.js`, `js/kanban-app.js`
+
+### Navigation focus améliorée
+- **Problème**: Pas de navigation intuitive entre colonnes en mode focus
+- **Solution**: Boutons avec icônes et compteurs pour chaque statut
+- **Fichiers**: `js/managers/ViewModeManager.js`
+
+### Conflicts filtres résolus
+- **Problème**: Les filtres de statut interféraient avec le mode focus
+- **Solution**: Logique conditionnelle pour ignorer les filtres statut en mode focus
+- **Fichiers**: `js/managers/FilterManager.js`
 
 ## 🤝 Contribution
 

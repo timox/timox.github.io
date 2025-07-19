@@ -43,10 +43,10 @@ export class KanbanManager {
     this.gristOptions = {};
     
     // �tat de l'interface
-    this.viewMode = VIEW_MODES.COMPACT;
+    // Le mode de vue est géré par ViewModeManager
     this.filters = {};
     this.showTermine = true;
-    this.focusColumn = null;
+    // La colonne focus est gérée par ViewModeManager
     
     // Utilisateur courant
     this.currentUser = null;
@@ -251,7 +251,7 @@ export class KanbanManager {
   setupViewControls() {
     // Les contr�les sont g�r�s par le FilterManager
     // On s'assure juste que l'�tat initial est correct
-    this.viewMode = this.filterManager?.viewMode || VIEW_MODES.COMPACT;
+    // Le mode de vue est géré par ViewModeManager
   }
   
   /**
@@ -269,9 +269,9 @@ export class KanbanManager {
       
       // D�l�guer le rendu au BoardRenderer
       if (this.boardRenderer) {
-        this.boardRenderer.renderKanban(this.viewMode, filteredRecords, {
+        this.boardRenderer.renderKanban(this.viewModeManager?.getCurrentMode() || VIEW_MODES.COMPACT, filteredRecords, {
           showTermine: this.showTermine,
-          focusColumn: this.focusColumn,
+          focusColumn: this.viewModeManager?.getFocusColumn(),
           container: this.kanbanContainer
         });
       }
@@ -512,22 +512,10 @@ export class KanbanManager {
    * @param {string} newMode - Nouveau mode de vue
    */
   setViewMode(newMode) {
-    if (!Object.values(VIEW_MODES).includes(newMode)) {
-      console.warn('KanbanManager: Mode de vue invalide:', newMode);
-      return;
+    console.warn('KanbanManager.setViewMode() est déprécié. Utiliser viewModeManager.setViewMode()');
+    if (this.viewModeManager) {
+      this.viewModeManager.setViewMode(newMode);
     }
-    
-    this.viewMode = newMode;
-    
-    // Notifier le FilterManager
-    if (this.filterManager && typeof this.filterManager.setViewMode === 'function') {
-      this.filterManager.setViewMode(newMode);
-    } else {
-      // Fallback: rafra�chir directement
-      this.refreshKanban();
-    }
-    
-    console.log('KanbanManager: Mode de vue chang�:', newMode);
   }
   
   /**
@@ -712,10 +700,10 @@ export class KanbanManager {
       isInitialized: this.isInitialized,
       isUpdating: this.isUpdating,
       currentUser: this.currentUser,
-      viewMode: this.viewMode,
+      viewMode: this.viewModeManager?.getCurrentMode() || VIEW_MODES.COMPACT,
       filters: this.filters,
       showTermine: this.showTermine,
-      focusColumn: this.focusColumn,
+      focusColumn: this.viewModeManager?.getFocusColumn(),
       recordCount: this.currentRecords.length,
       gristConnected: this.gristManager?.isGristConnected() || false,
       managers: {
