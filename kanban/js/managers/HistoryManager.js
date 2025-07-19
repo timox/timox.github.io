@@ -993,8 +993,8 @@ export class HistoryManager {
         .comment-edit-modal {
           background: white;
           border-radius: 8px;
-          max-width: 500px;
-          width: 90%;
+          max-width: 700px;
+          width: 95%;
           max-height: 80vh;
           overflow-y: auto;
           box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
