@@ -674,16 +674,7 @@ export class BoardRenderer {
       this.cardRenderer.attachCardEventListeners(container);
     }
     
-    // Écouteurs pour la navigation du mode focus
-    container.querySelectorAll('.focus-navigation button').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const newFocusColumn = e.currentTarget.dataset.status;
-        
-        if (this.kanban.filterManager) {
-          this.kanban.filterManager.setFocusColumn(newFocusColumn);
-        }
-      });
-    });
+    // Navigation focus supprimée - utilise maintenant le filtre statut directement
     
     // Écouteurs pour les badges de count (filtres par statut)
     container.querySelectorAll('.board-count').forEach(badge => {

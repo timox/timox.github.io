@@ -999,6 +999,7 @@ class KanbanManager {
     // Attacher les événements pour les badges cliquables
     this.attachCardEventListeners();
     this.attachBadgeEventListeners();
+    this.initScrollArrows();
   }
 
   // === MÉTHODES UTILITAIRES POUR LE RENDU ===
@@ -1065,6 +1066,69 @@ class KanbanManager {
         badge.classList.remove('active');
       }
     });
+  }
+
+  // === GESTION DES FLÈCHES DE SCROLL ===
+  initScrollArrows() {
+    const leftArrow = document.getElementById('scroll-left');
+    const rightArrow = document.getElementById('scroll-right');
+    
+    if (!leftArrow || !rightArrow) {
+      console.warn('Flèches de scroll non trouvées dans le DOM');
+      return;
+    }
+
+    // Gérer les clics sur les flèches
+    leftArrow.addEventListener('click', () => {
+      this.scrollContainer(-300);
+    });
+
+    rightArrow.addEventListener('click', () => {
+      this.scrollContainer(300);
+    });
+
+    // Gérer la visibilité des flèches au scroll
+    this.kanbanContainer.addEventListener('scroll', () => {
+      this.updateArrowVisibility();
+    });
+
+    // Mise à jour initiale de la visibilité
+    setTimeout(() => {
+      this.updateArrowVisibility();
+    }, 100);
+  }
+
+  scrollContainer(direction) {
+    this.kanbanContainer.scrollBy({
+      left: direction,
+      behavior: 'smooth'
+    });
+  }
+
+  updateArrowVisibility() {
+    const leftArrow = document.getElementById('scroll-left');
+    const rightArrow = document.getElementById('scroll-right');
+    
+    if (!leftArrow || !rightArrow) return;
+
+    const container = this.kanbanContainer;
+    const scrollLeft = container.scrollLeft;
+    const scrollWidth = container.scrollWidth;
+    const clientWidth = container.clientWidth;
+
+    // Afficher flèche gauche si on peut scroller à gauche
+    if (scrollLeft > 10) {
+      leftArrow.classList.remove('hidden');
+    } else {
+      leftArrow.classList.add('hidden');
+    }
+
+    // Afficher flèche droite si on peut scroller à droite
+    if (scrollLeft < scrollWidth - clientWidth - 10) {
+      rightArrow.classList.remove('hidden');
+    } else {
+      rightArrow.classList.add('hidden');
+    }
   }
 
   // NOUVEAU: Tri des enregistrements

@@ -103,14 +103,7 @@ export class ViewModeManager {
       }
     });
     
-    // Navigation focus (pour le mode focus)
-    document.addEventListener('click', (e) => {
-      if (e.target.closest('.focus-nav-btn')) {
-        const button = e.target.closest('.focus-nav-btn');
-        const columnId = button.dataset.column;
-        this.setFocusColumn(columnId);
-      }
-    });
+    // Navigation focus supprimée - le mode focus utilise maintenant le filtre statut directement
   }
   
   /**
@@ -286,50 +279,11 @@ export class ViewModeManager {
   
   /**
    * Crée la navigation pour le mode focus
+   * SUPPRIMÉ: Plus nécessaire avec la simplification du mode focus
    */
   createFocusNavigation() {
-    // Vérifier si la navigation existe déjà
-    if (document.getElementById('focus-navigation')) return;
-    
-    const controlsContainer = document.querySelector('.kanban-controls');
-    if (!controlsContainer) return;
-    
-    // Obtenir les statuts depuis les constantes
-    const statuts = this.kanban.gristOptions?.statut || [
-      'Backlog', 'À faire', 'En cours', 'En attente', 'Bloqué', 'Validation', 'Terminé'
-    ];
-    
-    const navigationDiv = document.createElement('div');
-    navigationDiv.id = 'focus-navigation';
-    navigationDiv.className = 'row mt-2';
-    
-    const navButtons = statuts.map(statut => {
-      const count = this.getTaskCountForStatus(statut);
-      const isActive = this.focusColumn === statut;
-      const activeClass = isActive ? 'active' : '';
-      
-      return `
-        <div class="col-auto">
-          <button class="btn btn-outline-secondary btn-sm focus-nav-btn ${activeClass}" 
-                  data-column="${statut}"
-                  title="Voir les tâches ${statut}">
-            ${statut} 
-            <span class="badge bg-secondary">${count}</span>
-          </button>
-        </div>
-      `;
-    }).join('');
-    
-    navigationDiv.innerHTML = `
-      <div class="col-12">
-        <div class="d-flex align-items-center gap-2 flex-wrap">
-          <span class="text-muted small">Focus sur:</span>
-          ${navButtons}
-        </div>
-      </div>
-    `;
-    
-    controlsContainer.appendChild(navigationDiv);
+    // Navigation supprimée - le mode focus utilise maintenant directement le filtre statut
+    this.logger.debug('Navigation focus désactivée - utilise le filtre statut');
   }
   
   /**

@@ -84,7 +84,15 @@
 
     <!-- Kanban Container -->
     <div class="container-fluid">
-      <div id="kanban-container" class="kanban-container" role="main" aria-label="Tableau Kanban"></div>
+      <div class="kanban-wrapper">
+        <button class="scroll-arrow scroll-left hidden" id="scroll-left" aria-label="Faire défiler vers la gauche">
+          <i class="bi bi-chevron-left"></i>
+        </button>
+        <button class="scroll-arrow scroll-right hidden" id="scroll-right" aria-label="Faire défiler vers la droite">
+          <i class="bi bi-chevron-right"></i>
+        </button>
+        <div id="kanban-container" class="kanban-container" role="main" aria-label="Tableau Kanban"></div>
+      </div>
     </div>
 
     <!-- Debug Panel (commenté - réactiver au besoin)

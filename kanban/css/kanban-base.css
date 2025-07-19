@@ -53,6 +53,11 @@ body {
 }
 
 /* === Container principal === */
+.kanban-wrapper {
+  position: relative;
+  width: 100%;
+}
+
 .kanban-container {
   display: flex;
   overflow-x: auto;
@@ -60,6 +65,51 @@ body {
   padding: 0 1rem;
   scroll-behavior: smooth;
   min-height: calc(100vh - 250px);
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE et Edge */
+}
+
+.kanban-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari et Opera */
+}
+
+/* === Flèches de navigation latérales === */
+.scroll-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 123, 255, 0.9);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+  font-size: 1.2rem;
+}
+
+.scroll-arrow:hover {
+  background: rgba(0, 123, 255, 1);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.scroll-arrow.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.scroll-left {
+  left: 10px;
+}
+
+.scroll-right {
+  right: 10px;
 }
 
 .kanban-container > .kanban-board {
@@ -659,41 +709,8 @@ body {
 .status-done .board-title { color: #198754; }
 .status-unknown .board-title { color: var(--kanban-text); }
 
-/* === Mode Focus === */
-.focus-navigation {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  margin-bottom: 1rem;
-  padding: 0.75rem;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  width: 200px;
-  flex-shrink: 0;
-}
-
-.focus-navigation .btn {
-  border-radius: 6px;
-  padding: 0.4rem 0.75rem;
-  font-size: 0.8rem;
-  text-align: left;
-  justify-content: space-between;
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-}
-
-.focus-navigation .btn.active {
-  background-color: #007bff;
-  border-color: #007bff;
-  color: white;
-}
-
-.focus-navigation .badge {
-  font-size: 0.65rem;
-  padding: 0.2em 0.4em;
-}
+/* === Mode Focus (simplifié) === */
+/* Navigation focus supprimée - utilise maintenant le filtre statut directement */
 
 .focus-container {
   display: flex;
