@@ -1,10 +1,6 @@
-// === utils/exportStrategyData.js ===
-// Script pour exporter les données SSIR_strategie2 vers le format en dur
+// Script direct pour exporter les données SSIR_strategie2
+// À coller directement dans la console du navigateur
 
-/**
- * Exporte les données Grist vers le format JavaScript
- * À exécuter dans la console du navigateur
- */
 async function exportStrategyDataFromGrist() {
   try {
     console.log('🔄 Export des données stratégiques depuis Grist...');
@@ -102,9 +98,5 @@ export function convertToGristFormat(data) {
   }
 }
 
-// Exposer la fonction globalement pour utilisation en console
-if (typeof window !== 'undefined') {
-  window.exportStrategyDataFromGrist = exportStrategyDataFromGrist;
-  console.log('🛠️ Script d\'export chargé !');
-  console.log('📝 Pour exporter, tapez dans la console : exportStrategyDataFromGrist()');
-}
+console.log('🛠️ Fonction exportStrategyDataFromGrist() disponible !');
+console.log('📝 Tapez : exportStrategyDataFromGrist()');
