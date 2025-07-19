@@ -592,13 +592,15 @@ export class HistoryManager {
     return `
       <div class="timeline-entry timeline-entry-comment" data-comment-id="${commentId}">
         <div class="timeline-status">
-          <i class="bi bi-chat-square-text text-info"></i>
-          Commentaire${latestBadge}
-          <button class="btn btn-sm btn-outline-secondary btn-edit-comment" 
-                  data-comment-id="${commentId}"
-                  title="Éditer ce commentaire">
-            ✏️
-          </button>
+          <div class="timeline-status-left">
+            <i class="bi bi-chat-square-text text-info"></i>
+            <button class="btn btn-sm btn-outline-secondary btn-edit-comment" 
+                    data-comment-id="${commentId}"
+                    title="Éditer ce commentaire">
+              ✏️
+            </button>
+            <span class="timeline-status-text">Commentaire${latestBadge}</span>
+          </div>
         </div>
         <div class="timeline-dates">
           <i class="bi bi-calendar3"></i>
@@ -849,24 +851,19 @@ export class HistoryManager {
     // Créer le widget d'édition s'il n'existe pas
     this.createCommentEditWidget();
     
-    // Écouteur pour les boutons d'édition
+    // Écouteur pour les boutons d'édition (plus précis, sans logging)
     document.addEventListener('click', (e) => {
-      console.log('HistoryManager: Clic détecté sur:', e.target);
-      
+      // Ne traiter que les clics sur les boutons d'édition
       if (e.target.matches('.btn-edit-comment, .btn-edit-comment *')) {
         e.preventDefault();
         e.stopPropagation();
-        console.log('HistoryManager: Clic sur bouton édition détecté');
         
         const button = e.target.closest('.btn-edit-comment');
         if (!button) {
-          console.error('HistoryManager: Bouton .btn-edit-comment non trouvé');
           return;
         }
         
         const commentId = button.dataset.commentId;
-        console.log('HistoryManager: Clic sur bouton édition commentaire:', commentId);
-        console.log('HistoryManager: Bouton trouvé:', button);
         this.openCommentEditWidget(commentId);
       }
     });
@@ -899,14 +896,17 @@ export class HistoryManager {
     }
     
     // Fermer avec l'overlay (seulement celui de l'accordéon)
-    const overlay = document.querySelector('#accordion-comment-edit-widget .comment-edit-overlay');
-    if (overlay) {
-      overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) {
-          this.closeCommentEditWidget();
-        }
-      });
-    }
+    setTimeout(() => {
+      const overlay = document.querySelector('#accordion-comment-edit-widget .comment-edit-overlay');
+      if (overlay) {
+        overlay.addEventListener('click', (e) => {
+          // Fermer si on clique directement sur l'overlay (pas sur le modal)
+          if (e.target === overlay) {
+            this.closeCommentEditWidget();
+          }
+        });
+      }
+    }, 100);
     
     // Fermer avec Escape
     document.addEventListener('keydown', (e) => {
@@ -928,32 +928,34 @@ export class HistoryManager {
     
     console.log('HistoryManager: Création du widget d\'édition de commentaires pour accordéon');
     
-    // Créer le HTML du widget avec IDs uniques
+    // Créer le HTML du widget avec structure corrigée
     const widgetHTML = `
-      <div id="accordion-comment-edit-widget" class="comment-edit-overlay" style="display: none;">
-        <div class="comment-edit-modal">
-          <div class="comment-edit-header">
-            <h5><i class="bi bi-pencil me-2"></i>Édition de commentaire</h5>
-            <button type="button" id="accordion-btn-close-comment-edit" class="btn-close" aria-label="Fermer">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-          
-          <div class="comment-edit-body">
-            <div class="mb-2">
-              <small class="text-muted">Date: <span id="accordion-comment-edit-date"></span></small>
+      <div id="accordion-comment-edit-widget" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1080;">
+        <div class="comment-edit-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;">
+          <div class="comment-edit-modal" style="background: white; border-radius: 8px; max-width: 700px; width: 95%; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+            <div class="comment-edit-header" style="padding: 1rem; border-bottom: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: center;">
+              <h5 style="margin: 0; color: #333;"><i class="bi bi-pencil me-2"></i>Édition de commentaire</h5>
+              <button type="button" id="accordion-btn-close-comment-edit" class="btn-close" aria-label="Fermer" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6c757d;">
+                <span aria-hidden="true">&times;</span>
+              </button>
             </div>
-            <textarea id="accordion-comment-edit-text" class="form-control" rows="4" 
-                      placeholder="Modifiez votre commentaire..."></textarea>
-          </div>
-          
-          <div class="comment-edit-footer">
-            <button type="button" id="accordion-btn-cancel-comment-edit" class="btn btn-secondary">
-              <i class="bi bi-x-circle me-1"></i>Annuler
-            </button>
-            <button type="button" id="accordion-btn-save-comment-edit" class="btn btn-primary">
-              <i class="bi bi-check-circle me-1"></i>Sauvegarder
-            </button>
+            
+            <div class="comment-edit-body" style="padding: 1rem;">
+              <div class="mb-2">
+                <small class="text-muted">Date: <span id="accordion-comment-edit-date"></span></small>
+              </div>
+              <textarea id="accordion-comment-edit-text" class="form-control" rows="6" 
+                        placeholder="Modifiez votre commentaire..." style="resize: vertical; min-height: 120px;"></textarea>
+            </div>
+            
+            <div class="comment-edit-footer" style="padding: 1rem; border-top: 1px solid #dee2e6; display: flex; justify-content: flex-end; gap: 0.5rem;">
+              <button type="button" id="accordion-btn-cancel-comment-edit" class="btn btn-secondary">
+                <i class="bi bi-x-circle me-1"></i>Annuler
+              </button>
+              <button type="button" id="accordion-btn-save-comment-edit" class="btn btn-primary">
+                <i class="bi bi-check-circle me-1"></i>Sauvegarder
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -961,9 +963,6 @@ export class HistoryManager {
     
     // Ajouter au body
     document.body.insertAdjacentHTML('beforeend', widgetHTML);
-    
-    // Ajouter les styles CSS
-    this.addCommentEditStyles();
   }
   
   /**
@@ -1048,6 +1047,16 @@ export class HistoryManager {
           display: flex;
           align-items: center;
           justify-content: space-between;
+        }
+        
+        .timeline-status-left {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        
+        .timeline-status-text {
+          margin-left: 0.25rem;
         }
       </style>
     `;
