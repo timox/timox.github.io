@@ -136,52 +136,26 @@ export const getStatutById = (id) => STATUTS.find(s => s.id === id);
 export const getStatutByClasse = (classe) => STATUTS.find(s => s.classe === classe);
 export const getDefaultStatuts = () => STATUTS.map(s => s.id);
 
-// === DONNÉES STRATÉGIQUES INTÉGRÉES ===
+// === DONNÉES STRATÉGIQUES INTÉGRÉES (depuis CSV SSIR_strategie2) ===
+// Import automatique depuis debug/kanban_SSIR_TEST-Ssir_strategie2.csv
 export const STRATEGY_DATA = [
   {
-    id: 1,
-    objectif: "Modernisation Infrastructure",
-    sous_objectif: "Migration Cloud", 
-    action: "Audit Infrastructure Existante",
-    responsable: "DSI",
-    echeance: "2025-12-31",
-    portee: "National"
+    "id": 1,
+    "objectif": "Assurer le fonctionnement des systèmes d'information",
+    "sous_objectif": "Appliquer les dispositions organisationnelles des annexes 1 et 2",
+    "action": "Refonte et simplification des nomenclatures de groupes de sécurité et des groupes de distribution, et création de groupes, comptes, boîte mail ou liste de diffusion par le bureau exploitation.",
+    "responsable": "Exploitation",
+    "echeance": "2024-2025",
+    "portee": "GSSI"
   },
   {
-    id: 2,
-    objectif: "Modernisation Infrastructure",
-    sous_objectif: "Migration Cloud",
-    action: "Sélection Fournisseur Cloud", 
-    responsable: "Tech Lead",
-    echeance: "2025-09-30",
-    portee: "Régional"
-  },
-  {
-    id: 3,
-    objectif: "Modernisation Infrastructure",
-    sous_objectif: "Virtualisation",
-    action: "Évaluation Serveurs Physiques",
-    responsable: "Admin Sys",
-    echeance: "2025-08-15", 
-    portee: "Local"
-  },
-  {
-    id: 4,
-    objectif: "Sécurité Renforcée",
-    sous_objectif: "Authentification Multi-Facteur",
-    action: "Déploiement Tokens Physiques",
-    responsable: "RSSI",
-    echeance: "2025-10-31",
-    portee: "National"
-  },
-  {
-    id: 5,
-    objectif: "Sécurité Renforcée", 
-    sous_objectif: "Monitoring Sécurité",
-    action: "Mise en place SIEM",
-    responsable: "Équipe Sécurité",
-    echeance: "2025-11-30",
-    portee: "National"
+    "id": 2,
+    "objectif": "Assurer le fonctionnement des systèmes d'information",
+    "sous_objectif": "Appliquer les dispositions organisationnelles des annexes 1 et 2",
+    "action": "Établissement de procédures partagées (bonnes pratiques)",
+    "responsable": "Exploitation",
+    "echeance": "2024-2025",
+    "portee": "GSSI"
   }
 ];
 
