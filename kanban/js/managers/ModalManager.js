@@ -955,10 +955,10 @@ export class ModalManager {
       return;
     }
 
-    const { comments, timeline, history } = historyData;
+    const { comments, timeline, history, task } = historyData;
     
-    // Compter total des entrées (commentaires + modifications)
-    const totalEntries = comments.length + history.length;
+    // Utiliser la timeline complète qui contient TOUT (commentaires + changements de statut + modifications)
+    const totalEntries = timeline.length;
     
     // Mettre à jour le badge de comptage  
     commentCountBadge.textContent = totalEntries;
@@ -967,9 +967,9 @@ export class ModalManager {
     if (totalEntries === 0) {
       accordionContent.innerHTML = `
         <div class="text-center text-muted py-3">
-          <i class="bi bi-chat-square fs-4"></i>
+          <i class="bi bi-clock-history fs-4"></i>
           <p class="mt-2">Aucun historique trouvé</p>
-          <small>Les commentaires et modifications apparaîtront ici</small>
+          <small>L'historique complet apparaîtra ici une fois créé</small>
         </div>
       `;
       return;
@@ -1127,9 +1127,104 @@ export class ModalManager {
       }
     });
 
-    accordionContent.innerHTML = finalHTML;
+    // Utiliser directement la timeline unifiée pour simplifier et améliorer
+    let unifiedHTML = '';
     
-    console.log('ModalManager: Historique des commentaires chargé dans accordéon:', comments.length, 'commentaires');
+    timeline.forEach((entry, index) => {
+      const formattedDate = new Date(entry.timestamp).toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      const userInfo = entry.user ? ` par ${entry.user}` : '';
+      const isLatest = index === 0;
+
+      if (entry.type === 'comment') {
+        // 💬 Commentaire (éditable)
+        const latestBadge = isLatest ? '<span class="badge bg-success ms-2">Récent</span>' : '';
+        const timestampString = entry.timestamp instanceof Date ? 
+          entry.timestamp.toISOString() : String(entry.timestamp);
+        const commentId = `comment-${timestampString.replace(/[^\d]/g, '')}`;
+        
+        unifiedHTML += `
+          <div class="timeline-entry comment-item mb-3 p-3 border rounded border-primary" data-comment-id="${commentId}">
+            <div class="timeline-header d-flex justify-content-between align-items-start mb-2">
+              <div class="timeline-meta">
+                <small class="text-muted">
+                  <i class="bi bi-chat-fill me-1 text-primary"></i>${formattedDate}${userInfo}
+                  <span class="badge bg-primary ms-2">💬 Commentaire</span>
+                  ${latestBadge}
+                </small>
+              </div>
+              <button class="btn btn-sm btn-outline-primary btn-edit-comment" 
+                      data-comment-id="${commentId}"
+                      title="Éditer ce commentaire">
+                <i class="bi bi-pencil"></i>
+              </button>
+            </div>
+            <div class="timeline-content comment-content fw-normal" data-original="${entry.content.replace(/"/g, '&quot;')}">
+              ${entry.content}
+            </div>
+          </div>
+        `;
+      } else if (entry.type === 'status_change') {
+        // 🔄 Changement de statut (read-only)
+        unifiedHTML += `
+          <div class="timeline-entry history-item mb-3 p-3 border rounded bg-light border-info">
+            <div class="timeline-header d-flex justify-content-between align-items-start mb-2">
+              <div class="timeline-meta">
+                <small class="text-muted">
+                  <i class="bi bi-arrow-right-circle-fill me-1 text-info"></i>${formattedDate}${userInfo}
+                  <span class="badge bg-info ms-2">🔄 Statut</span>
+                </small>
+              </div>
+              <div class="text-muted">
+                <i class="bi bi-lock" title="Lecture seule"></i>
+              </div>
+            </div>
+            <div class="timeline-content text-muted">
+              <strong>${entry.statut || entry.status || 'Changement de statut'}</strong>
+              ${entry.note || entry.details ? `<br><small>${entry.note || entry.details}</small>` : ''}
+            </div>
+          </div>
+        `;
+      } else {
+        // ⚙️ Autre modification (read-only) 
+        const actionIcon = entry.action === 'creation' ? 'bi-plus-circle-fill text-success' : 
+                          entry.action === 'update' ? 'bi-pencil-square text-warning' : 
+                          'bi-gear-fill text-secondary';
+        
+        const actionLabel = entry.action === 'creation' ? '➕ Création' :
+                           entry.action === 'update' ? '✏️ Modification' :
+                           '⚙️ Changement';
+        
+        unifiedHTML += `
+          <div class="timeline-entry history-item mb-3 p-3 border rounded bg-light">
+            <div class="timeline-header d-flex justify-content-between align-items-start mb-2">
+              <div class="timeline-meta">
+                <small class="text-muted">
+                  <i class="${actionIcon} me-1"></i>${formattedDate}${userInfo}
+                  <span class="badge bg-secondary ms-2">${actionLabel}</span>
+                </small>
+              </div>
+              <div class="text-muted">
+                <i class="bi bi-lock" title="Lecture seule"></i>
+              </div>
+            </div>
+            <div class="timeline-content text-muted">
+              ${entry.details || entry.note || 'Modification de la tâche'}
+            </div>
+          </div>
+        `;
+      }
+    });
+
+    accordionContent.innerHTML = unifiedHTML;
+    
+    console.log('ModalManager: Timeline complète unifiée chargée:', timeline.length, 'entrées');
   }
 
   /**
