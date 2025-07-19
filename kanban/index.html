@@ -22,9 +22,16 @@
       <div class="container-fluid">
         <div class="row align-items-center">
           <div class="col">
-            <h1 class="h3 mb-0">
+            <h1 class="h3 mb-0 d-flex align-items-center">
               <i class="bi bi-kanban me-2"></i>
               Tableau Kanban
+              <span class="badge bg-warning text-dark ms-3">Environnement de test</span>
+              <a href="https://github.com/timox/timox.github.io/blob/main/README.md" 
+                 target="_blank" 
+                 class="btn btn-sm btn-outline-info ms-2"
+                 title="Voir le README sur GitHub">
+                <i class="bi bi-github me-1"></i>README
+              </a>
             </h1>
           </div>
           <div class="col-auto">
@@ -189,48 +196,39 @@
               </div>
             </div>
             
-            <!-- SECTION STRATÉGIE CORRIGÉE -->
+            <!-- SECTION STRATÉGIE - Listes dépendantes -->
             <div class="col-12">
               <label class="form-label">
                 <i class="bi bi-bullseye me-2"></i>Stratégie
                 <small class="text-muted">(Optionnel - Alignement stratégique)</small>
               </label>
               
-              <!-- Select stratégie depuis Grist -->
-              <div class="mb-3">
-                <select class="form-select" id="popup-strategie">
-                  <option value="">-- Choisir une stratégie --</option>
-                </select>
-                <div class="form-text">Sélectionnez une stratégie depuis la base de données</div>
-              </div>
-              
-              <!-- Détails de la stratégie sélectionnée -->
-              <div class="strategy-details" id="strategy-details" style="display: none;">
-                <div class="card bg-light">
-                  <div class="card-body">
-                    <h6 class="card-title">Détails de la stratégie sélectionnée:</h6>
-                    <div class="row">
-                      <div class="col-md-4">
-                        <strong>Objectif:</strong>
-                        <div id="popup-strategie-objectif" class="strategy-detail"></div>
-                      </div>
-                      <div class="col-md-4">
-                        <strong>Sous-objectif:</strong>
-                        <div id="popup-strategie-sous-objectif" class="strategy-detail"></div>
-                      </div>
-                      <div class="col-md-4">
-                        <strong>Action:</strong>
-                        <div id="popup-strategie-action" class="strategy-detail"></div>
-                      </div>
-                    </div>
-                  </div>
+              <!-- Listes déroulantes séparées et dépendantes -->
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label for="popup-strategie-objectif" class="form-label small">Objectif</label>
+                  <select class="form-select" id="popup-strategie-objectif">
+                    <option value="">-- Choisir un objectif --</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label for="popup-strategie-sous-objectif" class="form-label small">Sous-objectif</label>
+                  <select class="form-select" id="popup-strategie-sous-objectif" disabled>
+                    <option value="">-- Choisir d'abord un objectif --</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label for="popup-strategie-action" class="form-label small">Action</label>
+                  <select class="form-select" id="popup-strategie-action" disabled>
+                    <option value="">-- Choisir d'abord un sous-objectif --</option>
+                  </select>
                 </div>
               </div>
               
-              <!-- Champs cachés pour la compatibilité -->
-              <input type="hidden" id="popup-strategie-objectif-hidden">
-              <input type="hidden" id="popup-strategie-sous-objectif-hidden">
-              <input type="hidden" id="popup-strategie-action-hidden">
+              <div class="form-text mt-2">
+                <i class="bi bi-info-circle me-1"></i>
+                Sélectionnez d'abord un objectif, puis un sous-objectif, et enfin une action
+              </div>
             </div>
             
             <div class="col-md-6">

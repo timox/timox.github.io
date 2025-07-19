@@ -196,48 +196,60 @@
               </div>
             </div>
             
-            <!-- SECTION STRATÉGIE CORRIGÉE -->
+            <!-- SECTION STRATÉGIE - Interface guidée avec détails -->
             <div class="col-12">
               <label class="form-label">
                 <i class="bi bi-bullseye me-2"></i>Stratégie
                 <small class="text-muted">(Optionnel - Alignement stratégique)</small>
               </label>
               
-              <!-- Select stratégie depuis Grist -->
-              <div class="mb-3">
-                <select class="form-select" id="popup-strategie">
-                  <option value="">-- Choisir une stratégie --</option>
-                </select>
-                <div class="form-text">Sélectionnez une stratégie depuis la base de données</div>
+              <!-- Étapes de sélection guidée -->
+              <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                  <label for="popup-strategie-objectif" class="form-label small">1. Objectif</label>
+                  <select class="form-select" id="popup-strategie-objectif">
+                    <option value="">-- Choisir un objectif --</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label for="popup-strategie-sous-objectif" class="form-label small">2. Sous-objectif</label>
+                  <select class="form-select" id="popup-strategie-sous-objectif" disabled>
+                    <option value="">-- Choisir d'abord un objectif --</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label for="popup-strategie-action" class="form-label small">3. Action</label>
+                  <select class="form-select" id="popup-strategie-action" disabled>
+                    <option value="">-- Choisir d'abord un sous-objectif --</option>
+                  </select>
+                </div>
               </div>
               
-              <!-- Détails de la stratégie sélectionnée -->
-              <div class="strategy-details" id="strategy-details" style="display: none;">
-                <div class="card bg-light">
-                  <div class="card-body">
-                    <h6 class="card-title">Détails de la stratégie sélectionnée:</h6>
-                    <div class="row">
-                      <div class="col-md-4">
-                        <strong>Objectif:</strong>
-                        <div id="popup-strategie-objectif" class="strategy-detail"></div>
-                      </div>
-                      <div class="col-md-4">
-                        <strong>Sous-objectif:</strong>
-                        <div id="popup-strategie-sous-objectif" class="strategy-detail"></div>
-                      </div>
-                      <div class="col-md-4">
-                        <strong>Action:</strong>
-                        <div id="popup-strategie-action" class="strategy-detail"></div>
-                      </div>
-                    </div>
+              <!-- Détails automatiques après sélection complète -->
+              <div class="strategy-details bg-light p-3 rounded" id="strategy-details" style="display: none;">
+                <div class="row g-2">
+                  <div class="col-md-4">
+                    <small class="text-muted d-block"><strong>Échéance:</strong></small>
+                    <span id="strategy-echeance" class="text-primary">-</span>
+                  </div>
+                  <div class="col-md-4">
+                    <small class="text-muted d-block"><strong>Responsable:</strong></small>
+                    <span id="strategy-responsable" class="text-primary">-</span>
+                  </div>
+                  <div class="col-md-4">
+                    <small class="text-muted d-block"><strong>Portée:</strong></small>
+                    <span id="strategy-portee" class="text-primary">-</span>
                   </div>
                 </div>
               </div>
               
-              <!-- Champs cachés pour la compatibilité -->
-              <input type="hidden" id="popup-strategie-objectif-hidden">
-              <input type="hidden" id="popup-strategie-sous-objectif-hidden">
-              <input type="hidden" id="popup-strategie-action-hidden">
+              <!-- Champ caché pour strategie_id (sauvegarde finale) -->
+              <input type="hidden" id="popup-strategie-id" />
+              
+              <div class="form-text mt-2">
+                <i class="bi bi-info-circle me-1"></i>
+                Sélectionnez dans l'ordre : objectif → sous-objectif → action. Les détails apparaîtront automatiquement.
+              </div>
             </div>
             
             <div class="col-md-6">

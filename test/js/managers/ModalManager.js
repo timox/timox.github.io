@@ -291,29 +291,193 @@ export class ModalManager {
     }
     
     // Peupler la liste des objectifs
-    populateSelect('strategie-objectif', strategieObjectifs, true, '-- Choisir objectif --');
+    populateSelect('popup-strategie-objectif', strategieObjectifs, true, '-- Choisir un objectif --');
     
     // Écouteur pour les sous-objectifs
-    const objectifSelect = document.getElementById('strategie-objectif');
+    const objectifSelect = document.getElementById('popup-strategie-objectif');
     if (objectifSelect) {
       objectifSelect.addEventListener('change', (e) => {
         const selectedObjectif = e.target.value;
         const sousObjectifs = strategieSousObjectifs[selectedObjectif] || [];
-        populateSelect('strategie-sous-objectif', sousObjectifs, true, '-- Choisir sous-objectif --');
+        populateSelect('popup-strategie-sous-objectif', sousObjectifs, true, '-- Choisir un sous-objectif --');
         
-        // Vider les actions quand l'objectif change
-        populateSelect('strategie-action', [], true, '-- Choisir action --');
+        // Activer/désactiver la liste des sous-objectifs
+        const sousObjectifSelect = document.getElementById('popup-strategie-sous-objectif');
+        if (sousObjectifSelect) {
+          sousObjectifSelect.disabled = !selectedObjectif || sousObjectifs.length === 0;
+        }
+        
+        // Vider et désactiver les actions quand l'objectif change
+        populateSelect('popup-strategie-action', [], true, '-- Choisir d\'abord un sous-objectif --');
+        const actionSelect = document.getElementById('popup-strategie-action');
+        if (actionSelect) {
+          actionSelect.disabled = true;
+        }
+        
+        // Masquer les détails et vider strategie_id
+        this.hideStrategyDetails();
+        setFieldValue('popup-strategie-id', '');
       });
     }
     
     // Écouteur pour les actions
-    const sousObjectifSelect = document.getElementById('strategie-sous-objectif');
+    const sousObjectifSelect = document.getElementById('popup-strategie-sous-objectif');
     if (sousObjectifSelect) {
       sousObjectifSelect.addEventListener('change', (e) => {
         const selectedSousObjectif = e.target.value;
         const actions = strategieActions[selectedSousObjectif] || [];
-        populateSelect('strategie-action', actions, true, '-- Choisir action --');
+        populateSelect('popup-strategie-action', actions, true, '-- Choisir une action --');
+        
+        // Activer/désactiver la liste des actions
+        const actionSelect = document.getElementById('popup-strategie-action');
+        if (actionSelect) {
+          actionSelect.disabled = !selectedSousObjectif || actions.length === 0;
+        }
+        
+        // Masquer les détails et vider strategie_id
+        this.hideStrategyDetails();
+        setFieldValue('popup-strategie-id', '');
       });
+    }
+    
+    // Écouteur pour la sélection finale d'action
+    const actionSelect = document.getElementById('popup-strategie-action');
+    if (actionSelect) {
+      actionSelect.addEventListener('change', (e) => {
+        const selectedAction = e.target.value;
+        if (selectedAction) {
+          this.findAndSetStrategyId();
+        } else {
+          this.hideStrategyDetails();
+          setFieldValue('popup-strategie-id', '');
+        }
+      });
+    }
+  }
+  
+  /**
+   * Trouve et définit le strategie_id basé sur la sélection complète
+   */
+  findAndSetStrategyId() {
+    const objectif = getFieldValue('popup-strategie-objectif');
+    const sousObjectif = getFieldValue('popup-strategie-sous-objectif');
+    const action = getFieldValue('popup-strategie-action');
+    
+    if (!objectif || !sousObjectif || !action) {
+      this.hideStrategyDetails();
+      return;
+    }
+    
+    // Rechercher dans les données Grist la combinaison objectif + sous-objectif + action
+    if (this.kanban.strategyData && this.kanban.strategyData.length > 0) {
+      const strategy = this.kanban.strategyData.find(s => 
+        s.objectif === objectif && 
+        s.sous_objectif === sousObjectif && 
+        s.action === action
+      );
+      
+      if (strategy) {
+        // Définir le strategie_id trouvé
+        setFieldValue('popup-strategie-id', strategy.id);
+        
+        // Afficher les détails
+        this.updateStrategyDetails(strategy);
+      } else {
+        console.warn('Stratégie non trouvée pour:', { objectif, sousObjectif, action });
+        this.hideStrategyDetails();
+        setFieldValue('popup-strategie-id', '');
+      }
+    } else {
+      console.warn('Données stratégiques non disponibles');
+      this.hideStrategyDetails();
+    }
+  }
+  
+  /**
+   * Met à jour les détails de la stratégie sélectionnée
+   * @param {object} strategy - Objet stratégie
+   */
+  updateStrategyDetails(strategy) {
+    const detailsContainer = document.getElementById('strategy-details');
+    
+    if (!strategy || !detailsContainer) {
+      this.hideStrategyDetails();
+      return;
+    }
+    
+    // Mettre à jour les détails
+    document.getElementById('strategy-echeance').textContent = strategy.echeance || '-';
+    document.getElementById('strategy-responsable').textContent = strategy.responsable || '-';
+    document.getElementById('strategy-portee').textContent = strategy.portee || '-';
+    
+    detailsContainer.style.display = 'block';
+  }
+  
+  /**
+   * Masque les détails de stratégie
+   */
+  hideStrategyDetails() {
+    const detailsContainer = document.getElementById('strategy-details');
+    if (detailsContainer) {
+      detailsContainer.style.display = 'none';
+    }
+  }
+  
+  /**
+   * Peuple les champs de stratégie basés sur le strategie_id
+   * @param {number} strategyId - ID de la stratégie
+   */
+  populateStrategyFieldsFromId(strategyId) {
+    if (!strategyId) {
+      // Réinitialiser les champs
+      setFieldValue('popup-strategie-objectif', '');
+      setFieldValue('popup-strategie-sous-objectif', '');
+      setFieldValue('popup-strategie-action', '');
+      setFieldValue('popup-strategie-id', '');
+      this.hideStrategyDetails();
+      return;
+    }
+    
+    // Rechercher la stratégie dans les données Grist
+    if (this.kanban.strategyData && this.kanban.strategyData.length > 0) {
+      const strategy = this.kanban.strategyData.find(s => s.id == strategyId);
+      
+      if (strategy) {
+        // Définir l'objectif et déclencher la cascade
+        setFieldValue('popup-strategie-objectif', strategy.objectif);
+        
+        // Déclencher le changement pour peupler les sous-objectifs
+        const objectifSelect = document.getElementById('popup-strategie-objectif');
+        if (objectifSelect) {
+          objectifSelect.dispatchEvent(new Event('change'));
+          
+          // Attendre que les sous-objectifs soient peuplés
+          setTimeout(() => {
+            setFieldValue('popup-strategie-sous-objectif', strategy.sous_objectif);
+            
+            // Déclencher le changement pour peupler les actions
+            const sousObjectifSelect = document.getElementById('popup-strategie-sous-objectif');
+            if (sousObjectifSelect) {
+              sousObjectifSelect.dispatchEvent(new Event('change'));
+              
+              // Attendre que les actions soient peuplées
+              setTimeout(() => {
+                setFieldValue('popup-strategie-action', strategy.action);
+                setFieldValue('popup-strategie-id', strategyId);
+                
+                // Afficher les détails
+                this.updateStrategyDetails(strategy);
+              }, 100);
+            }
+          }, 100);
+        }
+      } else {
+        console.warn('Stratégie non trouvée pour ID:', strategyId);
+        this.hideStrategyDetails();
+      }
+    } else {
+      console.warn('Données stratégiques non disponibles pour peupler les champs');
+      this.hideStrategyDetails();
     }
   }
   
@@ -410,11 +574,8 @@ export class ModalManager {
     setFieldValue('popup-urgence', tache.urgence || '');
     setFieldValue('popup-impact', tache.impact || '');
     
-    // Stratégie depuis Grist
-    setFieldValue('popup-strategie', tache.strategie_id || '');
-    if (this.kanban.updateStrategyDetails) {
-      this.kanban.updateStrategyDetails(tache.strategie_id);
-    }
+    // Stratégie depuis Grist - peupler les listes dépendantes
+    this.populateStrategyFieldsFromId(tache.strategie_id);
     
     // Bureaux et responsables (selects multiples)
     setSelectedOptions('popup-bureau', tache.bureau || ['L']);
@@ -425,42 +586,6 @@ export class ModalManager {
 
 
   
-  /**
-   * Peuple les champs de stratégie
-   * @param {object} task - Données de la tâche
-   */
-  populateStrategyFields(task) {
-    // Définir l'objectif
-    if (task.strategie_objectif) {
-      setFieldValue('strategie-objectif', task.strategie_objectif);
-      
-      // Déclencher le changement pour peupler les sous-objectifs
-      const objectifSelect = document.getElementById('strategie-objectif');
-      if (objectifSelect) {
-        objectifSelect.dispatchEvent(new Event('change'));
-        
-        // Attendre que les sous-objectifs soient peuplés
-        setTimeout(() => {
-          if (task.strategie_sous_objectif) {
-            setFieldValue('strategie-sous-objectif', task.strategie_sous_objectif);
-            
-            // Déclencher le changement pour peupler les actions
-            const sousObjectifSelect = document.getElementById('strategie-sous-objectif');
-            if (sousObjectifSelect) {
-              sousObjectifSelect.dispatchEvent(new Event('change'));
-              
-              // Attendre que les actions soient peuplées
-              setTimeout(() => {
-                if (task.strategie_action) {
-                  setFieldValue('strategie-action', task.strategie_action);
-                }
-              }, 100);
-            }
-          }
-        }, 100);
-      }
-    }
-  }
   
   /**
    * Sauvegarde la tâche
@@ -630,9 +755,7 @@ export class ModalManager {
       impact: getFieldValue('popup-impact') || null,
       bureau: getSelectedOptionsAsGristFormat('popup-bureau'),
       qui: getSelectedOptionsAsGristFormat('popup-qui'),
-      strategie_id: getFieldValue('popup-strategie') || null
-      // NOTE: strategie_objectif, strategie_sous_objectif, strategie_action 
-      // are NOT saved - only strategie_id is saved to link to the strategy table
+      strategie_id: getFieldValue('popup-strategie-id') || null
     };
     
     // Debug chaque champ collecté
@@ -643,7 +766,7 @@ export class ModalManager {
     console.log('Impact:', data.impact);
     console.log('Bureau (raw):', data.bureau);
     console.log('Qui (raw):', data.qui);
-    console.log('Strategie_id (raw):', data.strategie_id);
+    console.log('Strategie_id:', data.strategie_id);
     
     // CHAMP DESCRIPTION SUPPRIMÉ - Tous les commentaires sont maintenant dans notes.history
     // Le champ de saisie popup-description sert uniquement pour les nouveaux commentaires
@@ -710,12 +833,6 @@ export class ModalManager {
       gristData.strategie_id = isNaN(strategyId) ? null : strategyId;
       console.log('Strategie_id après conversion:', gristData.strategie_id);
     }
-    
-    // Remove fields that are auto-computed by Grist formulas
-    delete gristData.strategie_objectif;
-    delete gristData.strategie_sous_objectif; 
-    delete gristData.strategie_action;
-    console.log('Removed auto-computed strategy fields');
     
     // Remove historique_statuts - it's a Date field, not JSON
     delete gristData.historique_statuts;
@@ -1367,8 +1484,19 @@ export class ModalManager {
     setSelectedOptions('popup-qui', ['L']);
     
     // Réinitialiser la stratégie
-    populateSelect('strategie-sous-objectif', [], true, '-- Choisir sous-objectif --');
-    populateSelect('strategie-action', [], true, '-- Choisir action --');
+    setFieldValue('popup-strategie-objectif', '');
+    populateSelect('popup-strategie-sous-objectif', [], true, '-- Choisir d\'abord un objectif --');
+    populateSelect('popup-strategie-action', [], true, '-- Choisir d\'abord un sous-objectif --');
+    setFieldValue('popup-strategie-id', '');
+    
+    // Désactiver les listes dépendantes
+    const sousObjectifSelect = document.getElementById('popup-strategie-sous-objectif');
+    const actionSelect = document.getElementById('popup-strategie-action');
+    if (sousObjectifSelect) sousObjectifSelect.disabled = true;
+    if (actionSelect) actionSelect.disabled = true;
+    
+    // Masquer les détails
+    this.hideStrategyDetails();
     
     // Réinitialiser la date
     if (this.kanban.datePickerManager) {

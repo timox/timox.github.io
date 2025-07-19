@@ -399,11 +399,11 @@ export class ViewModeManager {
         
       // Appliquer le mode focus APRÈS le refresh si nécessaire
       if (this.currentMode === VIEW_MODES.FOCUS && this.focusColumn) {
-          setTimeout(() => {
-            this.showOnlyFocusColumn(this.focusColumn);
-          }, 100);
-        }
+        setTimeout(() => {
+          this.showOnlyFocusColumn(this.focusColumn);
+        }, 100);
       }
+      
       this.refreshTimeout = null;
     }, 50);
   }
