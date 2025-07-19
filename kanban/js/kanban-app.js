@@ -8,6 +8,7 @@ import {
   DEFAULT_RESPONSABLES, 
   TABLE_ID,
   REQUIRED_COLUMNS,
+  LOG_CONFIG,
   OPTIONAL_COLUMNS,
   VIEW_MODES,
   getDefaultStatuts
@@ -63,6 +64,22 @@ import { GristManager } from './managers/GristManager.js';
 const STRATEGIES_TABLE_ID = "Ssir_strategie2";
 
 let projetsDynamiques = [];
+
+// === SYSTÈME DE LOGGING CONDITIONNEL ===
+const shouldLog = (level) => {
+  if (!LOG_CONFIG.PRODUCTION) return true;
+  const levels = { ERROR: 0, WARN: 1, INFO: 2, DEBUG: 3 };
+  const configLevel = levels[LOG_CONFIG.LEVEL] || 0;
+  const msgLevel = levels[level] || 3;
+  return msgLevel <= configLevel;
+};
+
+const log = {
+  error: (...args) => shouldLog('ERROR') && console.error(...args),
+  warn: (...args) => shouldLog('WARN') && console.warn(...args),
+  info: (...args) => shouldLog('INFO') && console.log(...args),
+  debug: (...args) => shouldLog('DEBUG') && console.log(...args)
+};
 
 // === CLASSE KANBANMANAGER CORRIGÉE ===
 class KanbanManager {
@@ -173,7 +190,7 @@ class KanbanManager {
   }
   // NOUVEAU: Initialisation des managers
   initializeManagers() {
-    console.log('🔧 Initialisation des managers...');
+    log.info('🔧 Initialisation des managers...');
     
     // Manager des filtres
     this.filterManager = new FilterManager(this);
@@ -193,7 +210,7 @@ class KanbanManager {
     // Manager Grist
     this.gristManager = new GristManager(this);
     
-    console.log('✅ Managers initialisés');
+    log.info('✅ Managers initialisés');
   }
 
   async waitForGristReady() {
@@ -276,7 +293,7 @@ class KanbanManager {
 
       // Projets dynamiques
       this.gristOptions.projet = this.getUniqueValuesFromData('projet', false);
-      console.log(`Options Projets (dynamique): ${this.gristOptions.projet.length} valeurs.`);
+      log.debug(`Options Projets (dynamique): ${this.gristOptions.projet.length} valeurs.`);
 
       // Charger les stratégies depuis Grist
       await this.loadStrategiesFromGrist();
@@ -958,7 +975,7 @@ class KanbanManager {
         }
 
         kanbanHTML += `
-          <div class="kanban-board${hiddenClass} ${statusClass}" data-status="${statut.id}">
+          <div class="kanban-board ${statusClass}${hiddenClass}" data-status="${statut.id}">
             <div class="kanban-board-header">
               <span class="board-title">
                 ${this.getStatusIcon(statut.id)}
