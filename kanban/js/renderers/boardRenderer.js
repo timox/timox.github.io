@@ -86,8 +86,8 @@ export class BoardRenderer {
       const stats = this.calculateColumnStats(boardRecords);
       const count = boardRecords.length;
       
-      // Classes CSS pour la colonne
-      const isHidden = (count === 0 && statut.id !== 'Terminé');
+      // Classes CSS pour la colonne (masquer toutes les colonnes vides pour gagner de l'espace)
+      const isHidden = (count === 0);
       const hiddenClass = isHidden ? ' board-hidden' : '';
       const statusClass = this.getStatusClass(statut.id);
       
