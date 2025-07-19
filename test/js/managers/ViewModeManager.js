@@ -1,7 +1,7 @@
 // === managers/ViewModeManager.js ===
 // Gestionnaire pour les modes de vue du Kanban (Compact, Détaillé, Focus)
 
-import { VIEW_MODES } from '../config/constants.js';
+import { VIEW_MODES, STATUTS } from '../config/constants.js';
 import { createModuleLogger } from '../utils/LoggerManager.js';
 
 /**
@@ -288,17 +288,19 @@ export class ViewModeManager {
     navigationDiv.id = 'focus-navigation';
     navigationDiv.className = 'row mt-2';
     
-    const navButtons = statuts.map(statut => {
-      const count = this.getTaskCountForStatus(statut);
-      const isActive = this.focusColumn === statut;
+    const navButtons = statuts.map(statutId => {
+      const statutObj = STATUTS.find(s => s.id === statutId);
+      const count = this.getTaskCountForStatus(statutId);
+      const isActive = this.focusColumn === statutId;
       const activeClass = isActive ? 'active' : '';
+      const icone = statutObj ? statutObj.icone : '';
       
       return `
         <div class="col-auto">
           <button class="btn btn-outline-secondary btn-sm focus-nav-btn ${activeClass}" 
-                  data-column="${statut}"
-                  title="Voir les tâches ${statut}">
-            ${statut} 
+                  data-column="${statutId}"
+                  title="Voir les tâches ${statutId}">
+            ${icone} ${statutId} 
             <span class="badge bg-secondary">${count}</span>
           </button>
         </div>

@@ -948,10 +948,13 @@ class KanbanManager {
           console.error(`Problème: ${count} enregistrements mais 0 caractères HTML générés`);
         }
 
+        const icone = statut.icone || '';
+        const emptyAttr = count === 0 ? ' data-empty="true"' : '';
+        
         kanbanHTML += `
-          <div class="kanban-board${hiddenClass}" data-status-id="${statut.id}" data-board-class="${statut.classe}">
+          <div class="kanban-board${hiddenClass}" data-status-id="${statut.id}" data-board-class="${statut.classe}"${emptyAttr}>
             <div class="kanban-board-header entete-${statut.classe}">
-              <span>${statut.libelle}</span>
+              <span>${icone} ${statut.libelle}</span>
               <span class="badge badge-secondary count-badge ml-2">${count}</span>
             </div>
             <div class="kanban-items-container" data-status-id="${statut.id}">

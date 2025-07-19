@@ -3,14 +3,20 @@
 
 // === STATUTS DU KANBAN ===
 export const STATUTS = [
-  { id: 'Backlog', libelle: 'Backlog', classe: 'backlog' },
-  { id: 'À faire', libelle: 'À faire', classe: 'a-faire' },
-  { id: 'En cours', libelle: 'En cours', classe: 'en-cours' },
-  { id: 'En attente', libelle: 'En attente', classe: 'en-attente' },
-  { id: 'Bloqué', libelle: 'Bloqué', classe: 'bloque' },
-  { id: 'Validation', libelle: 'Validation', classe: 'validation' },
-  { id: 'Terminé', libelle: 'Terminé', classe: 'termine' }
+  { id: 'Backlog', libelle: 'Backlog', classe: 'backlog', icone: '🛠️' },
+  { id: 'À faire', libelle: 'À faire', classe: 'a-faire', icone: '🛠️' },
+  { id: 'En cours', libelle: 'En cours', classe: 'en-cours', icone: '⚡' },
+  { id: 'En attente', libelle: 'En attente', classe: 'en-attente', icone: '🛠️' },
+  { id: 'Bloqué', libelle: 'Bloqué', classe: 'bloque', icone: '🚫' },
+  { id: 'Validation', libelle: 'Validation', classe: 'validation', icone: '🛠️' },
+  { id: 'Terminé', libelle: 'Terminé', classe: 'termine', icone: '✅' }
 ];
+
+// === STATUTS SPÉCIAUX (pour les cartes) ===
+export const STATUTS_SPECIAUX = {
+  URGENT: { icone: '🔥', classe: 'urgent' },
+  PRIORITAIRE: { icone: '💥', classe: 'prioritaire' }
+};
 
 // === DONNÉES DE BASE ===
 export const DEFAULT_BUREAUX = [

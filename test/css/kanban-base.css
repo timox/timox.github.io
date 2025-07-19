@@ -186,6 +186,29 @@ body {
   overflow-y: auto;
 }
 
+/* === Colonnes vides : masquées/repliées === */
+.kanban-board[data-empty="true"] {
+  width: 40px !important;
+  min-width: 40px !important;
+  opacity: 0.3;
+  transition: var(--kanban-transition);
+}
+
+.kanban-board[data-empty="true"] .kanban-board-header {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  padding: 0.5rem 0.25rem;
+  font-size: 0.75rem;
+}
+
+.kanban-board[data-empty="true"] .kanban-board-body {
+  display: none;
+}
+
+.kanban-board[data-empty="true"]:hover {
+  opacity: 0.6;
+}
+
 /* === Boards === */
 .kanban-board {
   background: var(--kanban-card-bg);

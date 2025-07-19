@@ -277,8 +277,9 @@ export class FilterManager {
         return false;
       }
       
-      // Filtre statut - Vérifier explicitement que la valeur n'est pas vide
-      if (this.filters.statut && this.filters.statut.trim() !== '' && record.statut !== this.filters.statut) {
+      // Filtre statut - Ignoré en mode focus car la colonne focus gère déjà le filtrage
+      if (this.filters.statut && this.filters.statut.trim() !== '' && 
+          this.kanban.viewMode !== 'focus' && record.statut !== this.filters.statut) {
         return false;
       }
       
