@@ -196,27 +196,37 @@
                 <small class="text-muted">(Optionnel - Alignement stratégique)</small>
               </label>
               
-              <!-- Étapes de sélection guidée -->
-              <div class="row g-3 mb-3">
-                <div class="col-md-4">
-                  <label for="popup-strategie-objectif" class="form-label small">1. Objectif</label>
-                  <select class="form-select" id="popup-strategie-objectif">
-                    <option value="">-- Choisir un objectif --</option>
-                  </select>
-                </div>
-                <div class="col-md-4">
-                  <label for="popup-strategie-sous-objectif" class="form-label small">2. Sous-objectif</label>
-                  <select class="form-select" id="popup-strategie-sous-objectif" disabled>
-                    <option value="">-- Choisir d'abord un objectif --</option>
-                  </select>
-                </div>
-                <div class="col-md-4">
-                  <label for="popup-strategie-action" class="form-label small">3. Action</label>
-                  <select class="form-select" id="popup-strategie-action" disabled>
-                    <option value="">-- Choisir d'abord un sous-objectif --</option>
-                  </select>
+              <!-- Interface accordéon avec détails -->
+              <div class="accordion" id="strategie-accordion">
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="strategie-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                            data-bs-target="#strategie-collapse" aria-expanded="false" 
+                            aria-controls="strategie-collapse">
+                      <i class="bi bi-search me-2"></i>
+                      Parcourir et sélectionner une stratégie
+                      <span id="selected-strategy-preview" class="ms-auto text-muted small"></span>
+                    </button>
+                  </h2>
+                  <div id="strategie-collapse" class="accordion-collapse collapse" 
+                       aria-labelledby="strategie-header" data-bs-parent="#strategie-accordion">
+                    <div class="accordion-body">
+                      <!-- Contenu dynamique généré par JS -->
+                      <div id="strategy-browser" class="strategy-browser">
+                        <div class="text-center text-muted py-3">
+                          <i class="bi bi-hourglass-split"></i>
+                          <p class="mt-2">Chargement des stratégies...</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
+              
+              <!-- Champs cachés pour compatibilité -->
+              <select class="form-select d-none" id="popup-strategie-objectif"></select>
+              <select class="form-select d-none" id="popup-strategie-sous-objectif"></select>
+              <select class="form-select d-none" id="popup-strategie-action"></select>
               
               <!-- Détails automatiques après sélection complète -->
               <div class="strategy-details bg-light p-3 rounded" id="strategy-details" style="display: none;">

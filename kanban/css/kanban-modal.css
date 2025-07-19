@@ -1,6 +1,136 @@
 /* === CSS Modal Styles - Kanban App === */
 /* Styles spécifiques pour les modales de l'application Kanban */
 
+/* === Interface Stratégie Accordéon === */
+.strategy-browser {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.strategy-objective {
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.strategy-objective-header {
+  background: #f8f9fa;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #dee2e6;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.strategy-objective-header:hover {
+  background: #e9ecef;
+}
+
+.strategy-objective-header.expanded {
+  background: #e3f2fd;
+  border-bottom-color: #2196f3;
+}
+
+.strategy-objective-title {
+  font-weight: 600;
+  color: #495057;
+  margin: 0;
+}
+
+.strategy-toggle-icon {
+  transition: transform 0.2s;
+  color: #6c757d;
+}
+
+.strategy-toggle-icon.expanded {
+  transform: rotate(90deg);
+}
+
+.strategy-sub-objectives {
+  padding: 1rem;
+  background: #fff;
+}
+
+.strategy-sub-objective {
+  border-left: 3px solid #17a2b8;
+  padding-left: 1rem;
+  margin-bottom: 1rem;
+  background: #f8f9fa;
+  border-radius: 0 8px 8px 0;
+}
+
+.strategy-sub-objective-title {
+  font-weight: 500;
+  color: #17a2b8;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.strategy-action {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.strategy-action:hover {
+  border-color: #007bff;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.strategy-action.selected {
+  border-color: #007bff;
+  background: #e3f2fd;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+}
+
+.strategy-action-title {
+  font-weight: 500;
+  color: #495057;
+  margin-bottom: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.strategy-action-details {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  color: #6c757d;
+}
+
+.strategy-action-detail {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.strategy-action-detail i {
+  font-size: 0.7rem;
+}
+
+.strategy-selected-indicator {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  color: #007bff;
+  font-size: 1rem;
+}
+
+#selected-strategy-preview {
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* === Popup Tâche === */
 .modal-xl {
   max-width: 1300px;
