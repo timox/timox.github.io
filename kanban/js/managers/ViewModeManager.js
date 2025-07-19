@@ -255,6 +255,12 @@ export class ViewModeManager {
       this.logger.debug(`Colonne focus automatique: ${this.focusColumn}`);
     }
     
+    // CORRECTION: Synchroniser avec le kanban principal
+    if (this.kanban.focusColumn !== this.focusColumn) {
+      this.kanban.focusColumn = this.focusColumn;
+      this.logger.debug(`Synchronisation focusColumn: ${this.focusColumn}`);
+    }
+    
     // Pas de refresh ici - sera fait par applyViewMode()
     this.logger.debug(`Focus mode configuré pour colonne: ${this.focusColumn}`);
     
@@ -332,6 +338,9 @@ export class ViewModeManager {
   setFocusColumn(columnId) {
     this.focusColumn = columnId;
     
+    // CORRECTION: Synchroniser avec le kanban principal
+    this.kanban.focusColumn = columnId;
+    
     // Mettre à jour les boutons de navigation
     document.querySelectorAll('.focus-nav-btn').forEach(btn => {
       btn.classList.remove('active');
@@ -345,9 +354,6 @@ export class ViewModeManager {
       this.showOnlyFocusColumn(columnId);
       this.logger.info(`Colonne focus changée vers: ${columnId}`);
     }
-    
-    // Mettre à jour aussi dans kanban pour compatibilité
-    this.kanban.focusColumn = columnId;
   }
   
   /**
