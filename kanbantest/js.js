@@ -1465,7 +1465,7 @@ getCommentsPerStatus(task) {
       });
       const itemsHTML = boardRecords.map(record => this.createTaskElementHTML(record)).join('');
       const count = boardRecords.length;
-      const isHidden = (count === 0 && statut.id !== 'Terminé' && this.showTermine);
+      const isHidden = (count === 0) || (statut.id === 'Terminé' && !this.showTermine);
       const hiddenClass = isHidden ? ' board-hidden' : '';
       
       kanbanHTML += `

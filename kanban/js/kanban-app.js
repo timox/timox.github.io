@@ -945,9 +945,8 @@ class KanbanManager {
         }).join('');
         const count = boardRecords.length;
         
-        // CORRIGÉ: Masquer TOUTES les colonnes vides en mode compact
-        const isHidden = (this.viewMode === VIEW_MODES.COMPACT && count === 0) || 
-                         (statut.id === 'Terminé' && !this.showTermine);
+        // CORRIGÉ: Masquer TOUTES les colonnes vides (peu importe le mode de vue) et la colonne Terminé si masquée
+        const isHidden = (count === 0) || (statut.id === 'Terminé' && !this.showTermine);
         const hiddenClass = isHidden ? ' board-hidden' : '';
         const statusClass = this.getStatusClass(statut.id);
 

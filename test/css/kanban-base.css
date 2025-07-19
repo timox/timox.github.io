@@ -743,6 +743,48 @@ body {
 .status-done { border-top: 4px solid #22c55e; }
 .status-unknown { border-top: 4px solid #6c757d; }
 
+/* === Coloration des colonnes kanban (header et body) === */
+.status-backlog { 
+  background: #f8f9fa; 
+  color: #6c757d; 
+  border-top: 4px solid #6c757d; 
+}
+.status-todo { 
+  background: #cce5ff; 
+  color: #0066cc; 
+  border-top: 4px solid #0ea5e9; 
+}
+.status-progress { 
+  background: #ffe6cc; 
+  color: #cc6600; 
+  border-top: 4px solid #f97316; 
+}
+.status-waiting { 
+  background: #fff2cc; 
+  color: #b3a000; 
+  border-top: 4px solid #eab308; 
+}
+.status-blocked { 
+  background: #ffcccc; 
+  color: #cc0000; 
+  border-top: 4px solid #ef4444; 
+}
+.status-validation { 
+  background: #e6ccff; 
+  color: #6600cc; 
+  border-top: 4px solid #8b5cf6; 
+}
+.status-done { 
+  background: #ccffcc; 
+  color: #00cc00; 
+  border-top: 4px solid #22c55e; 
+}
+.status-unknown { 
+  background: #f8f9fa; 
+  color: #6c757d; 
+  border-top: 4px solid #6c757d; 
+}
+
 /* === Mode Focus (simplifié) === */
 /* Navigation focus supprimée - utilise maintenant le filtre statut directement */
 
