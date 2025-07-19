@@ -893,7 +893,10 @@ class KanbanManager {
     if (this.viewMode === VIEW_MODES.FOCUS && this.focusColumn) {
       const focusStatut = STATUTS.find(s => s.id === this.focusColumn);
       if (focusStatut) {
-        const boardRecords = filteredRecords.filter(r => r.statut === focusStatut.id);
+        const boardRecords = filteredRecords.filter(r => 
+          r.statut === focusStatut.id && 
+          r.titre !== '___TEMP_USER_RECORD___'
+        );
         // Trier les enregistrements par priorité
         boardRecords.sort((a, b) => {
           const prioA = this.calculerPriorite(a.urgence, a.impact);
@@ -904,10 +907,11 @@ class KanbanManager {
         const itemsHTML = boardRecords.map(record => this.createTaskElementHTML(record)).join('');
         const count = boardRecords.length;
 
+        const icone = focusStatut.icone || '';
         kanbanHTML = `
           <div class="kanban-board focus-board" data-status-id="${focusStatut.id}">
             <div class="kanban-board-header">
-              <span>${focusStatut.libelle}</span>
+              <span>${icone} ${focusStatut.libelle}</span>
               <span class="badge badge-secondary count-badge ml-2">${count}</span>
             </div>
             <div class="kanban-items-container" data-status-id="${focusStatut.id}">
@@ -920,7 +924,10 @@ class KanbanManager {
       // Mode normal : afficher toutes les colonnes
       statutsToShow.forEach(statut => {
         const boardId = statut.classe;
-        const boardRecords = filteredRecords.filter(r => r.statut === statut.id);
+        const boardRecords = filteredRecords.filter(r => 
+          r.statut === statut.id && 
+          r.titre !== '___TEMP_USER_RECORD___'
+        );
         
         console.log(`Statut ${statut.id}: ${boardRecords.length} enregistrements`);
         
@@ -950,6 +957,8 @@ class KanbanManager {
 
         const icone = statut.icone || '';
         const emptyAttr = count === 0 ? ' data-empty="true"' : '';
+        
+        console.log(`🎨 Statut ${statut.id}: icone="${icone}"`);
         
         kanbanHTML += `
           <div class="kanban-board${hiddenClass}" data-status-id="${statut.id}" data-board-class="${statut.classe}"${emptyAttr}>

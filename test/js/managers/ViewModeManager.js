@@ -362,7 +362,10 @@ export class ViewModeManager {
   getTaskCountForStatus(status) {
     if (!this.kanban.currentRecords) return 0;
     
-    return this.kanban.currentRecords.filter(record => record.statut === status).length;
+    return this.kanban.currentRecords.filter(record => 
+      record.statut === status && 
+      record.titre !== '___TEMP_USER_RECORD___'
+    ).length;
   }
   
   /**
@@ -372,7 +375,7 @@ export class ViewModeManager {
   findFirstColumnWithTasks() {
     if (!this.kanban.currentRecords) return null;
     
-    const statusOrder = ['Backlog', 'À faire', 'En cours', 'Bloqué', 'En test', 'Terminé'];
+    const statusOrder = ['Backlog', 'À faire', 'En cours', 'En attente', 'Bloqué', 'Validation', 'Terminé'];
     
     for (const status of statusOrder) {
       if (this.getTaskCountForStatus(status) > 0) {
@@ -387,36 +390,9 @@ export class ViewModeManager {
    * Masque toutes les colonnes vides (sauf si toutes sont vides)
    */
   hideEmptyColumns() {
-    const container = this.kanban.kanbanContainer;
-    if (!container) return;
-    
-    const columns = container.querySelectorAll('.kanban-board');
-    let visibleCount = 0;
-    let totalCount = 0;
-    
-    columns.forEach(column => {
-      const titleElement = column.querySelector('.kanban-board-title');
-      const columnName = titleElement ? titleElement.textContent.trim() : '';
-      const taskCount = this.getTaskCountForStatus(columnName);
-      
-      totalCount++;
-      
-      if (taskCount > 0) {
-        column.style.display = '';
-        visibleCount++;
-      } else {
-        column.style.display = 'none';
-      }
-    });
-    
-    // Si toutes les colonnes sont vides, afficher toutes les colonnes
-    if (visibleCount === 0 && totalCount > 0) {
-      columns.forEach(column => {
-        column.style.display = '';
-      });
-    }
-    
-    this.logger.debug(`Colonnes visibles: ${visibleCount}/${totalCount}`);
+    // Ne rien faire - la gestion des colonnes vides est faite par le CSS avec data-empty
+    // Cette fonction est remplacée par le système data-empty dans kanban-app.js
+    this.logger.debug('hideEmptyColumns() désactivée - utilisation du système data-empty');
   }
   
   /**

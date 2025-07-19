@@ -99,6 +99,13 @@ body {
   max-width: 220px;
 }
 
+/* Colonnes vides en mode compact */
+.kanban-container.kanban-compact > .kanban-board[data-empty="true"] {
+  flex: 0 0 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+}
+
 .kanban-compact .kanban-board {
   display: flex;
   flex-direction: column;
@@ -142,6 +149,13 @@ body {
   flex: 0 0 320px;
   min-width: 320px;
   max-width: 320px;
+}
+
+/* Colonnes vides en mode détaillé */
+.kanban-container.kanban-detailed > .kanban-board[data-empty="true"] {
+  flex: 0 0 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
 }
 
 .kanban-detailed .kanban-board-header {
@@ -188,8 +202,10 @@ body {
 
 /* === Colonnes vides : masquées/repliées === */
 .kanban-board[data-empty="true"] {
+  flex: 0 0 40px !important;
   width: 40px !important;
   min-width: 40px !important;
+  max-width: 40px !important;
   opacity: 0.3;
   transition: var(--kanban-transition);
 }
@@ -199,10 +215,13 @@ body {
   text-orientation: mixed;
   padding: 0.5rem 0.25rem;
   font-size: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
-.kanban-board[data-empty="true"] .kanban-board-body {
-  display: none;
+.kanban-board[data-empty="true"] .kanban-board-body,
+.kanban-board[data-empty="true"] .kanban-items-container {
+  display: none !important;
 }
 
 .kanban-board[data-empty="true"]:hover {
