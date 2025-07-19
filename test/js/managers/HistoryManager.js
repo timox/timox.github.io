@@ -94,10 +94,31 @@ export class HistoryManager {
     
     this.currentTaskHistory = task;
     
-    if (this.kanban.modalManager) {
-      this.kanban.modalManager.openHistoryModal(taskId);
+    // Vérifier si la tâche est déjà ouverte dans la modale de détail
+    const taskModal = document.getElementById('popup-tache');
+    const isTaskModalOpen = taskModal && taskModal.classList.contains('show');
+    const currentTaskIdInModal = this.kanban.modalManager?.currentTaskId;
+    
+    if (isTaskModalOpen && currentTaskIdInModal === taskId) {
+      // Utiliser l'accordéon dans la modale de détail
+      console.log('HistoryManager: Utilisation accordéon dans modale de détail');
+      if (this.kanban.modalManager) {
+        this.kanban.modalManager.loadCommentHistoryInAccordion();
+        
+        // Ouvrir l'accordéon automatiquement
+        const accordion = document.getElementById('comment-history-accordion');
+        if (accordion && !accordion.classList.contains('show')) {
+          const bsCollapse = new bootstrap.Collapse(accordion, { show: true });
+        }
+      }
     } else {
-      this.renderTaskHistory(task);
+      // Utiliser la modale historique séparée (comportement original)
+      console.log('HistoryManager: Utilisation modale historique séparée');
+      if (this.kanban.modalManager) {
+        this.kanban.modalManager.openHistoryModal(taskId);
+      } else {
+        this.renderTaskHistory(task);
+      }
     }
   }
   
@@ -211,15 +232,19 @@ export class HistoryManager {
                  entry.details.includes('Commentaire ajouté:'));
               
               if (!isCommentUpdate) {
-                // Ajouter aux mises à jour générales (sauf commentaires)
-                const normalizedTimestamp = this.normalizeTimestamp(entry.timestamp);
-                history.push({
-                  timestamp: normalizedTimestamp,
-                  statut: entry.status || task.statut,
-                  date_entree: normalizedTimestamp,
-                  note: entry.action === 'field_change' ? entry.details : `Mise à jour: ${entry.details}`,
-                  user: entry.user || 'Utilisateur'
-                });
+                // Nettoyer et extraire l'information utile
+                const cleanNote = this.extractFieldChangeInfo(entry.details);
+                
+                if (cleanNote) {
+                  const normalizedTimestamp = this.normalizeTimestamp(entry.timestamp);
+                  history.push({
+                    timestamp: normalizedTimestamp,
+                    statut: entry.status || task.statut,
+                    date_entree: normalizedTimestamp,
+                    note: cleanNote,
+                    user: entry.user || 'Utilisateur'
+                  });
+                }
               } else {
                 this.logger?.debug('Doublon de commentaire ignoré dans update:', entry.details);
               }
@@ -251,6 +276,92 @@ export class HistoryManager {
   // FONCTION SUPPRIMÉE: parseCommentsFromDescription()
   // Les commentaires sont maintenant exclusivement dans notes.history
   
+  /**
+   * Extrait l'information utile d'une modification de champ
+   * @param {string} details - Détails bruts de la modification
+   * @returns {string|null} Information nettoyée ou null si pas pertinente
+   */
+  extractFieldChangeInfo(details) {
+    if (!details) return null;
+    
+    // Extraire les modifications d'équipe/responsables
+    const teamMatch = details.match(/Équipe modifiée:\s*([^→]+)→\s*(.+)/);
+    if (teamMatch) {
+      const avant = teamMatch[1].trim();
+      const apres = teamMatch[2].trim();
+      return `Équipe modifiée: ${avant} → ${apres}`;
+    }
+    
+    // Extraire les modifications de responsables
+    const responsableMatch = details.match(/Responsables?\s+modifiée?s?:\s*([^→]+)→\s*(.+)/);
+    if (responsableMatch) {
+      const avant = responsableMatch[1].trim();
+      const apres = responsableMatch[2].trim();
+      return `Responsables modifiés: ${avant} → ${apres}`;
+    }
+    
+    // Extraire les modifications de bureau
+    const bureauMatch = details.match(/Bureau modifié:\s*([^→]+)→\s*(.+)/);
+    if (bureauMatch) {
+      const avant = bureauMatch[1].trim();
+      const apres = bureauMatch[2].trim();
+      return `Bureau modifié: ${avant} → ${apres}`;
+    }
+    
+    // Extraire les modifications de titre
+    const titreMatch = details.match(/Titre modifié:\s*([^→]+)→\s*(.+)/);
+    if (titreMatch) {
+      const avant = titreMatch[1].trim();
+      const apres = titreMatch[2].trim();
+      // Limiter la longueur pour la lisibilité
+      const avantCourt = avant.length > 30 ? avant.substring(0, 30) + '...' : avant;
+      const apresCourt = apres.length > 30 ? apres.substring(0, 30) + '...' : apres;
+      return `Titre modifié: ${avantCourt} → ${apresCourt}`;
+    }
+    
+    // Extraire les modifications de projet
+    const projetMatch = details.match(/Projet modifié:\s*([^→]+)→\s*(.+)/);
+    if (projetMatch) {
+      const avant = projetMatch[1].trim();
+      const apres = projetMatch[2].trim();
+      return `Projet modifié: ${avant} → ${apres}`;
+    }
+    
+    // Extraire les modifications de priorité/urgence/impact
+    const prioriteMatch = details.match(/(Urgence|Impact|Priorité)\s+modifiée?:\s*([^→]+)→\s*(.+)/);
+    if (prioriteMatch) {
+      const champ = prioriteMatch[1];
+      const avant = prioriteMatch[2].trim();
+      const apres = prioriteMatch[3].trim();
+      return `${champ} modifiée: ${avant} → ${apres}`;
+    }
+    
+    // Extraire les modifications de date
+    const dateMatch = details.match(/Date\s+[^:]*modifiée:\s*([^→]+)→\s*(.+)/);
+    if (dateMatch) {
+      const avant = dateMatch[1].trim();
+      const apres = dateMatch[2].trim();
+      return `Date d'échéance modifiée: ${avant} → ${apres}`;
+    }
+    
+    // Pour toutes les autres modifications, essayer d'extraire le pattern général "X modifié: avant → après"
+    const generalMatch = details.match(/([^:]+)\s+modifiée?s?:\s*([^→]+)→\s*(.+)/);
+    if (generalMatch) {
+      const champ = generalMatch[1].trim();
+      const avant = generalMatch[2].trim();
+      const apres = generalMatch[3].trim();
+      
+      // Limiter la longueur si c'est trop long
+      const avantCourt = avant.length > 50 ? avant.substring(0, 50) + '...' : avant;
+      const apresCourt = apres.length > 50 ? apres.substring(0, 50) + '...' : apres;
+      
+      return `${champ} modifié: ${avantCourt} → ${apresCourt}`;
+    }
+    
+    // Si pas de pattern reconnu, ignorer (probablement du contenu de tâche)
+    return null;
+  }
+
   /**
    * Convertit un timestamp en objet Date valide
    * @param {*} timestamp - Timestamp à convertir
@@ -571,13 +682,15 @@ export class HistoryManager {
     return `
       <div class="timeline-entry timeline-entry-comment" data-comment-id="${commentId}">
         <div class="timeline-status">
-          <i class="bi bi-chat-square-text text-info"></i>
-          Commentaire${latestBadge}
-          <button class="btn btn-sm btn-outline-secondary btn-edit-comment" 
-                  data-comment-id="${commentId}"
-                  title="Éditer ce commentaire">
-            ✏️
-          </button>
+          <div class="timeline-status-left">
+            <i class="bi bi-chat-square-text text-info"></i>
+            <button class="btn btn-sm btn-outline-secondary btn-edit-comment" 
+                    data-comment-id="${commentId}"
+                    title="Éditer ce commentaire">
+              ✏️
+            </button>
+            <span class="timeline-status-text">Commentaire${latestBadge}</span>
+          </div>
         </div>
         <div class="timeline-dates">
           <i class="bi bi-calendar3"></i>
@@ -828,21 +941,25 @@ export class HistoryManager {
     // Créer le widget d'édition s'il n'existe pas
     this.createCommentEditWidget();
     
-    // Écouteur pour les boutons d'édition
+    // Écouteur pour les boutons d'édition (plus précis, sans logging)
     document.addEventListener('click', (e) => {
+      // Ne traiter que les clics sur les boutons d'édition
       if (e.target.matches('.btn-edit-comment, .btn-edit-comment *')) {
         e.preventDefault();
         e.stopPropagation();
         
         const button = e.target.closest('.btn-edit-comment');
+        if (!button) {
+          return;
+        }
+        
         const commentId = button.dataset.commentId;
-        console.log('HistoryManager: Clic sur bouton édition commentaire:', commentId);
         this.openCommentEditWidget(commentId);
       }
     });
     
-    // Bouton fermer
-    const btnClose = document.getElementById('btn-close-comment-edit');
+    // Bouton fermer (IDs uniques pour accordéon)
+    const btnClose = document.getElementById('accordion-btn-close-comment-edit');
     if (btnClose) {
       btnClose.addEventListener('click', () => {
         this.closeCommentEditWidget();
@@ -850,7 +967,7 @@ export class HistoryManager {
     }
     
     // Bouton annuler
-    const btnCancel = document.getElementById('btn-cancel-comment-edit');
+    const btnCancel = document.getElementById('accordion-btn-cancel-comment-edit');
     if (btnCancel) {
       btnCancel.addEventListener('click', () => {
         this.closeCommentEditWidget();
@@ -858,22 +975,28 @@ export class HistoryManager {
     }
     
     // Bouton sauvegarder
-    const btnSave = document.getElementById('btn-save-comment-edit');
+    const btnSave = document.getElementById('accordion-btn-save-comment-edit');
     if (btnSave) {
       btnSave.addEventListener('click', () => {
+        console.log('HistoryManager: Bouton sauvegarder cliqué, this:', this);
         this.saveCommentEdit();
       });
+    } else {
+      console.error('HistoryManager: Bouton accordion-btn-save-comment-edit non trouvé');
     }
     
-    // Fermer avec l'overlay
-    const overlay = document.querySelector('.comment-edit-overlay');
-    if (overlay) {
-      overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) {
-          this.closeCommentEditWidget();
-        }
-      });
-    }
+    // Fermer avec l'overlay (seulement celui de l'accordéon)
+    setTimeout(() => {
+      const overlay = document.querySelector('#accordion-comment-edit-widget .comment-edit-overlay');
+      if (overlay) {
+        overlay.addEventListener('click', (e) => {
+          // Fermer si on clique directement sur l'overlay (pas sur le modal)
+          if (e.target === overlay) {
+            this.closeCommentEditWidget();
+          }
+        });
+      }
+    }, 100);
     
     // Fermer avec Escape
     document.addEventListener('keydown', (e) => {
@@ -888,39 +1011,41 @@ export class HistoryManager {
    */
   createCommentEditWidget() {
     // Vérifier si le widget existe déjà
-    if (document.getElementById('comment-edit-widget')) {
-      console.log('HistoryManager: Widget d\'édition existe déjà');
+    if (document.getElementById('accordion-comment-edit-widget')) {
+      console.log('HistoryManager: Widget d\'édition accordéon existe déjà');
       return;
     }
     
-    console.log('HistoryManager: Création du widget d\'édition de commentaires');
+    console.log('HistoryManager: Création du widget d\'édition de commentaires pour accordéon');
     
-    // Créer le HTML du widget
+    // Créer le HTML du widget avec structure corrigée
     const widgetHTML = `
-      <div id="comment-edit-widget" class="comment-edit-overlay" style="display: none;">
-        <div class="comment-edit-modal">
-          <div class="comment-edit-header">
-            <h5><i class="bi bi-pencil me-2"></i>Édition de commentaire</h5>
-            <button type="button" id="btn-close-comment-edit" class="btn-close" aria-label="Fermer">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-          
-          <div class="comment-edit-body">
-            <div class="mb-2">
-              <small class="text-muted">Date: <span id="comment-edit-date"></span></small>
+      <div id="accordion-comment-edit-widget" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1080;">
+        <div class="comment-edit-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;">
+          <div class="comment-edit-modal" style="background: white; border-radius: 8px; max-width: 700px; width: 95%; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+            <div class="comment-edit-header" style="padding: 1rem; border-bottom: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: center;">
+              <h5 style="margin: 0; color: #333;"><i class="bi bi-pencil me-2"></i>Édition de commentaire</h5>
+              <button type="button" id="accordion-btn-close-comment-edit" class="btn-close" aria-label="Fermer" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6c757d;">
+                <span aria-hidden="true">&times;</span>
+              </button>
             </div>
-            <textarea id="comment-edit-text" class="form-control" rows="4" 
-                      placeholder="Modifiez votre commentaire..."></textarea>
-          </div>
-          
-          <div class="comment-edit-footer">
-            <button type="button" id="btn-cancel-comment-edit" class="btn btn-secondary">
-              <i class="bi bi-x-circle me-1"></i>Annuler
-            </button>
-            <button type="button" id="btn-save-comment-edit" class="btn btn-primary">
-              <i class="bi bi-check-circle me-1"></i>Sauvegarder
-            </button>
+            
+            <div class="comment-edit-body" style="padding: 1rem;">
+              <div class="mb-2">
+                <small class="text-muted">Date: <span id="accordion-comment-edit-date"></span></small>
+              </div>
+              <textarea id="accordion-comment-edit-text" class="form-control" rows="6" 
+                        placeholder="Modifiez votre commentaire..." style="resize: vertical; min-height: 120px;"></textarea>
+            </div>
+            
+            <div class="comment-edit-footer" style="padding: 1rem; border-top: 1px solid #dee2e6; display: flex; justify-content: flex-end; gap: 0.5rem;">
+              <button type="button" id="accordion-btn-cancel-comment-edit" class="btn btn-secondary">
+                <i class="bi bi-x-circle me-1"></i>Annuler
+              </button>
+              <button type="button" id="accordion-btn-save-comment-edit" class="btn btn-primary">
+                <i class="bi bi-check-circle me-1"></i>Sauvegarder
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -928,9 +1053,6 @@ export class HistoryManager {
     
     // Ajouter au body
     document.body.insertAdjacentHTML('beforeend', widgetHTML);
-    
-    // Ajouter les styles CSS
-    this.addCommentEditStyles();
   }
   
   /**
@@ -951,7 +1073,7 @@ export class HistoryManager {
           width: 100%;
           height: 100%;
           background-color: rgba(0, 0, 0, 0.5);
-          z-index: 1050;
+          z-index: 1070;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -960,8 +1082,8 @@ export class HistoryManager {
         .comment-edit-modal {
           background: white;
           border-radius: 8px;
-          max-width: 500px;
-          width: 90%;
+          max-width: 700px;
+          width: 95%;
           max-height: 80vh;
           overflow-y: auto;
           box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
@@ -1016,6 +1138,16 @@ export class HistoryManager {
           align-items: center;
           justify-content: space-between;
         }
+        
+        .timeline-status-left {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        
+        .timeline-status-text {
+          margin-left: 0.25rem;
+        }
       </style>
     `;
     
@@ -1027,16 +1159,24 @@ export class HistoryManager {
    * @param {string} commentId - ID du commentaire
    */
   openCommentEditWidget(commentId) {
+    console.log('HistoryManager: openCommentEditWidget appelé avec ID:', commentId);
     const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
+    console.log('HistoryManager: Element commentaire trouvé:', commentElement);
+    
     if (!commentElement) {
-      console.error('Commentaire non trouvé:', commentId);
+      console.error('HistoryManager: Commentaire non trouvé pour ID:', commentId);
+      console.log('HistoryManager: Éléments avec data-comment-id disponibles:', 
+        document.querySelectorAll('[data-comment-id]'));
       return;
     }
     
     const contentElement = commentElement.querySelector('.comment-content');
     const originalContent = contentElement.dataset.original || contentElement.textContent;
-    const dateElement = commentElement.querySelector('.timeline-dates');
-    const dateText = dateElement.textContent.trim();
+    
+    // Chercher l'élément de date (compatible modale historique ET accordéon)
+    const dateElement = commentElement.querySelector('.timeline-dates') || 
+                       commentElement.querySelector('.comment-meta');
+    const dateText = dateElement ? dateElement.textContent.trim() : 'Date inconnue';
     
     // Stocker les informations du commentaire en cours d'édition
     this.currentEditingComment = {
@@ -1045,17 +1185,30 @@ export class HistoryManager {
       originalContent: originalContent
     };
     
-    // Remplir le widget
-    document.getElementById('comment-edit-text').value = originalContent;
-    document.getElementById('comment-edit-date').textContent = dateText;
+    // Remplir le widget (IDs uniques pour accordéon)
+    const textArea = document.getElementById('accordion-comment-edit-text');
+    const dateSpan = document.getElementById('accordion-comment-edit-date');
+    
+    if (!textArea || !dateSpan) {
+      console.error('HistoryManager: Éléments du widget accordéon non trouvés');
+      return;
+    }
+    
+    textArea.value = originalContent;
+    dateSpan.textContent = dateText;
     
     // Afficher le widget
-    const widget = document.getElementById('comment-edit-widget');
+    const widget = document.getElementById('accordion-comment-edit-widget');
+    if (!widget) {
+      console.error('HistoryManager: Widget accordéon non trouvé');
+      return;
+    }
+    
     widget.style.display = 'block';
     
     // Focus sur le textarea
     setTimeout(() => {
-      document.getElementById('comment-edit-text').focus();
+      textArea.focus();
     }, 100);
   }
   
@@ -1063,14 +1216,19 @@ export class HistoryManager {
    * Ferme le widget d'édition
    */
   closeCommentEditWidget() {
-    const widget = document.getElementById('comment-edit-widget');
-    widget.style.display = 'none';
+    const widget = document.getElementById('accordion-comment-edit-widget');
+    if (widget) {
+      widget.style.display = 'none';
+    }
     
     this.currentEditingComment = null;
     
-    // Nettoyer le formulaire
-    document.getElementById('comment-edit-text').value = '';
-    document.getElementById('comment-edit-date').textContent = '';
+    // Nettoyer le formulaire (IDs uniques pour accordéon)
+    const textArea = document.getElementById('accordion-comment-edit-text');
+    const dateSpan = document.getElementById('accordion-comment-edit-date');
+    
+    if (textArea) textArea.value = '';
+    if (dateSpan) dateSpan.textContent = '';
   }
   
   /**
@@ -1078,7 +1236,7 @@ export class HistoryManager {
    * @returns {boolean}
    */
   isCommentEditOpen() {
-    const widget = document.getElementById('comment-edit-widget');
+    const widget = document.getElementById('accordion-comment-edit-widget');
     return widget && widget.style.display === 'block';
   }
   
@@ -1086,12 +1244,21 @@ export class HistoryManager {
    * Sauvegarde les modifications du commentaire
    */
   async saveCommentEdit() {
+    console.log('HistoryManager: saveCommentEdit appelé');
+    console.log('HistoryManager: currentEditingComment:', this.currentEditingComment);
+    
     if (!this.currentEditingComment) {
-      console.error('Aucun commentaire en cours d\'édition');
+      console.error('HistoryManager: Aucun commentaire en cours d\'édition');
+      console.log('HistoryManager: État du widget:', {
+        widgetVisible: document.getElementById('comment-edit-widget')?.style.display,
+        textareaValue: document.getElementById('comment-edit-text')?.value,
+        dateText: document.getElementById('comment-edit-date')?.textContent
+      });
+      displayError('Erreur: Aucun commentaire sélectionné pour édition');
       return;
     }
     
-    const newContent = document.getElementById('comment-edit-text').value.trim();
+    const newContent = document.getElementById('accordion-comment-edit-text').value.trim();
     
     if (!newContent) {
       displayError('Le commentaire ne peut pas être vide');
@@ -1112,7 +1279,7 @@ export class HistoryManager {
       }
       
       // Désactiver le bouton de sauvegarde et afficher un loader
-      const saveBtn = document.getElementById('btn-save-comment-edit');
+      const saveBtn = document.getElementById('accordion-btn-save-comment-edit');
       const originalText = saveBtn.innerHTML;
       saveBtn.disabled = true;
       saveBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Sauvegarde...';

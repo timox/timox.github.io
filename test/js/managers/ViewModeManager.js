@@ -1,7 +1,7 @@
 // === managers/ViewModeManager.js ===
 // Gestionnaire pour les modes de vue du Kanban (Compact, Détaillé, Focus)
 
-import { VIEW_MODES, STATUTS } from '../config/constants.js';
+import { VIEW_MODES } from '../config/constants.js';
 import { createModuleLogger } from '../utils/LoggerManager.js';
 
 /**
@@ -31,9 +31,9 @@ export class ViewModeManager {
    * Crée les contrôles de mode de vue
    */
   createViewModeControls() {
-    const controlsContainer = document.querySelector('.kanban-controls .row');
-    if (!controlsContainer) {
-      this.logger.error('Conteneur des contrôles kanban introuvable');
+    const searchCol = document.querySelector('.kanban-controls .col-md-3');
+    if (!searchCol) {
+      this.logger.error('Colonne de recherche introuvable');
       return;
     }
     
@@ -43,33 +43,31 @@ export class ViewModeManager {
       return;
     }
     
-    const viewModeCol = document.createElement('div');
-    viewModeCol.className = 'col-md-12 mb-2';
-    viewModeCol.id = 'view-mode-controls';
+    // Créer un conteneur pour les modes de vue au-dessus du champ de recherche
+    const viewModeContainer = document.createElement('div');
+    viewModeContainer.id = 'view-mode-controls';
+    viewModeContainer.className = 'mb-2';
     
-    viewModeCol.innerHTML = `
-      <div class="d-flex align-items-center gap-3">
-        <span class="text-muted small">Modes de vue:</span>
-        <div class="btn-group" role="group" aria-label="Modes de vue">
-          <button type="button" class="btn btn-outline-secondary active" data-mode="compact">
-            <i class="bi bi-grid-3x2"></i> Compact
+    viewModeContainer.innerHTML = `
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="text-muted small">Modes:</span>
+        <div class="btn-group btn-group-sm" role="group" aria-label="Modes de vue">
+          <button type="button" class="btn btn-outline-secondary active" data-mode="compact" title="Mode compact (1)">
+            <i class="bi bi-grid-3x2"></i>
           </button>
-          <button type="button" class="btn btn-outline-secondary" data-mode="detailed">
-            <i class="bi bi-card-list"></i> Détaillé
+          <button type="button" class="btn btn-outline-secondary" data-mode="detailed" title="Mode détaillé (2)">
+            <i class="bi bi-card-list"></i>
           </button>
-          <button type="button" class="btn btn-outline-secondary" data-mode="focus">
-            <i class="bi bi-zoom-in"></i> Focus
+          <button type="button" class="btn btn-outline-secondary" data-mode="focus" title="Mode focus (3)">
+            <i class="bi bi-zoom-in"></i>
           </button>
         </div>
-        <small class="text-muted">
-          <kbd>1</kbd> Compact • <kbd>2</kbd> Détaillé • <kbd>3</kbd> Focus
-        </small>
       </div>
     `;
     
-    // Insérer au début du container
-    controlsContainer.insertBefore(viewModeCol, controlsContainer.firstChild);
-    this.logger.info('Contrôles de vue créés et insérés dans le DOM');
+    // Insérer au début de la colonne de recherche
+    searchCol.insertBefore(viewModeContainer, searchCol.firstChild);
+    this.logger.info('Contrôles de vue créés et insérés dans la colonne de recherche');
   }
   
   /**
@@ -105,14 +103,7 @@ export class ViewModeManager {
       }
     });
     
-    // Navigation focus (pour le mode focus)
-    document.addEventListener('click', (e) => {
-      if (e.target.closest('.focus-nav-btn')) {
-        const button = e.target.closest('.focus-nav-btn');
-        const columnId = button.dataset.column;
-        this.setFocusColumn(columnId);
-      }
-    });
+    // Navigation focus supprimée - le mode focus utilise maintenant le filtre statut directement
   }
   
   /**
@@ -185,6 +176,13 @@ export class ViewModeManager {
     
     // Rafraîchir le kanban avec le nouveau mode
     if (this.kanban.refreshKanban) {
+      this.kanban.viewMode = mode;
+      
+      // Mettre à jour les options de filtrage selon le mode
+      if (this.kanban.filterManager && this.kanban.filterManager.updateForViewMode) {
+        this.kanban.filterManager.updateForViewMode();
+      }
+      
       // Rafraichissement synchronisé
       this.refreshWithSync();
     }
@@ -244,15 +242,27 @@ export class ViewModeManager {
     const container = this.kanban.kanbanContainer;
     container.classList.add('kanban-focus');
     
-    this.logger.debug('Application du mode focus...');
+    this.logger.debug('Application du mode focus simplifié...');
     
-    // Créer la navigation focus
-    this.createFocusNavigation();
+    // SIMPLIFIÉ: Pas de navigation focus custom, utilise le filtre statut uniquement
+    this.hideFocusNavigation();
     
     // Si pas de colonne focus définie, choisir la première colonne avec des tâches
     if (!this.focusColumn) {
       this.focusColumn = this.findFirstColumnWithTasks() || 'À faire';
       this.logger.debug(`Colonne focus automatique: ${this.focusColumn}`);
+    }
+    
+    // CORRECTION: Synchroniser avec le kanban principal
+    if (this.kanban.focusColumn !== this.focusColumn) {
+      this.kanban.focusColumn = this.focusColumn;
+      this.logger.debug(`Synchronisation focusColumn: ${this.focusColumn}`);
+    }
+    
+    // SIMPLIFIÉ: Appliquer le filtre statut directement via FilterManager
+    if (this.kanban.filterManager) {
+      this.kanban.filterManager.setFilter('statut', this.focusColumn);
+      this.logger.debug(`Filtre statut appliqué: ${this.focusColumn}`);
     }
     
     // Pas de refresh ici - sera fait par applyViewMode()
@@ -264,57 +274,16 @@ export class ViewModeManager {
     container.style.height = 'calc(100vh - 250px)';
     container.style.justifyContent = 'center';
     
-    this.logger.info(`Mode focus appliqué - colonne "${this.focusColumn}" seule visible`);
+    this.logger.info(`Mode focus simplifié appliqué - statut "${this.focusColumn}" filtré`);
   }
   
   /**
    * Crée la navigation pour le mode focus
+   * SUPPRIMÉ: Plus nécessaire avec la simplification du mode focus
    */
   createFocusNavigation() {
-    // Vérifier si la navigation existe déjà
-    if (document.getElementById('focus-navigation')) return;
-    
-    const controlsContainer = document.querySelector('.kanban-controls');
-    if (!controlsContainer) return;
-    
-    // Obtenir les statuts depuis les constantes
-    const statuts = this.kanban.gristOptions?.statut || [
-      'Backlog', 'À faire', 'En cours', 'En attente', 'Bloqué', 'Validation', 'Terminé'
-    ];
-    
-    const navigationDiv = document.createElement('div');
-    navigationDiv.id = 'focus-navigation';
-    navigationDiv.className = 'row mt-2';
-    
-    const navButtons = statuts.map(statutId => {
-      const statutObj = STATUTS.find(s => s.id === statutId);
-      const count = this.getTaskCountForStatus(statutId);
-      const isActive = this.focusColumn === statutId;
-      const activeClass = isActive ? 'active' : '';
-      const icone = statutObj ? statutObj.icone : '';
-      
-      return `
-        <div class="col-auto">
-          <button class="btn btn-outline-secondary btn-sm focus-nav-btn ${activeClass}" 
-                  data-column="${statutId}"
-                  title="Voir les tâches ${statutId}">
-            ${icone} ${statutId} 
-            <span class="badge bg-secondary">${count}</span>
-          </button>
-        </div>
-      `;
-    }).join('');
-    
-    navigationDiv.innerHTML = `
-      <div class="col-12">
-        <div class="d-flex align-items-center gap-2 flex-wrap">
-          <span class="text-muted small">Focus sur:</span>
-          ${navButtons}
-        </div>
-      </div>
-    `;
-    
-    controlsContainer.appendChild(navigationDiv);
+    // Navigation supprimée - le mode focus utilise maintenant directement le filtre statut
+    this.logger.debug('Navigation focus désactivée - utilise le filtre statut');
   }
   
   /**
@@ -334,22 +303,16 @@ export class ViewModeManager {
   setFocusColumn(columnId) {
     this.focusColumn = columnId;
     
-    // Mettre à jour les boutons de navigation
-    document.querySelectorAll('.focus-nav-btn').forEach(btn => {
-      btn.classList.remove('active');
-      if (btn.dataset.column === columnId) {
-        btn.classList.add('active');
-      }
-    });
-    
-    // Si on est en mode focus, changer immédiatement la colonne affichée
-    if (this.currentMode === VIEW_MODES.FOCUS) {
-      this.showOnlyFocusColumn(columnId);
-      this.logger.info(`Colonne focus changée vers: ${columnId}`);
-    }
-    
-    // Mettre à jour aussi dans kanban pour compatibilité
+    // CORRECTION: Synchroniser avec le kanban principal
     this.kanban.focusColumn = columnId;
+    
+    // SIMPLIFIÉ: Si on est en mode focus, appliquer le filtre statut directement
+    if (this.currentMode === VIEW_MODES.FOCUS) {
+      if (this.kanban.filterManager) {
+        this.kanban.filterManager.setFilter('statut', columnId);
+        this.logger.info(`Filtre statut appliqué en mode focus: ${columnId}`);
+      }
+    }
   }
   
   /**
@@ -360,10 +323,7 @@ export class ViewModeManager {
   getTaskCountForStatus(status) {
     if (!this.kanban.currentRecords) return 0;
     
-    return this.kanban.currentRecords.filter(record => 
-      record.statut === status && 
-      record.titre !== '___TEMP_USER_RECORD___'
-    ).length;
+    return this.kanban.currentRecords.filter(record => record.statut === status).length;
   }
   
   /**
@@ -373,7 +333,7 @@ export class ViewModeManager {
   findFirstColumnWithTasks() {
     if (!this.kanban.currentRecords) return null;
     
-    const statusOrder = ['Backlog', 'À faire', 'En cours', 'En attente', 'Bloqué', 'Validation', 'Terminé'];
+    const statusOrder = ['Backlog', 'À faire', 'En cours', 'Bloqué', 'En test', 'Terminé'];
     
     for (const status of statusOrder) {
       if (this.getTaskCountForStatus(status) > 0) {
@@ -388,9 +348,36 @@ export class ViewModeManager {
    * Masque toutes les colonnes vides (sauf si toutes sont vides)
    */
   hideEmptyColumns() {
-    // Ne rien faire - la gestion des colonnes vides est faite par le CSS avec data-empty
-    // Cette fonction est remplacée par le système data-empty dans kanban-app.js
-    this.logger.debug('hideEmptyColumns() désactivée - utilisation du système data-empty');
+    const container = this.kanban.kanbanContainer;
+    if (!container) return;
+    
+    const columns = container.querySelectorAll('.kanban-board');
+    let visibleCount = 0;
+    let totalCount = 0;
+    
+    columns.forEach(column => {
+      const titleElement = column.querySelector('.kanban-board-title');
+      const columnName = titleElement ? titleElement.textContent.trim() : '';
+      const taskCount = this.getTaskCountForStatus(columnName);
+      
+      totalCount++;
+      
+      if (taskCount > 0) {
+        column.style.display = '';
+        visibleCount++;
+      } else {
+        column.style.display = 'none';
+      }
+    });
+    
+    // Si toutes les colonnes sont vides, afficher toutes les colonnes
+    if (visibleCount === 0 && totalCount > 0) {
+      columns.forEach(column => {
+        column.style.display = '';
+      });
+    }
+    
+    this.logger.debug(`Colonnes visibles: ${visibleCount}/${totalCount}`);
   }
   
   /**

@@ -100,13 +100,24 @@ export class ModalManager {
       });
     }
     
-    // Bouton voir historique des commentaires
-    const btnViewHistory = document.getElementById('btn-view-comment-history');
-    if (btnViewHistory) {
-      btnViewHistory.addEventListener('click', () => {
-        this.viewCommentHistory();
-      });
-    }
+    // Bouton toggle accordéon historique des commentaires (délégation d'événements)
+    document.addEventListener('click', (e) => {
+      if (e.target.matches('#btn-toggle-comment-history, #btn-toggle-comment-history *')) {
+        console.log('ModalManager: Clic sur bouton toggle historique');
+        // Laisser Bootstrap gérer l'accordéon, mais charger les données
+        setTimeout(() => {
+          this.loadCommentHistoryInAccordion();
+        }, 100); // Petit délai pour laisser Bootstrap ouvrir l'accordéon
+      }
+    });
+    
+    // Écouteur pour quand l'accordéon s'ouvre (événement Bootstrap)
+    document.addEventListener('shown.bs.collapse', (e) => {
+      if (e.target.id === 'comment-history-accordion') {
+        console.log('ModalManager: Accordéon historique ouvert');
+        this.loadCommentHistoryInAccordion();
+      }
+    });
     
     // Raccourcis clavier
     document.addEventListener('keydown', (e) => {
@@ -384,6 +395,9 @@ export class ModalManager {
     // Description - TOUJOURS VIDE pour saisie de nouveaux commentaires
     // Les anciens commentaires sont visibles dans l'historique, pas dans la zone de saisie
     setFieldValue('popup-description', '');
+    
+    // Réinitialiser l'accordéon historique
+    this.resetCommentHistoryAccordion();
     
     // Statut (lecture seule)
     const statut = tache.statut || (isNewTask ? 'Backlog' : '');
@@ -900,6 +914,373 @@ export class ModalManager {
     setFieldValue('projet-ajout', '');
     
     displaySuccess(`Projet "${newProjectName}" ajouté`);
+  }
+
+  /**
+   * Charge l'historique des commentaires dans l'accordéon de la modale
+   */
+  loadCommentHistoryInAccordion() {
+    console.log('ModalManager: loadCommentHistoryInAccordion appelée');
+    console.log('ModalManager: currentTask:', this.currentTask);
+    console.log('ModalManager: historyManager:', this.kanban.historyManager);
+    
+    if (!this.currentTask) {
+      console.warn('ModalManager: Aucune tâche courante pour charger l\'historique');
+      this.showAccordionError('Aucune tâche sélectionnée');
+      return;
+    }
+
+    // Obtenir les données d'historique via HistoryManager
+    if (this.kanban.historyManager) {
+      console.log('ModalManager: Parsing historique pour tâche ID:', this.currentTask.id);
+      const historyData = this.kanban.historyManager.parseTaskHistory(this.currentTask);
+      console.log('ModalManager: Données historique reçues:', historyData);
+      this.renderCommentHistoryInAccordion(historyData);
+    } else {
+      console.error('HistoryManager non disponible');
+      this.showAccordionError('Gestionnaire d\'historique non disponible');
+    }
+  }
+
+  /**
+   * Rend l'historique des commentaires dans l'accordéon
+   * @param {object} historyData - Données d'historique parsées
+   */
+  renderCommentHistoryInAccordion(historyData) {
+    const accordionContent = document.getElementById('comment-history-content');
+    const commentCountBadge = document.getElementById('comment-count-badge');
+    
+    if (!accordionContent || !commentCountBadge) {
+      console.error('Éléments accordéon non trouvés');
+      return;
+    }
+
+    const { comments, timeline, history, task } = historyData;
+    
+    // Utiliser la timeline complète qui contient TOUT (commentaires + changements de statut + modifications)
+    const totalEntries = timeline.length;
+    
+    // Mettre à jour le badge de comptage  
+    commentCountBadge.textContent = totalEntries;
+    commentCountBadge.className = totalEntries > 0 ? 'badge bg-info ms-2' : 'badge bg-secondary ms-2';
+
+    if (totalEntries === 0) {
+      accordionContent.innerHTML = `
+        <div class="text-center text-muted py-3">
+          <i class="bi bi-clock-history fs-4"></i>
+          <p class="mt-2">Aucun historique trouvé</p>
+          <small>L'historique complet apparaîtra ici une fois créé</small>
+        </div>
+      `;
+      return;
+    }
+
+    // Construire le HTML avec commentaires ET modifications
+    let historyHTML = '';
+    
+    // Ajouter les modifications (read-only)
+    history.forEach((change) => {
+      const formattedDate = new Date(change.timestamp).toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      const userInfo = change.user ? ` par ${change.user}` : '';
+      
+      historyHTML += `
+        <div class="history-item mb-3 p-3 border rounded bg-light">
+          <div class="history-header d-flex justify-content-between align-items-start mb-2">
+            <div class="history-meta">
+              <small class="text-muted">
+                <i class="bi bi-arrow-right-circle me-1"></i>${formattedDate}${userInfo}
+                <span class="badge bg-secondary ms-2">Modification</span>
+              </small>
+            </div>
+            <div class="text-muted">
+              <i class="bi bi-lock" title="Lecture seule"></i>
+            </div>
+          </div>
+          <div class="history-content text-muted">
+            <strong>${change.statut}</strong>
+            ${change.note ? `<br><small>${change.note}</small>` : ''}
+          </div>
+        </div>
+      `;
+    });
+    
+    // Ajouter les commentaires (éditables)
+    comments.forEach((comment, index) => {
+      const formattedDate = new Date(comment.timestamp).toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      const isLatest = index === 0; // Le plus récent en premier
+      const latestBadge = isLatest ? '<span class="badge bg-success ms-2">Récent</span>' : '';
+      const userInfo = comment.user ? ` par ${comment.user}` : '';
+      
+      // Génerer un ID unique pour le commentaire
+      const timestampString = comment.timestamp instanceof Date ? 
+        comment.timestamp.toISOString() : 
+        String(comment.timestamp);
+      const commentId = `comment-${timestampString.replace(/[^\d]/g, '')}`;
+      
+      historyHTML += `
+        <div class="comment-item mb-3 p-3 border rounded" data-comment-id="${commentId}">
+          <div class="comment-header d-flex justify-content-between align-items-start mb-2">
+            <div class="comment-meta">
+              <small class="text-muted">
+                <i class="bi bi-chat me-1"></i>${formattedDate}${userInfo}
+                ${latestBadge}
+              </small>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary btn-edit-comment" 
+                    data-comment-id="${commentId}"
+                    title="Éditer ce commentaire">
+              <i class="bi bi-pencil"></i>
+            </button>
+          </div>
+          <div class="comment-content" data-original="${comment.content.replace(/"/g, '&quot;')}">
+            ${comment.content}
+          </div>
+        </div>
+      `;
+    });
+
+    // Combiner et trier par timeline chronologique
+    const allEntries = [...timeline].sort((a, b) => {
+      const timeA = new Date(a.timestamp).getTime();
+      const timeB = new Date(b.timestamp).getTime();
+      return timeB - timeA; // Plus récent en premier
+    });
+
+    // Construire le HTML final trié
+    let finalHTML = '';
+    allEntries.forEach((entry, index) => {
+      const formattedDate = new Date(entry.timestamp).toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      const userInfo = entry.user ? ` par ${entry.user}` : '';
+      const isLatest = index === 0;
+
+      if (entry.type === 'comment') {
+        // Commentaire (éditable)
+        const latestBadge = isLatest ? '<span class="badge bg-success ms-2">Récent</span>' : '';
+        const timestampString = entry.timestamp instanceof Date ? 
+          entry.timestamp.toISOString() : String(entry.timestamp);
+        const commentId = `comment-${timestampString.replace(/[^\d]/g, '')}`;
+        
+        console.log('ModalManager: Génération commentaire ID:', commentId, 'pour timestamp:', timestampString);
+        
+        finalHTML += `
+          <div class="comment-item mb-3 p-3 border rounded" data-comment-id="${commentId}">
+            <div class="comment-header d-flex justify-content-between align-items-start mb-2">
+              <div class="comment-meta">
+                <small class="text-muted">
+                  <i class="bi bi-chat me-1"></i>${formattedDate}${userInfo}
+                  ${latestBadge}
+                </small>
+              </div>
+              <button class="btn btn-sm btn-outline-secondary btn-edit-comment" 
+                      data-comment-id="${commentId}"
+                      title="Éditer ce commentaire">
+                <i class="bi bi-pencil"></i>
+              </button>
+            </div>
+            <div class="comment-content" data-original="${entry.content.replace(/"/g, '&quot;')}">
+              ${entry.content}
+            </div>
+          </div>
+        `;
+      } else {
+        // Modification (read-only)
+        finalHTML += `
+          <div class="history-item mb-3 p-3 border rounded bg-light">
+            <div class="history-header d-flex justify-content-between align-items-start mb-2">
+              <div class="history-meta">
+                <small class="text-muted">
+                  <i class="bi bi-arrow-right-circle me-1"></i>${formattedDate}${userInfo}
+                  <span class="badge bg-secondary ms-2">Modification</span>
+                </small>
+              </div>
+              <div class="text-muted">
+                <i class="bi bi-lock" title="Lecture seule"></i>
+              </div>
+            </div>
+            <div class="history-content text-muted">
+              <strong>${entry.statut || 'Changement'}</strong>
+              ${entry.note ? `<br><small>${entry.note}</small>` : ''}
+            </div>
+          </div>
+        `;
+      }
+    });
+
+    // Utiliser directement la timeline unifiée pour simplifier et améliorer
+    let unifiedHTML = '';
+    
+    timeline.forEach((entry, index) => {
+      const formattedDate = new Date(entry.timestamp).toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      const userInfo = entry.user ? ` par ${entry.user}` : '';
+      const isLatest = index === 0;
+
+      if (entry.type === 'comment') {
+        // 💬 Commentaire (éditable)
+        const latestBadge = isLatest ? '<span class="badge bg-success ms-2">Récent</span>' : '';
+        const timestampString = entry.timestamp instanceof Date ? 
+          entry.timestamp.toISOString() : String(entry.timestamp);
+        const commentId = `comment-${timestampString.replace(/[^\d]/g, '')}`;
+        
+        unifiedHTML += `
+          <div class="timeline-entry comment-item mb-3 p-3 border rounded border-primary" data-comment-id="${commentId}">
+            <div class="timeline-header d-flex justify-content-between align-items-start mb-2">
+              <div class="timeline-meta">
+                <small class="text-muted">
+                  <i class="bi bi-chat-fill me-1 text-primary"></i>${formattedDate}${userInfo}
+                  <span class="badge bg-primary ms-2">💬 Commentaire</span>
+                  ${latestBadge}
+                </small>
+              </div>
+              <button class="btn btn-sm btn-outline-primary btn-edit-comment" 
+                      data-comment-id="${commentId}"
+                      title="Éditer ce commentaire">
+                <i class="bi bi-pencil"></i>
+              </button>
+            </div>
+            <div class="timeline-content comment-content fw-normal" data-original="${entry.content.replace(/"/g, '&quot;')}">
+              ${entry.content}
+            </div>
+          </div>
+        `;
+      } else if (entry.type === 'status_change') {
+        // 🔄 Changement de statut (read-only)
+        unifiedHTML += `
+          <div class="timeline-entry history-item mb-3 p-3 border rounded bg-light border-info">
+            <div class="timeline-header d-flex justify-content-between align-items-start mb-2">
+              <div class="timeline-meta">
+                <small class="text-muted">
+                  <i class="bi bi-arrow-right-circle-fill me-1 text-info"></i>${formattedDate}${userInfo}
+                  <span class="badge bg-info ms-2">🔄 Statut</span>
+                </small>
+              </div>
+              <div class="text-muted">
+                <i class="bi bi-lock" title="Lecture seule"></i>
+              </div>
+            </div>
+            <div class="timeline-content text-muted">
+              <strong>${entry.statut || entry.status || 'Changement de statut'}</strong>
+              ${entry.note || entry.details ? `<br><small>${entry.note || entry.details}</small>` : ''}
+            </div>
+          </div>
+        `;
+      } else {
+        // ⚙️ Autre modification (read-only) 
+        const actionIcon = entry.action === 'creation' ? 'bi-plus-circle-fill text-success' : 
+                          entry.action === 'update' ? 'bi-pencil-square text-warning' : 
+                          'bi-gear-fill text-secondary';
+        
+        const actionLabel = entry.action === 'creation' ? '➕ Création' :
+                           entry.action === 'update' ? '✏️ Modification' :
+                           '⚙️ Changement';
+        
+        unifiedHTML += `
+          <div class="timeline-entry history-item mb-3 p-3 border rounded bg-light">
+            <div class="timeline-header d-flex justify-content-between align-items-start mb-2">
+              <div class="timeline-meta">
+                <small class="text-muted">
+                  <i class="${actionIcon} me-1"></i>${formattedDate}${userInfo}
+                  <span class="badge bg-secondary ms-2">${actionLabel}</span>
+                </small>
+              </div>
+              <div class="text-muted">
+                <i class="bi bi-lock" title="Lecture seule"></i>
+              </div>
+            </div>
+            <div class="timeline-content text-muted">
+              ${entry.details || entry.note || 'Modification de la tâche'}
+            </div>
+          </div>
+        `;
+      }
+    });
+
+    accordionContent.innerHTML = unifiedHTML;
+    
+    console.log('ModalManager: Timeline complète unifiée chargée:', timeline.length, 'entrées');
+  }
+
+  /**
+   * Affiche une erreur dans l'accordéon
+   * @param {string} errorMessage - Message d'erreur
+   */
+  showAccordionError(errorMessage) {
+    const accordionContent = document.getElementById('comment-history-content');
+    const commentCountBadge = document.getElementById('comment-count-badge');
+    
+    if (accordionContent) {
+      accordionContent.innerHTML = `
+        <div class="text-center text-danger py-3">
+          <i class="bi bi-exclamation-triangle fs-4"></i>
+          <p class="mt-2">${errorMessage}</p>
+        </div>
+      `;
+    }
+    
+    if (commentCountBadge) {
+      commentCountBadge.textContent = '!';
+      commentCountBadge.className = 'badge bg-danger ms-2';
+    }
+  }
+
+  /**
+   * Réinitialise l'accordéon historique des commentaires
+   */
+  resetCommentHistoryAccordion() {
+    const accordionContent = document.getElementById('comment-history-content');
+    const commentCountBadge = document.getElementById('comment-count-badge');
+    const accordion = document.getElementById('comment-history-accordion');
+    
+    // Réinitialiser le contenu
+    if (accordionContent) {
+      accordionContent.innerHTML = `
+        <div class="text-center text-muted py-3">
+          <i class="bi bi-clock-history fs-4"></i>
+          <p class="mt-2">Chargement de l'historique...</p>
+        </div>
+      `;
+    }
+    
+    // Réinitialiser le badge
+    if (commentCountBadge) {
+      commentCountBadge.textContent = '0';
+      commentCountBadge.className = 'badge bg-secondary ms-2';
+    }
+    
+    // Fermer l'accordéon s'il est ouvert
+    if (accordion && accordion.classList.contains('show')) {
+      const bsCollapse = bootstrap.Collapse.getInstance(accordion);
+      if (bsCollapse) {
+        bsCollapse.hide();
+      }
+    }
   }
 
   /**

@@ -3,20 +3,14 @@
 
 // === STATUTS DU KANBAN ===
 export const STATUTS = [
-  { id: 'Backlog', libelle: 'Backlog', classe: 'backlog', icone: '<i class="bi bi-archive text-secondary"></i>' },
-  { id: 'À faire', libelle: 'À faire', classe: 'a-faire', icone: '<i class="bi bi-tools text-primary"></i>' },
-  { id: 'En cours', libelle: 'En cours', classe: 'en-cours', icone: '<i class="bi bi-lightning text-warning"></i>' },
-  { id: 'En attente', libelle: 'En attente', classe: 'en-attente', icone: '<i class="bi bi-pause-circle text-info"></i>' },
-  { id: 'Bloqué', libelle: 'Bloqué', classe: 'bloque', icone: '<i class="bi bi-x-circle text-danger"></i>' },
-  { id: 'Validation', libelle: 'Validation', classe: 'validation', icone: '<i class="bi bi-clipboard-check text-warning"></i>' },
-  { id: 'Terminé', libelle: 'Terminé', classe: 'termine', icone: '<i class="bi bi-check-circle text-success"></i>' }
+  { id: 'Backlog', libelle: 'Backlog', classe: 'backlog' },
+  { id: 'À faire', libelle: 'À faire', classe: 'a-faire' },
+  { id: 'En cours', libelle: 'En cours', classe: 'en-cours' },
+  { id: 'En attente', libelle: 'En attente', classe: 'en-attente' },
+  { id: 'Bloqué', libelle: 'Bloqué', classe: 'bloque' },
+  { id: 'Validation', libelle: 'Validation', classe: 'validation' },
+  { id: 'Terminé', libelle: 'Terminé', classe: 'termine' }
 ];
-
-// === STATUTS SPÉCIAUX (pour les cartes) ===
-export const STATUTS_SPECIAUX = {
-  URGENT: { icone: '<i class="bi bi-fire text-danger"></i>', classe: 'urgent' },
-  PRIORITAIRE: { icone: '<i class="bi bi-star-fill text-warning"></i>', classe: 'prioritaire' }
-};
 
 // === DONNÉES DE BASE ===
 export const DEFAULT_BUREAUX = [

@@ -25,8 +25,8 @@ body {
 .kanban-header {
   background: var(--kanban-card-bg);
   border-bottom: 1px solid var(--kanban-border);
-  padding: 1rem 0;
-  margin-bottom: 1rem;
+  padding: 0.5rem 0;
+  margin-bottom: 0.75rem;
   box-shadow: var(--kanban-shadow);
 }
 
@@ -53,6 +53,11 @@ body {
 }
 
 /* === Container principal === */
+.kanban-wrapper {
+  position: relative;
+  width: 100%;
+}
+
 .kanban-container {
   display: flex;
   overflow-x: auto;
@@ -60,6 +65,51 @@ body {
   padding: 0 1rem;
   scroll-behavior: smooth;
   min-height: calc(100vh - 250px);
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE et Edge */
+}
+
+.kanban-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari et Opera */
+}
+
+/* === Flèches de navigation latérales === */
+.scroll-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 123, 255, 0.9);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+  font-size: 1.2rem;
+}
+
+.scroll-arrow:hover {
+  background: rgba(0, 123, 255, 1);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.scroll-arrow.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.scroll-left {
+  left: 10px;
+}
+
+.scroll-right {
+  right: 10px;
 }
 
 .kanban-container > .kanban-board {
@@ -97,13 +147,6 @@ body {
   flex: 0 0 220px;
   min-width: 220px;
   max-width: 220px;
-}
-
-/* Colonnes vides en mode compact */
-.kanban-container.kanban-compact > .kanban-board[data-empty="true"] {
-  flex: 0 0 40px !important;
-  min-width: 40px !important;
-  max-width: 40px !important;
 }
 
 .kanban-compact .kanban-board {
@@ -151,13 +194,6 @@ body {
   max-width: 320px;
 }
 
-/* Colonnes vides en mode détaillé */
-.kanban-container.kanban-detailed > .kanban-board[data-empty="true"] {
-  flex: 0 0 40px !important;
-  min-width: 40px !important;
-  max-width: 40px !important;
-}
-
 .kanban-detailed .kanban-board-header {
   padding: 1rem 1.25rem;
   font-size: 1rem;
@@ -200,34 +236,6 @@ body {
   overflow-y: auto;
 }
 
-/* === Colonnes vides : masquées/repliées === */
-.kanban-board[data-empty="true"] {
-  flex: 0 0 40px !important;
-  width: 40px !important;
-  min-width: 40px !important;
-  max-width: 40px !important;
-  opacity: 0.3;
-  transition: var(--kanban-transition);
-}
-
-.kanban-board[data-empty="true"] .kanban-board-header {
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  padding: 0.5rem 0.25rem;
-  font-size: 0.75rem;
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-.kanban-board[data-empty="true"] .kanban-board-body,
-.kanban-board[data-empty="true"] .kanban-items-container {
-  display: none !important;
-}
-
-.kanban-board[data-empty="true"]:hover {
-  opacity: 0.6;
-}
-
 /* === Boards === */
 .kanban-board {
   background: var(--kanban-card-bg);
@@ -251,11 +259,14 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  color: var(--kanban-text);
+  font-weight: 600;
 }
 
 .board-count {
   background: var(--kanban-text-muted);
   color: var(--kanban-card-bg);
+  border: none;
   border-radius: 50%;
   width: 24px;
   height: 24px;
@@ -264,6 +275,18 @@ body {
   justify-content: center;
   font-size: 0.75rem;
   font-weight: 500;
+  cursor: pointer;
+  transition: var(--kanban-transition);
+}
+
+.board-count:hover {
+  background: var(--kanban-text);
+  transform: scale(1.1);
+}
+
+.board-count.active {
+  background: #007bff;
+  color: white;
 }
 
 .kanban-board-body {
@@ -321,7 +344,8 @@ body {
 .item-title {
   font-weight: 600;
   margin-bottom: 0.5rem;
-  color: var(--kanban-text);
+  color: #2c3e50; /* Couleur plus distincte pour le titre */
+  font-size: 1.05rem; /* Légèrement plus grand pour plus de présence */
 }
 
 /* === Cartes Compactes === */
@@ -365,6 +389,7 @@ body {
   padding: 2px 4px;
   border-radius: 4px;
   transition: background-color 0.2s ease;
+  color: #2c3e50; /* Même couleur que le titre normal pour la cohérence */
 }
 
 .compact-title:hover {
@@ -390,9 +415,9 @@ body {
 
 /* === Bouton Historique === */
 .btn-history {
-  background: #e3f2fd;
-  color: #1976d2;
-  border: 1px solid #90caf9;
+  background: #e8f5e8;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
   border-radius: 12px;
   padding: 0.2rem 0.5rem;
   font-size: 0.75rem;
@@ -401,13 +426,15 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
+  font-weight: 500;
 }
 
 .btn-history:hover {
-  background: #bbdefb;
-  border-color: #64b5f6;
+  background: #c8e6c9;
+  border-color: #81c784;
   transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(25, 118, 210, 0.2);
+  box-shadow: 0 2px 4px rgba(46, 125, 50, 0.2);
+  color: #1b5e20;
 }
 
 /* === Drag & Drop === */
@@ -672,41 +699,18 @@ body {
 .board-termine { border-top: 4px solid #198754; }
 .board-hidden { display: none; }
 
-/* === Mode Focus === */
-.focus-navigation {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  margin-bottom: 1rem;
-  padding: 0.75rem;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  width: 200px;
-  flex-shrink: 0;
-}
+/* === Classes par statut avec couleurs titres === */
+.status-backlog .board-title { color: #6c757d; }
+.status-todo .board-title { color: #0dcaf0; }
+.status-progress .board-title { color: #fd7e14; }
+.status-waiting .board-title { color: #ffc107; }
+.status-blocked .board-title { color: #dc3545; }
+.status-validation .board-title { color: #6f42c1; }
+.status-done .board-title { color: #198754; }
+.status-unknown .board-title { color: var(--kanban-text); }
 
-.focus-navigation .btn {
-  border-radius: 6px;
-  padding: 0.4rem 0.75rem;
-  font-size: 0.8rem;
-  text-align: left;
-  justify-content: space-between;
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-}
-
-.focus-navigation .btn.active {
-  background-color: #007bff;
-  border-color: #007bff;
-  color: white;
-}
-
-.focus-navigation .badge {
-  font-size: 0.65rem;
-  padding: 0.2em 0.4em;
-}
+/* === Mode Focus (simplifié) === */
+/* Navigation focus supprimée - utilise maintenant le filtre statut directement */
 
 .focus-container {
   display: flex;
@@ -870,9 +874,9 @@ body {
 
 /* Bouton Timeline sur les cartes */
 .btn-timeline {
-  background: #e3f2fd;
-  color: #1976d2;
-  border: 1px solid #90caf9;
+  background: #f3e5f5;
+  color: #7b1fa2;
+  border: 1px solid #ce93d8;
   border-radius: 12px;
   padding: 0.2rem 0.5rem;
   font-size: 0.75rem;
@@ -883,14 +887,15 @@ body {
   gap: 0.3rem;
   text-decoration: none;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  font-weight: 500;
 }
 
 .btn-timeline:hover {
-  background: #bbdefb;
-  border-color: #64b5f6;
+  background: #e1bee7;
+  border-color: #ba68c8;
   transform: translateY(-1px);
-  box-shadow: 0 2px 5px rgba(25, 118, 210, 0.2);
-  color: #1565c0;
+  box-shadow: 0 2px 5px rgba(123, 31, 162, 0.2);
+  color: #4a148c;
 }
 
 .btn-timeline:active {

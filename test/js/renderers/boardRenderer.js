@@ -86,8 +86,8 @@ export class BoardRenderer {
       const stats = this.calculateColumnStats(boardRecords);
       const count = boardRecords.length;
       
-      // Classes CSS pour la colonne
-      const isHidden = (count === 0 && statut.id !== 'Terminé');
+      // Classes CSS pour la colonne (masquer toutes les colonnes vides pour gagner de l'espace)
+      const isHidden = (count === 0);
       const hiddenClass = isHidden ? ' board-hidden' : '';
       const statusClass = this.getStatusClass(statut.id);
       
@@ -192,7 +192,12 @@ export class BoardRenderer {
             ${statut.libelle}
           </span>
           <div class="board-meta">
-            <span class="board-count" title="${count} tâche${count !== 1 ? 's' : ''}">${count}</span>
+            <button class="board-count" 
+                    data-status="${statut.id}" 
+                    title="Filtrer par ${statut.libelle} (${count} tâche${count !== 1 ? 's' : ''})"
+                    aria-label="Filtrer par ${statut.libelle}">
+              ${count}
+            </button>
             ${performanceIndicators}
           </div>
         </div>
@@ -669,13 +674,26 @@ export class BoardRenderer {
       this.cardRenderer.attachCardEventListeners(container);
     }
     
-    // Écouteurs pour la navigation du mode focus
-    container.querySelectorAll('.focus-navigation button').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const newFocusColumn = e.currentTarget.dataset.status;
+    // Navigation focus supprimée - utilise maintenant le filtre statut directement
+    
+    // Écouteurs pour les badges de count (filtres par statut)
+    container.querySelectorAll('.board-count').forEach(badge => {
+      badge.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const statut = e.currentTarget.dataset.status;
         
         if (this.kanban.filterManager) {
-          this.kanban.filterManager.setFocusColumn(newFocusColumn);
+          // Toggle du filtre statut
+          const currentStatut = this.kanban.filterManager.filters.statut;
+          const newStatut = currentStatut === statut ? '' : statut;
+          
+          // Mettre à jour le filtre
+          this.kanban.filterManager.setFilter('statut', newStatut);
+          
+          // Mettre à jour l'interface
+          this.updateBadgeStates(container, newStatut);
         }
       });
     });
@@ -684,6 +702,22 @@ export class BoardRenderer {
     container.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         this.handleKeyboardNavigation(e);
+      }
+    });
+  }
+  
+  /**
+   * Met à jour l'état visuel des badges selon le filtre actif
+   * @param {HTMLElement} container - Container principal
+   * @param {string} activeStatut - Statut actuellement filtré
+   */
+  updateBadgeStates(container, activeStatut) {
+    container.querySelectorAll('.board-count').forEach(badge => {
+      const statut = badge.dataset.status;
+      if (activeStatut && statut === activeStatut) {
+        badge.classList.add('active');
+      } else {
+        badge.classList.remove('active');
       }
     });
   }

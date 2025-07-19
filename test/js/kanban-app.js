@@ -93,8 +93,8 @@ class KanbanManager {
     // CORRIGÉ: Propriétés pour les filtres et vues (utilisées par les managers)
     this.filters = { bureau: '', qui: '', projet: '', statut: '', search: '' };
     this.showTermine = true;
-    // Le mode de vue est géré par ViewModeManager
-    // La colonne focus est gérée par ViewModeManager
+    this.viewMode = VIEW_MODES.COMPACT;
+    this.focusColumn = null;
     this.expandedCards = new Set();
     
     // Gestion utilisateur
@@ -634,10 +634,10 @@ class KanbanManager {
     const datesElement = generateDatesContainer({
       date_debut: record.date_debut,
       date_echeance: record.date_echeance
-    }, this.viewModeManager?.isMode(VIEW_MODES.COMPACT) || false);
+    }, this.viewMode === VIEW_MODES.COMPACT);
     
     // Badges bureaux
-    const bureauBadges = generateBureauBadges(record.bureau, this.viewModeManager?.isMode(VIEW_MODES.COMPACT) || false);
+    const bureauBadges = generateBureauBadges(record.bureau, this.viewMode === VIEW_MODES.COMPACT);
     
     // Badges responsables
     const responsablesBadges = generateResponsablesBadges(record.qui);
@@ -649,7 +649,7 @@ class KanbanManager {
     const hasDateDebutClass = record.date_debut ? 'has-debut' : '';
     
     // CORRIGÉ: Classe selon le mode de vue
-    const cardClass = this.viewModeManager?.isMode(VIEW_MODES.COMPACT) ? 'kanban-item-compact' : 'kanban-item';
+    const cardClass = this.viewMode === VIEW_MODES.COMPACT ? 'kanban-item-compact' : 'kanban-item';
     
     return `<div class="kanban-item ${cardClass} ${hasEcheanceClass} ${hasDateDebutClass}" data-id="${record.id}">
       <div class="drag-handle">
@@ -881,19 +881,19 @@ class KanbanManager {
     this.sortableInstances.forEach(s => s.destroy());
     this.sortableInstances = [];
     
-    // Le ViewModeManager gère les classes CSS
+    // CORRIGÉ: Appliquer les classes du mode de vue
     let kanbanHTML = '';
-    const currentMode = this.viewModeManager?.getCurrentMode() || VIEW_MODES.COMPACT;
+    const modeClass = this.viewMode === VIEW_MODES.COMPACT ? 'kanban-compact' : 
+                     this.viewMode === VIEW_MODES.DETAILED ? 'kanban-detailed' : 
+                     'kanban-focus';
     
-    // Mode focus : afficher une seule colonne
-    const focusColumn = this.viewModeManager?.getFocusColumn();
-    if (currentMode === VIEW_MODES.FOCUS && focusColumn) {
-      const focusStatut = STATUTS.find(s => s.id === focusColumn);
+    this.kanbanContainer.className = `kanban-container ${modeClass}`;
+    
+    // Mode focus : afficher une seule colonne centrée
+    if (this.viewMode === VIEW_MODES.FOCUS && this.focusColumn) {
+      const focusStatut = STATUTS.find(s => s.id === this.focusColumn);
       if (focusStatut) {
-        const boardRecords = filteredRecords.filter(r => 
-          r.statut === focusStatut.id && 
-          r.titre !== '___TEMP_USER_RECORD___'
-        );
+        const boardRecords = filteredRecords.filter(r => r.statut === focusStatut.id);
         // Trier les enregistrements par priorité
         boardRecords.sort((a, b) => {
           const prioA = this.calculerPriorite(a.urgence, a.impact);
@@ -904,27 +904,27 @@ class KanbanManager {
         const itemsHTML = boardRecords.map(record => this.createTaskElementHTML(record)).join('');
         const count = boardRecords.length;
 
-        const icone = focusStatut.icone || '';
+        // CORRIGÉ: Une seule colonne centrée en mode focus
         kanbanHTML = `
-          <div class="kanban-board focus-board" data-status-id="${focusStatut.id}">
+          <div class="kanban-board kanban-board-title focus-board" data-status-id="${focusStatut.id}" style="max-width: 600px; margin: 0 auto;">
             <div class="kanban-board-header">
-              <span>${icone} ${focusStatut.libelle}</span>
-              <span class="badge badge-secondary count-badge ml-2">${count}</span>
+              <span class="board-title">
+                ${this.getStatusIcon(focusStatut.id)}
+                ${focusStatut.libelle}
+              </span>
+              <button class="board-count" data-status="${focusStatut.id}" title="Filtrer par ${focusStatut.libelle}">${count}</button>
             </div>
-            <div class="kanban-items-container" data-status-id="${focusStatut.id}">
+            <div class="kanban-board-body" data-status="${focusStatut.id}">
               ${itemsHTML}
             </div>
           </div>
         `;
       }
     } else {
-      // Mode normal : afficher toutes les colonnes
+      // Mode normal : afficher toutes les colonnes avec masquage des vides
       statutsToShow.forEach(statut => {
         const boardId = statut.classe;
-        const boardRecords = filteredRecords.filter(r => 
-          r.statut === statut.id && 
-          r.titre !== '___TEMP_USER_RECORD___'
-        );
+        const boardRecords = filteredRecords.filter(r => r.statut === statut.id);
         
         console.log(`Statut ${statut.id}: ${boardRecords.length} enregistrements`);
         
@@ -944,26 +944,28 @@ class KanbanManager {
           return html;
         }).join('');
         const count = boardRecords.length;
-        const isHidden = (count === 0) || (statut.id === 'Terminé' && !this.showTermine);
+        
+        // CORRIGÉ: Masquer TOUTES les colonnes vides en mode compact
+        const isHidden = (this.viewMode === VIEW_MODES.COMPACT && count === 0) || 
+                         (statut.id === 'Terminé' && !this.showTermine);
         const hiddenClass = isHidden ? ' board-hidden' : '';
+        const statusClass = this.getStatusClass(statut.id);
 
         console.log(`Items HTML pour ${statut.id}: ${itemsHTML.length} caractères`);
         if (count > 0 && itemsHTML.length === 0) {
           console.error(`Problème: ${count} enregistrements mais 0 caractères HTML générés`);
         }
 
-        const icone = statut.icone || '';
-        const emptyAttr = count === 0 ? ' data-empty="true"' : '';
-        
-        console.log(`🎨 Statut ${statut.id}: icone="${icone}"`);
-        
         kanbanHTML += `
-          <div class="kanban-board${hiddenClass}" data-status-id="${statut.id}" data-board-class="${statut.classe}"${emptyAttr}>
-            <div class="kanban-board-header entete-${statut.classe}">
-              <span>${icone} ${statut.libelle}</span>
-              <span class="badge badge-secondary count-badge ml-2">${count}</span>
+          <div class="kanban-board${hiddenClass} ${statusClass}" data-status="${statut.id}">
+            <div class="kanban-board-header">
+              <span class="board-title">
+                ${this.getStatusIcon(statut.id)}
+                ${statut.libelle}
+              </span>
+              <button class="board-count" data-status="${statut.id}" title="Filtrer par ${statut.libelle}">${count}</button>
             </div>
-            <div class="kanban-items-container" data-status-id="${statut.id}">
+            <div class="kanban-board-body" data-status="${statut.id}">
               ${itemsHTML}
             </div>
           </div>
@@ -980,7 +982,7 @@ class KanbanManager {
     this.isRefreshing = false;
     
     // Initialiser Sortable
-    this.kanbanContainer.querySelectorAll('.kanban-items-container').forEach(container => {
+    this.kanbanContainer.querySelectorAll('.kanban-board-body').forEach(container => {
       const sortableInstance = Sortable.create(container, {
         group: 'kanban-tasks',
         animation: 150,
@@ -994,8 +996,139 @@ class KanbanManager {
       this.sortableInstances.push(sortableInstance);
     });
     
-    // Attacher les événements
+    // Attacher les événements pour les badges cliquables
     this.attachCardEventListeners();
+    this.attachBadgeEventListeners();
+    this.initScrollArrows();
+  }
+
+  // === MÉTHODES UTILITAIRES POUR LE RENDU ===
+  getStatusIcon(statusId) {
+    const icons = {
+      'Backlog': '<i class="bi bi-list-ul"></i>',
+      'À faire': '<i class="bi bi-calendar-plus"></i>',
+      'En cours': '<i class="bi bi-play-circle"></i>',
+      'En attente': '<i class="bi bi-pause-circle"></i>',
+      'Bloqué': '<i class="bi bi-x-octagon"></i>',
+      'Validation': '<i class="bi bi-check-circle"></i>',
+      'Terminé': '<i class="bi bi-check-circle-fill"></i>'
+    };
+    
+    return icons[statusId] || '<i class="bi bi-circle"></i>';
+  }
+
+  getStatusClass(statusId) {
+    const classes = {
+      'Backlog': 'status-backlog',
+      'À faire': 'status-todo', 
+      'En cours': 'status-progress',
+      'En attente': 'status-waiting',
+      'Bloqué': 'status-blocked',
+      'Validation': 'status-validation',
+      'Terminé': 'status-done'
+    };
+    
+    return classes[statusId] || 'status-unknown';
+  }
+
+  // === GESTION DES ÉVÉNEMENTS BADGES ===
+  attachBadgeEventListeners() {
+    // Écouteurs pour les badges de count (filtres par statut)
+    this.kanbanContainer.querySelectorAll('.board-count').forEach(badge => {
+      badge.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const statut = e.currentTarget.dataset.status;
+        
+        if (this.filterManager) {
+          // Toggle du filtre statut
+          const currentStatut = this.filterManager.filters.statut;
+          const newStatut = currentStatut === statut ? '' : statut;
+          
+          // Mettre à jour le filtre
+          this.filterManager.setFilter('statut', newStatut);
+          
+          // Mettre à jour l'interface
+          this.updateBadgeStates(newStatut);
+        }
+      });
+    });
+  }
+
+  // Met à jour l'état visuel des badges selon le filtre actif
+  updateBadgeStates(activeStatut) {
+    this.kanbanContainer.querySelectorAll('.board-count').forEach(badge => {
+      const statut = badge.dataset.status;
+      if (activeStatut && statut === activeStatut) {
+        badge.classList.add('active');
+      } else {
+        badge.classList.remove('active');
+      }
+    });
+  }
+
+  // === GESTION DES FLÈCHES DE SCROLL ===
+  initScrollArrows() {
+    const leftArrow = document.getElementById('scroll-left');
+    const rightArrow = document.getElementById('scroll-right');
+    
+    if (!leftArrow || !rightArrow) {
+      console.warn('Flèches de scroll non trouvées dans le DOM');
+      return;
+    }
+
+    // Gérer les clics sur les flèches
+    leftArrow.addEventListener('click', () => {
+      this.scrollContainer(-300);
+    });
+
+    rightArrow.addEventListener('click', () => {
+      this.scrollContainer(300);
+    });
+
+    // Gérer la visibilité des flèches au scroll
+    this.kanbanContainer.addEventListener('scroll', () => {
+      this.updateArrowVisibility();
+    });
+
+    // Mise à jour initiale de la visibilité
+    setTimeout(() => {
+      this.updateArrowVisibility();
+    }, 100);
+  }
+
+  scrollContainer(direction) {
+    this.kanbanContainer.scrollBy({
+      left: direction,
+      behavior: 'smooth'
+    });
+  }
+
+  updateArrowVisibility() {
+    const leftArrow = document.getElementById('scroll-left');
+    const rightArrow = document.getElementById('scroll-right');
+    
+    if (!leftArrow || !rightArrow) return;
+
+    const container = this.kanbanContainer;
+    const scrollLeft = container.scrollLeft;
+    const scrollWidth = container.scrollWidth;
+    const clientWidth = container.clientWidth;
+
+    // Afficher flèche gauche si on peut scroller à gauche
+    if (scrollLeft > 10) {
+      leftArrow.classList.remove('hidden');
+    } else {
+      leftArrow.classList.add('hidden');
+    }
+
+    // Afficher flèche droite si on peut scroller à droite
+    if (scrollLeft < scrollWidth - clientWidth - 10) {
+      rightArrow.classList.remove('hidden');
+    } else {
+      rightArrow.classList.add('hidden');
+    }
   }
 
   // NOUVEAU: Tri des enregistrements
@@ -1516,17 +1649,34 @@ class KanbanManager {
       return r && r.titre !== '___TEMP_USER_RECORD___';
     });
     
-    const { bureau, qui, projet, statut } = this.filters;
-    if (!bureau && !qui && !projet && !statut) {
-      return filteredTempRecords;
-    }
+    const { bureau, qui, projet, statut, search } = this.filters;
+    
+    // Appliquer tous les filtres (y compris la recherche textuelle)
     console.log("Application filtres:", this.filters);
     return filteredTempRecords.filter(r => {
+      // Filtres dropdown
       const matchBureau = !bureau || this.nettoyerListe(r.bureau).includes(bureau);
       const matchQui = !qui || this.nettoyerListe(r.qui).includes(qui);
       const matchProjet = !projet || r.projet === projet;
       const matchStatut = !statut || r.statut === statut;
-      return matchBureau && matchQui && matchProjet && matchStatut;
+      
+      // Recherche textuelle
+      let matchSearch = true;
+      if (search && search.trim() !== '') {
+        const searchableText = [
+          r.titre || '',
+          r.description || '',
+          r.projet || '',
+          r.strategie_objectif || '',
+          r.strategie_sous_objectif || '',
+          r.strategie_action || '',
+          r.notes || ''
+        ].join(' ').toLowerCase();
+        
+        matchSearch = searchableText.includes(search.toLowerCase().trim());
+      }
+      
+      return matchBureau && matchQui && matchProjet && matchStatut && matchSearch;
     });
   }
 
