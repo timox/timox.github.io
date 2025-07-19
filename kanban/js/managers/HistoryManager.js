@@ -232,15 +232,19 @@ export class HistoryManager {
                  entry.details.includes('Commentaire ajouté:'));
               
               if (!isCommentUpdate) {
-                // Ajouter aux mises à jour générales (sauf commentaires)
-                const normalizedTimestamp = this.normalizeTimestamp(entry.timestamp);
-                history.push({
-                  timestamp: normalizedTimestamp,
-                  statut: entry.status || task.statut,
-                  date_entree: normalizedTimestamp,
-                  note: entry.action === 'field_change' ? entry.details : `Mise à jour: ${entry.details}`,
-                  user: entry.user || 'Utilisateur'
-                });
+                // Nettoyer et extraire l'information utile
+                const cleanNote = this.extractFieldChangeInfo(entry.details);
+                
+                if (cleanNote) {
+                  const normalizedTimestamp = this.normalizeTimestamp(entry.timestamp);
+                  history.push({
+                    timestamp: normalizedTimestamp,
+                    statut: entry.status || task.statut,
+                    date_entree: normalizedTimestamp,
+                    note: cleanNote,
+                    user: entry.user || 'Utilisateur'
+                  });
+                }
               } else {
                 this.logger?.debug('Doublon de commentaire ignoré dans update:', entry.details);
               }
@@ -272,6 +276,92 @@ export class HistoryManager {
   // FONCTION SUPPRIMÉE: parseCommentsFromDescription()
   // Les commentaires sont maintenant exclusivement dans notes.history
   
+  /**
+   * Extrait l'information utile d'une modification de champ
+   * @param {string} details - Détails bruts de la modification
+   * @returns {string|null} Information nettoyée ou null si pas pertinente
+   */
+  extractFieldChangeInfo(details) {
+    if (!details) return null;
+    
+    // Extraire les modifications d'équipe/responsables
+    const teamMatch = details.match(/Équipe modifiée:\s*([^→]+)→\s*(.+)/);
+    if (teamMatch) {
+      const avant = teamMatch[1].trim();
+      const apres = teamMatch[2].trim();
+      return `Équipe modifiée: ${avant} → ${apres}`;
+    }
+    
+    // Extraire les modifications de responsables
+    const responsableMatch = details.match(/Responsables?\s+modifiée?s?:\s*([^→]+)→\s*(.+)/);
+    if (responsableMatch) {
+      const avant = responsableMatch[1].trim();
+      const apres = responsableMatch[2].trim();
+      return `Responsables modifiés: ${avant} → ${apres}`;
+    }
+    
+    // Extraire les modifications de bureau
+    const bureauMatch = details.match(/Bureau modifié:\s*([^→]+)→\s*(.+)/);
+    if (bureauMatch) {
+      const avant = bureauMatch[1].trim();
+      const apres = bureauMatch[2].trim();
+      return `Bureau modifié: ${avant} → ${apres}`;
+    }
+    
+    // Extraire les modifications de titre
+    const titreMatch = details.match(/Titre modifié:\s*([^→]+)→\s*(.+)/);
+    if (titreMatch) {
+      const avant = titreMatch[1].trim();
+      const apres = titreMatch[2].trim();
+      // Limiter la longueur pour la lisibilité
+      const avantCourt = avant.length > 30 ? avant.substring(0, 30) + '...' : avant;
+      const apresCourt = apres.length > 30 ? apres.substring(0, 30) + '...' : apres;
+      return `Titre modifié: ${avantCourt} → ${apresCourt}`;
+    }
+    
+    // Extraire les modifications de projet
+    const projetMatch = details.match(/Projet modifié:\s*([^→]+)→\s*(.+)/);
+    if (projetMatch) {
+      const avant = projetMatch[1].trim();
+      const apres = projetMatch[2].trim();
+      return `Projet modifié: ${avant} → ${apres}`;
+    }
+    
+    // Extraire les modifications de priorité/urgence/impact
+    const prioriteMatch = details.match(/(Urgence|Impact|Priorité)\s+modifiée?:\s*([^→]+)→\s*(.+)/);
+    if (prioriteMatch) {
+      const champ = prioriteMatch[1];
+      const avant = prioriteMatch[2].trim();
+      const apres = prioriteMatch[3].trim();
+      return `${champ} modifiée: ${avant} → ${apres}`;
+    }
+    
+    // Extraire les modifications de date
+    const dateMatch = details.match(/Date\s+[^:]*modifiée:\s*([^→]+)→\s*(.+)/);
+    if (dateMatch) {
+      const avant = dateMatch[1].trim();
+      const apres = dateMatch[2].trim();
+      return `Date d'échéance modifiée: ${avant} → ${apres}`;
+    }
+    
+    // Pour toutes les autres modifications, essayer d'extraire le pattern général "X modifié: avant → après"
+    const generalMatch = details.match(/([^:]+)\s+modifiée?s?:\s*([^→]+)→\s*(.+)/);
+    if (generalMatch) {
+      const champ = generalMatch[1].trim();
+      const avant = generalMatch[2].trim();
+      const apres = generalMatch[3].trim();
+      
+      // Limiter la longueur si c'est trop long
+      const avantCourt = avant.length > 50 ? avant.substring(0, 50) + '...' : avant;
+      const apresCourt = apres.length > 50 ? apres.substring(0, 50) + '...' : apres;
+      
+      return `${champ} modifié: ${avantCourt} → ${apresCourt}`;
+    }
+    
+    // Si pas de pattern reconnu, ignorer (probablement du contenu de tâche)
+    return null;
+  }
+
   /**
    * Convertit un timestamp en objet Date valide
    * @param {*} timestamp - Timestamp à convertir
