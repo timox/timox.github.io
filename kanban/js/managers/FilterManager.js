@@ -134,6 +134,12 @@ export class FilterManager {
       this.elements.filterStatut.addEventListener('change', (e) => {
         this.filters.statut = e.target.value || '';
         console.log('FilterManager: Filtre statut changé:', this.filters.statut);
+        
+        // CORRIGÉ: Synchroniser avec ViewModeManager en mode focus
+        if (this.kanban.viewMode === 'focus' && this.kanban.viewModeManager) {
+          this.kanban.viewModeManager.focusColumn = this.filters.statut;
+        }
+        
         this.applyFilters();
       });
     }
@@ -485,24 +491,24 @@ export class FilterManager {
    */
   updateInterfaceFromState() {
     // Champs de recherche et filtres
-    if (this.elements.searchInput && this.filters.search) {
-      this.elements.searchInput.value = this.filters.search;
+    if (this.elements.searchInput) {
+      this.elements.searchInput.value = this.filters.search || '';
     }
     
-    if (this.elements.filterBureau && this.filters.bureau) {
-      this.elements.filterBureau.value = this.filters.bureau;
+    if (this.elements.filterBureau) {
+      this.elements.filterBureau.value = this.filters.bureau || '';
     }
     
-    if (this.elements.filterQui && this.filters.qui) {
-      this.elements.filterQui.value = this.filters.qui;
+    if (this.elements.filterQui) {
+      this.elements.filterQui.value = this.filters.qui || '';
     }
     
-    if (this.elements.filterProjet && this.filters.projet) {
-      this.elements.filterProjet.value = this.filters.projet;
+    if (this.elements.filterProjet) {
+      this.elements.filterProjet.value = this.filters.projet || '';
     }
     
-    if (this.elements.filterStatut && this.filters.statut) {
-      this.elements.filterStatut.value = this.filters.statut;
+    if (this.elements.filterStatut) {
+      this.elements.filterStatut.value = this.filters.statut || '';
     }
     
     if (this.elements.showTermine) {

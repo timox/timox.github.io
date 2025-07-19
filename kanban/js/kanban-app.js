@@ -890,8 +890,10 @@ class KanbanManager {
     this.kanbanContainer.className = `kanban-container ${modeClass}`;
     
     // Mode focus : afficher une seule colonne centrée
-    if (this.viewMode === VIEW_MODES.FOCUS && this.focusColumn) {
-      const focusStatut = STATUTS.find(s => s.id === this.focusColumn);
+    if (this.viewMode === VIEW_MODES.FOCUS) {
+      // CORRIGÉ: Utiliser le filtre statut actuel au lieu de this.focusColumn
+      const activeStatusFilter = this.filterManager?.filters?.statut || this.focusColumn;
+      const focusStatut = STATUTS.find(s => s.id === activeStatusFilter);
       if (focusStatut) {
         const boardRecords = filteredRecords.filter(r => r.statut === focusStatut.id);
         // Trier les enregistrements par priorité
