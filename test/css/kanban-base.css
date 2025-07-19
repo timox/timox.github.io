@@ -697,7 +697,10 @@ body {
 .board-bloque { border-top: 4px solid #dc3545; }
 .board-validation { border-top: 4px solid #6f42c1; }
 .board-termine { border-top: 4px solid #198754; }
-.board-hidden { display: none; }
+/* === Masquage des colonnes vides (comportement unique pour tous les modes) === */
+.board-hidden { 
+  display: none !important; 
+}
 
 /* === Classes par statut avec couleurs titres === */
 .status-backlog .board-title { 
