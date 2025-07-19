@@ -984,7 +984,7 @@ export class HistoryManager {
           width: 100%;
           height: 100%;
           background-color: rgba(0, 0, 0, 0.5);
-          z-index: 1050;
+          z-index: 1070;
           display: flex;
           align-items: center;
           justify-content: center;
