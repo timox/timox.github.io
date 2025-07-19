@@ -41,6 +41,7 @@ export class KanbanManager {
     // �tat des donn�es
     this.currentRecords = [];
     this.gristOptions = {};
+    this.strategyData = []; // Données de la table SSIR_strategie2
     
     // �tat de l'interface
     this.viewMode = VIEW_MODES.COMPACT;
@@ -158,10 +159,75 @@ export class KanbanManager {
     this.currentRecords = this.gristManager.currentRecords || [];
     this.gristOptions = this.gristManager.gristOptions || {};
     
+    // Charger les données stratégiques depuis SSIR_strategie2
+    await this.loadStrategyData();
+    
     // Obtenir les informations utilisateur
     await this.loadUserInfo();
     
     console.log(`KanbanManager: ${this.currentRecords.length} t�ches charg�es`);
+    console.log(`KanbanManager: ${this.strategyData.length} strat�gies charg�es`);
+  }
+  
+  /**
+   * Charge les données stratégiques depuis la table SSIR_strategie2
+   */
+  async loadStrategyData() {
+    try {
+      console.log('KanbanManager: Chargement des données stratégiques...');
+      
+      // Charger les enregistrements de la table SSIR_strategie2
+      const strategyRecords = await grist.docApi.fetchTable('SSIR_strategie2');
+      
+      if (strategyRecords && typeof strategyRecords === 'object') {
+        // Mapper les enregistrements de stratégie
+        this.strategyData = this.mapStrategyRecords(strategyRecords);
+        console.log(`KanbanManager: ${this.strategyData.length} stratégies chargées`);
+      } else {
+        console.warn('KanbanManager: Aucune donnée stratégique trouvée');
+        this.strategyData = [];
+      }
+      
+    } catch (error) {
+      console.warn('KanbanManager: Erreur chargement stratégies:', error);
+      this.strategyData = [];
+    }
+  }
+  
+  /**
+   * Mappe les enregistrements de stratégie depuis Grist
+   * @param {object} records - Enregistrements bruts de Grist
+   * @returns {Array} Enregistrements mappés
+   */
+  mapStrategyRecords(records) {
+    const mapped = [];
+    
+    // Les clés sont les IDs des enregistrements
+    const ids = Object.keys(records.id || {});
+    
+    ids.forEach(id => {
+      try {
+        const strategy = {
+          id: records.id[id],
+          objectif: records.objectif?.[id] || '',
+          sous_objectif: records.sous_objectif?.[id] || '',
+          action: records.action?.[id] || '',
+          echeance: records.echeance?.[id] || '',
+          responsable: records.responsable?.[id] || '',
+          portee: records.portee?.[id] || ''
+        };
+        
+        // Ne garder que les stratégies complètes
+        if (strategy.objectif && strategy.sous_objectif && strategy.action) {
+          mapped.push(strategy);
+        }
+        
+      } catch (error) {
+        console.warn('KanbanManager: Erreur mapping stratégie:', id, error);
+      }
+    });
+    
+    return mapped;
   }
   
   /**
@@ -820,6 +886,7 @@ export class KanbanManager {
     this.isInitialized = false;
     this.currentRecords = [];
     this.gristOptions = {};
+    this.strategyData = [];
     
     console.log('KanbanManager: Ressources nettoy�es');
   }

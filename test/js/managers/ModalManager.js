@@ -138,37 +138,20 @@ export class ModalManager {
    * Configure les listes déroulantes de stratégie
    */
   setupStrategySelects() {
-    // Importer les données stratégiques si disponibles
+    // Utiliser les données stratégiques depuis Grist ou fallback
     let strategieObjectifs, strategieSousObjectifs, strategieActions;
     
-    try {
-      // Tenter d'importer les données stratégiques
-      const { 
-        STRATEGIC_OBJECTIVES, 
-        SUB_OBJECTIVES, 
-        STRATEGIC_ACTIONS,
-        getSubObjectives,
-        getActions
-      } = window.KanbanAppInitializer ? 
-       import('../config/strategyData.js') : 
-        { STRATEGIC_OBJECTIVES: [], SUB_OBJECTIVES: {}, STRATEGIC_ACTIONS: {} };
+    // Vérifier si on a des données Grist disponibles
+    if (this.kanban.strategyData && this.kanban.strategyData.length > 0) {
+      console.log('ModalManager: Utilisation des données stratégiques depuis Grist');
       
-      strategieObjectifs = STRATEGIC_OBJECTIVES.map(obj => obj.label);
-      strategieSousObjectifs = {};
-      strategieActions = {};
+      // Construire les listes depuis les données Grist
+      const gristData = this.buildStrategyMappingsFromGrist();
+      strategieObjectifs = gristData.objectifs;
+      strategieSousObjectifs = gristData.sousObjectifs;
+      strategieActions = gristData.actions;
       
-      // Construire les mappings
-      STRATEGIC_OBJECTIVES.forEach(obj => {
-        const subObjs = SUB_OBJECTIVES[obj.id] || [];
-        strategieSousObjectifs[obj.label] = subObjs.map(sub => sub.label);
-        
-        subObjs.forEach(subObj => {
-          const actions = STRATEGIC_ACTIONS[subObj.id] || [];
-          strategieActions[subObj.label] = actions;
-        });
-      });
-      
-    } catch (error) {
+    } else {
       console.warn('ModalManager: Utilisation des données stratégiques par défaut');
       
       // Données de stratégie par défaut (fallback)
@@ -391,6 +374,36 @@ export class ModalManager {
       console.warn('Données stratégiques non disponibles');
       this.hideStrategyDetails();
     }
+  }
+  
+  /**
+   * Construit les mappings de stratégie depuis les données Grist
+   * @returns {object} Mappings organisés par objectif, sous-objectif, action
+   */
+  buildStrategyMappingsFromGrist() {
+    const objectifs = [...new Set(this.kanban.strategyData.map(s => s.objectif))].sort();
+    const sousObjectifs = {};
+    const actions = {};
+    
+    // Pour chaque objectif, trouver les sous-objectifs
+    objectifs.forEach(objectif => {
+      const strategiesForObjectif = this.kanban.strategyData.filter(s => s.objectif === objectif);
+      const sousObjectifsList = [...new Set(strategiesForObjectif.map(s => s.sous_objectif))].sort();
+      sousObjectifs[objectif] = sousObjectifsList;
+      
+      // Pour chaque sous-objectif, trouver les actions
+      sousObjectifsList.forEach(sousObjectif => {
+        const strategiesForSousObjectif = strategiesForObjectif.filter(s => s.sous_objectif === sousObjectif);
+        const actionsList = [...new Set(strategiesForSousObjectif.map(s => s.action))].sort();
+        actions[sousObjectif] = actionsList;
+      });
+    });
+    
+    return {
+      objectifs,
+      sousObjectifs,
+      actions
+    };
   }
   
   /**
