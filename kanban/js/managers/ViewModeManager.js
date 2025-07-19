@@ -31,9 +31,9 @@ export class ViewModeManager {
    * Crée les contrôles de mode de vue
    */
   createViewModeControls() {
-    const controlsContainer = document.querySelector('.kanban-controls .row');
-    if (!controlsContainer) {
-      this.logger.error('Conteneur des contrôles kanban introuvable');
+    const searchCol = document.querySelector('.kanban-controls .col-md-3');
+    if (!searchCol) {
+      this.logger.error('Colonne de recherche introuvable');
       return;
     }
     
@@ -43,33 +43,31 @@ export class ViewModeManager {
       return;
     }
     
-    const viewModeCol = document.createElement('div');
-    viewModeCol.className = 'col-md-12 mb-2';
-    viewModeCol.id = 'view-mode-controls';
+    // Créer un conteneur pour les modes de vue au-dessus du champ de recherche
+    const viewModeContainer = document.createElement('div');
+    viewModeContainer.id = 'view-mode-controls';
+    viewModeContainer.className = 'mb-2';
     
-    viewModeCol.innerHTML = `
-      <div class="d-flex align-items-center gap-3">
-        <span class="text-muted small">Modes de vue:</span>
-        <div class="btn-group" role="group" aria-label="Modes de vue">
-          <button type="button" class="btn btn-outline-secondary active" data-mode="compact">
-            <i class="bi bi-grid-3x2"></i> Compact
+    viewModeContainer.innerHTML = `
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="text-muted small">Modes:</span>
+        <div class="btn-group btn-group-sm" role="group" aria-label="Modes de vue">
+          <button type="button" class="btn btn-outline-secondary active" data-mode="compact" title="Mode compact (1)">
+            <i class="bi bi-grid-3x2"></i>
           </button>
-          <button type="button" class="btn btn-outline-secondary" data-mode="detailed">
-            <i class="bi bi-card-list"></i> Détaillé
+          <button type="button" class="btn btn-outline-secondary" data-mode="detailed" title="Mode détaillé (2)">
+            <i class="bi bi-card-list"></i>
           </button>
-          <button type="button" class="btn btn-outline-secondary" data-mode="focus">
-            <i class="bi bi-zoom-in"></i> Focus
+          <button type="button" class="btn btn-outline-secondary" data-mode="focus" title="Mode focus (3)">
+            <i class="bi bi-zoom-in"></i>
           </button>
         </div>
-        <small class="text-muted">
-          <kbd>1</kbd> Compact • <kbd>2</kbd> Détaillé • <kbd>3</kbd> Focus
-        </small>
       </div>
     `;
     
-    // Insérer au début du container
-    controlsContainer.insertBefore(viewModeCol, controlsContainer.firstChild);
-    this.logger.info('Contrôles de vue créés et insérés dans le DOM');
+    // Insérer au début de la colonne de recherche
+    searchCol.insertBefore(viewModeContainer, searchCol.firstChild);
+    this.logger.info('Contrôles de vue créés et insérés dans la colonne de recherche');
   }
   
   /**
