@@ -1,7 +1,7 @@
 // === managers/GristManager.js ===
 // Interface pour l'API Grist et la gestion des données
 
-import { TABLE_ID, REQUIRED_COLUMNS, OPTIONAL_COLUMNS } from '../config/constants.js';
+import { TABLE_ID, REQUIRED_COLUMNS, OPTIONAL_COLUMNS, DEFAULT_BUREAUX, DEFAULT_RESPONSABLES } from '../config/constants.js';
 import { displayError, displaySuccess } from '../utils/dom.js';
 import { normalizeDate } from '../utils/dates.js';
 
@@ -205,16 +205,21 @@ export class GristManager {
   async loadGristOptions() {
     try {
       // Extraire les valeurs uniques pour les listes déroulantes
+      const extractedBureaux = this.extractUniqueValues('bureau', true);
+      const extractedResponsables = this.extractUniqueValues('qui', true);
+      
       this.gristOptions = {
-        bureaux: this.extractUniqueValues('bureau', true),
-        responsables: this.extractUniqueValues('qui', true),
+        // Combiner les bureaux par défaut avec ceux des données
+        bureaux: [...new Set([...DEFAULT_BUREAUX, ...extractedBureaux])].sort(),
+        // Combiner les responsables par défaut avec ceux des données
+        responsables: [...new Set([...DEFAULT_RESPONSABLES, ...extractedResponsables])].sort(),
         projets: this.extractUniqueValues('projet', false),
         statuts: this.extractUniqueValues('statut', false),
         urgences: this.extractUniqueValues('urgence', false),
         impacts: this.extractUniqueValues('impact', false)
       };
       
-      console.log('GristManager: Options extraites:', this.gristOptions);
+      console.log('GristManager: Options extraites (avec défauts):', this.gristOptions);
       
     } catch (error) {
       console.error('GristManager: Erreur chargement options:', error);
