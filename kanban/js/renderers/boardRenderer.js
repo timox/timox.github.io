@@ -180,7 +180,7 @@ export class BoardRenderer {
     
     return `
       <div id="board-${boardId}" 
-           class="kanban-board board-${boardId}${hiddenClass} ${statusClass}" 
+           class="kanban-board board-${boardId} ${statusClass}${hiddenClass}" 
            data-status="${statut.id}"
            role="region"
            aria-label="Colonne ${statut.libelle}">

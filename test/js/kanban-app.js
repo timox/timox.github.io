@@ -958,7 +958,7 @@ class KanbanManager {
         }
 
         kanbanHTML += `
-          <div class="kanban-board${hiddenClass} ${statusClass}" data-status="${statut.id}">
+          <div class="kanban-board ${statusClass}${hiddenClass}" data-status="${statut.id}">
             <div class="kanban-board-header">
               <span class="board-title">
                 ${this.getStatusIcon(statut.id)}
