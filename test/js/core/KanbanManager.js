@@ -170,26 +170,24 @@ export class KanbanManager {
   }
   
   /**
-   * Charge les données stratégiques depuis la table SSIR_strategie2
+   * Charge les données stratégiques (version intégrée)
    */
   async loadStrategyData() {
     try {
-      console.log('KanbanManager: Chargement des données stratégiques...');
+      console.log('KanbanManager: Chargement des données stratégiques intégrées...');
       
-      // Charger les enregistrements de la table SSIR_strategie2
-      const strategyRecords = await grist.docApi.fetchTable('SSIR_strategie2');
+      // Importer les données intégrées
+      const { STRATEGY_DATA, convertToGristFormat } = await import('../config/strategyDataHardcoded.js');
       
-      if (strategyRecords && typeof strategyRecords === 'object') {
-        // Mapper les enregistrements de stratégie
-        this.strategyData = this.mapStrategyRecords(strategyRecords);
-        console.log(`KanbanManager: ${this.strategyData.length} stratégies chargées`);
-      } else {
-        console.warn('KanbanManager: Aucune donnée stratégique trouvée');
-        this.strategyData = [];
-      }
+      // Convertir au format Grist pour compatibilité avec mapStrategyRecords
+      const strategyRecords = convertToGristFormat(STRATEGY_DATA);
+      
+      // Mapper les enregistrements de stratégie
+      this.strategyData = this.mapStrategyRecords(strategyRecords);
+      console.log(`KanbanManager: ${this.strategyData.length} stratégies chargées depuis les données intégrées`);
       
     } catch (error) {
-      console.warn('KanbanManager: Erreur chargement stratégies:', error);
+      console.warn('KanbanManager: Erreur chargement stratégies intégrées:', error);
       this.strategyData = [];
     }
   }
