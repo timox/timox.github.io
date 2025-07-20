@@ -153,6 +153,9 @@ export class ModalManager {
       return;
     }
     
+    // Initialiser la collection des stratégies sélectionnées
+    this.selectedStrategies = [];
+    
     // Vérifier si on a des données stratégiques disponibles
     console.log('ModalManager: Vérification strategiesData:', {
       exists: !!this.kanban.strategiesData,
@@ -167,6 +170,9 @@ export class ModalManager {
       console.warn('ModalManager: Génération interface accordéon avec données par défaut');
       this.renderFallbackStrategyAccordion(strategyBrowser);
     }
+    
+    // Configurer les événements pour la gestion multiple
+    this.setupMultiStrategyEvents();
   }
   
   /**
@@ -297,40 +303,171 @@ export class ModalManager {
   }
   
   /**
-   * Sélectionne une stratégie
+   * Toggle une stratégie (ajout/suppression)
    */
   selectStrategy(strategy, objectif, sousObjectif, action) {
-    // Désélectionner les autres actions
+    if (!strategy) return;
+    
+    const actionCard = event.currentTarget;
+    const isCurrentlySelected = actionCard.classList.contains('selected');
+    
+    if (isCurrentlySelected) {
+      // Désélectionner cette stratégie
+      this.removeStrategyFromSelection(strategy.id);
+      actionCard.classList.remove('selected');
+      actionCard.querySelector('.strategy-selected-indicator').style.display = 'none';
+    } else {
+      // Ajouter cette stratégie
+      this.addStrategyToSelection(strategy);
+      actionCard.classList.add('selected');
+      actionCard.querySelector('.strategy-selected-indicator').style.display = 'block';
+    }
+    
+    // Mettre à jour l'affichage
+    this.updateStrategyTags();
+    this.updateStrategyPreview();
+    this.updateStrategyIds();
+    
+    // Afficher les détails de la stratégie cliquée
+    this.updateStrategyDetails(strategy);
+    
+    console.log('Stratégies sélectionnées:', this.selectedStrategies.map(s => ({
+      id: s.id,
+      objectif: s.objectif,
+      action: s.action
+    })));
+  }
+  
+  /**
+   * Ajoute une stratégie à la sélection
+   */
+  addStrategyToSelection(strategy) {
+    // Éviter les doublons
+    if (!this.selectedStrategies.find(s => s.id === strategy.id)) {
+      this.selectedStrategies.push(strategy);
+    }
+  }
+  
+  /**
+   * Retire une stratégie de la sélection
+   */
+  removeStrategyFromSelection(strategyId) {
+    this.selectedStrategies = this.selectedStrategies.filter(s => s.id !== strategyId);
+    
+    // Mettre à jour l'état visuel de la carte correspondante
+    const actionCard = document.querySelector(`[data-strategy-id="${strategyId}"]`);
+    if (actionCard) {
+      actionCard.classList.remove('selected');
+      const indicator = actionCard.querySelector('.strategy-selected-indicator');
+      if (indicator) indicator.style.display = 'none';
+    }
+  }
+  
+  /**
+   * Met à jour l'affichage des tags de stratégies
+   */
+  updateStrategyTags() {
+    const tagsContainer = document.getElementById('strategy-tags');
+    const selectedContainer = document.getElementById('selected-strategies');
+    const countBadge = document.getElementById('strategy-count');
+    
+    if (!tagsContainer || !selectedContainer || !countBadge) return;
+    
+    if (this.selectedStrategies.length === 0) {
+      selectedContainer.style.display = 'none';
+      return;
+    }
+    
+    selectedContainer.style.display = 'block';
+    countBadge.textContent = this.selectedStrategies.length;
+    
+    // Générer les tags
+    tagsContainer.innerHTML = this.selectedStrategies.map(strategy => `
+      <span class="badge bg-primary me-2 mb-2 strategy-tag" data-strategy-id="${strategy.id}">
+        <span class="strategy-tag-text" title="${strategy.objectif} → ${strategy.sous_objectif} → ${strategy.action}">
+          ${strategy.action}
+        </span>
+        <button type="button" class="btn-close btn-close-white ms-2 strategy-tag-remove" 
+                data-strategy-id="${strategy.id}" title="Retirer cette stratégie">
+        </button>
+      </span>
+    `).join('');
+    
+    // Ajouter les événements de suppression
+    tagsContainer.querySelectorAll('.strategy-tag-remove').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const strategyId = parseInt(btn.dataset.strategyId);
+        this.removeStrategyFromSelection(strategyId);
+        this.updateStrategyTags();
+        this.updateStrategyPreview();
+        this.updateStrategyIds();
+      });
+    });
+  }
+  
+  /**
+   * Met à jour le preview dans l'en-tête de l'accordéon
+   */
+  updateStrategyPreview() {
+    const preview = document.getElementById('selected-strategy-preview');
+    if (!preview) return;
+    
+    if (this.selectedStrategies.length === 0) {
+      preview.textContent = '';
+    } else if (this.selectedStrategies.length === 1) {
+      const strategy = this.selectedStrategies[0];
+      preview.textContent = `${strategy.objectif} → ${strategy.action}`;
+    } else {
+      preview.textContent = `${this.selectedStrategies.length} stratégies sélectionnées`;
+    }
+  }
+  
+  /**
+   * Met à jour le champ caché avec les IDs de stratégies
+   */
+  updateStrategyIds() {
+    const strategyIds = this.selectedStrategies.map(s => s.id);
+    setFieldValue('popup-strategie-ids', JSON.stringify(strategyIds));
+    
+    // Compatibilité avec l'ancien système (premier ID seulement)
+    setFieldValue('popup-strategie-id', strategyIds.length > 0 ? strategyIds[0] : '');
+  }
+  
+  /**
+   * Configure les événements pour la gestion multiple
+   */
+  setupMultiStrategyEvents() {
+    // Bouton "Tout désélectionner"
+    const clearBtn = document.getElementById('btn-clear-strategies');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        this.clearAllStrategies();
+      });
+    }
+  }
+  
+  /**
+   * Désélectionne toutes les stratégies
+   */
+  clearAllStrategies() {
+    // Vider la collection
+    this.selectedStrategies = [];
+    
+    // Mettre à jour l'interface
     document.querySelectorAll('.strategy-action.selected').forEach(el => {
       el.classList.remove('selected');
-      el.querySelector('.strategy-selected-indicator').style.display = 'none';
+      const indicator = el.querySelector('.strategy-selected-indicator');
+      if (indicator) indicator.style.display = 'none';
     });
     
-    // Sélectionner cette action
-    const actionCard = event.currentTarget;
-    actionCard.classList.add('selected');
-    actionCard.querySelector('.strategy-selected-indicator').style.display = 'block';
+    // Mettre à jour l'affichage
+    this.updateStrategyTags();
+    this.updateStrategyPreview();
+    this.updateStrategyIds();
+    this.hideStrategyDetails();
     
-    // Mettre à jour les champs cachés pour compatibilité
-    setFieldValue('popup-strategie-objectif', objectif);
-    setFieldValue('popup-strategie-sous-objectif', sousObjectif);  
-    setFieldValue('popup-strategie-action', action);
-    setFieldValue('popup-strategie-id', strategy ? strategy.id : '');
-    
-    // Mettre à jour le preview dans l'accordéon
-    const preview = document.getElementById('selected-strategy-preview');
-    if (preview) {
-      preview.textContent = `${objectif} → ${sousObjectif} → ${action}`;
-    }
-    
-    // Afficher les détails
-    if (strategy) {
-      this.updateStrategyDetails(strategy);
-    } else {
-      this.hideStrategyDetails();
-    }
-    
-    console.log('Stratégie sélectionnée:', { objectif, sousObjectif, action, strategyId: strategy?.id });
+    console.log('Toutes les stratégies désélectionnées');
   }
   
   /**
@@ -408,51 +545,72 @@ export class ModalManager {
   }
   
   /**
-   * Peuple les champs de stratégie basés sur le strategie_id
-   * @param {number} strategyId - ID de la stratégie
+   * Peuple les champs de stratégie basés sur les strategie_ids multiples
+   * @param {string|array} strategyIds - IDs de stratégies (JSON string ou array)
    */
-  populateStrategyFieldsFromId(strategyId) {
-    if (!strategyId) {
-      // Réinitialiser les champs et l'interface
-      this.resetStrategySelection();
+  populateStrategyFieldsFromIds(strategyIds) {
+    // Réinitialiser d'abord
+    this.resetStrategySelection();
+    
+    if (!strategyIds) {
       return;
     }
     
-    // Rechercher la stratégie dans les données intégrées
-    if (this.kanban.strategiesData && this.kanban.strategiesData.length > 0) {
-      const strategy = this.kanban.strategiesData.find(s => s.id == strategyId);
-      
-      if (strategy) {
-        // Simuler la sélection dans l'interface accordéon
-        this.preSelectStrategyInAccordion(strategy);
-        
-        // Mettre à jour les champs cachés pour compatibilité
-        setFieldValue('popup-strategie-objectif', strategy.objectif);
-        setFieldValue('popup-strategie-sous-objectif', strategy.sous_objectif);
-        setFieldValue('popup-strategie-action', strategy.action);
-        setFieldValue('popup-strategie-id', strategyId);
-        
-        // Mettre à jour le preview
-        const preview = document.getElementById('selected-strategy-preview');
-        if (preview) {
-          preview.textContent = `${strategy.objectif} → ${strategy.sous_objectif} → ${strategy.action}`;
-        }
-        
-        // Afficher les détails
-        this.updateStrategyDetails(strategy);
-        
-        console.log('Stratégie pré-sélectionnée:', {
-          objectif: strategy.objectif,
-          sousObjectif: strategy.sous_objectif,
-          action: strategy.action,
-          strategyId: strategyId
-        });
+    // Conversion en array si nécessaire
+    let idsArray = [];
+    try {
+      if (typeof strategyIds === 'string') {
+        idsArray = JSON.parse(strategyIds);
+      } else if (Array.isArray(strategyIds)) {
+        idsArray = strategyIds;
       } else {
-        console.warn('Stratégie non trouvée pour ID:', strategyId);
-        this.resetStrategySelection();
+        // Fallback pour compatibilité avec ancien système (ID unique)
+        idsArray = [strategyIds];
       }
+    } catch (e) {
+      console.warn('Erreur parsing strategie_ids:', e);
+      return;
+    }
+    
+    if (!Array.isArray(idsArray) || idsArray.length === 0) {
+      return;
+    }
+    
+    // Rechercher et pré-sélectionner chaque stratégie
+    if (this.kanban.strategiesData && this.kanban.strategiesData.length > 0) {
+      idsArray.forEach(strategyId => {
+        const strategy = this.kanban.strategiesData.find(s => s.id == strategyId);
+        if (strategy) {
+          this.addStrategyToSelection(strategy);
+          this.preSelectStrategyInAccordion(strategy);
+        } else {
+          console.warn('Stratégie non trouvée pour ID:', strategyId);
+        }
+      });
+      
+      // Mettre à jour l'affichage après toutes les sélections
+      this.updateStrategyTags();
+      this.updateStrategyPreview();
+      this.updateStrategyIds();
+      
+      console.log('Stratégies pré-sélectionnées:', this.selectedStrategies.map(s => ({
+        id: s.id,
+        objectif: s.objectif,
+        action: s.action
+      })));
     } else {
       console.warn('Données stratégiques non disponibles pour peupler les champs');
+    }
+  }
+  
+  /**
+   * Compatibilité : peuple depuis un ID unique (ancien système)
+   * @param {number} strategyId - ID de la stratégie unique
+   */
+  populateStrategyFieldsFromId(strategyId) {
+    if (strategyId) {
+      this.populateStrategyFieldsFromIds([strategyId]);
+    } else {
       this.resetStrategySelection();
     }
   }
@@ -606,12 +764,22 @@ export class ModalManager {
     setFieldValue('popup-urgence', tache.urgence || '');
     setFieldValue('popup-impact', tache.impact || '');
     
-    // Stratégie depuis Grist - peupler les listes dépendantes
-    this.populateStrategyFieldsFromId(tache.strategie_id);
+    // Stratégies depuis Grist - peupler avec support multi-stratégies
+    if (tache.strategie_ids) {
+      this.populateStrategyFieldsFromIds(tache.strategie_ids);
+    } else if (tache.strategie_id) {
+      // Fallback compatibilité ancien système
+      this.populateStrategyFieldsFromId(tache.strategie_id);
+    }
     
     // Bureaux et responsables (selects multiples)
     setSelectedOptions('popup-bureau', tache.bureau || ['L']);
     setSelectedOptions('popup-qui', tache.qui || ['L']);
+    
+    // Charger les jalons si disponibles
+    if (this.kanban.jalonManager) {
+      this.kanban.jalonManager.loadJalonsFromTask(tache);
+    }
     
     console.log('✅ Formulaire rempli');
   }
@@ -787,7 +955,9 @@ export class ModalManager {
       impact: getFieldValue('popup-impact') || null,
       bureau: getSelectedOptionsAsGristFormat('popup-bureau'),
       qui: getSelectedOptionsAsGristFormat('popup-qui'),
-      strategie_id: getFieldValue('popup-strategie-id') || null
+      strategie_ids: getFieldValue('popup-strategie-ids') || null,
+      strategie_id: getFieldValue('popup-strategie-id') || null, // Compatibilité
+      jalons: this.kanban.jalonManager ? this.kanban.jalonManager.getJalonsForSave() : null
     };
     
     // Debug chaque champ collecté
@@ -798,7 +968,8 @@ export class ModalManager {
     console.log('Impact:', data.impact);
     console.log('Bureau (raw):', data.bureau);
     console.log('Qui (raw):', data.qui);
-    console.log('Strategie_id:', data.strategie_id);
+    console.log('Strategie_ids:', data.strategie_ids);
+    console.log('Strategie_id (compat):', data.strategie_id);
     
     // CHAMP DESCRIPTION SUPPRIMÉ - Tous les commentaires sont maintenant dans notes.history
     // Le champ de saisie popup-description sert uniquement pour les nouveaux commentaires
@@ -1522,6 +1693,11 @@ export class ModalManager {
     if (this.kanban.datePickerManager) {
       this.kanban.datePickerManager.reset();
     }
+    
+    // Réinitialiser les jalons
+    if (this.kanban.jalonManager) {
+      this.kanban.jalonManager.loadJalonsFromTask({});
+    }
   }
   
   /**
@@ -1724,7 +1900,7 @@ export class ModalManager {
     
     const relevantFields = [
       'titre', 'statut', 'projet', 'urgence', 'impact', 'bureau', 'qui', 
-      'strategie_id', 'date_debut', 'date_echeance'
+      'strategie_ids', 'strategie_id', 'date_debut', 'date_echeance'
     ];
     
     // Filtrer les champs exclus

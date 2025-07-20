@@ -203,6 +203,71 @@
   white-space: nowrap;
 }
 
+/* === TAGS DE STRATÉGIES SÉLECTIONNÉES === */
+.selected-strategies {
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  background: #f8f9fa;
+  padding: 12px;
+}
+
+.strategy-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.strategy-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  background: #0d6efd;
+  color: white;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.strategy-tag:hover {
+  background: #0b5ed7;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(13, 110, 253, 0.3);
+}
+
+.strategy-tag-text {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.strategy-tag-remove {
+  border: none;
+  background: none;
+  color: white;
+  font-size: 0.7rem;
+  padding: 0;
+  margin-left: 6px;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.strategy-tag-remove:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+#btn-clear-strategies {
+  font-size: 0.8rem;
+  padding: 4px 8px;
+}
+
+#strategy-count {
+  font-size: 0.75rem;
+  padding: 2px 6px;
+}
+
 /* === SCROLLBAR CUSTOM === */
 .strategy-browser::-webkit-scrollbar {
   width: 6px;

@@ -59,6 +59,7 @@ import { ModalManager } from './managers/ModalManager.js';
 import { HistoryManager } from './managers/HistoryManager.js';
 import { DatePickerManager } from './managers/DatePickerManager.js';
 import { GristManager } from './managers/GristManager.js';
+import { JalonManager } from './managers/JalonManager.js';
 
 // === CONSTANTES ===
 const STRATEGIES_TABLE_ID = "Ssir_strategie2";
@@ -193,6 +194,9 @@ class KanbanManager {
     
     // Manager Grist
     this.gristManager = new GristManager(this);
+    
+    // Manager des jalons
+    this.jalonManager = new JalonManager(this);
     
     console.log('✅ Managers initialisés');
   }

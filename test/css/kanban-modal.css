@@ -598,3 +598,218 @@
   cursor: not-allowed;
   opacity: 0.7;
 }
+
+/* === STYLES JALONS === */
+
+.jalons-timeline {
+  position: relative;
+  min-height: 60px;
+}
+
+.jalon-item {
+  position: relative;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.jalon-item:hover {
+  border-color: #007bff;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.jalon-item.jalon-completed {
+  border-color: #28a745;
+  background: #f8fff9;
+}
+
+.jalon-item.jalon-overdue {
+  border-color: #dc3545;
+  background: #fff5f5;
+}
+
+.jalon-header {
+  display: flex;
+  justify-content: between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.jalon-type-badge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  margin-right: 0.5rem;
+}
+
+.jalon-type-reunion {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.jalon-type-echeance {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.jalon-type-validation {
+  background: #e8f5e8;
+  color: #388e3c;
+}
+
+.jalon-type-livrable {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.jalon-title {
+  font-weight: 600;
+  color: #495057;
+  flex-grow: 1;
+}
+
+.jalon-date {
+  font-size: 0.875rem;
+  color: #6c757d;
+  white-space: nowrap;
+}
+
+.jalon-content {
+  margin-top: 0.5rem;
+}
+
+.jalon-comment {
+  font-size: 0.875rem;
+  color: #495057;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.jalon-participants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.participant-badge {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.4rem;
+  background: #e9ecef;
+  color: #495057;
+  border-radius: 10px;
+}
+
+.jalon-actions {
+  display: flex;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.jalon-item:hover .jalon-actions {
+  opacity: 1;
+}
+
+.jalon-status-select {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.3rem;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  background: white;
+  min-width: 90px;
+}
+
+/* Timeline connector line */
+.jalons-timeline::before {
+  content: '';
+  position: absolute;
+  left: 20px;
+  top: 20px;
+  bottom: 20px;
+  width: 2px;
+  background: linear-gradient(to bottom, #007bff 0%, #e9ecef 100%);
+  z-index: 0;
+}
+
+.jalon-item::before {
+  content: '';
+  position: absolute;
+  left: -20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #007bff;
+  border: 3px solid white;
+  box-shadow: 0 0 0 2px #007bff;
+  z-index: 1;
+}
+
+.jalon-item.jalon-completed::before {
+  background: #28a745;
+  box-shadow: 0 0 0 2px #28a745;
+}
+
+.jalon-item.jalon-overdue::before {
+  background: #dc3545;
+  box-shadow: 0 0 0 2px #dc3545;
+}
+
+/* Modal pour ajouter/éditer un jalon */
+.jalon-modal .modal-body {
+  padding: 1.5rem;
+}
+
+.jalon-form-group {
+  margin-bottom: 1rem;
+}
+
+.jalon-type-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.jalon-type-card {
+  padding: 0.75rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.jalon-type-card:hover {
+  border-color: #007bff;
+  background: #f8f9fa;
+}
+
+.jalon-type-card.selected {
+  border-color: #007bff;
+  background: #e3f2fd;
+}
+
+.jalon-type-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.jalon-conditional-fields {
+  display: none;
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.jalon-conditional-fields.visible {
+  display: block;
+}
