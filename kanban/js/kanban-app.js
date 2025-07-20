@@ -8,10 +8,10 @@ import {
   DEFAULT_RESPONSABLES, 
   TABLE_ID,
   REQUIRED_COLUMNS,
-  LOG_CONFIG,
   OPTIONAL_COLUMNS,
   VIEW_MODES,
-  getDefaultStatuts
+  getDefaultStatuts,
+  STRATEGY_DATA
 } from './config/constants.js';
 
 import {
@@ -64,22 +64,6 @@ import { GristManager } from './managers/GristManager.js';
 const STRATEGIES_TABLE_ID = "Ssir_strategie2";
 
 let projetsDynamiques = [];
-
-// === SYSTÈME DE LOGGING CONDITIONNEL ===
-const shouldLog = (level) => {
-  if (!LOG_CONFIG.PRODUCTION) return true;
-  const levels = { ERROR: 0, WARN: 1, INFO: 2, DEBUG: 3 };
-  const configLevel = levels[LOG_CONFIG.LEVEL] || 0;
-  const msgLevel = levels[level] || 3;
-  return msgLevel <= configLevel;
-};
-
-const log = {
-  error: (...args) => shouldLog('ERROR') && console.error(...args),
-  warn: (...args) => shouldLog('WARN') && console.warn(...args),
-  info: (...args) => shouldLog('INFO') && console.log(...args),
-  debug: (...args) => shouldLog('DEBUG') && console.log(...args)
-};
 
 // === CLASSE KANBANMANAGER CORRIGÉE ===
 class KanbanManager {
@@ -190,7 +174,7 @@ class KanbanManager {
   }
   // NOUVEAU: Initialisation des managers
   initializeManagers() {
-    log.info('🔧 Initialisation des managers...');
+    console.log('🔧 Initialisation des managers...');
     
     // Manager des filtres
     this.filterManager = new FilterManager(this);
@@ -210,7 +194,7 @@ class KanbanManager {
     // Manager Grist
     this.gristManager = new GristManager(this);
     
-    log.info('✅ Managers initialisés');
+    console.log('✅ Managers initialisés');
   }
 
   async waitForGristReady() {
@@ -293,7 +277,7 @@ class KanbanManager {
 
       // Projets dynamiques
       this.gristOptions.projet = this.getUniqueValuesFromData('projet', false);
-      log.debug(`Options Projets (dynamique): ${this.gristOptions.projet.length} valeurs.`);
+      console.log(`Options Projets (dynamique): ${this.gristOptions.projet.length} valeurs.`);
 
       // Charger les stratégies depuis Grist
       await this.loadStrategiesFromGrist();
@@ -378,32 +362,32 @@ class KanbanManager {
     }
   }
 
-  // Chargement des stratégies depuis la table Grist (basé sur old example)
+  // Chargement des stratégies depuis les données intégrées
   async loadStrategiesFromGrist() {
     try {
-      console.log(`Chargement table ${STRATEGIES_TABLE_ID}...`);
-      const strategiesData = await grist.docApi.fetchTable(STRATEGIES_TABLE_ID);
+      console.log('Chargement des stratégies depuis les données intégrées...');
       
-      // Colonnes à extraire de Ssir_strategie2
-      const requiredStratCols = ['id', 'id2', 'objectif', 'sous_objectif', 'action'];
-      const displayCol = 'id2';
-      
-      if (strategiesData && requiredStratCols.every(col => strategiesData.hasOwnProperty(col))) {
-        this.strategiesData = strategiesData.id.map((id, index) => {
-          const stratRecord = {};
-          requiredStratCols.forEach(col => {
-            stratRecord[col] = strategiesData[col][index];
-          });
-          return stratRecord;
-        }).sort((a, b) => String(a[displayCol] || '').localeCompare(String(b[displayCol] || '')));
+      if (STRATEGY_DATA && STRATEGY_DATA.length > 0) {
+        // Utiliser les données intégrées depuis constants.js
+        this.strategiesData = STRATEGY_DATA.map(strategy => ({
+          id: strategy.id,
+          id2: strategy.id, // Fallback pour compatibilité
+          objectif: strategy.objectif,
+          sous_objectif: strategy.sous_objectif,
+          action: strategy.action,
+          responsable: strategy.responsable,
+          echeance: strategy.echeance,
+          portee: strategy.portee
+        })).sort((a, b) => a.id - b.id);
         
-        console.log(`Options Stratégies (dynamique): ${this.strategiesData.length} valeurs chargées.`);
+        console.log(`✅ Stratégies chargées depuis données intégrées: ${this.strategiesData.length} stratégies`);
+        console.log('Aperçu des stratégies:', this.strategiesData.slice(0, 3));
       } else {
-        console.warn(`La table ${STRATEGIES_TABLE_ID} ou des colonnes requises (${requiredStratCols.join(', ')}) sont manquantes/vides.`);
+        console.warn('STRATEGY_DATA non disponible ou vide');
         this.strategiesData = [];
       }
     } catch (stratError) {
-      console.error(`Erreur chargement table ${STRATEGIES_TABLE_ID}:`, stratError);
+      console.error('Erreur chargement stratégies intégrées:', stratError);
       this.strategiesData = [];
     }
   }

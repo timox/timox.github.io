@@ -153,15 +153,15 @@ export class ModalManager {
       return;
     }
     
-    // Vérifier si on a des données Grist disponibles
-    console.log('ModalManager: Vérification strategyData:', {
-      exists: !!this.kanban.strategyData,
-      length: this.kanban.strategyData?.length || 0,
-      sample: this.kanban.strategyData?.[0]
+    // Vérifier si on a des données stratégiques disponibles
+    console.log('ModalManager: Vérification strategiesData:', {
+      exists: !!this.kanban.strategiesData,
+      length: this.kanban.strategiesData?.length || 0,
+      sample: this.kanban.strategiesData?.[0]
     });
     
-    if (this.kanban.strategyData && this.kanban.strategyData.length > 0) {
-      console.log('ModalManager: Génération interface accordéon depuis Grist');
+    if (this.kanban.strategiesData && this.kanban.strategiesData.length > 0) {
+      console.log('ModalManager: Génération interface accordéon depuis données intégrées');
       this.renderStrategyAccordion(strategyBrowser);
     } else {
       console.warn('ModalManager: Génération interface accordéon avec données par défaut');
@@ -257,7 +257,7 @@ export class ModalManager {
    */
   createActionCard(objectif, sousObjectif, action) {
     // Trouver la stratégie correspondante dans les données Grist
-    const strategy = this.kanban.strategyData.find(s => 
+    const strategy = this.kanban.strategiesData.find(s => 
       s.objectif === objectif && 
       s.sous_objectif === sousObjectif && 
       s.action === action
@@ -348,17 +348,17 @@ export class ModalManager {
   }
   
   /**
-   * Construit les mappings de stratégie depuis les données Grist
+   * Construit les mappings de stratégie depuis les données intégrées
    * @returns {object} Mappings organisés par objectif, sous-objectif, action
    */
   buildStrategyMappingsFromGrist() {
-    const objectifs = [...new Set(this.kanban.strategyData.map(s => s.objectif))].sort();
+    const objectifs = [...new Set(this.kanban.strategiesData.map(s => s.objectif))].sort();
     const sousObjectifs = {};
     const actions = {};
     
     // Pour chaque objectif, trouver les sous-objectifs
     objectifs.forEach(objectif => {
-      const strategiesForObjectif = this.kanban.strategyData.filter(s => s.objectif === objectif);
+      const strategiesForObjectif = this.kanban.strategiesData.filter(s => s.objectif === objectif);
       const sousObjectifsList = [...new Set(strategiesForObjectif.map(s => s.sous_objectif))].sort();
       sousObjectifs[objectif] = sousObjectifsList;
       
@@ -422,9 +422,9 @@ export class ModalManager {
       return;
     }
     
-    // Rechercher la stratégie dans les données Grist
-    if (this.kanban.strategyData && this.kanban.strategyData.length > 0) {
-      const strategy = this.kanban.strategyData.find(s => s.id == strategyId);
+    // Rechercher la stratégie dans les données intégrées
+    if (this.kanban.strategiesData && this.kanban.strategiesData.length > 0) {
+      const strategy = this.kanban.strategiesData.find(s => s.id == strategyId);
       
       if (strategy) {
         // Définir l'objectif et déclencher la cascade
