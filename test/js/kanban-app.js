@@ -656,6 +656,9 @@ class KanbanManager {
     // Timeline button
     const timelineButton = this.generateTimelineButton(record);
     
+    // History badge
+    const historyBadge = this.generateHistoryBadge(record);
+    
     const hasEcheanceClass = record.date_echeance ? 'has-echeance' : '';
     const hasDateDebutClass = record.date_debut ? 'has-debut' : '';
     
@@ -676,6 +679,7 @@ class KanbanManager {
         </div>
         <div class="item-badges">
           ${projectBadge}
+          ${historyBadge}
           ${timelineButton}
         </div>
       </div>
@@ -726,6 +730,37 @@ class KanbanManager {
     return `<button class="btn-timeline" title="Voir la timeline (${totalEvents} événement${totalEvents > 1 ? 's' : ''})" data-task-id="${record.id}">
       <i class="bi bi-clock-history"></i> ${totalEvents}
     </button>`;
+  }
+
+  // Génération du badge historique
+  generateHistoryBadge(record) {
+    // Compter l'historique depuis les notes JSON
+    let historyCount = 0;
+    if (record.notes) {
+      try {
+        const notesData = JSON.parse(record.notes);
+        if (notesData && notesData.history && Array.isArray(notesData.history)) {
+          historyCount = notesData.history.length;
+        }
+      } catch (e) {
+        historyCount = 0;
+      }
+    }
+    
+    // Compter aussi l'ancien historique de statuts
+    if (record.historique_statuts) {
+      try {
+        const historyData = JSON.parse(record.historique_statuts);
+        const oldHistoryCount = historyData.historique ? historyData.historique.length : 0;
+        historyCount += oldHistoryCount;
+      } catch (e) {
+        // Ignore les erreurs de parsing
+      }
+    }
+    
+    if (historyCount <= 1) return '';
+    
+    return generateHistoryBadge(historyCount, record.id);
   }
 
   // Récupération des infos stratégie
@@ -1221,13 +1256,32 @@ class KanbanManager {
       });
     });
     
-    // 3. Icônes de stratégies (mini-modale)
-    this.kanbanContainer.querySelectorAll('.strategie-icon').forEach(icon => {
+    // 3. Boutons historique
+    const historyButtons = this.kanbanContainer.querySelectorAll('.btn-history');
+    this.logger.debug(`Boutons historique trouvés: ${historyButtons.length}`);
+    
+    historyButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        
+        const taskId = parseInt(btn.dataset.taskId, 10);
+        this.logger.debug(`Clic historique sur tâche ID: ${taskId}`);
+        this.openTimelineModal(taskId); // Même fonction que timeline
+      });
+    });
+    
+    // 4. Icônes de stratégies (mini-modale)
+    const strategyIcons = this.kanbanContainer.querySelectorAll('.strategie-icon');
+    this.logger.debug(`Icônes stratégie trouvées: ${strategyIcons.length}`);
+    
+    strategyIcons.forEach(icon => {
       icon.addEventListener('click', (e) => {
         e.stopPropagation();
         e.preventDefault();
         
         const taskId = parseInt(icon.dataset.taskId, 10);
+        this.logger.debug(`Clic stratégie sur tâche ID: ${taskId}`);
         this.openStrategyMiniModal(taskId);
       });
     });
