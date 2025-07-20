@@ -653,11 +653,8 @@ class KanbanManager {
     // Badges responsables
     const responsablesBadges = generateResponsablesBadges(record.qui);
     
-    // Timeline button
+    // Timeline/History button (même chose)
     const timelineButton = this.generateTimelineButton(record);
-    
-    // History badge
-    const historyBadge = this.generateHistoryBadge(record);
     
     const hasEcheanceClass = record.date_echeance ? 'has-echeance' : '';
     const hasDateDebutClass = record.date_debut ? 'has-debut' : '';
@@ -679,7 +676,6 @@ class KanbanManager {
         </div>
         <div class="item-badges">
           ${projectBadge}
-          ${historyBadge}
           ${timelineButton}
         </div>
       </div>
@@ -732,36 +728,6 @@ class KanbanManager {
     </button>`;
   }
 
-  // Génération du badge historique
-  generateHistoryBadge(record) {
-    // Compter l'historique depuis les notes JSON
-    let historyCount = 0;
-    if (record.notes) {
-      try {
-        const notesData = JSON.parse(record.notes);
-        if (notesData && notesData.history && Array.isArray(notesData.history)) {
-          historyCount = notesData.history.length;
-        }
-      } catch (e) {
-        historyCount = 0;
-      }
-    }
-    
-    // Compter aussi l'ancien historique de statuts
-    if (record.historique_statuts) {
-      try {
-        const historyData = JSON.parse(record.historique_statuts);
-        const oldHistoryCount = historyData.historique ? historyData.historique.length : 0;
-        historyCount += oldHistoryCount;
-      } catch (e) {
-        // Ignore les erreurs de parsing
-      }
-    }
-    
-    if (historyCount <= 1) return '';
-    
-    return generateHistoryBadge(historyCount, record.id);
-  }
 
   // Récupération des infos stratégie
   getStrategyInfo(strategieId) {
@@ -1241,49 +1207,37 @@ class KanbanManager {
       });
     });
     
-    // 2. Boutons timeline
-    const timelineButtons = this.kanbanContainer.querySelectorAll('.btn-timeline');
-    this.logger.debug(`Boutons timeline trouvés: ${timelineButtons.length}`);
-    
-    timelineButtons.forEach(btn => {
-      btn.addEventListener('click', (e) => {
+    // 2. Délégation d'événements consolidée pour boutons et icônes
+    this.kanbanContainer.addEventListener('click', (e) => {
+      // Boutons timeline/historique
+      if (e.target.closest('.btn-timeline')) {
         e.stopPropagation();
         e.preventDefault();
         
+        const btn = e.target.closest('.btn-timeline');
         const taskId = parseInt(btn.dataset.taskId, 10);
-        this.logger.debug(`Clic timeline sur tâche ID: ${taskId}`);
-        this.openTimelineModal(taskId);
-      });
-    });
-    
-    // 3. Boutons historique
-    const historyButtons = this.kanbanContainer.querySelectorAll('.btn-history');
-    this.logger.debug(`Boutons historique trouvés: ${historyButtons.length}`);
-    
-    historyButtons.forEach(btn => {
-      btn.addEventListener('click', (e) => {
+        this.logger.debug(`Clic timeline délégué sur tâche ID: ${taskId}`);
+        
+        if (!isNaN(taskId)) {
+          this.openTimelineModal(taskId);
+        }
+        return;
+      }
+      
+      // Icônes de stratégies
+      if (e.target.closest('.strategie-icon')) {
         e.stopPropagation();
         e.preventDefault();
         
-        const taskId = parseInt(btn.dataset.taskId, 10);
-        this.logger.debug(`Clic historique sur tâche ID: ${taskId}`);
-        this.openTimelineModal(taskId); // Même fonction que timeline
-      });
-    });
-    
-    // 4. Icônes de stratégies (mini-modale)
-    const strategyIcons = this.kanbanContainer.querySelectorAll('.strategie-icon');
-    this.logger.debug(`Icônes stratégie trouvées: ${strategyIcons.length}`);
-    
-    strategyIcons.forEach(icon => {
-      icon.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        
+        const icon = e.target.closest('.strategie-icon');
         const taskId = parseInt(icon.dataset.taskId, 10);
-        this.logger.debug(`Clic stratégie sur tâche ID: ${taskId}`);
-        this.openStrategyMiniModal(taskId);
-      });
+        this.logger.debug(`Clic stratégie délégué sur tâche ID: ${taskId}`);
+        
+        if (!isNaN(taskId)) {
+          this.openStrategyMiniModal(taskId);
+        }
+        return;
+      }
     });
   }
 
