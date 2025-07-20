@@ -599,6 +599,68 @@
   opacity: 0.7;
 }
 
+/* === AMÉLIORATION ERGONOMIE MODALE === */
+
+/* Groupes de champs avec couleurs distinctes */
+.form-group-basic {
+  background: linear-gradient(135deg, #f8fdff, #e3f2fd);
+  border-left: 4px solid #2196f3;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.form-group-planning {
+  background: linear-gradient(135deg, #fffbf0, #fff3e0);
+  border-left: 4px solid #ff9800;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.form-group-strategy {
+  background: linear-gradient(135deg, #faf5ff, #f3e5f5);
+  border-left: 4px solid #9c27b0;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.form-group-team {
+  background: linear-gradient(135deg, #f1f8e9, #e8f5e8);
+  border-left: 4px solid #4caf50;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+/* Amélioration des labels par couleur */
+.form-group-basic .form-label {
+  color: #1565c0;
+  font-weight: 600;
+}
+
+.form-group-planning .form-label {
+  color: #e65100;
+  font-weight: 600;
+}
+
+.form-group-strategy .form-label {
+  color: #7b1fa2;
+  font-weight: 600;
+}
+
+.form-group-team .form-label {
+  color: #2e7d32;
+  font-weight: 600;
+}
+
+/* Icônes de section */
+.section-icon {
+  margin-right: 0.5rem;
+  font-size: 1.1rem;
+}
+
 /* === STYLES JALONS === */
 
 .jalons-timeline {

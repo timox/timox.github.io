@@ -1075,6 +1075,22 @@ export class ModalManager {
     }
     */
     
+    // Vérifier et formater les jalons pour Grist
+    if (gristData.jalons !== null && gristData.jalons !== undefined) {
+      if (typeof gristData.jalons !== 'string') {
+        console.log('🔧 Conversion jalons en JSON string pour Grist');
+        gristData.jalons = JSON.stringify(gristData.jalons || []);
+      }
+      console.log('✅ Jalons prêts pour sauvegarde:', gristData.jalons.length, 'caractères');
+    }
+    
+    // TEMPORAIRE : Supprimer strategie_ids jusqu'à ce que la colonne soit créée
+    // TODO: Enlever cette ligne quand la colonne strategie_ids sera ajoutée à Grist
+    if (gristData.strategie_ids !== undefined) {
+      console.log('⚠️ Suppression temporaire du champ strategie_ids (colonne pas encore créée)');
+      delete gristData.strategie_ids;
+    }
+    
     console.log('=== FINAL gristData pour envoi ===');
     console.log('Données préparées pour Grist:', gristData);
     
