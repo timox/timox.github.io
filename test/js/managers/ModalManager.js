@@ -705,6 +705,11 @@ export class ModalManager {
     // Peupler les champs
     this.populateTaskForm(task);
     
+    // Informer le JalonManager de la tâche en cours
+    if (this.kanban.jalonManager) {
+      this.kanban.jalonManager.setCurrentTaskId(this.currentTaskId);
+    }
+    
     // Afficher/masquer le bouton supprimer
     toggleVisibility('btn-delete-task', !this.isNewTask, 'inline-block');
     
@@ -872,6 +877,11 @@ export class ModalManager {
           const newJalons = gristData.jalons || null;
           const jalonsChanged = this.hasJalonsChanged(oldJalons, newJalons);
           
+          // Vérifier les changements de stratégies spécifiquement
+          const oldStrategies = this.currentTask?.strategie_id || null;
+          const newStrategies = gristData.strategie_id || null;
+          const strategiesChanged = this.hasStrategiesChanged(oldStrategies, newStrategies);
+          
           if (descriptionContent) {
             // Si il y a un commentaire, l'ajouter spécifiquement à l'historique
             await userActionManager.addHistoryEntry(
@@ -915,6 +925,19 @@ export class ModalManager {
               jalonsDetails.message,
               jalonsDetails.oldSummary,
               jalonsDetails.newSummary,
+              gristData.statut || this.currentTask?.statut
+            );
+          }
+          
+          // Tracker spécifiquement les stratégies si elles ont changé
+          if (strategiesChanged) {
+            const strategiesDetails = this.getStrategiesChangeDetails(oldStrategies, newStrategies);
+            await userActionManager.addHistoryEntry(
+              this.currentTaskId,
+              'strategies_update',
+              strategiesDetails.message,
+              strategiesDetails.oldSummary,
+              strategiesDetails.newSummary,
               gristData.statut || this.currentTask?.statut
             );
           }
@@ -1984,6 +2007,19 @@ export class ModalManager {
   }
 
   /**
+   * Vérifie si les stratégies ont changé
+   * @param {string|Array|null} oldStrategies - Anciennes stratégies
+   * @param {string|Array|null} newStrategies - Nouvelles stratégies
+   * @returns {boolean} True si changement détecté
+   */
+  hasStrategiesChanged(oldStrategies, newStrategies) {
+    // Normaliser en strings pour comparaison
+    const oldStr = typeof oldStrategies === 'string' ? oldStrategies : JSON.stringify(oldStrategies || []);
+    const newStr = typeof newStrategies === 'string' ? newStrategies : JSON.stringify(newStrategies || []);
+    return oldStr !== newStr;
+  }
+
+  /**
    * Compte le nombre de jalons dans un objet jalons
    * @param {string|object|null} jalons - Objet jalons
    * @returns {number} Nombre de jalons
@@ -2077,6 +2113,66 @@ export class ModalManager {
       console.warn('Erreur parsing jalons pour détails:', error);
       return {
         message: 'Jalons modifiés (erreur parsing)',
+        oldSummary: 'Erreur',
+        newSummary: 'Erreur'
+      };
+    }
+  }
+
+  /**
+   * Génère les détails des changements de stratégies pour l'historique
+   * @param {string|Array|null} oldStrategies - Anciennes stratégies
+   * @param {string|Array|null} newStrategies - Nouvelles stratégies
+   * @returns {object} Détails du changement
+   */
+  getStrategiesChangeDetails(oldStrategies, newStrategies) {
+    try {
+      // Parser les stratégies (peuvent être array d'IDs ou null)
+      const oldIds = oldStrategies ? (Array.isArray(oldStrategies) ? oldStrategies : JSON.parse(oldStrategies)) : [];
+      const newIds = newStrategies ? (Array.isArray(newStrategies) ? newStrategies : JSON.parse(newStrategies)) : [];
+      
+      // Normaliser en arrays
+      const oldIdsArray = Array.isArray(oldIds) ? oldIds : [oldIds].filter(Boolean);
+      const newIdsArray = Array.isArray(newIds) ? newIds : [newIds].filter(Boolean);
+      
+      // Chercher les stratégies correspondantes
+      const getStrategyInfo = (id) => {
+        const strategy = this.kanban.strategiesData?.find(s => s.id === id);
+        return strategy ? `${strategy.objectif} → ${strategy.action}` : `Stratégie ID ${id}`;
+      };
+      
+      const added = newIdsArray.filter(id => !oldIdsArray.includes(id));
+      const removed = oldIdsArray.filter(id => !newIdsArray.includes(id));
+      
+      // Générer le message
+      const messages = [];
+      
+      if (added.length > 0) {
+        const strategyNames = added.map(id => `"${getStrategyInfo(id)}"`).join(', ');
+        messages.push(`Ajouté: ${strategyNames}`);
+      }
+      
+      if (removed.length > 0) {
+        const strategyNames = removed.map(id => `"${getStrategyInfo(id)}"`).join(', ');
+        messages.push(`Supprimé: ${strategyNames}`);
+      }
+      
+      const message = messages.length > 0 ? messages.join(' | ') : 'Stratégies modifiées';
+      
+      // Générer les résumés pour oldValue/newValue
+      const oldSummary = oldIdsArray.map(id => getStrategyInfo(id)).join(', ') || 'Aucune';
+      const newSummary = newIdsArray.map(id => getStrategyInfo(id)).join(', ') || 'Aucune';
+      
+      return {
+        message,
+        oldSummary,
+        newSummary
+      };
+      
+    } catch (error) {
+      console.warn('Erreur parsing stratégies pour détails:', error);
+      return {
+        message: 'Stratégies modifiées (erreur parsing)',
         oldSummary: 'Erreur',
         newSummary: 'Erreur'
       };

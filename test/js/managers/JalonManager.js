@@ -8,6 +8,7 @@ export class JalonManager {
     this.kanban = kanban;
     this.jalons = [];
     this.currentEditingId = null;
+    this.currentTaskId = null; // AJOUT: ID de la tâche en cours d'édition
     this.jalonModal = null;
     
     this.init();
@@ -20,6 +21,20 @@ export class JalonManager {
     this.jalonModal = new bootstrap.Modal(document.getElementById('jalonModal'));
     
     this.setupEventListeners();
+  }
+
+  /**
+   * Définit l'ID de la tâche en cours d'édition
+   */
+  setCurrentTaskId(taskId) {
+    this.currentTaskId = taskId;
+  }
+
+  /**
+   * Récupère l'ID de la tâche en cours d'édition
+   */
+  getCurrentTaskId() {
+    return this.currentTaskId;
   }
 
   setupEventListeners() {
@@ -105,19 +120,46 @@ export class JalonManager {
   /**
    * Sauvegarde le jalon (création ou modification)
    */
-  saveJalon() {
+  async saveJalon() {
     const jalonData = this.collectJalonFormData();
     
     if (!this.validateJalonData(jalonData)) {
       return;
     }
 
-    if (this.currentEditingId) {
+    const isEdit = !!this.currentEditingId;
+    const taskId = this.getCurrentTaskId();
+
+    if (isEdit) {
       // Mode édition
       this.updateJalon(this.currentEditingId, jalonData);
+      
+      // Ajouter à l'historique
+      if (taskId && this.kanban.userActionManager) {
+        await this.kanban.userActionManager.addHistoryEntry(
+          taskId,
+          'jalon_modifie',
+          `Jalon modifié: ${jalonData.titre}`,
+          '', // oldValue
+          JSON.stringify(jalonData), // newValue
+          ''
+        );
+      }
     } else {
       // Mode création
       this.addJalon(jalonData);
+      
+      // Ajouter à l'historique
+      if (taskId && this.kanban.userActionManager) {
+        await this.kanban.userActionManager.addHistoryEntry(
+          taskId,
+          'jalon_ajoute',
+          `Nouveau jalon ajouté: ${jalonData.titre}`,
+          '', // oldValue
+          JSON.stringify(jalonData), // newValue
+          ''
+        );
+      }
     }
 
     this.jalonModal.hide();
@@ -209,12 +251,28 @@ export class JalonManager {
   /**
    * Supprime un jalon
    */
-  deleteJalon(id) {
+  async deleteJalon(id) {
     const index = this.jalons.findIndex(j => j.id === id);
     if (index !== -1) {
+      const jalonData = this.jalons[index];
+      const taskId = this.getCurrentTaskId();
+      
       this.jalons.splice(index, 1);
       this.updateJalonsDisplay();
       this.saveJalonsToForm();
+      
+      // Ajouter à l'historique
+      if (taskId && this.kanban.userActionManager) {
+        await this.kanban.userActionManager.addHistoryEntry(
+          taskId,
+          'jalon_supprime',
+          `Jalon supprimé: ${jalonData.titre}`,
+          JSON.stringify(jalonData), // oldValue
+          '', // newValue
+          ''
+        );
+      }
+      
       console.log('🗑️ Jalon supprimé:', id);
     }
   }
