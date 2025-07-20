@@ -62,6 +62,13 @@ kanban/
 - ✅ Système de coloration des colonnes par statut
 - ✅ Architecture modulaire complète
 
+### 🔧 Améliorations Architecturales Récentes (2025-07-20)
+- ✅ **Gestion événements anti-duplication** - Protection contre les écouteurs multiples
+- ✅ **Protection anti-spam** - Mécanismes timeout pour interactions rapides
+- ✅ **Z-index coordination** - Gestion hiérarchie modales et overlays
+- ✅ **Format Grist unifié** - Support arrays `["L", number]` et types flexibles
+- ✅ **Widget overlay fixes** - Résolution conflits superposition interface
+
 ---
 
 ## 🧪 `/test/` - ENVIRONNEMENT DE DÉVELOPPEMENT
@@ -82,11 +89,13 @@ test/
 │   ├── *.csv              # Données de test/migration
 │   ├── *.json             # Extractions et sauvegardes
 │   └── extracted_json_*/  # Données extraites par tâche
-├── ARCHITECTURE.md         # Documentation architecture
+├── ARCHITECTURE.md         # Documentation architecture complète
+├── CHANGELOG_2025-07-20.md # Corrections critiques récentes
 ├── CHANGELOG_2025-07-14.md # Journal des modifications
-├── LOGGING_GUIDE.md        # Guide système de logs
-├── VERIFICATION_ANTI_DUPLICATION.md # Guide anti-doublons
-└── schema.md               # Schéma base de données
+├── LOGGING_GUIDE.md        # Guide système de logs  
+├── VERIFICATION_ANTI_DUPLICATION.md # Guide anti-doublons événements
+├── STRATEGY_INTERFACE_DOCUMENTATION.md # Interface stratégies détaillée
+└── schema.md               # Schéma base de données Grist
 ```
 
 ### Usage

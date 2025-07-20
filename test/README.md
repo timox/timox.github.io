@@ -482,6 +482,14 @@ Pour toute question ou problème :
 - **Documentation**: Consulter ce README et les commentaires du code
 - **Debug**: Utiliser les outils de développement intégrés
 
+## 📚 Documentation Technique Supplémentaire
+
+- **`ARCHITECTURE.md`** - Architecture détaillée et patterns de développement
+- **`VERIFICATION_ANTI_DUPLICATION.md`** - Guide de gestion des événements 
+- **`LOGGING_GUIDE.md`** - Système de logs et debug
+- **`STRATEGY_INTERFACE_DOCUMENTATION.md`** - Interface stratégies accordéon
+- **`CHANGELOG_2025-07-20.md`** - Corrections critiques récentes (overlay, anti-spam)
+
 ---
 
 *Dernière mise à jour: Juillet 2025*

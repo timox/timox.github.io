@@ -8,6 +8,8 @@ Cette version corrige les problèmes bloquants d'interface utilisateur identifi�
 
 ## 🔥 Problèmes Résolus
 
+**🎯 5 problèmes critiques identifiés et corrigés dans cette version :**
+
 ### ✅ **1. Écran Noir Bloquant (Overlay Multiple) - RÉSOLU**
 
 **📋 Problème identifié :**
@@ -74,7 +76,38 @@ if (Array.isArray(strategieIds) && strategieIds.length === 2 && strategieIds[0] 
 }
 ```
 
-### ✅ **4. Boucles Infinies Modales Timeline/Stratégie - RÉSOLU**
+### ✅ **4. Modal-Backdrop Orphelins Bloquants - RÉSOLU**
+
+**📋 Problème critique identifié :**
+- **Symptôme** : Interface complètement bloquée par des `modal-backdrop fade show` orphelins
+- **Cause** : Modales Bootstrap fermées de manière incorrecte laissant leurs backdrops actifs
+- **Impact** : Voile noir permanent empêchant toute interaction avec l'interface
+
+**🔧 Solution appliquée :**
+- **Nettoyage automatique** : Fonction `cleanOrphanBackdrops()` au démarrage de l'app
+- **Bouton d'urgence** : Bouton "Débloquer" visible quand des backdrops orphelins sont détectés
+- **Surveillance continue** : Vérification toutes les 5 secondes avec `updateCleanButton()`
+- **Réinitialisation body** : Nettoyage des classes et styles Bootstrap sur le body
+
+**📁 Fichiers modifiés :**
+- `test/js/kanban-app.js` (lignes 1317-1357) : Fonctions de nettoyage
+- `test/index.html` (lignes 78-82) : Bouton de déblocage d'urgence
+
+**🔍 Code de nettoyage :**
+```javascript
+cleanOrphanBackdrops() {
+  const backdrops = document.querySelectorAll('.modal-backdrop');
+  backdrops.forEach(backdrop => backdrop.remove());
+  
+  // Réinitialiser le body
+  const body = document.body;
+  body.classList.remove('modal-open');
+  body.style.overflow = '';
+  body.style.paddingRight = '';
+}
+```
+
+### ✅ **5. Boucles Infinies Modales Timeline/Stratégie - RÉSOLU**
 
 **📋 Problème identifié dans les logs :**
 - **Timeline** : HistoryManager appelé 6 fois en 1 seconde  

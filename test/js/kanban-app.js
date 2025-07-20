@@ -199,6 +199,12 @@ class KanbanManager {
     // Manager des jalons
     this.jalonManager = new JalonManager(this);
     
+    // 🔧 CORRECTION: Nettoyage automatique des backdrops Bootstrap orphelins
+    this.cleanOrphanBackdrops();
+    
+    // Vérification périodique des backdrops orphelins (toutes les 5 secondes)
+    setInterval(() => this.updateCleanButton(), 5000);
+    
     console.log('✅ Managers initialisés');
   }
 
@@ -1307,6 +1313,49 @@ class KanbanManager {
     } else {
       this.logger.error('Gestionnaire d\'historique non disponible');
       displayError('Gestionnaire d\'historique non disponible');
+    }
+  }
+  
+  // === NETTOYAGE DES BACKDROPS BOOTSTRAP ORPHELINS ===
+  cleanOrphanBackdrops() {
+    // Supprimer tous les backdrops Bootstrap orphelins
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    console.log(`🧹 Nettoyage des backdrops orphelins: ${backdrops.length} trouvés`);
+    
+    backdrops.forEach((backdrop, index) => {
+      console.log(`🗑️ Suppression backdrop orphelin ${index + 1}`);
+      backdrop.remove();
+    });
+    
+    // Réinitialiser le body si nécessaire
+    const body = document.body;
+    if (body.classList.contains('modal-open')) {
+      console.log('🔄 Réinitialisation du body (modal-open)');
+      body.classList.remove('modal-open');
+      body.style.overflow = '';
+      body.style.paddingRight = '';
+      body.removeAttribute('data-bs-overflow');
+      body.removeAttribute('data-bs-padding-right');
+    }
+    
+    // Afficher/masquer le bouton de nettoyage d'urgence
+    this.updateCleanButton();
+    
+    console.log('✅ Nettoyage des backdrops terminé');
+  }
+  
+  // Mise à jour du bouton de nettoyage d'urgence
+  updateCleanButton() {
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    const cleanBtn = document.getElementById('btn-clean-backdrops');
+    
+    if (cleanBtn) {
+      if (backdrops.length > 0) {
+        cleanBtn.style.display = 'block';
+        cleanBtn.onclick = () => this.cleanOrphanBackdrops();
+      } else {
+        cleanBtn.style.display = 'none';
+      }
     }
   }
   
