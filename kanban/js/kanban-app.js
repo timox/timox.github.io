@@ -420,11 +420,26 @@ class KanbanManager {
           } else {
             rec[key] = v;
           }
+          
+          // Debug pour strategie_id
+          if (key === 'strategie_id') {
+            console.log(`📋 Record ${i} - strategie_id:`, {
+              value: v,
+              type: typeof v,
+              isNull: v === null,
+              isEmpty: v === '',
+              isZero: v === 0
+            });
+          }
         } else if (key === 'id') { 
           ok = false; 
           break; 
         } else {
           rec[key] = null;
+          // Debug pour strategie_id quand manquant
+          if (key === 'strategie_id') {
+            console.log(`📋 Record ${i} - strategie_id MANQUANT (défini à null)`);
+          }
         }
       }
       
@@ -607,6 +622,14 @@ class KanbanManager {
     
     // Stratégies multiples avec tooltip
     const strategiesInfo = this.getMultipleStrategiesInfo(record.strategie_id);
+    console.log(`🎯 Debug stratégie pour tâche ${record.id}:`, {
+      strategie_id: record.strategie_id,
+      strategiesData_available: !!this.strategiesData,
+      strategiesData_length: this.strategiesData?.length || 0,
+      strategiesInfo_length: strategiesInfo.length,
+      strategiesInfo: strategiesInfo
+    });
+    
     const strategiesText = strategiesInfo.length > 0 
       ? strategiesInfo.map(s => `${s.objectif} → ${s.action}`).join(' | ')
       : '';
@@ -614,6 +637,11 @@ class KanbanManager {
       `data-toggle="tooltip" data-placement="top" title="Stratégies: ${strategiesText}"` : '';
     const strategyIcon = strategiesInfo.length > 0 ? 
       `<i class="fas fa-bullseye strategie-icon" ${strategyTooltip}></i>` : '';
+    
+    console.log(`🎯 Icône stratégie générée pour tâche ${record.id}:`, {
+      strategyIcon_empty: strategyIcon === '',
+      strategyIcon_content: strategyIcon
+    });
 
     // Projet
     const projectBadge = record.projet ? 
@@ -733,14 +761,33 @@ class KanbanManager {
   }
 
   getMultipleStrategiesInfo(strategieIds) {
-    if (!strategieIds || !this.strategiesData) return [];
+    console.log(`🔍 getMultipleStrategiesInfo appelé avec:`, {
+      strategieIds,
+      strategieIds_type: typeof strategieIds,
+      strategieIds_isArray: Array.isArray(strategieIds),
+      strategiesData_available: !!this.strategiesData,
+      strategiesData_length: this.strategiesData?.length || 0
+    });
+    
+    if (!strategieIds || !this.strategiesData) {
+      console.log(`❌ Retour vide: strategieIds=${strategieIds}, strategiesData=${!!this.strategiesData}`);
+      return [];
+    }
     
     // Support ancien format (single ID) et nouveau format (array)
     const idsArray = Array.isArray(strategieIds) ? strategieIds : [strategieIds];
+    console.log(`🔄 IDs à traiter:`, idsArray);
     
-    return idsArray
-      .map(id => this.strategiesData.find(strategy => strategy.id === id))
+    const result = idsArray
+      .map(id => {
+        const found = this.strategiesData.find(strategy => strategy.id === id);
+        console.log(`🔎 Recherche ID ${id}:`, found ? `Trouvé: ${found.objectif}` : 'Non trouvé');
+        return found;
+      })
       .filter(strategy => strategy !== undefined);
+    
+    console.log(`✅ Résultat final getMultipleStrategiesInfo:`, result);
+    return result;
   }
 
   // === INITIALISATION DES MODALES CORRIGÉE ===

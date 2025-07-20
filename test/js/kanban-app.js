@@ -609,12 +609,23 @@ class KanbanManager {
     // Stratégies multiples
     const strategiesInfo = this.getMultipleStrategiesInfo(record.strategie_id);
     
+    // DEBUG: Log strategy data for task 76
+    if (record.id === 76) {
+      console.log(`🔍 DEBUG Task 76:`, {
+        strategie_id: record.strategie_id,
+        strategiesInfo: strategiesInfo,
+        strategiesInfoLength: strategiesInfo.length,
+        strategiesData: this.strategiesData?.length || 0
+      });
+    }
+    
     // Icône de stratégie avec mini-modale au clic
-    const strategyIcon = strategiesInfo.length > 0 ? 
+    // CORRECTION TEMPORAIRE: Forcer l'affichage pour la tâche 76 pour debug
+    const strategyIcon = (strategiesInfo.length > 0 || record.id === 76) ? 
       `<i class="fas fa-bullseye strategie-icon" 
           data-task-id="${record.id}" 
-          title="Voir les stratégies (${strategiesInfo.length})"
-          style="cursor: pointer;"></i>` : '';
+          title="Voir les stratégies (${strategiesInfo.length || 'debug'})"
+          style="cursor: pointer; color: ${record.id === 76 ? 'red' : '#0d6efd'};"></i>` : '';
 
     // Projet avec stratégies dans l'infobulle aussi (double affichage)
     const projectBadge = record.projet ? 
@@ -737,14 +748,21 @@ class KanbanManager {
   }
 
   getMultipleStrategiesInfo(strategieIds) {
-    if (!strategieIds || !this.strategiesData) return [];
+    if (!strategieIds || !this.strategiesData) {
+      console.log(`🔍 getMultipleStrategiesInfo: pas de données`, { strategieIds, hasStrategiesData: !!this.strategiesData });
+      return [];
+    }
     
     // Support ancien format (single ID) et nouveau format (array)
     const idsArray = Array.isArray(strategieIds) ? strategieIds : [strategieIds];
+    console.log(`🔍 getMultipleStrategiesInfo: idsArray=`, idsArray);
     
-    return idsArray
+    const result = idsArray
       .map(id => this.strategiesData.find(strategy => strategy.id === id))
       .filter(strategy => strategy !== undefined);
+    
+    console.log(`🔍 getMultipleStrategiesInfo: result=`, result);
+    return result;
   }
 
   // === INITIALISATION DES MODALES CORRIGÉE ===
@@ -1258,11 +1276,15 @@ class KanbanManager {
   
   // === GESTION DE LA MINI-MODALE STRATÉGIES ===
   openStrategyMiniModal(taskId) {
+    console.log(`🔍 openStrategyMiniModal appelée avec taskId: ${taskId}`);
+    
     const task = this.currentRecords?.find(r => r.id === taskId);
     if (!task) {
       displayError('Tâche non trouvée');
       return;
     }
+    
+    console.log(`🔍 Task trouvée:`, { id: task.id, titre: task.titre, strategie_id: task.strategie_id });
     
     const strategiesInfo = this.getMultipleStrategiesInfo(task.strategie_id);
     const content = document.getElementById('strategy-mini-content');
@@ -1272,7 +1294,19 @@ class KanbanManager {
       return;
     }
     
-    if (strategiesInfo.length === 0) {
+    // DEBUG pour tâche 76
+    if (taskId === 76) {
+      content.innerHTML = `
+        <div class="strategy-mini-empty">
+          <strong>DEBUG Tâche 76:</strong><br>
+          ID: ${task.id}<br>
+          Titre: ${task.titre}<br>
+          Strategie_id: ${task.strategie_id || 'null/vide'}<br>
+          Strategies trouvées: ${strategiesInfo.length}<br>
+          Total strategies disponibles: ${this.strategiesData?.length || 0}
+        </div>
+      `;
+    } else if (strategiesInfo.length === 0) {
       content.innerHTML = '<div class="strategy-mini-empty">Aucune stratégie associée</div>';
     } else {
       content.innerHTML = strategiesInfo.map(strategy => `
