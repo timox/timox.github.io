@@ -404,7 +404,9 @@ export class CardRenderer {
     // Pas besoin de nettoyage manuel
     
     // Écouteurs pour l'édition des tâches
-    container.querySelectorAll('.editable-zone').forEach(zone => {
+    const editableZones = container.querySelectorAll('.editable-zone');
+    
+    editableZones.forEach(zone => {
       zone.addEventListener('click', (e) => {
         e.stopPropagation();
         e.preventDefault();

@@ -1163,13 +1163,8 @@ class KanbanManager {
 
   // EVENT LISTENERS
   attachCardEventListeners() {
-    // Nettoyer les anciens écouteurs timeline d'abord
-    this.kanbanContainer.querySelectorAll('.btn-timeline').forEach(btn => {
-      const newBtn = btn.cloneNode(true);
-      btn.parentNode.replaceChild(newBtn, btn);
-    });
-    
     // Seuls les boutons timeline - les autres événements sont gérés par CardRenderer
+    // Le nettoyage se fait automatiquement via innerHTML dans refreshKanban
     this.kanbanContainer.querySelectorAll('.btn-timeline').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
