@@ -1,0 +1,342 @@
+/* =============================================================================
+   CSS pour l'interface accordéon des stratégies
+   ============================================================================= */
+
+.strategy-browser {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+/* === OBJECTIFS === */
+.strategy-objective {
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.strategy-objective:last-child {
+  border-bottom: none;
+}
+
+.strategy-objective-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: #f8f9fa;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-left: 4px solid #dee2e6;
+}
+
+.strategy-objective-header:hover {
+  background: #e9ecef;
+  border-left-color: #0d6efd;
+}
+
+.strategy-objective-header.expanded {
+  background: #e7f1ff;
+  border-left-color: #0d6efd;
+  box-shadow: inset 0 1px 0 rgba(13, 110, 253, 0.1);
+}
+
+.strategy-objective-title {
+  margin: 0;
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.95rem;
+}
+
+.strategy-toggle-icon {
+  color: #6c757d;
+  transition: transform 0.2s ease;
+}
+
+.strategy-toggle-icon.expanded {
+  transform: rotate(90deg);
+}
+
+/* === SOUS-OBJECTIFS === */
+.strategy-sub-objectives {
+  background: #ffffff;
+  border-top: 1px solid #e9ecef;
+}
+
+.strategy-sub-objective {
+  border-bottom: 1px solid #f1f3f4;
+  padding: 8px 16px 8px 32px;
+}
+
+.strategy-sub-objective:last-child {
+  border-bottom: none;
+}
+
+.strategy-sub-objective-title {
+  font-weight: 500;
+  color: #6c757d;
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid #f8f9fa;
+}
+
+/* === ACTIONS === */
+.strategy-action {
+  margin: 4px 0;
+  padding: 8px 12px;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  margin-left: 16px;
+}
+
+.strategy-action:hover {
+  border-color: #0d6efd;
+  box-shadow: 0 2px 4px rgba(13, 110, 253, 0.1);
+  transform: translateY(-1px);
+}
+
+.strategy-action.selected {
+  border-color: #0d6efd;
+  background: #f8fbff;
+  box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.1);
+}
+
+.strategy-action-title {
+  font-weight: 500;
+  color: #212529;
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+  line-height: 1.3;
+}
+
+.strategy-action-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.75rem;
+}
+
+.strategy-action-detail {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #6c757d;
+  background: #f8f9fa;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.strategy-action-detail i {
+  font-size: 0.7rem;
+  color: #adb5bd;
+}
+
+.strategy-selected-indicator {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  color: #198754;
+  font-size: 1.1rem;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+  .strategy-browser {
+    max-height: 250px;
+  }
+  
+  .strategy-objective-header {
+    padding: 6px 12px;
+  }
+  
+  .strategy-sub-objective {
+    padding: 6px 12px 6px 24px;
+  }
+  
+  .strategy-action {
+    margin-left: 8px;
+    padding: 6px 8px;
+  }
+  
+  .strategy-action-details {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .strategy-action-detail {
+    align-self: flex-start;
+  }
+}
+
+/* === STATES ET ANIMATIONS === */
+.strategy-objective-header,
+.strategy-action {
+  user-select: none;
+}
+
+.strategy-sub-objectives {
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* === PREVIEW DANS L'ACCORDÉON === */
+#selected-strategy-preview {
+  font-style: italic;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* === TAGS DE STRATÉGIES SÉLECTIONNÉES === */
+.selected-strategies {
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  background: #f8f9fa;
+  padding: 12px;
+}
+
+.strategy-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.strategy-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  background: #0d6efd;
+  color: white;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.strategy-tag:hover {
+  background: #0b5ed7;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(13, 110, 253, 0.3);
+}
+
+.strategy-tag-text {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.strategy-tag-remove {
+  border: none;
+  background: none;
+  color: white;
+  font-size: 0.7rem;
+  padding: 0;
+  margin-left: 6px;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.strategy-tag-remove:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+#btn-clear-strategies {
+  font-size: 0.8rem;
+  padding: 4px 8px;
+}
+
+#strategy-count {
+  font-size: 0.75rem;
+  padding: 2px 6px;
+}
+
+/* === SCROLLBAR CUSTOM === */
+.strategy-browser::-webkit-scrollbar {
+  width: 6px;
+}
+
+.strategy-browser::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.strategy-browser::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.strategy-browser::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* === LOADING STATE === */
+.strategy-browser .text-center {
+  padding: 40px 20px;
+}
+
+.strategy-browser .bi-hourglass-split {
+  font-size: 2rem;
+  color: #6c757d;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* === EMPTY STATE === */
+.alert.alert-warning {
+  margin: 20px;
+  border-radius: 8px;
+}
+
+/* === DARK MODE SUPPORT === */
+@media (prefers-color-scheme: dark) {
+  .strategy-browser {
+    background: #2d3748;
+    border-color: #4a5568;
+  }
+  
+  .strategy-objective-header {
+    background: #4a5568;
+    color: #e2e8f0;
+  }
+  
+  .strategy-objective-header.expanded {
+    background: #2b6cb0;
+  }
+  
+  .strategy-sub-objectives {
+    background: #2d3748;
+  }
+  
+  .strategy-action {
+    background: #2d3748;
+    border-color: #4a5568;
+    color: #e2e8f0;
+  }
+  
+  .strategy-action.selected {
+    background: #2c5282;
+    border-color: #3182ce;
+  }
+}
