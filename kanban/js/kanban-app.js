@@ -605,11 +605,14 @@ class KanbanManager {
     const priority = this.calculerPriorite(record.urgence, record.impact);
     const priorityBadge = generatePriorityBadge(priority);
     
-    // Stratégie avec tooltip si disponible
-    const strategyInfo = this.getStrategyInfo(record.strategie_id);
-    const strategyTooltip = strategyInfo ? 
-      `data-toggle="tooltip" data-placement="top" title="Objectif: ${strategyInfo.objectif} | Action: ${strategyInfo.action}"` : '';
-    const strategyIcon = strategyInfo ? 
+    // Stratégies multiples avec tooltip
+    const strategiesInfo = this.getMultipleStrategiesInfo(record.strategie_id);
+    const strategiesText = strategiesInfo.length > 0 
+      ? strategiesInfo.map(s => `${s.objectif} → ${s.action}`).join(' | ')
+      : '';
+    const strategyTooltip = strategiesText ? 
+      `data-toggle="tooltip" data-placement="top" title="Stratégies: ${strategiesText}"` : '';
+    const strategyIcon = strategiesInfo.length > 0 ? 
       `<i class="fas fa-bullseye strategie-icon" ${strategyTooltip}></i>` : '';
 
     // Projet
@@ -727,6 +730,17 @@ class KanbanManager {
     if (!strategieId || !this.strategiesData) return null;
     
     return this.strategiesData.find(strategy => strategy.id === strategieId) || null;
+  }
+
+  getMultipleStrategiesInfo(strategieIds) {
+    if (!strategieIds || !this.strategiesData) return [];
+    
+    // Support ancien format (single ID) et nouveau format (array)
+    const idsArray = Array.isArray(strategieIds) ? strategieIds : [strategieIds];
+    
+    return idsArray
+      .map(id => this.strategiesData.find(strategy => strategy.id === id))
+      .filter(strategy => strategy !== undefined);
   }
 
   // === INITIALISATION DES MODALES CORRIGÉE ===
@@ -1149,21 +1163,13 @@ class KanbanManager {
 
   // EVENT LISTENERS
   attachCardEventListeners() {
-    // Édition des tâches
-    this.kanbanContainer.querySelectorAll('.editable-zone').forEach(zone => {
-      zone.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        
-        const card = zone.closest('.kanban-item');
-        const taskId = parseInt(card.dataset.id, 10);
-        const task = this.currentRecords.find(r => r.id === taskId);
-        
-        if (task) this.openPopup(task);
-      });
+    // Nettoyer les anciens écouteurs timeline d'abord
+    this.kanbanContainer.querySelectorAll('.btn-timeline').forEach(btn => {
+      const newBtn = btn.cloneNode(true);
+      btn.parentNode.replaceChild(newBtn, btn);
     });
     
-    // Boutons timeline
+    // Seuls les boutons timeline - les autres événements sont gérés par CardRenderer
     this.kanbanContainer.querySelectorAll('.btn-timeline').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();

@@ -867,6 +867,11 @@ export class ModalManager {
           // Capturer le contenu du champ description pour l'historique
           const descriptionContent = getFieldValue('popup-description').trim();
           
+          // Vérifier les changements de jalons spécifiquement
+          const oldJalons = this.currentTask?.jalons || null;
+          const newJalons = gristData.jalons || null;
+          const jalonsChanged = this.hasJalonsChanged(oldJalons, newJalons);
+          
           if (descriptionContent) {
             // Si il y a un commentaire, l'ajouter spécifiquement à l'historique
             await userActionManager.addHistoryEntry(
@@ -898,6 +903,19 @@ export class ModalManager {
               this.currentTask, 
               gristData, 
               'Task updated via modal'
+            );
+          }
+          
+          // Tracker spécifiquement les jalons si ils ont changé
+          if (jalonsChanged) {
+            const jalonsDetails = this.getJalonsChangeDetails(oldJalons, newJalons);
+            await userActionManager.addHistoryEntry(
+              this.currentTaskId,
+              'jalons_update',
+              jalonsDetails.message,
+              jalonsDetails.oldSummary,
+              jalonsDetails.newSummary,
+              gristData.statut || this.currentTask?.statut
             );
           }
         }
@@ -1916,7 +1934,7 @@ export class ModalManager {
     
     const relevantFields = [
       'titre', 'statut', 'projet', 'urgence', 'impact', 'bureau', 'qui', 
-      'strategie_ids', 'strategie_id', 'date_debut', 'date_echeance'
+      'strategie_ids', 'strategie_id', 'date_debut', 'date_echeance', 'jalons'
     ];
     
     // Filtrer les champs exclus
@@ -1926,8 +1944,16 @@ export class ModalManager {
       const oldValue = oldData[field];
       const newValue = newData[field];
       
+      // Comparaison spéciale pour les jalons (JSON)
+      if (field === 'jalons') {
+        const oldJalonsStr = typeof oldValue === 'string' ? oldValue : JSON.stringify(oldValue || []);
+        const newJalonsStr = typeof newValue === 'string' ? newValue : JSON.stringify(newValue || []);
+        if (oldJalonsStr !== newJalonsStr) {
+          return true;
+        }
+      }
       // Comparaison spéciale pour les tableaux
-      if (Array.isArray(oldValue) && Array.isArray(newValue)) {
+      else if (Array.isArray(oldValue) && Array.isArray(newValue)) {
         const oldStr = oldValue.slice().sort().join(',');
         const newStr = newValue.slice().sort().join(',');
         if (oldStr !== newStr) {
@@ -1942,5 +1968,118 @@ export class ModalManager {
     }
     
     return false;
+  }
+
+  /**
+   * Vérifie si les jalons ont changé
+   * @param {string|object|null} oldJalons - Anciens jalons
+   * @param {string|object|null} newJalons - Nouveaux jalons
+   * @returns {boolean} True si les jalons ont changé
+   */
+  hasJalonsChanged(oldJalons, newJalons) {
+    // Normaliser en strings pour comparaison
+    const oldStr = typeof oldJalons === 'string' ? oldJalons : JSON.stringify(oldJalons || []);
+    const newStr = typeof newJalons === 'string' ? newJalons : JSON.stringify(newJalons || []);
+    return oldStr !== newStr;
+  }
+
+  /**
+   * Compte le nombre de jalons dans un objet jalons
+   * @param {string|object|null} jalons - Objet jalons
+   * @returns {number} Nombre de jalons
+   */
+  getJalonsCount(jalons) {
+    if (!jalons) return 0;
+    
+    try {
+      const jalonsObj = typeof jalons === 'string' ? JSON.parse(jalons) : jalons;
+      if (jalonsObj && jalonsObj.jalons && Array.isArray(jalonsObj.jalons)) {
+        return jalonsObj.jalons.length;
+      }
+      return 0;
+    } catch (error) {
+      console.warn('Erreur parsing jalons pour comptage:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Génère les détails des changements de jalons pour l'historique
+   * @param {string|object|null} oldJalons - Anciens jalons
+   * @param {string|object|null} newJalons - Nouveaux jalons
+   * @returns {object} Détails des changements
+   */
+  getJalonsChangeDetails(oldJalons, newJalons) {
+    try {
+      // Parser les jalons
+      const oldJalonsObj = oldJalons ? (typeof oldJalons === 'string' ? JSON.parse(oldJalons) : oldJalons) : { jalons: [] };
+      const newJalonsObj = newJalons ? (typeof newJalons === 'string' ? JSON.parse(newJalons) : newJalons) : { jalons: [] };
+      
+      const oldJalonsList = oldJalonsObj.jalons || [];
+      const newJalonsList = newJalonsObj.jalons || [];
+      
+      // Créer des maps pour faciliter la comparaison
+      const oldJalonsMap = new Map(oldJalonsList.map(j => [j.id, j]));
+      const newJalonsMap = new Map(newJalonsList.map(j => [j.id, j]));
+      
+      const added = [];
+      const removed = [];
+      const modified = [];
+      
+      // Détecter les ajouts et modifications
+      newJalonsList.forEach(newJalon => {
+        const oldJalon = oldJalonsMap.get(newJalon.id);
+        if (!oldJalon) {
+          added.push(newJalon);
+        } else if (JSON.stringify(oldJalon) !== JSON.stringify(newJalon)) {
+          modified.push({ old: oldJalon, new: newJalon });
+        }
+      });
+      
+      // Détecter les suppressions
+      oldJalonsList.forEach(oldJalon => {
+        if (!newJalonsMap.has(oldJalon.id)) {
+          removed.push(oldJalon);
+        }
+      });
+      
+      // Générer le message
+      const messages = [];
+      
+      if (added.length > 0) {
+        const titres = added.map(j => `"${j.titre}"`).join(', ');
+        messages.push(`Ajouté: ${titres}`);
+      }
+      
+      if (modified.length > 0) {
+        const titres = modified.map(m => `"${m.new.titre}"`).join(', ');
+        messages.push(`Modifié: ${titres}`);
+      }
+      
+      if (removed.length > 0) {
+        const titres = removed.map(j => `"${j.titre}"`).join(', ');
+        messages.push(`Supprimé: ${titres}`);
+      }
+      
+      const message = messages.length > 0 ? messages.join(' | ') : 'Jalons modifiés';
+      
+      // Générer les résumés pour oldValue/newValue
+      const oldSummary = oldJalonsList.map(j => `${j.titre} (${j.date})`).join(', ') || 'Aucun';
+      const newSummary = newJalonsList.map(j => `${j.titre} (${j.date})`).join(', ') || 'Aucun';
+      
+      return {
+        message,
+        oldSummary,
+        newSummary
+      };
+      
+    } catch (error) {
+      console.warn('Erreur parsing jalons pour détails:', error);
+      return {
+        message: 'Jalons modifiés (erreur parsing)',
+        oldSummary: 'Erreur',
+        newSummary: 'Erreur'
+      };
+    }
   }
 }

@@ -227,17 +227,27 @@ export class JalonManager {
     const emptyState = document.getElementById('jalons-empty');
     const countBadge = document.getElementById('jalons-count');
 
+    // Vérifier que les éléments existent
+    if (!timeline || !countBadge) {
+      console.warn('JalonManager: Éléments DOM jalons non trouvés');
+      return;
+    }
+
     // Mettre à jour le compteur
     countBadge.textContent = this.jalons.length;
 
     if (this.jalons.length === 0) {
-      // Afficher l'état vide
-      emptyState.style.display = 'block';
+      // Afficher l'état vide si l'élément existe
+      if (emptyState) {
+        emptyState.style.display = 'block';
+      }
       return;
     }
 
-    // Masquer l'état vide
-    emptyState.style.display = 'none';
+    // Masquer l'état vide si l'élément existe
+    if (emptyState) {
+      emptyState.style.display = 'none';
+    }
 
     // Trier les jalons par date
     const sortedJalons = [...this.jalons].sort((a, b) => new Date(a.date) - new Date(b.date));

@@ -394,11 +394,28 @@ export class CardRenderer {
   }
   
   /**
+   * Supprime les écouteurs d'événements des cartes
+   * @param {HTMLElement} container - Container des cartes
+   */
+  removeCardEventListeners(container) {
+    if (!container) return;
+    
+    // Cloner et remplacer les éléments pour supprimer tous les event listeners
+    container.querySelectorAll('.editable-zone, .btn-expand, .btn-timeline').forEach(element => {
+      const newElement = element.cloneNode(true);
+      element.parentNode.replaceChild(newElement, element);
+    });
+  }
+  
+  /**
    * Attache les écouteurs d'événements aux cartes rendues
    * @param {HTMLElement} container - Container des cartes
    */
   attachCardEventListeners(container) {
     if (!container) return;
+    
+    // Nettoyer les anciens écouteurs d'abord pour éviter les doublons
+    this.removeCardEventListeners(container);
     
     // Écouteurs pour l'édition des tâches
     container.querySelectorAll('.editable-zone').forEach(zone => {

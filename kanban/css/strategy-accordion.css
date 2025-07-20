@@ -236,7 +236,7 @@
 }
 
 .strategy-tag-text {
-  max-width: 150px;
+  max-width: 300px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
