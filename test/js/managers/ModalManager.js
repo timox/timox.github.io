@@ -413,12 +413,8 @@ export class ModalManager {
    */
   populateStrategyFieldsFromId(strategyId) {
     if (!strategyId) {
-      // Réinitialiser les champs
-      setFieldValue('popup-strategie-objectif', '');
-      setFieldValue('popup-strategie-sous-objectif', '');
-      setFieldValue('popup-strategie-action', '');
-      setFieldValue('popup-strategie-id', '');
-      this.hideStrategyDetails();
+      // Réinitialiser les champs et l'interface
+      this.resetStrategySelection();
       return;
     }
     
@@ -427,42 +423,94 @@ export class ModalManager {
       const strategy = this.kanban.strategiesData.find(s => s.id == strategyId);
       
       if (strategy) {
-        // Définir l'objectif et déclencher la cascade
-        setFieldValue('popup-strategie-objectif', strategy.objectif);
+        // Simuler la sélection dans l'interface accordéon
+        this.preSelectStrategyInAccordion(strategy);
         
-        // Déclencher le changement pour peupler les sous-objectifs
-        const objectifSelect = document.getElementById('popup-strategie-objectif');
-        if (objectifSelect) {
-          objectifSelect.dispatchEvent(new Event('change'));
-          
-          // Attendre que les sous-objectifs soient peuplés
-          setTimeout(() => {
-            setFieldValue('popup-strategie-sous-objectif', strategy.sous_objectif);
-            
-            // Déclencher le changement pour peupler les actions
-            const sousObjectifSelect = document.getElementById('popup-strategie-sous-objectif');
-            if (sousObjectifSelect) {
-              sousObjectifSelect.dispatchEvent(new Event('change'));
-              
-              // Attendre que les actions soient peuplées
-              setTimeout(() => {
-                setFieldValue('popup-strategie-action', strategy.action);
-                setFieldValue('popup-strategie-id', strategyId);
-                
-                // Afficher les détails
-                this.updateStrategyDetails(strategy);
-              }, 100);
-            }
-          }, 100);
+        // Mettre à jour les champs cachés pour compatibilité
+        setFieldValue('popup-strategie-objectif', strategy.objectif);
+        setFieldValue('popup-strategie-sous-objectif', strategy.sous_objectif);
+        setFieldValue('popup-strategie-action', strategy.action);
+        setFieldValue('popup-strategie-id', strategyId);
+        
+        // Mettre à jour le preview
+        const preview = document.getElementById('selected-strategy-preview');
+        if (preview) {
+          preview.textContent = `${strategy.objectif} → ${strategy.sous_objectif} → ${strategy.action}`;
         }
+        
+        // Afficher les détails
+        this.updateStrategyDetails(strategy);
+        
+        console.log('Stratégie pré-sélectionnée:', {
+          objectif: strategy.objectif,
+          sousObjectif: strategy.sous_objectif,
+          action: strategy.action,
+          strategyId: strategyId
+        });
       } else {
         console.warn('Stratégie non trouvée pour ID:', strategyId);
-        this.hideStrategyDetails();
+        this.resetStrategySelection();
       }
     } else {
       console.warn('Données stratégiques non disponibles pour peupler les champs');
-      this.hideStrategyDetails();
+      this.resetStrategySelection();
     }
+  }
+  
+  /**
+   * Pré-sélectionne une stratégie dans l'interface accordéon
+   * @param {object} strategy - Stratégie à pré-sélectionner
+   */
+  preSelectStrategyInAccordion(strategy) {
+    // Désélectionner les autres actions d'abord
+    document.querySelectorAll('.strategy-action.selected').forEach(el => {
+      el.classList.remove('selected');
+      const indicator = el.querySelector('.strategy-selected-indicator');
+      if (indicator) indicator.style.display = 'none';
+    });
+    
+    // Trouver et sélectionner la bonne action
+    const actionCards = document.querySelectorAll('.strategy-action');
+    actionCards.forEach(card => {
+      if (card.dataset.strategyId == strategy.id) {
+        card.classList.add('selected');
+        const indicator = card.querySelector('.strategy-selected-indicator');
+        if (indicator) indicator.style.display = 'block';
+        
+        // Ouvrir l'accordéon parent si nécessaire
+        const objectiveHeader = card.closest('.strategy-objective').querySelector('.strategy-objective-header');
+        if (objectiveHeader && !objectiveHeader.classList.contains('expanded')) {
+          objectiveHeader.click(); // Déclencher l'ouverture
+        }
+      }
+    });
+  }
+  
+  /**
+   * Réinitialise la sélection de stratégie
+   */
+  resetStrategySelection() {
+    // Réinitialiser les champs cachés
+    setFieldValue('popup-strategie-objectif', '');
+    setFieldValue('popup-strategie-sous-objectif', '');
+    setFieldValue('popup-strategie-action', '');
+    setFieldValue('popup-strategie-id', '');
+    
+    // Réinitialiser l'interface accordéon
+    document.querySelectorAll('.strategy-action.selected').forEach(el => {
+      el.classList.remove('selected');
+      const indicator = el.querySelector('.strategy-selected-indicator');
+      if (indicator) indicator.style.display = 'none';
+    });
+    
+    // Réinitialiser le preview
+    const preview = document.getElementById('selected-strategy-preview');
+    if (preview) {
+      preview.textContent = '';
+    }
+    
+    // Masquer les détails
+    this.hideStrategyDetails();
   }
   
   /**
@@ -1468,19 +1516,7 @@ export class ModalManager {
     setSelectedOptions('popup-qui', ['L']);
     
     // Réinitialiser la stratégie
-    setFieldValue('popup-strategie-objectif', '');
-    populateSelect('popup-strategie-sous-objectif', [], true, '-- Choisir d\'abord un objectif --');
-    populateSelect('popup-strategie-action', [], true, '-- Choisir d\'abord un sous-objectif --');
-    setFieldValue('popup-strategie-id', '');
-    
-    // Désactiver les listes dépendantes
-    const sousObjectifSelect = document.getElementById('popup-strategie-sous-objectif');
-    const actionSelect = document.getElementById('popup-strategie-action');
-    if (sousObjectifSelect) sousObjectifSelect.disabled = true;
-    if (actionSelect) actionSelect.disabled = true;
-    
-    // Masquer les détails
-    this.hideStrategyDetails();
+    this.resetStrategySelection();
     
     // Réinitialiser la date
     if (this.kanban.datePickerManager) {
