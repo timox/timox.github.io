@@ -27,20 +27,28 @@ Cette version corrige les problèmes bloquants d'interface utilisateur identifi�
 
 ---
 
-### ✅ **2. Boutons/Images Objectifs Non Visibles**
+### ✅ **2. Boutons/Images Objectifs Non Visibles - RÉSOLU**
 
-**📋 Diagnostic effectué :**
-- **Code fonctionnel** présent dans `test/js/kanban-app.js:628-641`
-- **Icône bullseye conditionnelle** avec test spécial pour tâche 76
-- **Fonction `getMultipleStrategiesInfo()`** correctement implémentée
+**📋 Problème identifié :**
+- **Cause racine** : Comparaison de types incompatibles dans `getMultipleStrategiesInfo()`
+- **Schema Grist** : `strategie_id` est défini comme type **texte** dans la documentation
+- **Code problématique** : Comparaison stricte `===` assumant des numbers (1, 5, etc.)
+- **Résultat** : `strategy.id === "1"` → false, aucune stratégie trouvée malgré données valides
 
-**🔧 Améliorations appliquées :**
-- **Debug renforcé** pour traçabilité des stratégies (lignes 625-633)
-- **Logs conditionnels** : tâche 76 + 10% échantillon aléatoire
-- **Vérification** disponibilité `strategiesData` et longueur
+**🔧 Solution appliquée :**
+- **Comparaison flexible** : `strategy.id == id` au lieu de `strategy.id === id`
+- **Double correction** : `getStrategyInfo()` et `getMultipleStrategiesInfo()`
+- **Debug renforcé** : Logs avec types et résultats de recherche
 
 **📁 Fichiers modifiés :**
-- `test/js/kanban-app.js` (lignes 625-633) : Debug stratégies ajouté
+- `test/js/kanban-app.js` (lignes 761, 774) : Comparaison flexible `==`
+- `test/js/kanban-app.js` (lignes 625-636) : Debug détaillé ajouté
+
+**🧪 Validation debug page :**
+```
+string ID ("1"): "1" → Results: 0 → Icon: ❌ NO   (AVANT)
+string ID ("1"): "1" → Results: 1 → Icon: ✅ YES  (APRÈS)
+```
 
 ---
 
@@ -70,17 +78,29 @@ Cette version corrige les problèmes bloquants d'interface utilisateur identifi�
 <!-- Seul le widget dynamique reste actif -->
 ```
 
-### **Debug Stratégies Objectifs**
+### **Correction Comparaison Types Stratégies**
 
-**Ajout de logs diagnostiques :**
+**Problème type de données :**
+```javascript
+// AVANT (problématique - ignorait le schema Grist)
+.find(strategy => strategy.id === id)  // "1" === 1 → false
+
+// APRÈS (corrigé - conforme au type texte de strategie_id)  
+.find(strategy => strategy.id == id)   // "1" == 1 → true
+```
+
+**Debug diagnostiques ajoutés :**
 ```javascript
 // DEBUG pour stratégies
 if (record.id === 76 || Math.random() < 0.1) {
   console.log(`🎯 Debug stratégies tâche ${record.id}:`, {
     strategie_id: record.strategie_id,
+    strategie_id_type: typeof record.strategie_id,  // NOUVEAU
     strategiesInfo: strategiesInfo,
+    strategiesInfo_length: strategiesInfo.length,   // NOUVEAU
     strategiesData_available: !!this.strategiesData,
-    strategiesData_length: this.strategiesData?.length
+    strategiesData_length: this.strategiesData?.length,
+    icon_will_show: strategiesInfo.length > 0 || record.id === 76  // NOUVEAU
   });
 }
 ```
@@ -96,10 +116,12 @@ if (record.id === 76 || Math.random() < 0.1) {
 - [ ] Fermer tous les modaux → Retour interface normale
 
 ### **Validation Icônes Stratégies**
-- [ ] Charger une tâche avec `strategie_id` → Vérifier icône bullseye visible
+- [ ] Charger une tâche avec `strategie_id` string → Vérifier icône bullseye visible
+- [ ] Page debug `/test/debug_strategy.html` → Tester `string ID ("1")` → Results: 1 ✅
 - [ ] Tâche 76 spécifiquement → Icône rouge forcée visible
-- [ ] Console navigateur → Logs debug stratégies présents
+- [ ] Console navigateur → Logs debug avec `strategie_id_type: "string"`
 - [ ] Clic sur icône → Mini-modal stratégies fonctionnelle
+- [ ] Toutes les tâches avec stratégies → Icônes maintenant visibles
 
 ---
 
@@ -123,6 +145,12 @@ if (record.id === 76 || Math.random() < 0.1) {
 - **CRITIQUE** : Ne pas réintroduire de widget statique dans `index.html`
 - **OBLIGATOIRE** : Utiliser uniquement le widget dynamique de `HistoryManager`
 - **Z-INDEX** : Éviter les conflits de superposition (> 1000)
+
+### **Types de Données Grist**
+- **DOCUMENTATION** : `strategie_id` est type **texte** selon schema Grist
+- **COMPARAISONS** : Utiliser `==` (flexible) plutôt que `===` (strict) pour IDs
+- **COHÉRENCE** : Toutes les fonctions de recherche stratégies doivent respecter le type texte
+- **ÉVITER** : Assumer que les IDs Grist sont des numbers
 
 ### **Debug Stratégies**
 - **Logs temporaires** : Supprimer les logs de debug en production

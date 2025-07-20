@@ -626,9 +626,12 @@ class KanbanManager {
     if (record.id === 76 || Math.random() < 0.1) { // Tâche 76 + 10% des autres tâches
       console.log(`🎯 Debug stratégies tâche ${record.id}:`, {
         strategie_id: record.strategie_id,
+        strategie_id_type: typeof record.strategie_id,
         strategiesInfo: strategiesInfo,
+        strategiesInfo_length: strategiesInfo.length,
         strategiesData_available: !!this.strategiesData,
-        strategiesData_length: this.strategiesData?.length
+        strategiesData_length: this.strategiesData?.length,
+        icon_will_show: strategiesInfo.length > 0 || record.id === 76
       });
     }
     
@@ -757,7 +760,8 @@ class KanbanManager {
   getStrategyInfo(strategieId) {
     if (!strategieId || !this.strategiesData) return null;
     
-    return this.strategiesData.find(strategy => strategy.id === strategieId) || null;
+    // 🔧 CORRECTION: Comparaison flexible pour gérer string/number depuis Grist
+    return this.strategiesData.find(strategy => strategy.id == strategieId) || null;
   }
 
   getMultipleStrategiesInfo(strategieIds) {
@@ -769,7 +773,10 @@ class KanbanManager {
     const idsArray = Array.isArray(strategieIds) ? strategieIds : [strategieIds];
     
     return idsArray
-      .map(id => this.strategiesData.find(strategy => strategy.id === id))
+      .map(id => {
+        // 🔧 CORRECTION: Comparaison flexible pour gérer string/number depuis Grist
+        return this.strategiesData.find(strategy => strategy.id == id); // == au lieu de ===
+      })
       .filter(strategy => strategy !== undefined);
   }
 
