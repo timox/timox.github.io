@@ -619,9 +619,9 @@ class KanbanManager {
     const projectBadge = record.projet ? 
       generateProjectBadge({
         projet: record.projet,
-        strategie_objectif: strategyInfo?.objectif,
-        strategie_sous_objectif: strategyInfo?.sous_objectif,
-        strategie_action: strategyInfo?.action
+        strategie_objectif: strategiesInfo[0]?.objectif,
+        strategie_sous_objectif: strategiesInfo[0]?.sous_objectif,
+        strategie_action: strategiesInfo[0]?.action
       }) : '';
 
     // Description résumée depuis notes.content
