@@ -606,20 +606,22 @@ class KanbanManager {
     const priority = this.calculerPriorite(record.urgence, record.impact);
     const priorityBadge = generatePriorityBadge(priority);
     
-    // Stratégies multiples avec tooltip
+    // Stratégies multiples
     const strategiesInfo = this.getMultipleStrategiesInfo(record.strategie_id);
-    const strategiesText = strategiesInfo.length > 0 
-      ? strategiesInfo.map(s => `${s.objectif} → ${s.action}`).join(' | ')
-      : '';
-    const strategyTooltip = strategiesText ? 
-      `data-bs-toggle="tooltip" data-bs-placement="top" title="Stratégies: ${strategiesText}"` : '';
+    
+    // Icône de stratégie avec mini-modale au clic
     const strategyIcon = strategiesInfo.length > 0 ? 
-      `<i class="fas fa-bullseye strategie-icon" ${strategyTooltip}></i>` : '';
+      `<i class="fas fa-bullseye strategie-icon" 
+          data-task-id="${record.id}" 
+          title="Voir les stratégies (${strategiesInfo.length})"
+          style="cursor: pointer;"></i>` : '';
 
-    // Projet
+    // Projet avec stratégies dans l'infobulle aussi (double affichage)
     const projectBadge = record.projet ? 
       generateProjectBadge({
         projet: record.projet,
+        strategiesInfo: strategiesInfo,
+        // Fallback ancien format pour compatibilité
         strategie_objectif: strategiesInfo[0]?.objectif,
         strategie_sous_objectif: strategiesInfo[0]?.sous_objectif,
         strategie_action: strategiesInfo[0]?.action
@@ -1205,25 +1207,77 @@ class KanbanManager {
     });
     
     // 2. Boutons timeline
-    this.kanbanContainer.querySelectorAll('.btn-timeline').forEach(btn => {
+    const timelineButtons = this.kanbanContainer.querySelectorAll('.btn-timeline');
+    this.logger.debug(`Boutons timeline trouvés: ${timelineButtons.length}`);
+    
+    timelineButtons.forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         e.preventDefault();
         
         const taskId = parseInt(btn.dataset.taskId, 10);
+        this.logger.debug(`Clic timeline sur tâche ID: ${taskId}`);
         this.openTimelineModal(taskId);
+      });
+    });
+    
+    // 3. Icônes de stratégies (mini-modale)
+    this.kanbanContainer.querySelectorAll('.strategie-icon').forEach(icon => {
+      icon.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        
+        const taskId = parseInt(icon.dataset.taskId, 10);
+        this.openStrategyMiniModal(taskId);
       });
     });
   }
 
   // === GESTION DE LA MODAL TIMELINE ===
   openTimelineModal(taskId) {
+    this.logger.debug(`openTimelineModal appelée avec taskId: ${taskId}`);
+    this.logger.debug(`historyManager disponible: ${!!this.historyManager}`);
+    
     // REDIRECTION: Utiliser le HistoryManager qui a le système complet avec boutons d'édition
     if (this.historyManager) {
+      this.logger.debug(`Appel historyManager.openTaskHistory(${taskId})`);
       this.historyManager.openTaskHistory(taskId);
     } else {
+      this.logger.error('Gestionnaire d\'historique non disponible');
       displayError('Gestionnaire d\'historique non disponible');
     }
+  }
+  
+  // === GESTION DE LA MINI-MODALE STRATÉGIES ===
+  openStrategyMiniModal(taskId) {
+    const task = this.currentRecords?.find(r => r.id === taskId);
+    if (!task) {
+      displayError('Tâche non trouvée');
+      return;
+    }
+    
+    const strategiesInfo = this.getMultipleStrategiesInfo(task.strategie_id);
+    const content = document.getElementById('strategy-mini-content');
+    
+    if (!content) {
+      displayError('Container de stratégies non trouvé');
+      return;
+    }
+    
+    if (strategiesInfo.length === 0) {
+      content.innerHTML = '<div class="strategy-mini-empty">Aucune stratégie associée</div>';
+    } else {
+      content.innerHTML = strategiesInfo.map(strategy => `
+        <div class="strategy-mini-item">
+          <div class="strategy-mini-objectif">${strategy.objectif}</div>
+          <div class="strategy-mini-action">${strategy.action}</div>
+        </div>
+      `).join('');
+    }
+    
+    // Ouvrir la modale
+    const modal = new bootstrap.Modal(document.getElementById('strategy-mini-modal'));
+    modal.show();
   }
 
   renderTimelineContent(task) {
