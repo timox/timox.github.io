@@ -1018,6 +1018,25 @@ class KanbanManager {
     
     // Attacher les événements pour les badges cliquables
     this.attachCardEventListeners();
+    
+    // TEMPORAIRE: Attacher les listeners des cartes directement ici
+    this.kanbanContainer.querySelectorAll('.editable-zone').forEach(zone => {
+      zone.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        
+        const card = zone.closest('.kanban-item');
+        const taskId = parseInt(card.dataset.id, 10);
+        
+        if (!isNaN(taskId) && this.modalManager) {
+          const task = this.currentRecords?.find(r => r.id === taskId);
+          if (task) {
+            this.modalManager.openTaskModal(task);
+          }
+        }
+      });
+    });
+    
     this.attachBadgeEventListeners();
     this.initScrollArrows();
   }
