@@ -370,7 +370,9 @@ class KanbanManager {
   // Chargement des stratégies depuis les données intégrées
   async loadStrategiesFromGrist() {
     try {
-      console.log('Chargement des stratégies depuis les données intégrées...');
+      console.log('🎯 Chargement des stratégies depuis les données intégrées...');
+      console.log('🔍 STRATEGY_DATA disponible:', !!STRATEGY_DATA);
+      console.log('🔍 STRATEGY_DATA length:', STRATEGY_DATA?.length);
       
       if (STRATEGY_DATA && STRATEGY_DATA.length > 0) {
         // Utiliser les données intégrées depuis constants.js
@@ -386,13 +388,14 @@ class KanbanManager {
         })).sort((a, b) => a.id - b.id);
         
         console.log(`✅ Stratégies chargées depuis données intégrées: ${this.strategiesData.length} stratégies`);
-        console.log('Aperçu des stratégies:', this.strategiesData.slice(0, 3));
+        console.log('📋 Aperçu des stratégies:', this.strategiesData.slice(0, 3));
+        console.log('🔢 IDs des stratégies:', this.strategiesData.map(s => s.id).slice(0, 10));
       } else {
-        console.warn('STRATEGY_DATA non disponible ou vide');
+        console.warn('⚠️ STRATEGY_DATA non disponible ou vide');
         this.strategiesData = [];
       }
     } catch (stratError) {
-      console.error('Erreur chargement stratégies intégrées:', stratError);
+      console.error('❌ Erreur chargement stratégies intégrées:', stratError);
       this.strategiesData = [];
     }
   }
@@ -601,12 +604,17 @@ class KanbanManager {
       return '';
     }
     
-    console.log(`Création HTML pour tâche ${record.id}: ${record.titre}`, {
-      strategie_id: record.strategie_id,
-      strategie_id_type: typeof record.strategie_id,
-      has_strategies_data: !!this.strategiesData,
-      strategies_count: this.strategiesData?.length
-    });
+    // LOG DÉTAILLÉ pour debug
+    if (record.id === 76 || Math.random() < 0.1) { // Tâche 76 + 10% des autres tâches
+      console.log(`🎨 Création HTML pour tâche ${record.id}: ${record.titre}`, {
+        strategie_id: record.strategie_id,
+        strategie_id_type: typeof record.strategie_id,
+        has_strategies_data: !!this.strategiesData,
+        strategies_count: this.strategiesData?.length,
+        all_fields: Object.keys(record),
+        strategy_related_fields: Object.keys(record).filter(k => k.includes('strateg'))
+      });
+    }
     
     const priority = this.calculerPriorite(record.urgence, record.impact);
     const priorityBadge = generatePriorityBadge(priority);
@@ -614,6 +622,15 @@ class KanbanManager {
     // Stratégies multiples
     const strategiesInfo = this.getMultipleStrategiesInfo(record.strategie_id);
     
+    // DEBUG pour stratégies
+    if (record.id === 76 || Math.random() < 0.1) { // Tâche 76 + 10% des autres tâches
+      console.log(`🎯 Debug stratégies tâche ${record.id}:`, {
+        strategie_id: record.strategie_id,
+        strategiesInfo: strategiesInfo,
+        strategiesData_available: !!this.strategiesData,
+        strategiesData_length: this.strategiesData?.length
+      });
+    }
     
     // Icône de stratégie avec mini-modale au clic
     // TEST TEMPORAIRE: Forcer l'icône pour tâche 76
