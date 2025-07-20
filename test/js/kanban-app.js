@@ -49,7 +49,8 @@ import {
   confirmAction,
   validateForm,
   addEventListenerSafe,
-  toggleVisibility
+  toggleVisibility,
+  initializeTooltips
 } from './utils/dom.js';
 
 // NOUVEAU: Import des managers
@@ -611,7 +612,7 @@ class KanbanManager {
       ? strategiesInfo.map(s => `${s.objectif} → ${s.action}`).join(' | ')
       : '';
     const strategyTooltip = strategiesText ? 
-      `data-toggle="tooltip" data-placement="top" title="Stratégies: ${strategiesText}"` : '';
+      `data-bs-toggle="tooltip" data-bs-placement="top" title="Stratégies: ${strategiesText}"` : '';
     const strategyIcon = strategiesInfo.length > 0 ? 
       `<i class="fas fa-bullseye strategie-icon" ${strategyTooltip}></i>` : '';
 
@@ -1021,6 +1022,17 @@ class KanbanManager {
     
     this.attachBadgeEventListeners();
     this.initScrollArrows();
+    
+    // Réinitialiser les tooltips après refresh pour inclure les nouveaux éléments
+    try {
+      initializeTooltips('[data-bs-toggle="tooltip"], [title]');
+      this.logger.debug("Tooltips réinitialisés après refresh");
+    } catch (error) {
+      this.logger.debug("Erreur initialisation tooltips:", error);
+    }
+    
+    // Marquer la fin du refresh
+    this.isRefreshing = false;
   }
 
   // === MÉTHODES UTILITAIRES POUR LE RENDU ===
