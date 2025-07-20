@@ -460,19 +460,8 @@ export class CardRenderer {
       });
     });
     
-    // Écouteurs pour les boutons d'historique
-    container.querySelectorAll('.btn-history').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        
-        const taskId = parseInt(btn.dataset.taskId, 10);
-        
-        if (!isNaN(taskId) && this.kanban.historyManager) {
-          this.kanban.historyManager.openTaskHistory(taskId);
-        }
-      });
-    });
+    // 🚫 SUPPRIMÉ: Écouteurs d'historique déjà gérés par HistoryManager (évite duplication)
+    // Les boutons .btn-history sont gérés par l'écouteur global dans HistoryManager.js:69-77
   }
   
   /**

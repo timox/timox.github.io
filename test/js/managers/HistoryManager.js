@@ -71,6 +71,14 @@ export class HistoryManager {
         e.preventDefault();
         e.stopPropagation();
         
+        // 🛡️ PROTECTION ANTI-SPAM: Éviter appels multiples rapides
+        if (this._historyOpening) {
+          console.log('🚫 HistoryManager: ouverture déjà en cours');
+          return;
+        }
+        this._historyOpening = true;
+        setTimeout(() => { this._historyOpening = false; }, 1000); // Reset après 1s
+        
         const button = e.target.closest('.btn-history');
         const taskId = parseInt(button.dataset.taskId, 10);
         
@@ -1020,7 +1028,7 @@ export class HistoryManager {
     
     // Créer le HTML du widget avec structure corrigée
     const widgetHTML = `
-      <div id="accordion-comment-edit-widget" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1080;">
+      <div id="accordion-comment-edit-widget" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1055;">
         <div class="comment-edit-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;">
           <div class="comment-edit-modal" style="background: white; border-radius: 8px; max-width: 700px; width: 95%; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
             <div class="comment-edit-header" style="padding: 1rem; border-bottom: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: center;">

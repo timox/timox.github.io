@@ -490,7 +490,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 1060; /* Au-dessus de la modal d'historique */
+  z-index: 1055; /* Sous les modales Bootstrap (1055 < 1060) */
 }
 
 .comment-edit-overlay {

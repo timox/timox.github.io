@@ -74,6 +74,46 @@ if (Array.isArray(strategieIds) && strategieIds.length === 2 && strategieIds[0] 
 }
 ```
 
+### ✅ **4. Boucles Infinies Modales Timeline/Stratégie - RÉSOLU**
+
+**📋 Problème identifié dans les logs :**
+- **Timeline** : HistoryManager appelé 6 fois en 1 seconde  
+- **Stratégie** : `openStrategyMiniModal` appelé 5 fois de suite
+- **Cause** : Écouteurs d'événements dupliqués + z-index bloquants
+
+**🔧 Solutions appliquées :**
+
+1. **Suppression écouteurs dupliqués** :
+   - Removed : Écouteurs `.btn-history` dans `CardRenderer.js:464-474`  
+   - Conservé : Écouteur global dans `HistoryManager.js:69-89`
+
+2. **Protection anti-spam** :
+   - HistoryManager : `_historyOpening` flag avec timeout 1s
+   - StrategyModal : `_strategyModalOpening` flag avec timeout 1s
+
+3. **Correction z-index** :
+   - Widget édition : z-index `1055` (au lieu de `1060/1080`)
+   - Évite conflit avec modales Bootstrap (`1060`)
+
+**📁 Fichiers modifiés :**
+- `test/js/renderers/CardRenderer.js` (lignes 463-464) : Écouteurs supprimés
+- `test/js/managers/HistoryManager.js` (lignes 74-81) : Protection anti-spam
+- `test/js/kanban-app.js` (lignes 1315-1321) : Protection anti-spam 
+- `test/css/kanban-modal.css` (ligne 493) : z-index corrigé
+- `test/js/managers/HistoryManager.js` (ligne 1031) : z-index corrigé
+
+**🧪 Validation logs :**
+```
+// AVANT (problématique)
+01:33:32,429 HistoryManager: Utilisation modale historique séparée
+01:33:32,431 HistoryManager: Utilisation modale historique séparée  
+01:33:32,432 HistoryManager: Utilisation modale historique séparée (x6)
+
+// APRÈS (attendu)
+01:33:32,429 HistoryManager: Utilisation modale historique séparée
+🚫 HistoryManager: ouverture déjà en cours (spam bloqué)
+```
+
 ---
 
 ## 🔍 Détails Techniques

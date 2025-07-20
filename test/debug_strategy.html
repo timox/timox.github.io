@@ -13,7 +13,7 @@
     </style>
 </head>
 <body>
-    <h1>Debug Strategy Icon Generation</h1>
+    <h1>Debug Strategy Icon Generation - VERSION CORRIGÉE (Format Grist ["L", number])</h1>
     
     <div class="debug-section">
         <h3>Test Strategy Data Structure</h3>
@@ -53,7 +53,7 @@
             return true;
         }
         
-        // Test 2: Simulate getMultipleStrategiesInfo function
+        // Test 2: Simulate getMultipleStrategiesInfo function (VERSION CORRIGÉE test/)
         function simulateGetMultipleStrategiesInfo(strategieIds) {
             console.log(`🔍 simulateGetMultipleStrategiesInfo called with:`, {
                 strategieIds,
@@ -66,12 +66,23 @@
                 return [];
             }
             
-            const idsArray = Array.isArray(strategieIds) ? strategieIds : [strategieIds];
+            // 🔧 CORRECTION: Grist renvoie les IDs sous format ["L", number]
+            let cleanIds = strategieIds;
+            
+            // Si c'est un array Grist ["L", id], extraire l'ID
+            if (Array.isArray(strategieIds) && strategieIds.length === 2 && strategieIds[0] === 'L') {
+                cleanIds = strategieIds[1];
+                console.log(`🔄 Grist format detected: ${JSON.stringify(strategieIds)} → extracted: ${cleanIds}`);
+            }
+            
+            // Support ancien format (single ID) et nouveau format (array)
+            const idsArray = Array.isArray(cleanIds) ? cleanIds : [cleanIds];
             console.log(`🔄 IDs to process:`, idsArray);
             
             const result = idsArray
                 .map(id => {
-                    const found = STRATEGY_DATA.find(strategy => strategy.id === id);
+                    // 🔧 CORRECTION: Comparaison flexible pour gérer string/number depuis Grist
+                    const found = STRATEGY_DATA.find(strategy => strategy.id == id); // == au lieu de ===
                     console.log(`🔎 Search ID ${id}:`, found ? `Found: ${found.objectif}` : 'Not found');
                     return found;
                 })
@@ -94,7 +105,14 @@
                 { name: 'invalid ID (999)', value: 999 },
                 { name: 'string ID ("1")', value: "1" },
                 { name: 'array with valid ID', value: [1] },
-                { name: 'array with multiple IDs', value: [1, 5, 10] }
+                { name: 'array with multiple IDs', value: [1, 5, 10] },
+                // 🆕 TESTS FORMAT GRIST
+                { name: 'Grist format ["L", 1]', value: ["L", 1] },
+                { name: 'Grist format ["L", 5]', value: ["L", 5] },
+                { name: 'Grist format ["L", 11]', value: ["L", 11] },
+                { name: 'Grist format ["L", "7"]', value: ["L", "7"] },
+                { name: 'Grist invalid ["L", 999]', value: ["L", 999] },
+                { name: 'Malformed ["X", 1]', value: ["X", 1] }
             ];
             
             let html = '';
@@ -126,7 +144,11 @@
                 { name: 'Task with strategy ID 5', strategie_id: 5 },
                 { name: 'Task with invalid strategy', strategie_id: 999 },
                 { name: 'Task with string strategy', strategie_id: "1" },
-                { name: 'Task with array strategy', strategie_id: [1, 5] }
+                { name: 'Task with array strategy', strategie_id: [1, 5] },
+                // 🆕 TESTS FORMAT GRIST RÉEL
+                { name: 'Task Grist format ["L", 7]', strategie_id: ["L", 7] },
+                { name: 'Task Grist format ["L", 11]', strategie_id: ["L", 11] },
+                { name: 'Task Grist format ["L", "24"]', strategie_id: ["L", "24"] }
             ];
             
             let html = '';

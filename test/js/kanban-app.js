@@ -1312,11 +1312,20 @@ class KanbanManager {
   
   // === GESTION DE LA MINI-MODALE STRATÉGIES ===
   openStrategyMiniModal(taskId) {
+    // 🛡️ PROTECTION ANTI-SPAM: Éviter appels multiples rapides
+    if (this._strategyModalOpening) {
+      console.log('🚫 openStrategyMiniModal: déjà en cours d\'ouverture');
+      return;
+    }
+    this._strategyModalOpening = true;
+    setTimeout(() => { this._strategyModalOpening = false; }, 1000); // Reset après 1s
+    
     console.log(`🔍 openStrategyMiniModal appelée avec taskId: ${taskId}`);
     
     const task = this.currentRecords?.find(r => r.id === taskId);
     if (!task) {
       displayError('Tâche non trouvée');
+      this._strategyModalOpening = false;
       return;
     }
     
@@ -1327,6 +1336,7 @@ class KanbanManager {
     
     if (!content) {
       displayError('Container de stratégies non trouvé');
+      this._strategyModalOpening = false;
       return;
     }
     
@@ -1342,8 +1352,20 @@ class KanbanManager {
     }
     
     // Ouvrir la modale
-    const modal = new bootstrap.Modal(document.getElementById('strategy-mini-modal'));
+    const modalElement = document.getElementById('strategy-mini-modal');
+    if (!modalElement) {
+      console.error('❌ Élément strategy-mini-modal introuvable !');
+      displayError('Modal stratégie non trouvée');
+      this._strategyModalOpening = false;
+      return;
+    }
+    
+    console.log('🎉 Ouverture modal stratégie...');
+    const modal = new bootstrap.Modal(modalElement);
     modal.show();
+    
+    // Reset protection après ouverture réussie
+    setTimeout(() => { this._strategyModalOpening = false; }, 500);
   }
 
   renderTimelineContent(task) {
