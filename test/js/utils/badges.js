@@ -136,7 +136,7 @@ export function generateProjectBadge(projectData) {
     }
   }
   
-  return `<span class="badge bg-info text-dark" data-bs-toggle="tooltip" data-bs-placement="top" title="${tooltip.replace(/"/g, '&quot;')}">${projet}</span>`;
+  return `<span class="badge bg-info text-dark" title="${tooltip.replace(/"/g, '&quot;')}">${projet}</span>`;
 }
 
 /**

@@ -601,7 +601,12 @@ class KanbanManager {
       return '';
     }
     
-    console.log(`Création HTML pour tâche ${record.id}: ${record.titre}`);
+    console.log(`Création HTML pour tâche ${record.id}: ${record.titre}`, {
+      strategie_id: record.strategie_id,
+      strategie_id_type: typeof record.strategie_id,
+      has_strategies_data: !!this.strategiesData,
+      strategies_count: this.strategiesData?.length
+    });
     
     const priority = this.calculerPriorite(record.urgence, record.impact);
     const priorityBadge = generatePriorityBadge(priority);
@@ -611,11 +616,12 @@ class KanbanManager {
     
     
     // Icône de stratégie avec mini-modale au clic
-    const strategyIcon = strategiesInfo.length > 0 ? 
+    // TEST TEMPORAIRE: Forcer l'icône pour tâche 76
+    const strategyIcon = (strategiesInfo.length > 0 || record.id === 76) ? 
       `<i class="bi bi-bullseye strategie-icon" 
           data-task-id="${record.id}" 
-          title="Voir les stratégies (${strategiesInfo.length})"
-          style="cursor: pointer; color: #0d6efd; font-size: 16px; margin-left: 4px;"></i>` : '';
+          title="Voir les stratégies (${strategiesInfo.length || 'TEST'})"
+          style="cursor: pointer; color: ${record.id === 76 ? 'red' : '#0d6efd'}; font-size: 16px; margin-left: 4px;"></i>` : '';
 
     // Projet avec stratégies dans l'infobulle aussi (double affichage)
     const projectBadge = record.projet ? 

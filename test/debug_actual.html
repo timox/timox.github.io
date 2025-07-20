@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Real Data</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug-section { border: 1px solid #ccc; padding: 15px; margin: 10px 0; }
+        .debug-section h3 { margin-top: 0; color: #333; }
+        .log { background: #f5f5f5; padding: 10px; margin: 5px 0; border-left: 3px solid #007bff; }
+        .error { background: #f8d7da; border-left: 3px solid #dc3545; }
+    </style>
+</head>
+<body>
+    <h1>Debug Real Kanban Data</h1>
+    
+    <div class="debug-section">
+        <h3>Console Logs</h3>
+        <div id="console-output"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h3>Kanban Manager State</h3>
+        <div id="kanban-state"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h3>Task 76 Analysis</h3>
+        <div id="task-76-analysis"></div>
+    </div>
+
+    <script>
+        // Capture console.log
+        const originalLog = console.log;
+        const originalError = console.error;
+        const consoleOutput = document.getElementById('console-output');
+        const logs = [];
+        
+        console.log = function(...args) {
+            logs.push({type: 'log', args: args, time: new Date().toLocaleTimeString()});
+            updateConsoleOutput();
+            originalLog.apply(console, args);
+        };
+        
+        console.error = function(...args) {
+            logs.push({type: 'error', args: args, time: new Date().toLocaleTimeString()});
+            updateConsoleOutput();
+            originalError.apply(console, args);
+        };
+        
+        function updateConsoleOutput() {
+            const html = logs.slice(-20).map(log => {
+                const className = log.type === 'error' ? 'log error' : 'log';
+                const argsStr = log.args.map(arg => 
+                    typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                ).join(' ');
+                return `<div class="${className}">[${log.time}] ${argsStr}</div>`;
+            }).join('');
+            consoleOutput.innerHTML = html;
+        }
+        
+        // Check Kanban state every 2 seconds
+        setInterval(() => {
+            const kanbanState = document.getElementById('kanban-state');
+            const task76Analysis = document.getElementById('task-76-analysis');
+            
+            if (window.kanbanManager) {
+                kanbanState.innerHTML = `
+                    <div class="log">✅ KanbanManager found</div>
+                    <div class="log">📊 Current records: ${window.kanbanManager.currentRecords?.length || 0}</div>
+                    <div class="log">🎯 Strategies data: ${window.kanbanManager.strategiesData?.length || 0}</div>
+                    <div class="log">🔄 View mode: ${window.kanbanManager.viewMode || 'unknown'}</div>
+                `;
+                
+                // Analyze task 76 specifically
+                const task76 = window.kanbanManager.currentRecords?.find(r => r.id === 76);
+                if (task76) {
+                    const strategiesInfo = window.kanbanManager.getMultipleStrategiesInfo(task76.strategie_id);
+                    task76Analysis.innerHTML = `
+                        <div class="log">✅ Task 76 found</div>
+                        <div class="log">📝 Title: ${task76.titre}</div>
+                        <div class="log">🎯 Strategy ID: ${JSON.stringify(task76.strategie_id)}</div>
+                        <div class="log">📋 Strategies found: ${strategiesInfo.length}</div>
+                        <div class="log">📋 Strategy details: ${JSON.stringify(strategiesInfo, null, 2)}</div>
+                        <div class="log">🎨 Icon would show: ${strategiesInfo.length > 0 ? 'YES' : 'NO'}</div>
+                    `;
+                } else {
+                    task76Analysis.innerHTML = `<div class="log error">❌ Task 76 not found in current records</div>`;
+                }
+            } else {
+                kanbanState.innerHTML = `<div class="log error">❌ KanbanManager not found</div>`;
+                task76Analysis.innerHTML = `<div class="log error">❌ Cannot analyze task 76 without KanbanManager</div>`;
+            }
+        }, 2000);
+        
+        console.log('🔧 Debug script started - monitoring kanban state...');
+    </script>
+</body>
+</html>
