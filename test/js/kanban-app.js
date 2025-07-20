@@ -760,24 +760,45 @@ class KanbanManager {
   getStrategyInfo(strategieId) {
     if (!strategieId || !this.strategiesData) return null;
     
+    // 🔧 CORRECTION: Grist renvoie les IDs sous format ["L", number]
+    let cleanId = strategieId;
+    
+    // Si c'est un array Grist ["L", id], extraire l'ID
+    if (Array.isArray(strategieId) && strategieId.length === 2 && strategieId[0] === 'L') {
+      cleanId = strategieId[1];
+    }
+    
     // 🔧 CORRECTION: Comparaison flexible pour gérer string/number depuis Grist
-    return this.strategiesData.find(strategy => strategy.id == strategieId) || null;
+    return this.strategiesData.find(strategy => strategy.id == cleanId) || null;
   }
 
   getMultipleStrategiesInfo(strategieIds) {
     if (!strategieIds || !this.strategiesData) {
+      console.log('🔍 getMultipleStrategiesInfo: pas de données', { strategieIds, hasStrategiesData: !!this.strategiesData });
       return [];
     }
     
-    // Support ancien format (single ID) et nouveau format (array)
-    const idsArray = Array.isArray(strategieIds) ? strategieIds : [strategieIds];
+    // 🔧 CORRECTION: Grist renvoie les IDs sous format ["L", number]
+    let cleanIds = strategieIds;
     
-    return idsArray
+    // Si c'est un array Grist ["L", id], extraire l'ID
+    if (Array.isArray(strategieIds) && strategieIds.length === 2 && strategieIds[0] === 'L') {
+      cleanIds = strategieIds[1];
+    }
+    
+    // Support ancien format (single ID) et nouveau format (array)
+    const idsArray = Array.isArray(cleanIds) ? cleanIds : [cleanIds];
+    console.log('🔍 getMultipleStrategiesInfo: idsArray=', idsArray);
+    
+    const result = idsArray
       .map(id => {
         // 🔧 CORRECTION: Comparaison flexible pour gérer string/number depuis Grist
         return this.strategiesData.find(strategy => strategy.id == id); // == au lieu de ===
       })
       .filter(strategy => strategy !== undefined);
+    
+    console.log('🔍 getMultipleStrategiesInfo: result=', result);
+    return result;
   }
 
   // === INITIALISATION DES MODALES CORRIGÉE ===

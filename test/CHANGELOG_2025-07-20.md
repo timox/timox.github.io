@@ -8,7 +8,7 @@ Cette version corrige les problèmes bloquants d'interface utilisateur identifi�
 
 ## 🔥 Problèmes Résolus
 
-### ✅ **1. Écran Noir Bloquant (Overlay Multiple)**
+### ✅ **1. Écran Noir Bloquant (Overlay Multiple) - RÉSOLU**
 
 **📋 Problème identifié :**
 - **Symptôme** : Écran noir permanent qui bloque toute interaction avec l'interface
@@ -48,6 +48,30 @@ Cette version corrige les problèmes bloquants d'interface utilisateur identifi�
 ```
 string ID ("1"): "1" → Results: 0 → Icon: ❌ NO   (AVANT)
 string ID ("1"): "1" → Results: 1 → Icon: ✅ YES  (APRÈS)
+```
+
+### ✅ **3. Format Grist strategie_id ["L", number] - RÉSOLU**
+
+**📋 Problème découvert dans les logs :**
+- **Format réel Grist** : `strategie_id` stocké comme `["L", 11]`, `["L", 24]`, etc.
+- **Code assumait** : Format simple comme `"11"` ou `11`
+- **Résultat** : Aucune correspondance trouvée malgré données valides
+
+**🔧 Solution appliquée :**
+- **Extraction automatique** : Si `["L", id]` détecté → utiliser `id`
+- **Double correction** : `getStrategyInfo()` et `getMultipleStrategiesInfo()`
+- **Logs debug** : Traçabilité du format array et extraction
+
+**📁 Fichiers modifiés :**
+- `test/js/kanban-app.js` (lignes 767-778, 783) : Extraction format Grist
+- `test/js/kanban-app.js` (lignes 792-793) : Logs debug format
+
+**🔍 Logs debug ajoutés :**
+```javascript
+// Si c'est un array Grist ["L", id], extraire l'ID
+if (Array.isArray(strategieIds) && strategieIds.length === 2 && strategieIds[0] === 'L') {
+  cleanIds = strategieIds[1];
+}
 ```
 
 ---
@@ -116,11 +140,12 @@ if (record.id === 76 || Math.random() < 0.1) {
 - [ ] Fermer tous les modaux → Retour interface normale
 
 ### **Validation Icônes Stratégies**
-- [ ] Charger une tâche avec `strategie_id` string → Vérifier icône bullseye visible
-- [ ] Page debug `/test/debug_strategy.html` → Tester `string ID ("1")` → Results: 1 ✅
+- [ ] Charger une tâche avec `strategie_id` array → Vérifier icône bullseye visible
+- [ ] Page debug `/test/debug_strategy.html` → Tester avec format `["L", 11]`
 - [ ] Tâche 76 spécifiquement → Icône rouge forcée visible
-- [ ] Console navigateur → Logs debug avec `strategie_id_type: "string"`
-- [ ] Clic sur icône → Mini-modal stratégies fonctionnelle
+- [ ] Console navigateur → Logs debug `🔍 getMultipleStrategiesInfo: idsArray=`
+- [ ] Clic sur icône → Mini-modal stratégies sans voile noir
+- [ ] Modal timeline → Ouverture sans voile noir
 - [ ] Toutes les tâches avec stratégies → Icônes maintenant visibles
 
 ---
