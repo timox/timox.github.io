@@ -1019,24 +1019,6 @@ class KanbanManager {
     // Attacher les événements pour les badges cliquables
     this.attachCardEventListeners();
     
-    // TEMPORAIRE: Attacher les listeners des cartes directement ici
-    this.kanbanContainer.querySelectorAll('.editable-zone').forEach(zone => {
-      zone.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        
-        const card = zone.closest('.kanban-item');
-        const taskId = parseInt(card.dataset.id, 10);
-        
-        if (!isNaN(taskId) && this.modalManager) {
-          const task = this.currentRecords?.find(r => r.id === taskId);
-          if (task) {
-            this.modalManager.openTaskModal(task);
-          }
-        }
-      });
-    });
-    
     this.attachBadgeEventListeners();
     this.initScrollArrows();
   }
@@ -1182,8 +1164,35 @@ class KanbanManager {
 
   // EVENT LISTENERS
   attachCardEventListeners() {
-    // Seuls les boutons timeline - les autres événements sont gérés par CardRenderer
     // Le nettoyage se fait automatiquement via innerHTML dans refreshKanban
+    
+    // 1. Écouteurs pour l'édition des tâches (zones editables)
+    this.kanbanContainer.querySelectorAll('.editable-zone').forEach(zone => {
+      zone.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        
+        const card = zone.closest('.kanban-item');
+        const taskId = parseInt(card.dataset.id, 10);
+        
+        if (!isNaN(taskId) && this.modalManager) {
+          const task = this.currentRecords?.find(r => r.id === taskId);
+          if (task) {
+            this.modalManager.openTaskModal(task);
+          }
+        }
+      });
+      
+      // Support clavier pour accessibilité
+      zone.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          zone.click();
+        }
+      });
+    });
+    
+    // 2. Boutons timeline
     this.kanbanContainer.querySelectorAll('.btn-timeline').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
