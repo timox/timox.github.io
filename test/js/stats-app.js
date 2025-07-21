@@ -492,14 +492,20 @@ class StatsManager {
 
   showError(message) {
     console.error('Stats Error:', message);
-    // Afficher une alerte d'erreur
-    const container = document.querySelector('.container-fluid');
-    container.innerHTML = `
-      <div class="alert alert-danger" role="alert">
-        <i class="bi bi-exclamation-triangle me-2"></i>
-        <strong>Erreur:</strong> ${message}
-      </div>
-    `;
+    // ⚠️ CORRECTION: NE PAS détruire le DOM Kanban ! Utiliser seulement le container d'erreur
+    const errorContainer = document.getElementById('error-container');
+    if (errorContainer) {
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'alert alert-danger alert-dismissible fade show';
+      errorDiv.innerHTML = `
+        <strong>Erreur Stats:</strong> ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      `;
+      errorContainer.appendChild(errorDiv);
+    } else {
+      // Fallback - alerter sans détruire le DOM
+      console.warn('Container d\'erreur non trouvé, erreur ignorée:', message);
+    }
   }
 }
 
