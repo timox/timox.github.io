@@ -7,16 +7,17 @@ Cette documentation technique évite les erreurs de factorisation en documentant
 
 ## 📁 Structure des Modules
 
-### Architecture Générale
+### Architecture Générale - **MISE À JOUR 2025-07-21**
 ```
 js/
-├── kanban-app.js              # ⚠️ POINT D'ENTRÉE LEGACY - Ne pas supprimer
+├── kanban-app.js              # ⚠️ POINT D'ENTRÉE PRINCIPAL
+├── simple-click-handler.js   # 🎯 GESTIONNAIRE D'ÉVÉNEMENTS CENTRALISÉ (NOUVEAU)
 ├── core/
 │   └── KanbanManager.js       # Orchestrateur moderne (peu utilisé)
 ├── managers/                  # 🔧 Gestionnaires spécialisés
 │   ├── FilterManager.js       # Filtres et recherche
-│   ├── ModalManager.js        # Modales et formulaires
-│   ├── HistoryManager.js      # Historique et commentaires
+│   ├── ModalManager.js        # Modales et formulaires (listeners supprimés)
+│   ├── HistoryManager.js      # Historique et commentaires (listeners supprimés)
 │   ├── DatePickerManager.js   # Sélection de dates
 │   ├── ViewModeManager.js     # Modes d'affichage
 │   └── GristManager.js        # Interface Grist
@@ -323,6 +324,63 @@ refreshWithSync() {
 // ✅ OBLIGATOIRE: Logs détaillés pour debugging mode focus
 this.logger.debug(`Mode focus: recherche colonne "${focusColumnName}" parmi ${columns.length} colonnes`);
 this.logger.debug(`Comparaison: "${columnName}" === "${focusColumnName}" ?`, columnName === focusColumnName);
+```
+
+---
+
+## 🎯 **GESTIONNAIRE D'ÉVÉNEMENTS CENTRALISÉ** - **NOUVEAU 2025-07-21**
+
+### Architecture des Event Listeners
+
+**⚠️ PRINCIPE FONDAMENTAL**: UN SEUL gestionnaire d'événements global pour éviter les conflits.
+
+```javascript
+// ✅ NOUVEAU: SimpleClickHandler - Point d'entrée unique
+class SimpleClickHandler {
+  constructor(kanbanManager) {
+    // UN SEUL listener global avec capture prioritaire
+    document.addEventListener('click', (e) => this.handleClick(e), true);
+  }
+  
+  handleClick(e) {
+    // 🎯 PRIORITÉS STRICTES (ordre d'évaluation fixe):
+    // 1. Boutons système (save, delete, new task)
+    // 2. Timeline et historique  
+    // 3. Stratégies
+    // 4. Cartes kanban
+    // 5. Badges passifs (tooltips seulement)
+    // 6. Filtres et navigation
+  }
+}
+```
+
+### Migration des Event Listeners
+
+**✅ SUPPRIMÉS** - Event listeners dispersés dans:
+- `ModalManager.setupEventListeners()` → Désactivé
+- `HistoryManager.setupEventListeners()` → Désactivé  
+- `kanban-app.js` attachCardEventListeners → Simplifié
+- Listeners directs sur éléments → Centralisés
+
+**✅ AVANTAGES**:
+- ❌ Plus de conflits entre handlers
+- ❌ Plus de double-exécution d'actions
+- ❌ Plus de voiles noirs persistants
+- ✅ Comportement 100% prévisible
+- ✅ Debug centralisé avec logs détaillés
+- ✅ Maintenance simplifiée
+
+### Règles de Développement
+
+```javascript
+// ❌ INTERDIT: Ajouter des listeners directs
+element.addEventListener('click', handler); // NON !
+
+// ✅ OBLIGATOIRE: Ajouter la logique dans SimpleClickHandler
+if (e.target.id === 'mon-nouveau-bouton') {
+  this.handleMonNouveauBouton();
+  return;
+}
 ```
 
 ---

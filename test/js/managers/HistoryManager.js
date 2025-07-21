@@ -29,15 +29,16 @@ export class HistoryManager {
    * Initialise le gestionnaire d'historique
    */
   init() {
-    this.setupEventListeners();
+    // ✅ Event listeners supprimés - gérés par SimpleClickHandler
     this.setupCommentEditWidget();
-    this.logger.info('History manager initialized');
+    this.logger.info('History manager initialized (listeners centralisés)');
   }
   
   /**
-   * Configure les écouteurs d'événements
+   * ✅ SUPPRIMÉ - Configure les écouteurs d'événements  
+   * Event listeners maintenant gérés par SimpleClickHandler
    */
-  setupEventListeners() {
+  setupEventListeners_DISABLED() {
     // Bouton "Voir tous les commentaires"
     const btnShowComments = document.getElementById('btn-show-comments-only');
     if (btnShowComments) {

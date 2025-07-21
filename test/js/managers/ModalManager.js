@@ -38,9 +38,9 @@ export class ModalManager {
    */
   init() {
     this.initializeModals();
-    this.setupEventListeners();
+    // ✅ Event listeners supprimés - gérés par SimpleClickHandler
     this.setupStrategySelects();
-    console.log('ModalManager: Gestionnaire de modales initialisé');
+    console.log('ModalManager: Gestionnaire de modales initialisé (listeners centralisés)');
   }
   
   /**
@@ -65,9 +65,10 @@ export class ModalManager {
   }
   
   /**
-   * Configure les écouteurs d'événements
+   * ✅ SUPPRIMÉ - Configure les écouteurs d'événements
+   * Event listeners maintenant gérés par SimpleClickHandler
    */
-  setupEventListeners() {
+  setupEventListeners_DISABLED() {
     // Bouton nouvelle tâche
     const btnNouvelleTache = document.getElementById('btn-nouvelle-tache');
     if (btnNouvelleTache) {

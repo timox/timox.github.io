@@ -142,10 +142,14 @@ class KanbanManager {
       console.log('✅ Container kanban-container récupéré:', this.kanbanContainer);
       
       this.initModals();
-      this.initEventListeners();
+      // ✅ Event listeners centralisés dans SimpleClickHandler
+      console.log('Event listeners délégués au SimpleClickHandler');
       
       // Initialiser les managers après le chargement des données
       this.initializeManagers();
+      
+      // Initialiser le gestionnaire de clics simple
+      this.initSimpleClickHandler();
       
       this.refreshKanban();
       
@@ -1245,97 +1249,18 @@ class KanbanManager {
     });
   }
 
-  // EVENT LISTENERS
+  // EVENT LISTENERS - VERSION SIMPLE
   attachCardEventListeners() {
-    // Le nettoyage se fait automatiquement via innerHTML dans refreshKanban
-    
-    // 🚫 ANCIEN SYSTÈME SUPPRIMÉ - Utiliser seulement la délégation ci-dessous
-    
-    // 🔧 DÉLÉGATION D'ÉVÉNEMENTS NETTOYÉE ET SIMPLIFIÉE
-    this.kanbanContainer.addEventListener('click', (e) => {
-      console.log('🖱️ Clic détecté sur:', e.target.className, e.target.tagName);
-      
-      // Protection anti-double-clic
-      if (this._isProcessingClick) {
-        console.log('🚫 Clic ignoré - traitement en cours');
-        return;
-      }
-      this._isProcessingClick = true;
-      setTimeout(() => { this._isProcessingClick = false; }, 500);
-      
-      // 1. BOUTONS TIMELINE/HISTORIQUE - Priorité absolue
-      const timelineBtn = e.target.closest('.btn-timeline');
-      if (timelineBtn) {
-        e.stopPropagation();
-        e.preventDefault();
-        const taskId = parseInt(timelineBtn.dataset.taskId, 10);
-        console.log('📖 Clic timeline sur tâche:', taskId);
-        if (!isNaN(taskId)) {
-          this.openTimelineModal(taskId);
-        }
-        return;
-      }
-      
-      // 2. ICÔNES STRATÉGIES - Priorité élevée
-      const strategyIcon = e.target.closest('.strategie-icon');
-      if (strategyIcon) {
-        e.stopPropagation();
-        e.preventDefault();
-        const taskId = parseInt(strategyIcon.dataset.taskId, 10);
-        console.log('🎯 Clic stratégie sur tâche:', taskId);
-        if (!isNaN(taskId)) {
-          this.openStrategyMiniModal(taskId);
-        }
-        return;
-      }
-      
-      // 3. BADGES PROJET - Juste une infobulle, pas d'action
-      const projectBadge = e.target.closest('.badge, .project-badge, [class*="project"], [data-bs-toggle="tooltip"]');
-      if (projectBadge && !projectBadge.closest('.btn-timeline, .strategie-icon')) {
-        console.log('📋 Clic sur badge projet - infobulle seulement');
-        // Laisser Bootstrap gérer le tooltip, arrêter la propagation
-        e.stopPropagation();
-        e.preventDefault();
-        return;
-      }
-      
-      // 4. ZONES ÉDITABLES - Ouvrir modale d'édition
-      const editableZone = e.target.closest('.editable-zone');
-      if (editableZone) {
-        const card = editableZone.closest('.kanban-item');
-        const taskId = parseInt(card?.dataset.id, 10);
-        
-        console.log('✏️ Clic zone éditable - ouvrir modale tâche:', taskId);
-        
-        if (!isNaN(taskId)) {
-          e.stopPropagation();
-          e.preventDefault();
-          this.openTaskModalDirect(taskId);
-        }
-        return;
-      }
-      
-      // 5. CARTES - Ouvrir modale d'édition (priorité la plus basse)
-      const card = e.target.closest('.kanban-item');
-      if (card) {
-        const taskId = parseInt(card.dataset.id, 10);
-        console.log('📝 Clic carte tâche:', taskId);
-        
-        if (!isNaN(taskId)) {
-          e.preventDefault();
-          e.stopPropagation();
-          
-          // Utiliser la méthode directe au lieu du ModalManager défaillant
-          this.openTaskModalDirect(taskId);
-        }
-        return;
-      }
-    });
+    // Ne plus rien faire ici - le SimpleClickHandler s'occupe de tout
+    console.log('📝 Event listeners délégués au SimpleClickHandler');
   }
 
   // === MÉTHODE DIRECTE POUR OUVRIR MODALE TÂCHE ===
   openTaskModalDirect(taskId) {
     console.log('🔧 Ouverture directe modale tâche:', taskId);
+    
+    // Nettoyer d'abord les backdrops orphelins
+    this.cleanOrphanBackdrops();
     
     try {
       // Trouver la tâche
@@ -1363,6 +1288,15 @@ class KanbanManager {
       
       // Stocker l'ID pour sauvegarde
       this.currentTaskId = taskId;
+      
+      // Charger l'historique dans la modale si le manager existe
+      if (this.historyManager) {
+        console.log('📖 Chargement historique dans modale...');
+        // Utiliser un timeout pour laisser la modale s'ouvrir d'abord
+        setTimeout(() => {
+          this.historyManager.loadTaskHistoryInModal(taskId);
+        }, 100);
+      }
       
       // Ouvrir la modale avec Bootstrap
       const modal = new bootstrap.Modal(modalElement);
@@ -2123,6 +2057,23 @@ class KanbanManager {
     });
 
     return stats;
+  }
+
+  // Initialiser le gestionnaire de clics simple
+  async initSimpleClickHandler() {
+    // Charger le script s'il n'existe pas
+    if (typeof SimpleClickHandler === 'undefined') {
+      try {
+        await import('./simple-click-handler.js');
+      } catch (error) {
+        console.error('❌ Erreur chargement SimpleClickHandler:', error);
+        return;
+      }
+    }
+    
+    // Créer l'instance
+    this.simpleClickHandler = new SimpleClickHandler(this);
+    console.log('✅ SimpleClickHandler initialisé');
   }
 }
 
