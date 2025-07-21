@@ -1306,6 +1306,26 @@ class KanbanManager {
         }
         return;
       }
+      
+      // 🔧 AJOUT: Clics sur les cartes pour ouvrir la modale d'édition
+      if (e.target.closest('.kanban-item')) {
+        const card = e.target.closest('.kanban-item');
+        const taskId = parseInt(card.dataset.id, 10);
+        
+        // Ignorer si on clique sur des boutons spécifiques
+        if (e.target.closest('.btn-timeline, .strategie-icon, .editable-zone')) {
+          return; // Laisser les autres handlers gérer ces clics
+        }
+        
+        this.logger.debug(`Clic carte délégué sur tâche ID: ${taskId}`);
+        
+        if (!isNaN(taskId) && this.modalManager) {
+          e.preventDefault();
+          e.stopPropagation();
+          this.modalManager.openTaskModal(taskId);
+        }
+        return;
+      }
     });
   }
 
