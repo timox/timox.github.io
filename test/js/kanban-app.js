@@ -79,8 +79,8 @@ class KanbanManager {
       window.logger = logger;
     }
     
-    // Propriétés principales
-    this.kanbanContainer = document.getElementById('kanban-container');
+    // Propriétés principales (container défini après waitForDOM)
+    this.kanbanContainer = null;
     this.currentRecords = [];
     this.modalElement = null;
     this.historyModalElement =null;
@@ -133,6 +133,14 @@ class KanbanManager {
       
       // IMPORTANT: Attendre que le DOM soit complètement prêt
       await this.waitForDOM();
+      
+      // Récupérer le container maintenant que le DOM est prêt
+      this.kanbanContainer = document.getElementById('kanban-container');
+      if (!this.kanbanContainer) {
+        throw new Error('Container kanban-container non trouvé dans le DOM');
+      }
+      console.log('✅ Container kanban-container récupéré:', this.kanbanContainer);
+      
       this.initModals();
       this.initEventListeners();
       
