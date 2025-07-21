@@ -1275,58 +1275,113 @@ class KanbanManager {
       });
     });
     
-    // 2. Délégation d'événements consolidée pour boutons et icônes
+    // 🔧 DÉLÉGATION D'ÉVÉNEMENTS NETTOYÉE ET SIMPLIFIÉE
     this.kanbanContainer.addEventListener('click', (e) => {
-      // Boutons timeline/historique
-      if (e.target.closest('.btn-timeline')) {
+      console.log('🖱️ Clic détecté sur:', e.target.className, e.target.tagName);
+      
+      // 1. BOUTONS TIMELINE/HISTORIQUE - Priorité absolue
+      const timelineBtn = e.target.closest('.btn-timeline');
+      if (timelineBtn) {
         e.stopPropagation();
         e.preventDefault();
-        
-        const btn = e.target.closest('.btn-timeline');
-        const taskId = parseInt(btn.dataset.taskId, 10);
-        this.logger.debug(`Clic timeline délégué sur tâche ID: ${taskId}`);
-        
+        const taskId = parseInt(timelineBtn.dataset.taskId, 10);
+        console.log('📖 Clic timeline sur tâche:', taskId);
         if (!isNaN(taskId)) {
           this.openTimelineModal(taskId);
         }
         return;
       }
       
-      // Icônes de stratégies
-      if (e.target.closest('.strategie-icon')) {
+      // 2. ICÔNES STRATÉGIES - Priorité élevée
+      const strategyIcon = e.target.closest('.strategie-icon');
+      if (strategyIcon) {
         e.stopPropagation();
         e.preventDefault();
-        
-        const icon = e.target.closest('.strategie-icon');
-        const taskId = parseInt(icon.dataset.taskId, 10);
-        this.logger.debug(`Clic stratégie délégué sur tâche ID: ${taskId}`);
-        
+        const taskId = parseInt(strategyIcon.dataset.taskId, 10);
+        console.log('🎯 Clic stratégie sur tâche:', taskId);
         if (!isNaN(taskId)) {
           this.openStrategyMiniModal(taskId);
         }
         return;
       }
       
-      // 🔧 AJOUT: Clics sur les cartes pour ouvrir la modale d'édition
-      if (e.target.closest('.kanban-item')) {
-        const card = e.target.closest('.kanban-item');
+      // 3. BADGES PROJET - Juste une infobulle, pas d'action
+      const projectBadge = e.target.closest('.project-badge');
+      if (projectBadge) {
+        console.log('📋 Clic sur badge projet - infobulle seulement');
+        // Laisser Bootstrap gérer le tooltip, ne pas propager
+        e.stopPropagation();
+        return;
+      }
+      
+      // 4. ZONES ÉDITABLES - Édition inline
+      const editableZone = e.target.closest('.editable-zone');
+      if (editableZone) {
+        console.log('✏️ Clic zone éditable');
+        e.stopPropagation();
+        // TODO: Gérer édition inline si nécessaire
+        return;
+      }
+      
+      // 5. CARTES - Ouvrir modale d'édition (priorité la plus basse)
+      const card = e.target.closest('.kanban-item');
+      if (card) {
         const taskId = parseInt(card.dataset.id, 10);
+        console.log('📝 Clic carte tâche:', taskId);
         
-        // Ignorer si on clique sur des boutons spécifiques
-        if (e.target.closest('.btn-timeline, .strategie-icon, .editable-zone')) {
-          return; // Laisser les autres handlers gérer ces clics
-        }
-        
-        this.logger.debug(`Clic carte délégué sur tâche ID: ${taskId}`);
-        
-        if (!isNaN(taskId) && this.modalManager) {
+        if (!isNaN(taskId)) {
           e.preventDefault();
           e.stopPropagation();
-          this.modalManager.openTaskModal(taskId);
+          
+          // Utiliser la méthode directe au lieu du ModalManager défaillant
+          this.openTaskModalDirect(taskId);
         }
         return;
       }
     });
+  }
+
+  // === MÉTHODE DIRECTE POUR OUVRIR MODALE TÂCHE ===
+  openTaskModalDirect(taskId) {
+    console.log('🔧 Ouverture directe modale tâche:', taskId);
+    
+    try {
+      // Trouver la tâche
+      const task = this.currentRecords.find(t => t.id === taskId);
+      if (!task) {
+        console.error('❌ Tâche non trouvée:', taskId);
+        return;
+      }
+      
+      // Récupérer la modale
+      const modalElement = document.getElementById('popup-tache');
+      if (!modalElement) {
+        console.error('❌ Modale popup-tache non trouvée');
+        return;
+      }
+      
+      // Peupler les champs de base
+      const titleField = document.getElementById('popup-titre');
+      const descField = document.getElementById('popup-description');
+      const statusField = document.getElementById('popup-statut-text');
+      
+      if (titleField) titleField.value = task.titre || '';
+      if (descField) descField.value = task.description || '';
+      if (statusField) statusField.value = task.statut || '';
+      
+      // Stocker l'ID pour sauvegarde
+      this.currentTaskId = taskId;
+      
+      // Ouvrir la modale avec Bootstrap
+      const modal = new bootstrap.Modal(modalElement);
+      modal.show();
+      
+      console.log('✅ Modale ouverte directement pour tâche:', taskId);
+      
+    } catch (error) {
+      console.error('❌ Erreur ouverture modale directe:', error);
+      alert(`Erreur ouverture modale: ${error.message}`);
+    }
   }
 
   // === GESTION DE LA MODAL TIMELINE ===
