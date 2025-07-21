@@ -141,7 +141,25 @@ class SimpleClickHandler {
     // Nettoyer avant d'ouvrir
     this.cleanBackdrops();
     
-    // Méthode ultra-simple
+    // CORRECTION: Utiliser le ModalManager au lieu de faire à la main
+    if (this.kanban.modalManager) {
+      // Récupérer l'objet task complet à partir du taskId
+      const task = this.kanban.currentRecords?.find(t => t.id === taskId);
+      if (task) {
+        console.log('📝 SimpleClickHandler: Ouverture via ModalManager avec task:', task.id);
+        this.kanban.modalManager.openTaskModal(task);
+      } else {
+        console.error('❌ SimpleClickHandler: Task non trouvée pour ID:', taskId);
+        displayError('Tâche non trouvée');
+      }
+    } else {
+      console.log('⚠️ SimpleClickHandler: ModalManager indisponible, fallback direct');
+      // Fallback ultra-simple si ModalManager indisponible
+      this.fallbackOpenTaskModal(taskId);
+    }
+  }
+  
+  fallbackOpenTaskModal(taskId) {
     const task = this.kanban.currentRecords?.find(t => t.id === taskId);
     if (!task) return;
     
@@ -163,9 +181,23 @@ class SimpleClickHandler {
   }
   
   cleanBackdrops() {
-    document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    console.log(`🧹 SimpleClickHandler: Nettoyage ${backdrops.length} backdrops`);
+    
+    backdrops.forEach((backdrop, index) => {
+      console.log(`   → Suppression backdrop ${index + 1}: ${backdrop.className}`);
+      backdrop.remove();
+    });
+    
+    // Réinitialiser l'état du body
     document.body.classList.remove('modal-open');
     document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+    
+    console.log('🔧 Body state réinitialisé:', {
+      classes: document.body.className,
+      overflow: document.body.style.overflow
+    });
   }
   
   // === MÉTHODES POUR LES NOUVEAUX HANDLERS ===

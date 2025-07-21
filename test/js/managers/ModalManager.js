@@ -691,8 +691,11 @@ export class ModalManager {
     this.currentTask = task;
     this.currentTaskId = task?.id || null;
     
-    console.log('IsNewTask:', this.isNewTask);
-    console.log('CurrentTaskId:', this.currentTaskId);
+    console.log('✅ openTaskModal - État après initialisation:');
+    console.log('   → IsNewTask:', this.isNewTask);
+    console.log('   → CurrentTaskId:', this.currentTaskId);
+    console.log('   → CurrentTask.id:', this.currentTask?.id);
+    console.log('   → Task parameter received:', !!task);
     console.log('CurrentTask:', this.currentTask);
     
     // Mettre à jour le titre de la modal
@@ -820,10 +823,23 @@ export class ModalManager {
       
       // Validation critique
       if (!this.isNewTask && (!this.currentTaskId || this.currentTaskId === null)) {
-        console.error('ERREUR CRITIQUE: Tentative UpdateRecord avec currentTaskId null!');
-        console.error('CurrentTask:', this.currentTask);
-        displayError('Erreur: ID de tâche manquant pour la mise à jour');
-        return;
+        console.error('🚨 ERREUR CRITIQUE: Tentative UpdateRecord avec currentTaskId null!');
+        console.error('📊 État actuel ModalManager:');
+        console.error('   → this.isNewTask:', this.isNewTask);
+        console.error('   → this.currentTaskId:', this.currentTaskId);
+        console.error('   → this.currentTask:', this.currentTask);
+        console.error('   → typeof currentTaskId:', typeof this.currentTaskId);
+        console.error('   → currentTask?.id:', this.currentTask?.id);
+        
+        // Tentative de récupération depuis currentTask
+        if (this.currentTask && this.currentTask.id) {
+          console.warn('🔧 RÉCUPÉRATION: Tentative récupération ID depuis currentTask');
+          this.currentTaskId = this.currentTask.id;
+          console.warn('   → currentTaskId récupéré:', this.currentTaskId);
+        } else {
+          displayError('Erreur: ID de tâche manquant pour la mise à jour');
+          return;
+        }
       }
       
       if (this.isNewTask) {

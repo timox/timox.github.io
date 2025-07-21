@@ -159,7 +159,36 @@ export class HistoryManager {
       
       // Ouvrir la modale historique après le rendu
       if (this.kanban.modalManager && this.kanban.modalManager.historyModal) {
+        console.log('🚀 HistoryManager: Tentative ouverture historyModal...');
+        
+        // Diagnostic de l'état de la modale avant ouverture
+        const historyModalEl = document.getElementById('history-modal');
+        if (historyModalEl) {
+          console.log('📋 HistoryModal element:', {
+            display: window.getComputedStyle(historyModalEl).display,
+            visibility: window.getComputedStyle(historyModalEl).visibility,
+            zIndex: window.getComputedStyle(historyModalEl).zIndex,
+            classes: historyModalEl.className
+          });
+        }
+        
         this.kanban.modalManager.historyModal.show();
+        
+        // Vérification après ouverture
+        setTimeout(() => {
+          if (historyModalEl) {
+            console.log('✅ HistoryModal après ouverture:', {
+              display: window.getComputedStyle(historyModalEl).display,
+              classes: historyModalEl.className,
+              isShown: historyModalEl.classList.contains('show')
+            });
+          }
+        }, 100);
+      } else {
+        console.log('❌ HistoryModal ou ModalManager indisponible:', {
+          modalManager: !!this.kanban.modalManager,
+          historyModal: !!(this.kanban.modalManager && this.kanban.modalManager.historyModal)
+        });
       }
     }
   }
