@@ -1299,12 +1299,19 @@ class KanbanManager {
         return;
       }
       
-      // 4. ZONES ÉDITABLES - Édition inline
+      // 4. ZONES ÉDITABLES - Ouvrir modale d'édition
       const editableZone = e.target.closest('.editable-zone');
       if (editableZone) {
-        console.log('✏️ Clic zone éditable');
-        e.stopPropagation();
-        // TODO: Gérer édition inline si nécessaire
+        const card = editableZone.closest('.kanban-item');
+        const taskId = parseInt(card?.dataset.id, 10);
+        
+        console.log('✏️ Clic zone éditable - ouvrir modale tâche:', taskId);
+        
+        if (!isNaN(taskId)) {
+          e.stopPropagation();
+          e.preventDefault();
+          this.openTaskModalDirect(taskId);
+        }
         return;
       }
       
