@@ -107,28 +107,35 @@ cleanOrphanBackdrops() {
 }
 ```
 
-### ✅ **5. Boucles Infinies Modales Timeline/Stratégie - RÉSOLU**
+### ✅ **5. Boucles Infinies Modales Timeline/Stratégie - RÉSOLU** 
 
 **📋 Problème identifié dans les logs :**
 - **Timeline** : HistoryManager appelé 6 fois en 1 seconde  
 - **Stratégie** : `openStrategyMiniModal` appelé 5 fois de suite
-- **Cause** : Écouteurs d'événements dupliqués + z-index bloquants
+- **Cause racine** : Boucle infinie `HistoryManager.openTaskHistory()` → `ModalManager.openHistoryModal()` → `HistoryManager.renderTaskHistory()` → boucle
+- **Cause secondaire** : Écouteurs d'événements dupliqués + z-index bloquants
 
 **🔧 Solutions appliquées :**
 
-1. **Suppression écouteurs dupliqués** :
+1. **Correction boucle infinie critique** :
+   - **AVANT** : `HistoryManager.openTaskHistory()` → `ModalManager.openHistoryModal()` → `HistoryManager.renderTaskHistory()` → boucle
+   - **APRÈS** : `HistoryManager.openTaskHistory()` → `renderTaskHistory()` direct → `historyModal.show()`
+   - **Fichier** : `test/js/managers/HistoryManager.js` (lignes 126-144)
+
+2. **Suppression écouteurs dupliqués** :
    - Removed : Écouteurs `.btn-history` dans `CardRenderer.js:464-474`  
    - Conservé : Écouteur global dans `HistoryManager.js:69-89`
 
-2. **Protection anti-spam** :
+3. **Protection anti-spam** :
    - HistoryManager : `_historyOpening` flag avec timeout 1s
    - StrategyModal : `_strategyModalOpening` flag avec timeout 1s
 
-3. **Correction z-index** :
+4. **Correction z-index** :
    - Widget édition : z-index `1055` (au lieu de `1060/1080`)
    - Évite conflit avec modales Bootstrap (`1060`)
 
 **📁 Fichiers modifiés :**
+- `test/js/managers/HistoryManager.js` (lignes 126-144) : **CORRECTION BOUCLE INFINIE**
 - `test/js/renderers/CardRenderer.js` (lignes 463-464) : Écouteurs supprimés
 - `test/js/managers/HistoryManager.js` (lignes 74-81) : Protection anti-spam
 - `test/js/kanban-app.js` (lignes 1315-1321) : Protection anti-spam 

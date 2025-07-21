@@ -122,10 +122,25 @@ export class HistoryManager {
     } else {
       // Utiliser la modale historique séparée (comportement original)
       console.log('HistoryManager: Utilisation modale historique séparée');
-      if (this.kanban.modalManager) {
-        this.kanban.modalManager.openHistoryModal(taskId);
-      } else {
-        this.renderTaskHistory(task);
+      
+      // 🔧 CORRECTION: Éviter la boucle infinie - appeler directement renderTaskHistory
+      // au lieu de passer par modalManager qui va nous rappeler
+      
+      // Mettre à jour le titre de la modale
+      const modalTitle = document.getElementById('history-modal-label');
+      if (modalTitle) {
+        modalTitle.innerHTML = `
+          <i class="bi bi-clock-history me-2"></i>
+          Historique de la tâche #${taskId} - ${task.titre}
+        `;
+      }
+      
+      // Rendre l'historique
+      this.renderTaskHistory(task);
+      
+      // Ouvrir la modale historique après le rendu
+      if (this.kanban.modalManager && this.kanban.modalManager.historyModal) {
+        this.kanban.modalManager.historyModal.show();
       }
     }
   }
