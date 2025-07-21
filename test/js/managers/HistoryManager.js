@@ -71,13 +71,18 @@ export class HistoryManager {
         e.preventDefault();
         e.stopPropagation();
         
-        // 🛡️ PROTECTION ANTI-SPAM: Éviter appels multiples rapides
+        // 🛡️ PROTECTION ANTI-SPAM RENFORCÉE: Éviter appels multiples rapides
         if (this._historyOpening) {
-          console.log('🚫 HistoryManager: ouverture déjà en cours');
+          console.log('🚫 HistoryManager: ouverture déjà en cours - BLOQUÉ');
           return;
         }
+        
+        // Protection immédiate plus longue
         this._historyOpening = true;
-        setTimeout(() => { this._historyOpening = false; }, 1000); // Reset après 1s
+        setTimeout(() => { 
+          this._historyOpening = false; 
+          console.log('🔓 HistoryManager: protection anti-spam levée');
+        }, 3000); // Reset après 3s au lieu de 1s
         
         const button = e.target.closest('.btn-history');
         const taskId = parseInt(button.dataset.taskId, 10);
@@ -94,11 +99,24 @@ export class HistoryManager {
    * @param {number} taskId - ID de la tâche
    */
   openTaskHistory(taskId) {
+    // 🛡️ PROTECTION SUPPLÉMENTAIRE: Éviter les appels multiples sur openTaskHistory
+    if (this._taskHistoryOpening === taskId) {
+      console.log(`🚫 HistoryManager: openTaskHistory déjà en cours pour tâche ${taskId}`);
+      return;
+    }
+    
     const task = this.kanban.currentRecords?.find(r => r.id === taskId);
     if (!task) {
       displayError('Tâche non trouvée');
       return;
     }
+    
+    // Marquer cette tâche comme en cours d'ouverture
+    this._taskHistoryOpening = taskId;
+    setTimeout(() => { 
+      this._taskHistoryOpening = null; 
+      console.log(`🔓 HistoryManager: protection openTaskHistory levée pour tâche ${taskId}`);
+    }, 2000);
     
     this.currentTaskHistory = task;
     
