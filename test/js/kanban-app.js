@@ -1249,35 +1249,19 @@ class KanbanManager {
   attachCardEventListeners() {
     // Le nettoyage se fait automatiquement via innerHTML dans refreshKanban
     
-    // 1. Écouteurs pour l'édition des tâches (zones editables)
-    this.kanbanContainer.querySelectorAll('.editable-zone').forEach(zone => {
-      zone.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        
-        const card = zone.closest('.kanban-item');
-        const taskId = parseInt(card.dataset.id, 10);
-        
-        if (!isNaN(taskId) && this.modalManager) {
-          const task = this.currentRecords?.find(r => r.id === taskId);
-          if (task) {
-            this.modalManager.openTaskModal(task);
-          }
-        }
-      });
-      
-      // Support clavier pour accessibilité
-      zone.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          zone.click();
-        }
-      });
-    });
+    // 🚫 ANCIEN SYSTÈME SUPPRIMÉ - Utiliser seulement la délégation ci-dessous
     
     // 🔧 DÉLÉGATION D'ÉVÉNEMENTS NETTOYÉE ET SIMPLIFIÉE
     this.kanbanContainer.addEventListener('click', (e) => {
       console.log('🖱️ Clic détecté sur:', e.target.className, e.target.tagName);
+      
+      // Protection anti-double-clic
+      if (this._isProcessingClick) {
+        console.log('🚫 Clic ignoré - traitement en cours');
+        return;
+      }
+      this._isProcessingClick = true;
+      setTimeout(() => { this._isProcessingClick = false; }, 500);
       
       // 1. BOUTONS TIMELINE/HISTORIQUE - Priorité absolue
       const timelineBtn = e.target.closest('.btn-timeline');
@@ -1306,11 +1290,12 @@ class KanbanManager {
       }
       
       // 3. BADGES PROJET - Juste une infobulle, pas d'action
-      const projectBadge = e.target.closest('.project-badge');
-      if (projectBadge) {
+      const projectBadge = e.target.closest('.badge, .project-badge, [class*="project"], [data-bs-toggle="tooltip"]');
+      if (projectBadge && !projectBadge.closest('.btn-timeline, .strategie-icon')) {
         console.log('📋 Clic sur badge projet - infobulle seulement');
-        // Laisser Bootstrap gérer le tooltip, ne pas propager
+        // Laisser Bootstrap gérer le tooltip, arrêter la propagation
         e.stopPropagation();
+        e.preventDefault();
         return;
       }
       
