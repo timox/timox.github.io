@@ -397,8 +397,7 @@ export class GristManager {
     const gristData = {};
     
     // Copier les champs simples
-    const simpleFields = ['titre', 'description', 'statut', 'projet', 'urgence', 'impact', 
-                         'strategie_objectif', 'strategie_sous_objectif', 'strategie_action', 'notes'];
+    const simpleFields = ['titre', 'description', 'statut', 'projet', 'urgence', 'impact', 'notes'];
     
     simpleFields.forEach(field => {
       if (recordData.hasOwnProperty(field)) {
@@ -413,6 +412,22 @@ export class GristManager {
     
     if (recordData.qui) {
       gristData.qui = Array.isArray(recordData.qui) ? recordData.qui : ['L'];
+    }
+    
+    // 🔧 CORRECTION: Traiter strategie_id selon le schema Grist (Reference)
+    if (recordData.strategie_id) {
+      // Si c'est déjà au format Grist ["L", ID], conserver tel quel
+      if (Array.isArray(recordData.strategie_id) && recordData.strategie_id.length === 2 && recordData.strategie_id[0] === 'L') {
+        gristData.strategie_id = recordData.strategie_id;
+      } 
+      // Si c'est un ID simple, convertir au format Grist
+      else if (typeof recordData.strategie_id === 'number' || typeof recordData.strategie_id === 'string') {
+        gristData.strategie_id = ['L', parseInt(recordData.strategie_id, 10)];
+      }
+      // Si c'est null/undefined, laisser null
+      else {
+        gristData.strategie_id = null;
+      }
     }
     
     // Traiter les dates
