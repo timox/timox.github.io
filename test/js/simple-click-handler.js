@@ -55,11 +55,13 @@ class SimpleClickHandler {
       
       // === PRIORITÉ 2: TIMELINE ET HISTORIQUE ===
       
-      // Timeline - bouton avec data-task-id
-      if (e.target.dataset.taskId && e.target.classList.contains('btn-timeline')) {
+      // Timeline - bouton avec data-task-id OU son parent
+      const timelineBtn = e.target.closest('.btn-timeline') || (e.target.classList.contains('btn-timeline') ? e.target : null);
+      if (timelineBtn && timelineBtn.dataset.taskId) {
         e.preventDefault();
         e.stopPropagation();
-        this.openTimeline(parseInt(e.target.dataset.taskId));
+        console.log('🎯 Timeline détecté via closest(), taskId:', timelineBtn.dataset.taskId);
+        this.openTimeline(parseInt(timelineBtn.dataset.taskId));
         return;
       }
       
@@ -73,11 +75,13 @@ class SimpleClickHandler {
       
       // === PRIORITÉ 3: STRATÉGIES ===
       
-      // Stratégie - icône avec data-task-id
-      if (e.target.dataset.taskId && e.target.classList.contains('strategie-icon')) {
+      // Stratégie - icône avec data-task-id OU son parent
+      const strategyIcon = e.target.closest('.strategie-icon') || (e.target.classList.contains('strategie-icon') ? e.target : null);
+      if (strategyIcon && strategyIcon.dataset.taskId) {
         e.preventDefault();
         e.stopPropagation();
-        this.openStrategy(parseInt(e.target.dataset.taskId));
+        console.log('🎯 Stratégie détectée via closest(), taskId:', strategyIcon.dataset.taskId);
+        this.openStrategy(parseInt(strategyIcon.dataset.taskId));
         return;
       }
       
