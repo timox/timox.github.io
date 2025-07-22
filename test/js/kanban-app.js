@@ -774,7 +774,7 @@ class KanbanManager {
     const totalEvents = notesEventCount + commentCount + statusChangeCount;
     if (totalEvents === 0) return '';
     
-    return `<button class="btn-timeline" title="Voir la timeline (${totalEvents} événement${totalEvents > 1 ? 's' : ''})" data-task-id="${record.id}">
+    return `<button class="btn-timeline" data-task-id="${record.id}" data-no-tooltip="true">
       <i class="bi bi-clock-history"></i> ${totalEvents}
     </button>`;
   }
