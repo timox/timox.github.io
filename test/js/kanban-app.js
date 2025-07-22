@@ -87,7 +87,6 @@ class KanbanManager {
     this.modalElement = null;
     this.historyModalElement = null;
     
-    // Modal management handled by ModalManager
     this.currentTaskId = null;
     this.isUpdating = false;
     this.isRefreshing = false;
@@ -146,16 +145,14 @@ class KanbanManager {
       console.log('✅ Container kanban-container récupéré:', this.kanbanContainer);
       
       this.initModals();
-      // ✅ Event listeners centralisés dans SimpleClickHandler
-      console.log('Event listeners délégués au SimpleClickHandler');
+      // ✅ Event listeners centralisés avec délégation jQuery
+      console.log('Event listeners délégués avec jQuery');
       
       // Initialiser les managers après le chargement des données
       this.initializeManagers();
       
-      // Modal system already handled by ModalManager
-      
-      // Initialiser le gestionnaire de clics simple
-      this.initSimpleClickHandler();
+      // Initialiser les événements avec délégation jQuery
+      this.initEventDelegation();
       
       this.refreshKanban();
       
@@ -1257,8 +1254,8 @@ class KanbanManager {
 
   // EVENT LISTENERS - VERSION SIMPLE
   attachCardEventListeners() {
-    // Ne plus rien faire ici - le SimpleClickHandler s'occupe de tout
-    console.log('📝 Event listeners délégués au SimpleClickHandler');
+    // Ne plus rien faire ici - la délégation jQuery s'occupe de tout
+    console.log('📝 Event listeners délégués avec jQuery');
   }
 
   // === MÉTHODE DIRECTE POUR OUVRIR MODALE TÂCHE ===
@@ -1377,35 +1374,11 @@ class KanbanManager {
     const testBtn = document.getElementById('btn-test-new-modal');
     if (testBtn && !testBtn.hasAttribute('data-initialized')) {
       testBtn.setAttribute('data-initialized', 'true');
-      testBtn.onclick = () => this.testNewModalSystem();
+      // testBtn.onclick = () => this.testNewModalSystem(); // SUPPRIMÉ
     }
   }
   
-  /**
-   * Test du nouveau système modal
-   */
-  testNewModalSystem() {
-    console.log('🧪 Test du nouveau système modal...');
-    
-    if (!this.modalSystem?.isInitialized()) {
-      alert('⚠️ Nouveau système modal non initialisé');
-      return;
-    }
-    
-    // Test avec une tâche existante
-    const taskId = this.currentRecords?.length > 0 ? this.currentRecords[0].id : 102;
-    
-    console.log(`🧪 Test ouverture historique pour tâche ${taskId}`);
-    
-    this.modalSystem.openModal('history-modal', { taskId })
-      .then(() => {
-        console.log('✅ Test réussi !');
-      })
-      .catch(error => {
-        console.error('❌ Test échoué:', error);
-        alert(`❌ Test échoué: ${error.message}`);
-      });
-  }
+  // testNewModalSystem() supprimée - plus nécessaire
   
   // === GESTION DE LA MINI-MODALE STRATÉGIES ===
   openStrategyMiniModal(taskId) {
@@ -2098,51 +2071,107 @@ class KanbanManager {
     return stats;
   }
 
-  // Initialiser le gestionnaire de clics simple
-  async initSimpleClickHandler() {
-    // Charger le script s'il n'existe pas
-    if (typeof SimpleClickHandler === 'undefined') {
-      try {
-        await import('./simple-click-handler.js');
-      } catch (error) {
-        console.error('❌ Erreur chargement SimpleClickHandler:', error);
+  /**
+   * Initialise la délégation d'événements jQuery (bonne pratique)
+   */
+  initEventDelegation() {
+    console.log('🎯 Initialisation délégation d\'événements jQuery...');
+    
+    // Utiliser jQuery si disponible, sinon délégation native
+    if (typeof $ !== 'undefined') {
+      this.initJQueryDelegation();
+    } else {
+      this.initNativeDelegation();
+    }
+    
+    console.log('✅ Délégation d\'événements initialisée');
+  }
+  
+  /**
+   * Délégation avec jQuery (recommandé)
+   */
+  initJQueryDelegation() {
+    const $container = $('#kanban-container');
+    
+    // Boutons historique - délégation sur le container
+    $container.on('click', '.btn-timeline', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const taskId = $(e.currentTarget).data('task-id');
+      console.log('🎯 Historique jQuery délégation, taskId:', taskId);
+      
+      if (taskId && this.historyManager) {
+        this.historyManager.openTaskHistory(taskId);
+      }
+    });
+    
+    // Titres de tâches - délégation pour édition
+    $container.on('click', '.item-title', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const $card = $(e.target).closest('.kanban-item');
+      const taskId = parseInt($card.data('id'));
+      console.log('🎯 Édition tâche jQuery délégation, taskId:', taskId);
+      
+      if (taskId && this.modalManager) {
+        const task = this.currentRecords?.find(t => t.id === taskId);
+        if (task) {
+          this.modalManager.openTaskModal(task);
+        }
+      }
+    });
+    
+    console.log('✅ Délégation jQuery configurée');
+  }
+  
+  /**
+   * Délégation native (fallback)
+   */
+  initNativeDelegation() {
+    const container = document.getElementById('kanban-container');
+    if (!container) return;
+    
+    container.addEventListener('click', (e) => {
+      // Timeline
+      const timelineBtn = e.target.closest('.btn-timeline');
+      if (timelineBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const taskId = parseInt(timelineBtn.dataset.taskId);
+        console.log('🎯 Historique natif délégation, taskId:', taskId);
+        
+        if (taskId && this.historyManager) {
+          this.historyManager.openTaskHistory(taskId);
+        }
         return;
       }
-    }
+      
+      // Titre tâche
+      if (e.target.classList.contains('item-title')) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const card = e.target.closest('.kanban-item');
+        const taskId = parseInt(card.dataset.id);
+        console.log('🎯 Édition tâche natif délégation, taskId:', taskId);
+        
+        if (taskId && this.modalManager) {
+          const task = this.currentRecords?.find(t => t.id === taskId);
+          if (task) {
+            this.modalManager.openTaskModal(task);
+          }
+        }
+        return;
+      }
+    });
     
-    // Créer l'instance
-    this.simpleClickHandler = new SimpleClickHandler(this);
-    console.log('✅ SimpleClickHandler initialisé');
+    console.log('✅ Délégation native configurée');
   }
 
-  /**
-   * Initialise le nouveau système modal
-   */
-  async initializeModalSystem() {
-    console.log('🆕 Initialisation du nouveau système modal...');
-    
-    try {
-      this.modalSystem = await initModalSystem({
-        kanbanManager: this,
-        historyManager: this.historyManager
-      }, {
-        enableTracing: true,
-        maintainCompatibility: true
-      });
-      
-      console.log('✅ Nouveau système modal initialisé avec succès');
-      
-      // Exposer pour debug
-      if (typeof window !== 'undefined') {
-        window.NewModalSystem = this.modalSystem;
-      }
-      
-    } catch (error) {
-      console.error('❌ Erreur initialisation nouveau système modal:', error);
-      console.log('🔄 Fallback: Ancien système conservé');
-      // L'ancien système reste en place comme fallback
-    }
-  }
+  // initializeModalSystem() supprimée - système simplifié avec délégation jQuery
 }
 
 // === INITIALISATION ===
