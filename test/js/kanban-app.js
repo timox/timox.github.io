@@ -2140,11 +2140,21 @@ class KanbanManager {
         e.preventDefault();
         e.stopPropagation();
         
-        const taskId = parseInt(timelineBtn.dataset.taskId);
-        console.log('🎯 Historique natif délégation, taskId:', taskId);
+        const rawTaskId = timelineBtn.dataset.taskId;
+        const taskId = parseInt(rawTaskId);
+        console.log('🎯 Historique natif délégation');
+        console.log('🔍 Raw data-task-id:', rawTaskId);
+        console.log('🔍 Parsed taskId:', taskId);
+        console.log('🔍 Type raw:', typeof rawTaskId);
+        console.log('🔍 Type parsed:', typeof taskId);
+        console.log('🔍 Debug historyManager:', !!this.historyManager);
+        console.log('🔍 Debug taskId valid:', !!taskId);
         
         if (taskId && this.historyManager) {
+          console.log('✅ Appel historyManager.openTaskHistory');
           this.historyManager.openTaskHistory(taskId);
+        } else {
+          console.log('❌ Conditions non remplies:', {taskId, hasHistoryManager: !!this.historyManager});
         }
         return;
       }
