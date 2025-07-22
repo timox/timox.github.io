@@ -11,7 +11,7 @@ class ModalSystemDiagnostic {
     
     this.checkBootstrapVersion();
     this.checkModalStructure();
-    this.checkCSSSty­les();
+    this.checkCSSStyles();
     this.checkZIndexLayers();
     this.checkEventListeners();
     this.trackModalStates();
@@ -84,7 +84,7 @@ class ModalSystemDiagnostic {
     });
   }
 
-  checkCSSSty­les() {
+  checkCSSStyles() {
     console.log('\n🎨 3. STYLES CSS ET CONFLITS');
     
     // Vérifier les règles CSS qui peuvent poser problème
