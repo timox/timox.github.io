@@ -963,9 +963,14 @@ class KanbanManager {
     this.isRefreshing = true;
     
     if (!this.kanbanContainer) {
-      console.error("Conteneur Kanban principal manquant !");
-      this.isRefreshing = false;
-      return;
+      console.log("🔧 Conteneur manquant, création automatique pour Grist...");
+      this.createKanbanContainer();
+      
+      if (!this.kanbanContainer) {
+        console.error("❌ Impossible de créer le conteneur Kanban !");
+        this.isRefreshing = false;
+        return;
+      }
     }
     
     this.logger.debug("Rafraîchissement Kanban en cours...");
