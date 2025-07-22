@@ -985,6 +985,10 @@ body {
 }
 
 /* Modal Timeline spécifique */
+.history-modal {
+  z-index: 1065 !important; /* Au-dessus des autres modales Bootstrap */
+}
+
 .history-modal .modal-content {
   border-radius: 16px;
   overflow: hidden;
