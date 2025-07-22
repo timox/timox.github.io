@@ -2152,7 +2152,15 @@ class KanbanManager {
         
         if (taskId && this.historyManager) {
           console.log('✅ Appel historyManager.openTaskHistory');
-          this.historyManager.openTaskHistory(taskId);
+          console.log('🔍 Type de historyManager:', typeof this.historyManager);
+          console.log('🔍 Méthode openTaskHistory existe?', typeof this.historyManager.openTaskHistory);
+          
+          if (typeof this.historyManager.openTaskHistory === 'function') {
+            console.log('⚡ Exécution openTaskHistory...');
+            this.historyManager.openTaskHistory(taskId);
+          } else {
+            console.log('❌ openTaskHistory n\'est pas une fonction!');
+          }
         } else {
           console.log('❌ Conditions non remplies:', {taskId, hasHistoryManager: !!this.historyManager});
         }
