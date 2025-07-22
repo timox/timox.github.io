@@ -13,7 +13,7 @@
  * - Centralise la gestion de la modale historique
  */
 
-import BaseModalController from './BaseModalController.js';
+import { BaseModalController } from './BaseModalController.js';
 
 export class HistoryModalController extends BaseModalController {
   constructor(modalId = 'history-modal', options = {}) {

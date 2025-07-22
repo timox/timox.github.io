@@ -13,8 +13,8 @@
  */
 
 import { modalRegistry, ModalRegistry } from './ModalRegistry.js';
-import BaseModalController from './BaseModalController.js';
-import HistoryModalController from './HistoryModalController.js';
+import { BaseModalController } from './BaseModalController.js';
+import { HistoryModalController } from './HistoryModalController.js';
 import { createModuleLogger } from '../utils/LoggerManager.js';
 
 // Logger du module
@@ -371,17 +371,11 @@ export async function closeModal(modalId, options = {}) {
 // EXPORTS
 // ==========================================
 
-export {
-  modalRegistry,
-  ModalRegistry,
-  BaseModalController,
-  HistoryModalController
-};
-
-// Export par défaut - utilitaires uniquement
+// Export par défaut - API principale
 export default {
-  init: initModalSystem,
-  get: getModalSystem,
-  open: openModal,
-  close: closeModal
+  initModalSystem,
+  getModalSystem, 
+  openModal,
+  closeModal,
+  ModalSystem
 };
