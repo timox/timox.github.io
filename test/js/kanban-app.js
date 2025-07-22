@@ -2154,10 +2154,13 @@ document.addEventListener('DOMContentLoaded', () => {
   
   try {
     console.log('🔍 Vérification jQuery:', typeof $);
+    console.log('🔍 Avant création KanbanManager...');
     window.kanbanManager = new KanbanManager();
     console.log('✅ window.kanbanManager créé:', !!window.kanbanManager);
+    console.log('🔍 Type de kanbanManager:', typeof window.kanbanManager);
   } catch (error) {
     console.error('❌ Erreur création KanbanManager:', error);
+    console.error('❌ Stack trace:', error.stack);
     window.kanbanManager = null;
   }
 });
