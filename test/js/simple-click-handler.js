@@ -23,7 +23,11 @@ class SimpleClickHandler {
     }
     
     this.isProcessing = true;
-    setTimeout(() => { this.isProcessing = false; }, 1000);
+    setTimeout(() => { 
+      this.isProcessing = false; 
+      // Nettoyer les tooltips figées
+      this.cleanStuckTooltips();
+    }, 1000);
     
     try {
       console.log('🎯 Click intercepté:', e.target.className, e.target.id);
@@ -53,17 +57,22 @@ class SimpleClickHandler {
         return;
       }
       
-      // === PRIORITÉ 2: TIMELINE ET HISTORIQUE ===
+      // === PRIORITÉ 2: TIMELINE ET HISTORIQUE (ULTRA PRIORITAIRE) ===
       
-      // Timeline - bouton avec data-task-id OU son parent  
-      const timelineBtn = e.target.closest('.btn-timeline') || (e.target.classList.contains('btn-timeline') ? e.target : null);
-      if (timelineBtn && timelineBtn.dataset.taskId) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation(); // AJOUTÉ: empêche TOUS les autres listeners
-        console.log('🎯 Timeline détecté via closest(), taskId:', timelineBtn.dataset.taskId);
-        this.openTimeline(parseInt(timelineBtn.dataset.taskId));
-        return;
+      // Timeline - détection TRÈS agressive pour éviter conflits avec cartes
+      if (e.target.classList.contains('bi-clock-history') || 
+          e.target.closest('.btn-timeline') ||
+          e.target.classList.contains('btn-timeline')) {
+        
+        const timelineBtn = e.target.closest('.btn-timeline') || (e.target.classList.contains('btn-timeline') ? e.target : null);
+        if (timelineBtn && timelineBtn.dataset.taskId) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation(); // Empêche TOUS les autres listeners
+          console.log('🎯 Timeline détecté (priorité ultra), taskId:', timelineBtn.dataset.taskId);
+          this.openTimeline(parseInt(timelineBtn.dataset.taskId));
+          return;
+        }
       }
       
       // Export historique
@@ -269,6 +278,27 @@ class SimpleClickHandler {
     console.log('🧹 Clear filtres');
     if (this.kanban.filterManager) {
       this.kanban.filterManager.clearAllFilters();
+    }
+  }
+  
+  cleanStuckTooltips() {
+    // Supprimer toutes les tooltips figées
+    const stuckTooltips = document.querySelectorAll('.tooltip, .bs-tooltip-auto, .bs-tooltip-top, .bs-tooltip-bottom, .bs-tooltip-left, .bs-tooltip-right');
+    stuckTooltips.forEach(tooltip => {
+      if (tooltip && tooltip.remove) {
+        tooltip.remove();
+      }
+    });
+    
+    // Réinitialiser les tooltips Bootstrap
+    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+      tooltipTriggerList.forEach(tooltipTriggerEl => {
+        const tooltipInstance = bootstrap.Tooltip.getInstance(tooltipTriggerEl);
+        if (tooltipInstance) {
+          tooltipInstance.hide();
+        }
+      });
     }
   }
 }

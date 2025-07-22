@@ -967,6 +967,9 @@ body {
   text-decoration: none;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   font-weight: 500;
+  position: relative;
+  z-index: 1000; /* AU-DESSUS de la carte */
+  pointer-events: auto; /* Force le clic sur ce bouton uniquement */
 }
 
 .btn-timeline:hover {
