@@ -986,7 +986,7 @@ body {
 
 /* Modal Timeline spécifique */
 .history-modal {
-  z-index: 1065 !important; /* Au-dessus des autres modales Bootstrap */
+  z-index: 1150 !important; /* Au-dessus de la snackbar (1100) et autres éléments */
 }
 
 .history-modal .modal-content {

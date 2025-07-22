@@ -139,6 +139,12 @@ class KanbanManager {
       
       // Récupérer le container maintenant que le DOM est prêt
       this.kanbanContainer = document.getElementById('kanban-container');
+      
+      // Créer le conteneur s'il n'existe pas (pour les widgets Grist)
+      if (!this.kanbanContainer) {
+        console.log('🔧 Création du conteneur Kanban pour widget Grist...');
+        this.createKanbanContainer();
+      }
       if (!this.kanbanContainer) {
         throw new Error('Container kanban-container non trouvé dans le DOM');
       }
@@ -1356,6 +1362,95 @@ class KanbanManager {
     console.log('✅ Nettoyage des backdrops terminé');
   }
   
+  // === CRÉATION DU CONTENEUR POUR WIDGETS GRIST ===
+  createKanbanContainer() {
+    // Créer la structure HTML minimale nécessaire
+    const container = document.createElement('div');
+    container.id = 'kanban-container';
+    container.className = 'kanban-container';
+    
+    // Style inline minimal pour Grist
+    container.style.cssText = `
+      display: flex;
+      overflow-x: auto;
+      gap: 1rem;
+      padding: 1rem;
+      min-height: 400px;
+      width: 100%;
+      box-sizing: border-box;
+    `;
+    
+    // Ajouter au body
+    document.body.appendChild(container);
+    
+    // Créer aussi les modales nécessaires
+    this.createRequiredModals();
+    
+    // Récupérer le conteneur créé
+    this.kanbanContainer = container;
+    
+    console.log('✅ Conteneur Kanban créé pour widget Grist');
+  }
+  
+  createRequiredModals() {
+    // Créer la modal d'historique
+    const historyModal = document.createElement('div');
+    historyModal.className = 'modal fade history-modal';
+    historyModal.id = 'history-modal';
+    historyModal.setAttribute('tabindex', '-1');
+    historyModal.setAttribute('aria-hidden', 'true');
+    historyModal.innerHTML = `
+      <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="history-modal-label">
+              <i class="bi bi-clock-history me-2"></i>Historique de la tâche
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div id="history-stats"></div>
+            <div id="history-timeline"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-success" id="btn-export-task-history">
+              <i class="bi bi-download me-1"></i>Exporter
+            </button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(historyModal);
+    
+    // Créer la modal d'édition de tâche
+    const taskModal = document.createElement('div');
+    taskModal.className = 'modal fade';
+    taskModal.id = 'popup-tache';
+    taskModal.setAttribute('tabindex', '-1');
+    taskModal.setAttribute('aria-hidden', 'true');
+    taskModal.innerHTML = `
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="popup-tache-label">Éditer la tâche</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body" id="popup-tache-body">
+            <!-- Contenu généré dynamiquement -->
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+            <button type="button" class="btn btn-primary" id="btn-save-task">Sauvegarder</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(taskModal);
+    
+    console.log('✅ Modales créées pour widget Grist');
+  }
+
   // Mise à jour du bouton de nettoyage d'urgence
   updateCleanButton() {
     const backdrops = document.querySelectorAll('.modal-backdrop');
