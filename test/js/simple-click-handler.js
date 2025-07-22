@@ -129,7 +129,19 @@ class SimpleClickHandler {
   
   openTimeline(taskId) {
     console.log('📖 Ouverture timeline pour tâche:', taskId);
-    if (this.kanban.historyManager) {
+    
+    // 🆕 NOUVEAU SYSTÈME MODAL avec fallback
+    if (this.kanban.modalSystem?.isInitialized()) {
+      console.log('🆕 Utilisation nouveau système modal');
+      this.kanban.modalSystem.openModal('history-modal', { taskId })
+        .catch(error => {
+          console.error('❌ Nouveau système échoué, fallback:', error);
+          if (this.kanban.historyManager) {
+            this.kanban.historyManager.openTaskHistory(taskId);
+          }
+        });
+    } else if (this.kanban.historyManager) {
+      console.log('🔄 Fallback ancien système');
       this.kanban.historyManager.openTaskHistory(taskId);
     }
   }

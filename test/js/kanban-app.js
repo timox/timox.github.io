@@ -28,6 +28,9 @@ import { initUserActionManager, getUserActionManager } from './utils/UserActionM
 import { initNotesJsonMigrator, getNotesJsonMigrator } from './utils/NotesJsonMigrator.js';
 import { initLogger, createModuleLogger } from './utils/LoggerManager.js';
 
+// === NOUVEAU SYSTÈME MODAL ===
+import { initModalSystem } from './modal-system/index.js';
+
 import {
   generateBureauBadges,
   generatePriorityBadge,
@@ -83,7 +86,10 @@ class KanbanManager {
     this.kanbanContainer = null;
     this.currentRecords = [];
     this.modalElement = null;
-    this.historyModalElement =null;
+    this.historyModalElement = null;
+    
+    // === NOUVEAU SYSTÈME MODAL ===
+    this.modalSystem = null;
     this.currentTaskId = null;
     this.isUpdating = false;
     this.isRefreshing = false;
@@ -147,6 +153,9 @@ class KanbanManager {
       
       // Initialiser les managers après le chargement des données
       this.initializeManagers();
+      
+      // === NOUVEAU SYSTÈME MODAL ===
+      await this.initializeModalSystem();
       
       // Initialiser le gestionnaire de clics simple
       this.initSimpleClickHandler();
@@ -1366,6 +1375,39 @@ class KanbanManager {
         cleanBtn.style.display = 'none';
       }
     }
+    
+    // 🧪 BOUTON TEST NOUVEAU SYSTÈME MODAL
+    const testBtn = document.getElementById('btn-test-new-modal');
+    if (testBtn && !testBtn.hasAttribute('data-initialized')) {
+      testBtn.setAttribute('data-initialized', 'true');
+      testBtn.onclick = () => this.testNewModalSystem();
+    }
+  }
+  
+  /**
+   * Test du nouveau système modal
+   */
+  testNewModalSystem() {
+    console.log('🧪 Test du nouveau système modal...');
+    
+    if (!this.modalSystem?.isInitialized()) {
+      alert('⚠️ Nouveau système modal non initialisé');
+      return;
+    }
+    
+    // Test avec une tâche existante
+    const taskId = this.currentRecords?.length > 0 ? this.currentRecords[0].id : 102;
+    
+    console.log(`🧪 Test ouverture historique pour tâche ${taskId}`);
+    
+    this.modalSystem.openModal('history-modal', { taskId })
+      .then(() => {
+        console.log('✅ Test réussi !');
+      })
+      .catch(error => {
+        console.error('❌ Test échoué:', error);
+        alert(`❌ Test échoué: ${error.message}`);
+      });
   }
   
   // === GESTION DE LA MINI-MODALE STRATÉGIES ===
@@ -2074,6 +2116,35 @@ class KanbanManager {
     // Créer l'instance
     this.simpleClickHandler = new SimpleClickHandler(this);
     console.log('✅ SimpleClickHandler initialisé');
+  }
+
+  /**
+   * Initialise le nouveau système modal
+   */
+  async initializeModalSystem() {
+    console.log('🆕 Initialisation du nouveau système modal...');
+    
+    try {
+      this.modalSystem = await initModalSystem({
+        kanbanManager: this,
+        historyManager: this.historyManager
+      }, {
+        enableTracing: true,
+        maintainCompatibility: true
+      });
+      
+      console.log('✅ Nouveau système modal initialisé avec succès');
+      
+      // Exposer pour debug
+      if (typeof window !== 'undefined') {
+        window.NewModalSystem = this.modalSystem;
+      }
+      
+    } catch (error) {
+      console.error('❌ Erreur initialisation nouveau système modal:', error);
+      console.log('🔄 Fallback: Ancien système conservé');
+      // L'ancien système reste en place comme fallback
+    }
   }
 }
 
