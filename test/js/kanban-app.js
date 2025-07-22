@@ -2151,7 +2151,15 @@ class KanbanManager {
 // === INITIALISATION ===
 document.addEventListener('DOMContentLoaded', () => {
   console.log('🚀 Initialisation Kanban avec gestionnaires...');
-  window.kanbanManager = new KanbanManager();
+  
+  try {
+    console.log('🔍 Vérification jQuery:', typeof $);
+    window.kanbanManager = new KanbanManager();
+    console.log('✅ window.kanbanManager créé:', !!window.kanbanManager);
+  } catch (error) {
+    console.error('❌ Erreur création KanbanManager:', error);
+    window.kanbanManager = null;
+  }
 });
 
 // === EXPORT POUR UTILISATION EXTERNE ===
