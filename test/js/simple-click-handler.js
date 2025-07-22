@@ -73,8 +73,8 @@ class SimpleClickHandler {
         return;
       }
       
-      // === PRIORITÉ 3: STRATÉGIES ===
-      
+      // === PRIORITÉ 3: STRATÉGIES === (DÉSACTIVÉ POUR DEBUG)
+      /*
       // Stratégie - icône avec data-task-id OU son parent
       const strategyIcon = e.target.closest('.strategie-icon') || (e.target.classList.contains('strategie-icon') ? e.target : null);
       if (strategyIcon && strategyIcon.dataset.taskId) {
@@ -84,6 +84,7 @@ class SimpleClickHandler {
         this.openStrategy(parseInt(strategyIcon.dataset.taskId));
         return;
       }
+      */
       
       // === PRIORITÉ 4: CARTES KANBAN ===
       
@@ -146,10 +147,13 @@ class SimpleClickHandler {
     }
   }
   
+  // DÉSACTIVÉ POUR DEBUG
+  /*
   openStrategy(taskId) {
     console.log('🎯 Ouverture stratégie pour tâche:', taskId);
     this.kanban.openStrategyMiniModal(taskId);
   }
+  */
   
   openTaskModal(taskId) {
     console.log('📝 Ouverture modale tâche:', taskId);
