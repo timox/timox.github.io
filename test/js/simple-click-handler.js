@@ -55,11 +55,12 @@ class SimpleClickHandler {
       
       // === PRIORITÉ 2: TIMELINE ET HISTORIQUE ===
       
-      // Timeline - bouton avec data-task-id OU son parent
+      // Timeline - bouton avec data-task-id OU son parent  
       const timelineBtn = e.target.closest('.btn-timeline') || (e.target.classList.contains('btn-timeline') ? e.target : null);
       if (timelineBtn && timelineBtn.dataset.taskId) {
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation(); // AJOUTÉ: empêche TOUS les autres listeners
         console.log('🎯 Timeline détecté via closest(), taskId:', timelineBtn.dataset.taskId);
         this.openTimeline(parseInt(timelineBtn.dataset.taskId));
         return;
