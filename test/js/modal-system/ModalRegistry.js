@@ -413,8 +413,7 @@ export class ModalRegistry {
 // Export d'instance singleton
 export const modalRegistry = new ModalRegistry();
 
-// Export pour tests
-export { ModalRegistry };
+// Pas besoin d'export séparé - déjà exporté avec la classe
 
 // API globale pour debug
 if (typeof window !== 'undefined') {

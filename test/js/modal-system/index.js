@@ -372,17 +372,16 @@ export async function closeModal(modalId, options = {}) {
 // ==========================================
 
 export {
-  ModalSystem,
   modalRegistry,
   ModalRegistry,
   BaseModalController,
   HistoryModalController
 };
 
-// Export par défaut
+// Export par défaut - utilitaires uniquement
 export default {
-  initModalSystem,
-  getModalSystem,
-  openModal,
-  closeModal
+  init: initModalSystem,
+  get: getModalSystem,
+  open: openModal,
+  close: closeModal
 };

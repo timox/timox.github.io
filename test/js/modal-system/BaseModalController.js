@@ -455,4 +455,4 @@ export class BaseModalController {
   }
 }
 
-export default BaseModalController;
+// Pas besoin d'export default - déjà exporté avec la classe

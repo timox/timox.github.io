@@ -556,4 +556,4 @@ export class HistoryModalController extends BaseModalController {
   }
 }
 
-export default HistoryModalController;
+// Pas besoin d'export default - déjà exporté avec la classe
