@@ -2072,122 +2072,78 @@ class KanbanManager {
   }
 
   /**
-   * Initialise la délégation d'événements jQuery (bonne pratique)
+   * Initialise la délégation d'événements (bonne pratique jQuery)
+   * PRINCIPE : Utiliser UNIQUEMENT jQuery pour la cohérence et stabilité
    */
   initEventDelegation() {
     console.log('🎯 Initialisation délégation d\'événements jQuery...');
     
-    // Utiliser jQuery si disponible, sinon délégation native
-    if (typeof $ !== 'undefined') {
-      this.initJQueryDelegation();
-    } else {
-      this.initNativeDelegation();
+    // VÉRIFIER que jQuery est disponible - obligatoire pour la stabilité
+    if (typeof $ === 'undefined') {
+      console.error('❌ jQuery requis pour la délégation d\'événements');
+      displayError('jQuery requis pour le fonctionnement des événements');
+      return;
     }
     
-    console.log('✅ Délégation d\'événements initialisée');
+    this.initJQueryDelegation();
+    console.log('✅ Délégation d\'événements jQuery initialisée');
   }
   
   /**
-   * Délégation avec jQuery (recommandé)
+   * Délégation avec jQuery (seule méthode stable et pérenne)
+   * PRINCIPE : Utiliser .on() avec délégation et bind() pour conserver le contexte
    */
   initJQueryDelegation() {
     const $container = $('#kanban-container');
     
-    // Boutons historique - délégation sur le container
-    $container.on('click', '.btn-timeline', (e) => {
+    if ($container.length === 0) {
+      console.error('❌ Container #kanban-container non trouvé');
+      return;
+    }
+    
+    // BOUTONS HISTORIQUE - délégation avec contexte préservé
+    $container.on('click.kanban-history', '.btn-timeline', $.proxy(function(e) {
       e.preventDefault();
       e.stopPropagation();
       
-      const taskId = $(e.currentTarget).data('task-id');
+      const taskId = parseInt($(e.currentTarget).data('task-id'), 10);
       console.log('🎯 Historique jQuery délégation, taskId:', taskId);
+      console.log('🔍 Context this:', !!this);
+      console.log('🔍 HistoryManager existe:', !!this.historyManager);
       
-      if (taskId && this.historyManager) {
+      if (taskId && this.historyManager && typeof this.historyManager.openTaskHistory === 'function') {
+        console.log('✅ Appel historyManager.openTaskHistory');
         this.historyManager.openTaskHistory(taskId);
+      } else {
+        console.log('❌ Conditions échouées:', {
+          taskId,
+          hasHistoryManager: !!this.historyManager,
+          isFunction: typeof this.historyManager?.openTaskHistory
+        });
       }
-    });
+    }, this)); // $.proxy() préserve le contexte 'this'
     
-    // Titres de tâches - délégation pour édition
-    $container.on('click', '.item-title', (e) => {
+    // TITRES DE TÂCHES - délégation pour édition
+    $container.on('click.kanban-edit', '.item-title', $.proxy(function(e) {
       e.preventDefault();
       e.stopPropagation();
       
       const $card = $(e.target).closest('.kanban-item');
-      const taskId = parseInt($card.data('id'));
+      const taskId = parseInt($card.data('id'), 10);
       console.log('🎯 Édition tâche jQuery délégation, taskId:', taskId);
       
-      if (taskId && this.modalManager) {
+      if (taskId && this.modalManager && typeof this.modalManager.openTaskModal === 'function') {
         const task = this.currentRecords?.find(t => t.id === taskId);
         if (task) {
           this.modalManager.openTaskModal(task);
         }
       }
-    });
+    }, this)); // $.proxy() préserve le contexte 'this'
     
-    console.log('✅ Délégation jQuery configurée');
+    console.log('✅ Délégation jQuery configurée avec $.proxy()');
   }
   
-  /**
-   * Délégation native (fallback)
-   */
-  initNativeDelegation() {
-    const container = document.getElementById('kanban-container');
-    if (!container) return;
-    
-    container.addEventListener('click', (e) => {
-      // Timeline
-      const timelineBtn = e.target.closest('.btn-timeline');
-      if (timelineBtn) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const rawTaskId = timelineBtn.dataset.taskId;
-        const taskId = parseInt(rawTaskId);
-        console.log('🎯 Historique natif délégation');
-        console.log('🔍 Raw data-task-id:', rawTaskId);
-        console.log('🔍 Parsed taskId:', taskId);
-        console.log('🔍 Type raw:', typeof rawTaskId);
-        console.log('🔍 Type parsed:', typeof taskId);
-        console.log('🔍 Debug historyManager:', !!this.historyManager);
-        console.log('🔍 Debug taskId valid:', !!taskId);
-        
-        if (taskId && this.historyManager) {
-          console.log('✅ Appel historyManager.openTaskHistory');
-          console.log('🔍 Type de historyManager:', typeof this.historyManager);
-          console.log('🔍 Méthode openTaskHistory existe?', typeof this.historyManager.openTaskHistory);
-          
-          if (typeof this.historyManager.openTaskHistory === 'function') {
-            console.log('⚡ Exécution openTaskHistory...');
-            this.historyManager.openTaskHistory(taskId);
-          } else {
-            console.log('❌ openTaskHistory n\'est pas une fonction!');
-          }
-        } else {
-          console.log('❌ Conditions non remplies:', {taskId, hasHistoryManager: !!this.historyManager});
-        }
-        return;
-      }
-      
-      // Titre tâche
-      if (e.target.classList.contains('item-title')) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const card = e.target.closest('.kanban-item');
-        const taskId = parseInt(card.dataset.id);
-        console.log('🎯 Édition tâche natif délégation, taskId:', taskId);
-        
-        if (taskId && this.modalManager) {
-          const task = this.currentRecords?.find(t => t.id === taskId);
-          if (task) {
-            this.modalManager.openTaskModal(task);
-          }
-        }
-        return;
-      }
-    });
-    
-    console.log('✅ Délégation native configurée');
-  }
+  // initNativeDelegation() supprimée - utilisation exclusive de jQuery pour la stabilité
 
   // initializeModalSystem() supprimée - système simplifié avec délégation jQuery
 }
