@@ -108,3 +108,6 @@ if (typeof window !== 'undefined') {
   console.log('🛠️ Script d\'export chargé !');
   console.log('📝 Pour exporter, tapez dans la console : exportStrategyDataFromGrist()');
 }
+
+// Export ES6 pour utilisation en module
+export { exportStrategyDataFromGrist };

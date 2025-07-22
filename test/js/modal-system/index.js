@@ -384,6 +384,5 @@ export default {
   initModalSystem,
   getModalSystem,
   openModal,
-  closeModal,
-  ModalSystem
+  closeModal
 };
