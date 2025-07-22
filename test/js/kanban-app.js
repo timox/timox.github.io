@@ -28,8 +28,7 @@ import { initUserActionManager, getUserActionManager } from './utils/UserActionM
 import { initNotesJsonMigrator, getNotesJsonMigrator } from './utils/NotesJsonMigrator.js';
 import { initLogger, createModuleLogger } from './utils/LoggerManager.js';
 
-// === NOUVEAU SYSTÈME MODAL ===
-import { initModalSystem } from './modal-system/index.js';
+// Modal system simplified - using existing modal managers only
 
 import {
   generateBureauBadges,
@@ -88,8 +87,7 @@ class KanbanManager {
     this.modalElement = null;
     this.historyModalElement = null;
     
-    // === NOUVEAU SYSTÈME MODAL ===
-    this.modalSystem = null;
+    // Modal management handled by ModalManager
     this.currentTaskId = null;
     this.isUpdating = false;
     this.isRefreshing = false;
@@ -154,8 +152,7 @@ class KanbanManager {
       // Initialiser les managers après le chargement des données
       this.initializeManagers();
       
-      // === NOUVEAU SYSTÈME MODAL ===
-      await this.initializeModalSystem();
+      // Modal system already handled by ModalManager
       
       // Initialiser le gestionnaire de clics simple
       this.initSimpleClickHandler();
