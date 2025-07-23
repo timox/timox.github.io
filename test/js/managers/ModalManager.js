@@ -38,9 +38,9 @@ export class ModalManager {
    */
   init() {
     this.initializeModals();
-    // ✅ Event listeners supprimés - gérés par SimpleClickHandler
+    this.setupEventListeners();
     this.setupStrategySelects();
-    console.log('ModalManager: Gestionnaire de modales initialisé (listeners centralisés)');
+    console.log('ModalManager: Gestionnaire de modales initialisé');
   }
   
   /**
@@ -65,10 +65,9 @@ export class ModalManager {
   }
   
   /**
-   * ✅ SUPPRIMÉ - Configure les écouteurs d'événements
-   * Event listeners maintenant gérés par SimpleClickHandler
+   * Configure les écouteurs d'événements pour les modales
    */
-  setupEventListeners_DISABLED() {
+  setupEventListeners() {
     // Bouton nouvelle tâche
     const btnNouvelleTache = document.getElementById('btn-nouvelle-tache');
     if (btnNouvelleTache) {
@@ -77,21 +76,20 @@ export class ModalManager {
       });
     }
     
-    // Bouton sauvegarder
-    const btnSaveTask = document.getElementById('btn-save-task');
-    if (btnSaveTask) {
-      btnSaveTask.addEventListener('click', () => {
+    // Event listeners pour les boutons de la modal avec délégation
+    $(document).off('click.modal-events', '#btn-save-task, #btn-delete-task')
+      .on('click.modal-events', '#btn-save-task', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('🔄 Bouton sauvegarder cliqué');
         this.saveTask();
-      });
-    }
-    
-    // Bouton supprimer
-    const btnDeleteTask = document.getElementById('btn-delete-task');
-    if (btnDeleteTask) {
-      btnDeleteTask.addEventListener('click', () => {
+      })
+      .on('click.modal-events', '#btn-delete-task', (e) => {
+        e.preventDefault(); 
+        e.stopPropagation();
+        console.log('🗑️ Bouton supprimer cliqué');
         this.deleteTask();
       });
-    }
     
     // Bouton ajouter projet
     const btnAjoutProjet = document.getElementById('btn-ajout-projet');
@@ -535,15 +533,6 @@ export class ModalManager {
     detailsContainer.style.display = 'block';
   }
   
-  /**
-   * Masque les détails de stratégie
-   */
-  hideStrategyDetails() {
-    const detailsContainer = document.getElementById('strategy-details');
-    if (detailsContainer) {
-      detailsContainer.style.display = 'none';
-    }
-  }
   
   /**
    * Peuple les champs de stratégie basés sur les strategie_ids multiples
@@ -1197,9 +1186,7 @@ export class ModalManager {
       ]);
       
       // Fermer la modal d'abord
-      if (this.taskModal) {
-        this.taskModal.hide();
-      }
+      this.closeAllModals();
       
       displaySuccess('Tâche supprimée avec succès');
       
@@ -1723,6 +1710,17 @@ export class ModalManager {
   }
 
   /**
+   * Masque les détails de stratégie (fonction utilitaire)
+   */
+  hideStrategyDetails() {
+    // Masquer les sections de détail stratégie si elles existent
+    const strategyDetailsElements = document.querySelectorAll('.strategy-details, #strategy-details');
+    strategyDetailsElements.forEach(element => {
+      element.style.display = 'none';
+    });
+  }
+
+  /**
    * Réinitialise l'accordéon historique des commentaires
    */
   resetCommentHistoryAccordion() {
@@ -2021,19 +2019,6 @@ export class ModalManager {
     }
   }
   
-  /**
-   * Exporte l'état du gestionnaire
-   * @returns {object} État exporté
-   */
-  exportState() {
-    return {
-      currentTaskId: this.currentTaskId,
-      isNewTask: this.isNewTask,
-      hasTaskModal: this.taskModal !== null,
-      hasHistoryModal: this.historyModal !== null,
-      timestamp: Date.now()
-    };
-  }
   
   /**
    * Nettoie les ressources
