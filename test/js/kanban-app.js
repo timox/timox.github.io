@@ -2231,32 +2231,28 @@ class KanbanManager {
     
     // BOUTONS HISTORIQUE - délégation avec contexte préservé
     $container.on('click.kanban-events', '.btn-timeline', $.proxy(function(e) {
-      console.log('🎯 CLICK détecté sur bouton timeline!', e.currentTarget);
       e.preventDefault();
       e.stopPropagation();
+      e.stopImmediatePropagation(); // Empêcher autres gestionnaires
+      
+      // Protection anti-flood au niveau du gestionnaire
+      const now = Date.now();
+      if (this._lastTimelineClick && now - this._lastTimelineClick < 500) {
+        console.log('🛡️ Timeline click bloqué (trop rapide)');
+        return false;
+      }
+      this._lastTimelineClick = now;
       
       const taskId = parseInt($(e.currentTarget).data('task-id'), 10);
-      console.log('🎯 Historique jQuery délégation, taskId:', taskId);
-      console.log('🔍 Context this:', !!this);
-      console.log('🔍 HistoryManager existe:', !!this.historyManager);
-      
-      try {
-        console.log('🔍 HistoryManager type:', typeof this.historyManager);
-        console.log('🔍 openTaskHistory type:', typeof this.historyManager?.openTaskHistory);
-      } catch (e) {
-        console.error('❌ Erreur accès HistoryManager:', e);
-      }
+      console.log('🎯 Timeline clicked for task:', taskId);
       
       if (taskId && this.historyManager && typeof this.historyManager.openTaskHistory === 'function') {
-        console.log('✅ Appel historyManager.openTaskHistory');
         this.historyManager.openTaskHistory(taskId);
       } else {
-        console.log('❌ Conditions échouées:', {
-          taskId,
-          hasHistoryManager: !!this.historyManager,
-          isFunction: typeof this.historyManager?.openTaskHistory
-        });
+        console.warn('❌ Cannot open history:', { taskId, hasHistoryManager: !!this.historyManager });
       }
+      
+      return false; // Empêcher propagation
     }, this)); // $.proxy() préserve le contexte 'this'
     
     // TITRES DE TÂCHES - délégation pour édition
