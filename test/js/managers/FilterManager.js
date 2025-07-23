@@ -97,12 +97,13 @@ export class FilterManager {
       });
       
       // Raccourci clavier pour focus
-      document.addEventListener('keydown', (e) => {
-        if ((e.key === 'f' || e.key === 'F') && !e.target.matches('input, textarea, select')) {
-          e.preventDefault();
-          this.elements.searchInput.focus();
-        }
-      });
+      // Raccourci F - DÉSACTIVÉ (géré centralement dans kanban-app.js)
+      // document.addEventListener('keydown', (e) => {
+      //   if ((e.key === 'f' || e.key === 'F') && !e.target.matches('input, textarea, select')) {
+      //     e.preventDefault();
+      //     this.elements.searchInput.focus();
+      //   }
+      // });
     }
     
     // Filtres par sélection

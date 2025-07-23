@@ -33,7 +33,7 @@ export const TABLE_ID = "Ssir_principale_task";
 
 // === COLONNES REQUISES ET OPTIONNELLES ===
 export const REQUIRED_COLUMNS = [
-  'id', 'titre', 'description', 'statut', 'bureau', 'qui', 'urgence', 'impact',
+  'id', 'id_task', 'titre', 'description', 'statut', 'bureau', 'qui', 'urgence', 'impact',
   'projet', 'strategie_id', 'notes', 'date_derniere_maj', 'statut_precedent'
   // Removed: strategie_objectif, strategie_sous_objectif, strategie_action (auto-computed)
   // Removed: historique_statuts (Date field, not JSON)

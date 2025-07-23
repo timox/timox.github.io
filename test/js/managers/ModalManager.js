@@ -120,13 +120,13 @@ export class ModalManager {
       }
     });
     
-    // Raccourcis clavier
-    document.addEventListener('keydown', (e) => {
-      if ((e.key === 'n' || e.key === 'N') && !e.target.matches('input, textarea')) {
-        e.preventDefault();
-        this.openTaskModal();
-      }
-    });
+    // Raccourcis clavier - DÉSACTIVÉS (gérés centralement dans kanban-app.js)
+    // document.addEventListener('keydown', (e) => {
+    //   if ((e.key === 'n' || e.key === 'N') && !e.target.matches('input, textarea')) {
+    //     e.preventDefault();
+    //     this.openTaskModal();
+    //   }
+    // });
     
     // Auto-resize des textareas
     const descriptionTextarea = document.getElementById('popup-description');
@@ -580,12 +580,18 @@ export class ModalManager {
     // Rechercher et pré-sélectionner chaque stratégie
     if (this.kanban.strategiesData && this.kanban.strategiesData.length > 0) {
       idsArray.forEach(strategyId => {
-        const strategy = this.kanban.strategiesData.find(s => s.id == strategyId);
+        // Extraire l'ID depuis le format Grist ["L", id] si nécessaire
+        let searchId = strategyId;
+        if (Array.isArray(strategyId) && strategyId.length === 2 && strategyId[0] === 'L') {
+          searchId = strategyId[1];
+        }
+        
+        const strategy = this.kanban.strategiesData.find(s => s.id == searchId);
         if (strategy) {
           this.addStrategyToSelection(strategy);
           this.preSelectStrategyInAccordion(strategy);
         } else {
-          console.warn('Stratégie non trouvée pour ID:', strategyId);
+          console.warn('Stratégie non trouvée pour ID:', strategyId, '(recherché:', searchId, ')');
         }
       });
       
@@ -1715,6 +1721,9 @@ export class ModalManager {
    * Ferme toutes les modales ouvertes
    */
   closeAllModals() {
+    console.log('🚪 Fermeture de toutes les modales...');
+    
+    // Modales principales
     if (this.taskModal) {
       this.taskModal.hide();
     }
@@ -1722,6 +1731,30 @@ export class ModalManager {
     if (this.historyModal) {
       this.historyModal.hide();
     }
+    
+    // JalonModal via KanbanManager
+    if (this.kanban?.jalonManager?.jalonModal) {
+      this.kanban.jalonManager.jalonModal.hide();
+    }
+    
+    // DatePicker
+    if (this.kanban?.datePickerManager?.closeDatePicker) {
+      this.kanban.datePickerManager.closeDatePicker();
+    }
+    
+    // Fermer toutes les modales Bootstrap génériques ouvertes
+    $('.modal.show').each(function() {
+      const modal = bootstrap.Modal.getInstance(this);
+      if (modal) {
+        modal.hide();
+      }
+    });
+    
+    // Nettoyer les backdrops orphelins
+    setTimeout(() => {
+      $('.modal-backdrop').remove();
+      $('body').removeClass('modal-open');
+    }, 300);
   }
   
   /**

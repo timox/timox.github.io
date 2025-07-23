@@ -278,8 +278,13 @@ export class KanbanManager {
   
   /**
    * Configure les raccourcis clavier globaux
+   * Note: Désactivé temporairement pour éviter les conflits avec jQuery
    */
   setupGlobalKeyboardShortcuts() {
+    // DÉSACTIVÉ: Event listeners gérés centralement via jQuery dans kanban-app.js
+    console.log('⚠️ Raccourcis clavier KanbanManager désactivés (gérés par jQuery)');
+    
+    /*
     document.addEventListener('keydown', (e) => {
       // Ignorer si on est dans un champ de saisie
       if (e.target.matches('input, textarea, select')) return;
@@ -307,6 +312,7 @@ export class KanbanManager {
           break;
       }
     });
+    */
   }
   
   /**

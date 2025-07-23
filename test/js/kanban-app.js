@@ -1729,18 +1729,13 @@ class KanbanManager {
   initEventListeners() {
     console.log('🔧 Initialisation des event listeners...');
     
-    // Bouton nouvelle tâche
-    const btnNewTask = document.getElementById('btn-nouvelle-tache');
-    if (btnNewTask) {
-      btnNewTask.addEventListener('click', (e) => {
-        console.log('🆕 Clic bouton nouvelle tâche');
-        e.preventDefault();
-        this.openPopup();
-      });
-      console.log('✅ Event listener bouton nouvelle tâche attaché');
-    } else {
-      console.error('❌ Bouton nouvelle tâche non trouvé !');
-    }
+    // Bouton nouvelle tâche - Utiliser jQuery pour cohérence
+    $(document).off('click', '#btn-nouvelle-tache').on('click', '#btn-nouvelle-tache', (e) => {
+      console.log('🆕 Clic bouton nouvelle tâche (jQuery)');
+      e.preventDefault();
+      this.openPopup();
+    });
+    console.log('✅ Event listener bouton nouvelle tâche attaché');
 
     // Bouton sauvegarder - GÉRÉ PAR ModalManager.js (éviter duplication)
 
@@ -1758,13 +1753,36 @@ class KanbanManager {
 
    
 
-    // Raccourcis clavier - RACCOURCI 'N' GÉRÉ PAR ModalManager.js (éviter duplication)
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'r' || e.key === 'R') {
-        if (!e.target.matches('input, textarea')) {
+    // Raccourcis clavier centralisés avec jQuery (éviter conflits)
+    $(document).off('keydown.kanban').on('keydown.kanban', (e) => {
+      // Ignorer si dans un champ de saisie
+      if ($(e.target).is('input, textarea, select')) return;
+      
+      switch (e.key.toLowerCase()) {
+        case 'n':
           e.preventDefault();
-          this.refreshKanban();
-        }
+          console.log('🔑 Raccourci N: Nouvelle tâche');
+          this.openPopup();
+          break;
+          
+        case 'r':
+          if (!e.ctrlKey && !e.metaKey) { // R seul pour refresh
+            e.preventDefault();
+            console.log('🔑 Raccourci R: Refresh');
+            this.refreshKanban();
+          }
+          break;
+          
+        case 'f':
+          e.preventDefault();
+          console.log('🔑 Raccourci F: Focus recherche');
+          $('#search-input').focus();
+          break;
+          
+        case 'escape':
+          console.log('🔑 Raccourci Escape: Fermer modales');
+          this.closeAllModals();
+          break;
       }
     });
 
