@@ -1729,29 +1729,16 @@ class KanbanManager {
   initEventListeners() {
     console.log('🔧 Initialisation des event listeners...');
     
-    // Protection anti-flood d'événements
-    let lastClickTime = 0;
-    const CLICK_THROTTLE = 100; // ms
+    // Nettoyer tous les event listeners précédents pour éviter doublons
+    $(document).off('.kanban-events');
     
-    // Protection anti-flood spécifique pour body.modal-open
-    $(document).off('click.antiflood').on('click.antiflood', 'body.modal-open', (e) => {
-      const now = Date.now();
-      if (now - lastClickTime < CLICK_THROTTLE) {
-        console.log('🛡️ Click flood détecté et bloqué');
-        e.stopImmediatePropagation();
-        e.preventDefault();
-        return false;
-      }
-      lastClickTime = now;
-    });
-    
-    // Bouton nouvelle tâche - Utiliser jQuery pour cohérence
-    $(document).off('click', '#btn-nouvelle-tache').on('click', '#btn-nouvelle-tache', (e) => {
-      console.log('🆕 Clic bouton nouvelle tâche (jQuery)');
+    // Bouton nouvelle tâche - délégation jQuery propre
+    $(document).on('click.kanban-events', '#btn-nouvelle-tache', (e) => {
       e.preventDefault();
+      e.stopPropagation();
+      console.log('🆕 Clic bouton nouvelle tâche');
       this.openPopup();
     });
-    console.log('✅ Event listener bouton nouvelle tâche attaché');
 
     // Bouton sauvegarder - GÉRÉ PAR ModalManager.js (éviter duplication)
 
@@ -1769,34 +1756,30 @@ class KanbanManager {
 
    
 
-    // Raccourcis clavier centralisés avec jQuery (éviter conflits)
-    $(document).off('keydown.kanban').on('keydown.kanban', (e) => {
+    // Raccourcis clavier - délégation jQuery propre
+    $(document).on('keydown.kanban-events', (e) => {
       // Ignorer si dans un champ de saisie
       if ($(e.target).is('input, textarea, select')) return;
       
       switch (e.key.toLowerCase()) {
         case 'n':
           e.preventDefault();
-          console.log('🔑 Raccourci N: Nouvelle tâche');
           this.openPopup();
           break;
           
         case 'r':
-          if (!e.ctrlKey && !e.metaKey) { // R seul pour refresh
+          if (!e.ctrlKey && !e.metaKey) { 
             e.preventDefault();
-            console.log('🔑 Raccourci R: Refresh');
             this.refreshKanban();
           }
           break;
           
         case 'f':
           e.preventDefault();
-          console.log('🔑 Raccourci F: Focus recherche');
           $('#search-input').focus();
           break;
           
         case 'escape':
-          console.log('🔑 Raccourci Escape: Fermer modales');
           this.closeAllModals();
           break;
       }
@@ -2235,8 +2218,11 @@ class KanbanManager {
       return;
     }
     
+    // Nettoyer les anciens event listeners sur le container
+    $container.off('.kanban-events');
+    
     // BOUTONS HISTORIQUE - délégation avec contexte préservé
-    $container.on('click.kanban-history', '.btn-timeline', $.proxy(function(e) {
+    $container.on('click.kanban-events', '.btn-timeline', $.proxy(function(e) {
       e.preventDefault();
       e.stopPropagation();
       
@@ -2258,7 +2244,7 @@ class KanbanManager {
     }, this)); // $.proxy() préserve le contexte 'this'
     
     // TITRES DE TÂCHES - délégation pour édition
-    $container.on('click.kanban-edit', '.item-title', $.proxy(function(e) {
+    $container.on('click.kanban-events', '.item-title', $.proxy(function(e) {
       e.preventDefault();
       e.stopPropagation();
       
