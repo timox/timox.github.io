@@ -707,8 +707,7 @@ class KanbanManager {
     // Badges responsables
     const responsablesBadges = generateResponsablesBadges(record.qui);
     
-    // Timeline/History button (même chose)
-    const timelineButton = this.generateTimelineButton(record);
+    // Bouton timeline supprimé - historique disponible dans la modale d'édition
     
     const hasEcheanceClass = record.date_echeance ? 'has-echeance' : '';
     const hasDateDebutClass = record.date_debut ? 'has-debut' : '';
@@ -730,7 +729,6 @@ class KanbanManager {
         </div>
         <div class="item-badges">
           ${projectBadge}
-          ${timelineButton}
         </div>
       </div>
       
@@ -744,43 +742,7 @@ class KanbanManager {
     </div>`;
   }
 
-  // Génération du bouton timeline
-  generateTimelineButton(record) {
-    // Compter les événements depuis les notes JSON (nouveau système)
-    let notesEventCount = 0;
-    if (record.notes) {
-      try {
-        const migrator = getNotesJsonMigrator();
-        if (migrator) {
-          const history = migrator.getHistory(record);
-          notesEventCount = Array.isArray(history) ? history.length : 0;
-        }
-      } catch (e) {
-        notesEventCount = 0;
-      }
-    }
-    
-    // ANCIEN SYSTÈME SUPPRIMÉ: Plus de comptage des commentaires depuis description
-    const commentCount = 0; // Fixé à 0 car plus de comptage depuis description
-    
-    // Compter les changements de statut (ancien système)
-    let statusChangeCount = 0;
-    if (record.historique_statuts) {
-      try {
-        const history = JSON.parse(record.historique_statuts);
-        statusChangeCount = history.historique ? history.historique.length : 0;
-      } catch (e) {
-        statusChangeCount = 0;
-      }
-    }
-    
-    const totalEvents = notesEventCount + commentCount + statusChangeCount;
-    
-    // Toujours afficher le bouton timeline (même sans historique)
-    return `<button class="btn-timeline" data-task-id="${record.id}" data-no-tooltip="true">
-      <i class="bi bi-clock-history"></i> ${totalEvents > 0 ? totalEvents : 'Voir'}
-    </button>`;
-  }
+  // Bouton timeline supprimé - historique disponible dans la modale d'édition
 
 
   // Récupération des infos stratégie
