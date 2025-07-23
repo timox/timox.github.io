@@ -148,18 +148,46 @@ export class KanbanAppInitializer {
   async initializeBaseComponents() {
     console.log('⚙️ Initialisation des composants de base...');
     
-    // Importer et initialiser le KanbanManager principal (si pas déjà créé)
-    if (!window.kanbanManager) {
-      const { KanbanManager } = await import('./kanban-app.js');
-      this.components.kanbanManager = new KanbanManager();
-      window.kanbanManager = this.components.kanbanManager;
-    } else {
-      console.log('✅ KanbanManager existant réutilisé');
-      this.components.kanbanManager = window.kanbanManager;
+    try {
+      // Importer et initialiser le KanbanManager principal (si pas déjà créé)
+      if (!window.kanbanManager) {
+        const { KanbanManager } = await import('./kanban-app.js');
+        this.components.kanbanManager = new KanbanManager();
+        window.kanbanManager = this.components.kanbanManager;
+      } else {
+        console.log('✅ KanbanManager existant réutilisé');
+        this.components.kanbanManager = window.kanbanManager;
+      }
+      
+      // Vérifier l'état du KanbanManager
+      console.log('📊 État KanbanManager:', {
+        exists: !!this.components.kanbanManager,
+        isInitialized: this.components.kanbanManager?.isInitialized,
+        hasGrist: !!window.grist,
+        hasData: !!this.components.kanbanManager?.currentRecords
+      });
+      
+      // Si déjà initialisé, passer directement
+      if (this.components.kanbanManager.isInitialized) {
+        console.log('🚀 KanbanManager déjà initialisé');
+      } else {
+        // Attendre que le KanbanManager soit prêt
+        await this.waitForComponent(
+          () => this.components.kanbanManager && this.components.kanbanManager.isInitialized,
+          15000,
+          'KanbanManager.isInitialized'
+        );
+      }
+    } catch (error) {
+      console.error('❌ Erreur initialisation composants de base:', error);
+      // Essayer de continuer même en cas d'erreur
+      if (!this.components.kanbanManager) {
+        console.log('🔄 Création fallback KanbanManager...');
+        const { KanbanManager } = await import('./kanban-app.js');
+        this.components.kanbanManager = new KanbanManager();
+        window.kanbanManager = this.components.kanbanManager;
+      }
     }
-    
-    // Attendre que le KanbanManager soit prêt
-    await this.waitForComponent(() => this.components.kanbanManager.isInitialized);
     
     // Initialiser le ViewModeManager
     this.components.viewModeManager = new ViewModeManager(this.components.kanbanManager);
@@ -672,14 +700,23 @@ export class KanbanAppInitializer {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
   
-  async waitForComponent(condition, timeout = 10000) {
+  async waitForComponent(condition, timeout = 10000, description = 'component') {
     const start = Date.now();
+    console.log(`⏱️ Attente ${description}...`);
+    
     while (!condition() && Date.now() - start < timeout) {
       await this.delay(100);
+      if (Date.now() - start > 2000 && (Date.now() - start) % 2000 < 100) {
+        console.log(`⏳ Toujours en attente de ${description} (${Math.round((Date.now() - start)/1000)}s)`);
+      }
     }
+    
     if (!condition()) {
-      throw new Error('Timeout waiting for component');
+      console.error(`❌ Timeout après ${Math.round((Date.now() - start)/1000)}s pour ${description}`);
+      throw new Error(`Timeout waiting for ${description}`);
     }
+    
+    console.log(`✅ ${description} prêt après ${Math.round((Date.now() - start)/1000)}s`);
   }
   
   saveCurrentState() {
