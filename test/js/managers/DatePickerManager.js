@@ -39,6 +39,7 @@ export class DatePickerManager {
     this.flatpickrInstance = flatpickr(dateInput, {
       locale: 'fr',
       dateFormat: 'Y-m-d',
+      enableTime: false,
       allowInput: false,
       clickOpens: false, // On ouvre manuellement
       onChange: (selectedDates, dateStr) => {

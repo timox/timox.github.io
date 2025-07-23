@@ -21,25 +21,17 @@
     <!-- Header -->
     <div class="kanban-header">
       <div class="container-fluid">
-        <div class="row align-items-center">
-          <div class="col">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <div class="flex-grow-1">
             <h1 class="h3 mb-0 d-flex align-items-center">
               <i class="bi bi-kanban me-2"></i>
               Tableau Kanban
               <span class="badge bg-warning text-dark ms-3">Environnement de test</span>
-              <a href="https://github.com/timox/timox.github.io/blob/main/README.md" 
-                 target="_blank" 
-                 class="btn btn-sm btn-outline-info ms-2"
-                 title="Voir le README sur GitHub">
-                <i class="bi bi-github me-1"></i>README
-              </a>
             </h1>
           </div>
-          <div class="col-auto">
-            <button type="button" class="btn btn-primary btn-sm" id="btn-nouvelle-tache" aria-label="Créer une nouvelle tâche">
-              <i class="bi bi-plus-lg me-1"></i>Nouvelle Tâche
-            </button>
-          </div>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-nouvelle-tache" aria-label="Créer une nouvelle tâche">
+            <i class="bi bi-plus-lg me-1"></i>Nouvelle Tâche
+          </button>
         </div>
       </div>
     </div>
@@ -47,7 +39,7 @@
     <!-- Controls -->
     <div class="container-fluid">
       <div class="kanban-controls">
-        <div class="row g-3 align-items-center">
+        <div class="row g-2 align-items-center" style="min-height: auto;">
           <!-- Boutons de mode de vue (sera injecté par JS) -->
           <div class="col-md-3">
             <div class="input-group">
@@ -159,7 +151,7 @@
                 <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="collapse" 
                         data-bs-target="#comment-history-accordion" aria-expanded="false" 
                         aria-controls="comment-history-accordion" id="btn-toggle-comment-history">
-                  <i class="bi bi-clock-history me-1"></i>Voir l'historique des commentaires
+                  <i class="bi bi-clock-history me-1"></i>Voir l'historique
                 </button>
               </div>
               
@@ -196,15 +188,16 @@
               </div>
             </div>
             <div class="col-md-4">
-              <label for="popup-urgence" class="form-label">Urgence & Impact</label>
-              <div class="input-group">
-                <select class="form-select" id="popup-urgence">
-                  <option value="">-- Urgence --</option>
-                </select>
-                <select class="form-select" id="popup-impact">
-                  <option value="">-- Impact --</option>
-                </select>
-              </div>
+              <label for="popup-urgence" class="form-label">Urgence</label>
+              <select class="form-select" id="popup-urgence">
+                <option value="">-- Urgence --</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label for="popup-impact" class="form-label">Impact</label>
+              <select class="form-select" id="popup-impact">
+                <option value="">-- Impact --</option>
+              </select>
             </div>
             
             <!-- SECTION STRATÉGIE - Interface guidée avec détails -->
@@ -350,14 +343,18 @@
               </div>
             </div>
             <div class="col-md-6">
-              <label for="popup-bureau" class="form-label">Bureaux</label>
-              <select class="form-select" id="popup-bureau" multiple size="4"></select>
-              <div class="form-text">Maintenez Ctrl pour sélectionner plusieurs bureaux</div>
+              <label class="form-label">Bureaux</label>
+              <div id="popup-bureau-checkboxes" class="checkbox-group">
+                <!-- Cases à cocher générées dynamiquement -->
+              </div>
+              <select class="form-select d-none" id="popup-bureau" multiple></select>
             </div>
             <div class="col-md-6">
-              <label for="popup-qui" class="form-label">Responsables</label>
-              <select class="form-select" id="popup-qui" multiple size="4"></select>
-              <div class="form-text">Maintenez Ctrl pour sélectionner plusieurs responsables</div>
+              <label class="form-label">Responsables</label>
+              <div id="popup-qui-checkboxes" class="checkbox-group">
+                <!-- Cases à cocher générées dynamiquement -->
+              </div>
+              <select class="form-select d-none" id="popup-qui" multiple></select>
             </div>
           </div>
         </form>

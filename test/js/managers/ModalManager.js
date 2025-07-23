@@ -780,6 +780,10 @@ export class ModalManager {
     setSelectedOptions('popup-bureau', tache.bureau || ['L']);
     setSelectedOptions('popup-qui', tache.qui || ['L']);
     
+    // Synchroniser avec les cases à cocher
+    this.syncSelectToCheckbox('popup-bureau-checkboxes', 'popup-bureau');
+    this.syncSelectToCheckbox('popup-qui-checkboxes', 'popup-qui');
+    
     // Charger les jalons si disponibles
     if (this.kanban.jalonManager) {
       this.kanban.jalonManager.loadJalonsFromTask(tache);
@@ -1853,9 +1857,99 @@ export class ModalManager {
     // Peupler les selects
     populateSelect('popup-urgence', urgence || [], true);
     populateSelect('popup-impact', impact || [], true);
-    populateSelect('popup-bureau', bureau || [], false);
-    populateSelect('popup-qui', responsables || [], false);
     populateSelect('popup-projet', projet || [], true);
+    
+    // Peupler les cases à cocher
+    this.populateCheckboxOptions('popup-bureau-checkboxes', 'popup-bureau', bureau || []);
+    this.populateCheckboxOptions('popup-qui-checkboxes', 'popup-qui', responsables || []);
+  }
+  
+  /**
+   * Peuple les options sous forme de cases à cocher
+   */
+  populateCheckboxOptions(containerId, selectId, options) {
+    const container = document.getElementById(containerId);
+    const hiddenSelect = document.getElementById(selectId);
+    
+    if (!container || !hiddenSelect) return;
+    
+    // Vider le container
+    container.innerHTML = '';
+    
+    // Vider et remplir le select caché (pour compatibilité)
+    hiddenSelect.innerHTML = '';
+    
+    options.forEach((option, index) => {
+      if (index === 0 && option === 'L') return; // Ignorer le marqueur 'L'
+      
+      // Créer la case à cocher
+      const checkboxDiv = document.createElement('div');
+      checkboxDiv.className = 'form-check';
+      
+      const checkbox = document.createElement('input');
+      checkbox.className = 'form-check-input';
+      checkbox.type = 'checkbox';
+      checkbox.id = `${selectId}-${index}`;
+      checkbox.value = option;
+      
+      const label = document.createElement('label');
+      label.className = 'form-check-label';
+      label.htmlFor = checkbox.id;
+      label.textContent = option;
+      
+      checkboxDiv.appendChild(checkbox);
+      checkboxDiv.appendChild(label);
+      container.appendChild(checkboxDiv);
+      
+      // Ajouter l'option au select caché
+      const optionElement = document.createElement('option');
+      optionElement.value = option;
+      optionElement.textContent = option;
+      hiddenSelect.appendChild(optionElement);
+      
+      // Event listener pour synchroniser avec le select caché
+      checkbox.addEventListener('change', () => {
+        this.syncCheckboxToSelect(containerId, selectId);
+      });
+    });
+  }
+  
+  /**
+   * Synchronise les cases à cocher avec le select caché
+   */
+  syncCheckboxToSelect(containerId, selectId) {
+    const container = document.getElementById(containerId);
+    const hiddenSelect = document.getElementById(selectId);
+    
+    if (!container || !hiddenSelect) return;
+    
+    const checkboxes = container.querySelectorAll('input[type="checkbox"]:checked');
+    const selectedValues = ['L']; // Toujours inclure le marqueur 'L'
+    
+    checkboxes.forEach(checkbox => {
+      selectedValues.push(checkbox.value);
+    });
+    
+    // Mettre à jour le select caché
+    Array.from(hiddenSelect.options).forEach(option => {
+      option.selected = selectedValues.includes(option.value);
+    });
+  }
+  
+  /**
+   * Synchronise le select caché vers les cases à cocher
+   */
+  syncSelectToCheckbox(containerId, selectId) {
+    const container = document.getElementById(containerId);
+    const hiddenSelect = document.getElementById(selectId);
+    
+    if (!container || !hiddenSelect) return;
+    
+    const selectedValues = Array.from(hiddenSelect.selectedOptions).map(option => option.value);
+    
+    container.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+      checkbox.checked = selectedValues.includes(checkbox.value);
+    });
   }
   
   /**
@@ -1867,6 +1961,10 @@ export class ModalManager {
     // Réinitialiser les selects multiples
     setSelectedOptions('popup-bureau', ['L']);
     setSelectedOptions('popup-qui', ['L']);
+    
+    // Synchroniser avec les cases à cocher
+    this.syncSelectToCheckbox('popup-bureau-checkboxes', 'popup-bureau');
+    this.syncSelectToCheckbox('popup-qui-checkboxes', 'popup-qui');
     
     // Réinitialiser la stratégie
     this.resetStrategySelection();
