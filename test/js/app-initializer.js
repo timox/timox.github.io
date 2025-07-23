@@ -138,9 +138,15 @@ export class KanbanAppInitializer {
   async initializeBaseComponents() {
     console.log('⚙️ Initialisation des composants de base...');
     
-    // Importer et initialiser le KanbanManager principal
-    const { KanbanManager } = await import('./kanban-app.js');
-    this.components.kanbanManager = new KanbanManager();
+    // Importer et initialiser le KanbanManager principal (si pas déjà créé)
+    if (!window.kanbanManager) {
+      const { KanbanManager } = await import('./kanban-app.js');
+      this.components.kanbanManager = new KanbanManager();
+      window.kanbanManager = this.components.kanbanManager;
+    } else {
+      console.log('✅ KanbanManager existant réutilisé');
+      this.components.kanbanManager = window.kanbanManager;
+    }
     
     // Attendre que le KanbanManager soit prêt
     await this.waitForComponent(() => this.components.kanbanManager.isInitialized);

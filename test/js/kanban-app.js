@@ -1369,6 +1369,14 @@ class KanbanManager {
   
   // === CRÉATION DU CONTENEUR POUR WIDGETS GRIST ===
   createKanbanContainer() {
+    // Vérifier qu'il n'existe pas déjà un container
+    const existing = document.getElementById('kanban-container');
+    if (existing) {
+      console.log('✅ Container Kanban existant réutilisé');
+      this.kanbanContainer = existing;
+      return;
+    }
+    
     // Créer la structure HTML minimale nécessaire
     const container = document.createElement('div');
     container.id = 'kanban-container';
@@ -2269,21 +2277,8 @@ class KanbanManager {
 }
 
 // === INITIALISATION ===
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('🚀 Initialisation Kanban avec gestionnaires...');
-  
-  try {
-    console.log('🔍 Vérification jQuery:', typeof $);
-    console.log('🔍 Avant création KanbanManager...');
-    window.kanbanManager = new KanbanManager();
-    console.log('✅ window.kanbanManager créé:', !!window.kanbanManager);
-    console.log('🔍 Type de kanbanManager:', typeof window.kanbanManager);
-  } catch (error) {
-    console.error('❌ Erreur création KanbanManager:', error);
-    console.error('❌ Stack trace:', error.stack);
-    window.kanbanManager = null;
-  }
-});
+// SUPPRIMÉ: Double initialisation avec app-initializer.js
+// L'initialisation est gérée par app-initializer.js via DOMContentLoaded
 
 // === EXPORT POUR UTILISATION EXTERNE ===
 window.KanbanApp = {
