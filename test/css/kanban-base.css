@@ -15,11 +15,31 @@
 
 /* === Fix SortableJS will-change CSS error === */
 /* SortableJS v1.15.0 sets will-change to empty string which is invalid CSS */
+* {
+  will-change: auto !important;
+}
+
+/* Neutralisation complète de will-change pour tous les éléments */
 .sortable-ghost,
-.sortable-drag,
+.sortable-drag, 
 .sortable-chosen,
+.sortable-fallback,
+[data-sortable="true"],
 [data-sortable="true"] *,
-.kanban-item {
+.kanban-item,
+.kanban-item *,
+div[draggable="true"],
+div[draggable="true"] * {
+  will-change: auto !important;
+}
+
+/* Override pour Bootstrap et autres frameworks */
+.modal,
+.modal *,
+.dropdown,
+.dropdown *,
+.collapse,
+.collapse * {
   will-change: auto !important;
 }
 

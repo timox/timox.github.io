@@ -421,27 +421,72 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
   <script>
-    // Fix SortableJS will-change error immediately after loading
+    // Fix SortableJS will-change error - ULTIMATE VERSION
     (function() {
+      console.log('🛡️ Démarrage protection will-change ultra-renforcée');
+      
+      // 1. Override setProperty
       const originalSetProperty = CSSStyleDeclaration.prototype.setProperty;
       CSSStyleDeclaration.prototype.setProperty = function(property, value, priority) {
-        // Intercept will-change with empty value and set to 'auto' instead
-        if (property === 'will-change' && (!value || value === '')) {
-          value = 'auto';
+        if (property === 'will-change') {
+          if (!value || value === '' || value === '""' || value === "''") {
+            console.log('🔧 will-change vide intercepté et corrigé');
+            value = 'auto';
+          }
         }
         return originalSetProperty.call(this, property, value, priority);
       };
       
-      // Also override direct style assignments
+      // 2. Override cssText
       const originalStyleSetter = Object.getOwnPropertyDescriptor(CSSStyleDeclaration.prototype, 'cssText').set;
       Object.defineProperty(CSSStyleDeclaration.prototype, 'cssText', {
         set: function(value) {
-          // Replace empty will-change values in cssText
-          value = value.replace(/will-change:\s*['"]*\s*['"]*\s*;?/g, 'will-change: auto;');
+          // Nettoyer toutes les variantes de will-change vides
+          value = value.replace(/will-change\s*:\s*['"]*\s*['"]*\s*;?/g, 'will-change: auto;');
+          value = value.replace(/will-change\s*:\s*;/g, 'will-change: auto;');
           return originalStyleSetter.call(this, value);
         },
         get: Object.getOwnPropertyDescriptor(CSSStyleDeclaration.prototype, 'cssText').get
       });
+      
+      // 3. Override direct style access
+      const originalStylePropertySetter = function(property) {
+        const descriptor = Object.getOwnPropertyDescriptor(CSSStyleDeclaration.prototype, property);
+        if (descriptor && descriptor.set) {
+          Object.defineProperty(CSSStyleDeclaration.prototype, property, {
+            set: function(value) {
+              if (property === 'willChange' && (!value || value === '')) {
+                console.log('🔧 style.willChange vide intercepté');
+                value = 'auto';
+              }
+              return descriptor.set.call(this, value);
+            },
+            get: descriptor.get
+          });
+        }
+      };
+      originalStylePropertySetter('willChange');
+      
+      // 4. Surveillance MutationObserver pour nettoyer en continu
+      const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+            const element = mutation.target;
+            if (element.style && element.style.willChange === '') {
+              element.style.willChange = 'auto';
+              console.log('🧹 will-change vide nettoyé via MutationObserver');
+            }
+          }
+        });
+      });
+      
+      observer.observe(document, {
+        attributes: true,
+        attributeFilter: ['style'],
+        subtree: true
+      });
+      
+      console.log('✅ Protection will-change ultra-renforcée activée');
     })();
   </script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
