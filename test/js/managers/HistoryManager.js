@@ -67,11 +67,18 @@ export class HistoryManager {
     this.setupCommentEditWidget();
     
     // Écouteurs pour les boutons d'historique sur les cartes (support des deux classes)
+    // Utiliser capture:true pour intercepter avant les autres listeners
     document.addEventListener('click', (e) => {
-      if (e.target.matches('.btn-history, .btn-history *, .btn-timeline, .btn-timeline *')) {
-        console.log('🎯 HistoryManager: Click détecté sur bouton historique', e.target);
+      // Trouver le bouton parent si on a cliqué sur un enfant (icône, texte)
+      const button = e.target.closest('.btn-history, .btn-timeline');
+      
+      if (button) {
+        console.log('🎯 HistoryManager: Click détecté sur bouton historique', button);
+        
+        // IMPORTANT: Arrêter complètement la propagation
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
         
         // 🛡️ PROTECTION ANTI-SPAM RENFORCÉE: Éviter appels multiples rapides
         if (this._historyOpening) {
@@ -86,14 +93,25 @@ export class HistoryManager {
           console.log('🔓 HistoryManager: protection anti-spam levée');
         }, 1000); // Reset après 1s
         
-        const button = e.target.closest('.btn-history, .btn-timeline');
+        // Récupérer l'ID de la tâche depuis les attributs data
         const taskId = parseInt(button.dataset.taskId, 10);
+        
+        console.log('📋 Debug bouton:', {
+          buttonElement: button,
+          buttonClass: button.className,
+          taskIdRaw: button.dataset.taskId,
+          taskIdParsed: taskId,
+          isValidId: !isNaN(taskId)
+        });
         
         if (!isNaN(taskId)) {
           this.openTaskHistory(taskId);
         }
+        
+        // Retourner false pour empêcher toute autre action
+        return false;
       }
-    });
+    }, { capture: true }); // Capture en phase descendante pour priorité
   }
   
   /**
@@ -256,15 +274,15 @@ export class HistoryManager {
             // FORCER L'AFFICHAGE si pas visible
             if (rectAfter.width === 0 || rectAfter.height === 0) {
               console.log('⚠️ Modale pas visible - application styles de force');
-              historyModalEl.style.display = 'block !important';
-              historyModalEl.style.visibility = 'visible !important';
-              historyModalEl.style.opacity = '1 !important';
-              historyModalEl.style.zIndex = '2000 !important';
-              historyModalEl.style.position = 'fixed !important';
-              historyModalEl.style.top = '10% !important';
-              historyModalEl.style.left = '10% !important';
-              historyModalEl.style.width = '80% !important';
-              historyModalEl.style.height = '80% !important';
+              historyModalEl.style.setProperty('display', 'block', 'important');
+              historyModalEl.style.setProperty('visibility', 'visible', 'important');
+              historyModalEl.style.setProperty('opacity', '1', 'important');
+              historyModalEl.style.setProperty('z-index', '2000', 'important');
+              historyModalEl.style.setProperty('position', 'fixed', 'important');
+              historyModalEl.style.setProperty('top', '10%', 'important');
+              historyModalEl.style.setProperty('left', '10%', 'important');
+              historyModalEl.style.setProperty('width', '80%', 'important');
+              historyModalEl.style.setProperty('height', '80%', 'important');
             }
           }
           
@@ -279,19 +297,18 @@ export class HistoryManager {
           window.debugForceHistoryModal = () => {
             console.log('🔧 FORCE DEBUG: Tentative d\'affichage forcé de la modale');
             if (historyModalEl) {
-              historyModalEl.style.cssText = `
-                display: block !important;
-                visibility: visible !important;
-                opacity: 1 !important;
-                z-index: 2000 !important;
-                position: fixed !important;
-                top: 50px !important;
-                left: 50px !important;
-                width: 80vw !important;
-                height: 80vh !important;
-                background: white !important;
-                border: 2px solid red !important;
-              `;
+              // Appliquer les styles individuellement pour éviter les erreurs CSS
+              historyModalEl.style.display = 'block';
+              historyModalEl.style.visibility = 'visible';
+              historyModalEl.style.opacity = '1';
+              historyModalEl.style.zIndex = '2000';
+              historyModalEl.style.position = 'fixed';
+              historyModalEl.style.top = '50px';
+              historyModalEl.style.left = '50px';
+              historyModalEl.style.width = '80vw';
+              historyModalEl.style.height = '80vh';
+              historyModalEl.style.background = 'white';
+              historyModalEl.style.border = '2px solid red';
               console.log('✅ Styles forcés appliqués - regardez maintenant !');
             }
           };
