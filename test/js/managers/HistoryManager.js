@@ -178,14 +178,26 @@ export class HistoryManager {
         
         this.kanban.modalManager.historyModal.show();
         
-        // Vérification après ouverture
+        // Forcer le z-index et la visibilité après ouverture
         setTimeout(() => {
           if (historyModalEl) {
+            historyModalEl.style.zIndex = '2000'; // Plus haut que les autres modales
+            historyModalEl.style.display = 'block';
+            
             console.log('✅ HistoryModal après ouverture:', {
               display: window.getComputedStyle(historyModalEl).display,
+              zIndex: window.getComputedStyle(historyModalEl).zIndex,
+              position: historyModalEl.getBoundingClientRect(),
               classes: historyModalEl.className,
               isShown: historyModalEl.classList.contains('show')
             });
+          }
+          
+          // Forcer aussi le backdrop
+          const backdrop = document.querySelector('.modal-backdrop');
+          if (backdrop) {
+            backdrop.style.zIndex = '1999';
+            console.log('🎭 Backdrop z-index forcé à 1999');
           }
         }, 100);
       } else {
