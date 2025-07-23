@@ -1,6 +1,37 @@
 /* === CSS Modal Styles - Kanban App === */
 /* Styles spécifiques pour les modales de l'application Kanban */
 
+/* === Z-INDEX FIXES === */
+/* Force le z-index de la modale historique pour qu'elle apparaisse au-dessus des autres */
+#history-modal.modal {
+  --bs-modal-zindex: 2000 !important;
+  z-index: 2000 !important;
+}
+
+/* Force le backdrop de la modale historique */
+#history-modal + .modal-backdrop,
+.modal-backdrop.history-modal-backdrop {
+  z-index: 1999 !important;
+}
+
+/* === TAILLE MODALE HISTORIQUE === */
+/* Empêcher que la modale historique bouffe tout l'écran */
+#history-modal .modal-dialog {
+  max-width: 90vw;
+  max-height: 90vh;
+  margin: 2rem auto;
+}
+
+#history-modal .modal-content {
+  max-height: 85vh;
+  overflow: hidden;
+}
+
+#history-modal .modal-body {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
 /* === Interface Stratégie Accordéon === */
 .strategy-browser {
   max-height: 400px;
