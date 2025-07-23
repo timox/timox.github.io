@@ -423,14 +423,14 @@
   <script>
     // Fix SortableJS will-change error - ULTIMATE VERSION
     (function() {
-      console.log('🛡️ Démarrage protection will-change ultra-renforcée');
+      // Protection will-change activée
       
       // 1. Override setProperty
       const originalSetProperty = CSSStyleDeclaration.prototype.setProperty;
       CSSStyleDeclaration.prototype.setProperty = function(property, value, priority) {
         if (property === 'will-change') {
           if (!value || value === '' || value === '""' || value === "''") {
-            console.log('🔧 will-change vide intercepté et corrigé');
+            // will-change vide corrigé
             value = 'auto';
           }
         }
@@ -456,7 +456,6 @@
           Object.defineProperty(CSSStyleDeclaration.prototype, property, {
             set: function(value) {
               if (property === 'willChange' && (!value || value === '')) {
-                console.log('🔧 style.willChange vide intercepté');
                 value = 'auto';
               }
               return descriptor.set.call(this, value);
@@ -474,7 +473,6 @@
             const element = mutation.target;
             if (element.style && element.style.willChange === '') {
               element.style.willChange = 'auto';
-              console.log('🧹 will-change vide nettoyé via MutationObserver');
             }
           }
         });

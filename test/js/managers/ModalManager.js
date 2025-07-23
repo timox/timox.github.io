@@ -1171,24 +1171,19 @@ export class ModalManager {
    */
    // === SUPPRESSION DE TÂCHE ===
   async deleteTask() {
-    console.log('🗑️ Début suppression - TaskId:', this.currentTaskId);
-    console.log('🗑️ Kanban référence:', !!this.kanban);
-    console.log('🗑️ TaskModal référence:', !!this.taskModal);
+    console.log('Delete button clicked!', this.currentTaskId);
     
     if (!this.currentTaskId) {
-      displayError('Aucune tâche sélectionnée pour suppression');
+      alert('Aucune tâche sélectionnée pour suppression');
       return;
     }
     
     const task = this.kanban.currentRecords?.find(r => r.id === this.currentTaskId);
     const taskTitle = task?.titre || 'cette tâche';
     
-    if (!confirmAction(`Êtes-vous sûr de vouloir supprimer "${taskTitle}" ?`)) {
-      console.log('🗑️ Suppression annulée par l\'utilisateur');
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer "${taskTitle}" ?`)) {
       return;
     }
-    
-    console.log('🗑️ Suppression confirmée pour:', taskTitle);
     
     try {
       // Enregistrer l'action utilisateur avant la suppression
@@ -1322,23 +1317,75 @@ export class ModalManager {
   loadCommentHistoryInAccordion() {
     console.log('ModalManager: loadCommentHistoryInAccordion appelée');
     console.log('ModalManager: currentTask:', this.currentTask);
-    console.log('ModalManager: historyManager:', this.kanban.historyManager);
+    console.log('ModalManager: currentTaskId:', this.currentTaskId);
+    console.log('ModalManager: historyManager:', !!this.kanban.historyManager);
     
-    if (!this.currentTask) {
+    // Afficher un message de chargement
+    const accordionContent = document.getElementById('comment-history-content');
+    if (accordionContent) {
+      accordionContent.innerHTML = `
+        <div class="text-center text-muted py-3">
+          <div class="spinner-border spinner-border-sm me-2"></div>
+          <span>Chargement de l'historique...</span>
+        </div>
+      `;
+    }
+
+    // Vérifier si on a une tâche courante
+    if (!this.currentTask && !this.currentTaskId) {
       console.warn('ModalManager: Aucune tâche courante pour charger l\'historique');
       this.showAccordionError('Aucune tâche sélectionnée');
       return;
     }
 
-    // Obtenir les données d'historique via HistoryManager
-    if (this.kanban.historyManager) {
-      console.log('ModalManager: Parsing historique pour tâche ID:', this.currentTask.id);
-      const historyData = this.kanban.historyManager.parseTaskHistory(this.currentTask);
-      console.log('ModalManager: Données historique reçues:', historyData);
-      this.renderCommentHistoryInAccordion(historyData);
-    } else {
+    // Si on n'a pas currentTask mais qu'on a currentTaskId, essayer de la récupérer
+    let taskToProcess = this.currentTask;
+    if (!taskToProcess && this.currentTaskId) {
+      console.log('ModalManager: Tentative de récupération de la tâche depuis currentTaskId:', this.currentTaskId);
+      taskToProcess = this.kanban.currentRecords?.find(r => r.id === this.currentTaskId);
+      
+      if (taskToProcess) {
+        console.log('ModalManager: Tâche récupérée avec succès:', taskToProcess.titre);
+        this.currentTask = taskToProcess; // Sauvegarder pour les prochains appels
+      } else {
+        console.error('ModalManager: Impossible de trouver la tâche avec ID:', this.currentTaskId);
+        this.showAccordionError('Tâche non trouvée dans les données');
+        return;
+      }
+    }
+
+    // Vérifier le HistoryManager
+    if (!this.kanban.historyManager) {
       console.error('HistoryManager non disponible');
       this.showAccordionError('Gestionnaire d\'historique non disponible');
+      return;
+    }
+
+    try {
+      console.log('ModalManager: Parsing historique pour tâche ID:', taskToProcess.id);
+      console.log('ModalManager: Données de la tâche:', {
+        id: taskToProcess.id,
+        titre: taskToProcess.titre,
+        hasNotes: !!taskToProcess.notes,
+        hasHistoriqueStatuts: !!taskToProcess.historique_statuts,
+        notesLength: taskToProcess.notes?.length || 0
+      });
+      
+      // Parser l'historique
+      const historyData = this.kanban.historyManager.parseTaskHistory(taskToProcess);
+      console.log('ModalManager: Données historique reçues:', {
+        totalComments: historyData.comments?.length || 0,
+        totalHistory: historyData.history?.length || 0,
+        totalTimeline: historyData.timeline?.length || 0,
+        hasData: !!(historyData.comments?.length || historyData.history?.length)
+      });
+      
+      // Afficher les données dans l'accordéon
+      this.renderCommentHistoryInAccordion(historyData);
+      
+    } catch (error) {
+      console.error('ModalManager: Erreur lors du parsing de l\'historique:', error);
+      this.showAccordionError('Erreur lors du chargement de l\'historique: ' + error.message);
     }
   }
 
@@ -1366,10 +1413,22 @@ export class ModalManager {
 
     if (totalEntries === 0) {
       accordionContent.innerHTML = `
-        <div class="text-center text-muted py-3">
+        <div class="text-center text-muted py-4">
           <i class="bi bi-clock-history fs-4"></i>
           <p class="mt-2">Aucun historique trouvé</p>
-          <small>L'historique complet apparaîtra ici une fois créé</small>
+          <small class="text-muted">L'historique des commentaires et modifications apparaîtra ici</small>
+          <div class="mt-3">
+            <button class="btn btn-sm btn-outline-primary" onclick="kanbanManager?.modalManager?.loadCommentHistoryInAccordion()">
+              <i class="bi bi-arrow-clockwise me-1"></i>Recharger
+            </button>
+          </div>
+          <div class="mt-2">
+            <small class="text-muted">
+              Tâche ID: ${task?.id || 'N/A'} | 
+              Notes: ${task?.notes ? 'Présentes' : 'Vides'} | 
+              Statuts: ${task?.historique_statuts ? 'Présents' : 'Vides'}
+            </small>
+          </div>
         </div>
       `;
       return;
@@ -1637,9 +1696,22 @@ export class ModalManager {
     
     if (accordionContent) {
       accordionContent.innerHTML = `
-        <div class="text-center text-danger py-3">
+        <div class="text-center text-danger py-4">
           <i class="bi bi-exclamation-triangle fs-4"></i>
           <p class="mt-2">${errorMessage}</p>
+          <div class="mt-3">
+            <button class="btn btn-sm btn-outline-primary" onclick="kanbanManager?.modalManager?.loadCommentHistoryInAccordion()">
+              <i class="bi bi-arrow-clockwise me-1"></i>Réessayer
+            </button>
+          </div>
+          <div class="mt-2">
+            <small class="text-muted">
+              Debug: 
+              currentTaskId = ${this.currentTaskId || 'null'} | 
+              currentTask = ${this.currentTask ? 'présent' : 'null'} | 
+              historyManager = ${this.kanban?.historyManager ? 'présent' : 'null'}
+            </small>
+          </div>
         </div>
       `;
     }

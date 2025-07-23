@@ -68,8 +68,6 @@ export class HistoryManager {
     
     // Écouteurs pour les boutons d'historique sur les cartes (support des deux classes)
     // Event listeners pour boutons historique supprimés - boutons retirés des cartes
-    // L'historique est maintenant disponible uniquement dans la modale d'édition
-    console.log('HistoryManager: Boutons timeline supprimés des cartes');
     /*
     document.addEventListener('click', (e) => {
       // Trouver le bouton parent si on a cliqué sur un enfant (icône, texte)
@@ -116,6 +114,32 @@ export class HistoryManager {
       }
     }, { capture: true }); // Capture en phase descendante pour priorité
     */
+  }
+  
+  /**
+   * Rendre l'historique d'une tâche dans un élément donné
+   */
+  async renderTaskHistoryInElement(taskId, targetElement) {
+    try {
+      targetElement.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm"></div></div>';
+      
+      const gristData = await grist.docApi.fetchTable(TABLE_ID);
+      const mappedRecords = this.kanban.mapGristRecords(gristData);
+      const task = mappedRecords.find(r => r.id === taskId);
+      
+      if (!task) {
+        targetElement.innerHTML = '<p class="text-muted">Tâche introuvable.</p>';
+        return;
+      }
+      
+      // Réutiliser la logique existante
+      const timelineContent = this.generateTimelineContent(task);
+      targetElement.innerHTML = timelineContent;
+      
+    } catch (error) {
+      console.error('Erreur rendu historique:', error);
+      targetElement.innerHTML = '<p class="text-danger">Erreur lors du chargement.</p>';
+    }
   }
   
   /**
