@@ -59,19 +59,29 @@ export class KanbanAppInitializer {
       console.log('🚀 Démarrage de l\'initialisation Kanban...');
       
       // Étape 1: Vérifier les prérequis
+      console.log('🔍 Étape 1: Vérification des prérequis...');
       await this.checkPrerequisites();
+      console.log('✅ Étape 1 terminée');
       
       // Étape 2: Initialiser les composants de base
+      console.log('⚙️ Étape 2: Initialisation des composants de base...');
       await this.initializeBaseComponents();
+      console.log('✅ Étape 2 terminée');
       
       // Étape 3: Configurer l'interface utilisateur
+      console.log('🎨 Étape 3: Configuration de l\'interface utilisateur...');
       await this.setupUserInterface();
+      console.log('✅ Étape 3 terminée');
       
       // Étape 4: Charger les données
+      console.log('📊 Étape 4: Chargement des données...');
       await this.loadApplicationData();
+      console.log('✅ Étape 4 terminée');
       
       // Étape 5: Finaliser l'initialisation
+      console.log('🏁 Étape 5: Finalisation de l\'initialisation...');
       await this.finalizeInitialization();
+      console.log('✅ Étape 5 terminée');
       
       this.isInitialized = true;
       
@@ -715,11 +725,18 @@ export class KanbanAppInitializer {
 let appInitializer = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
+  console.log('🎯 DOMContentLoaded déclenché - Début initialisation app-initializer');
   try {
+    console.log('🏗️ Création KanbanAppInitializer...');
     appInitializer = new KanbanAppInitializer();
+    console.log('✅ KanbanAppInitializer créé');
+    
+    console.log('🚀 Lancement appInitializer.init()...');
     await appInitializer.init();
+    console.log('✅ appInitializer.init() terminé avec succès');
   } catch (error) {
-    console.error('Échec de l\'initialisation de l\'application:', error);
+    console.error('❌ Échec de l\'initialisation de l\'application:', error);
+    console.error('❌ Stack trace complète:', error.stack);
   }
 });
 
