@@ -1,7 +1,7 @@
 // === js/app-initializer.js ===
 // Script d'initialisation et de configuration globale de l'application Kanban
 
-import { ViewManager } from './managers/ViewManager.js';
+import { ViewModeManager } from './managers/ViewModeManager.js';
 import { 
   getObjectivesByPriority, 
   getSubObjectives, 
@@ -161,9 +161,9 @@ export class KanbanAppInitializer {
     // Attendre que le KanbanManager soit prêt
     await this.waitForComponent(() => this.components.kanbanManager.isInitialized);
     
-    // Initialiser le ViewManager
-    this.components.viewManager = new ViewManager(this.components.kanbanManager);
-    this.components.kanbanManager.viewManager = this.components.viewManager;
+    // Initialiser le ViewModeManager
+    this.components.viewModeManager = new ViewModeManager(this.components.kanbanManager);
+    this.components.kanbanManager.viewModeManager = this.components.viewModeManager;
     
     // Charger les données stratégiques
     this.components.strategicData = {
@@ -468,7 +468,7 @@ export class KanbanAppInitializer {
     window.KanbanAPI = {
       // Accès aux composants
       getKanbanManager: () => this.components.kanbanManager,
-      getViewManager: () => this.components.viewManager,
+      getViewModeManager: () => this.components.viewModeManager,
       
       // Actions rapides
       refresh: () => this.reloadApplication(),
