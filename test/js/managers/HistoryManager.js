@@ -178,32 +178,93 @@ export class HistoryManager {
       if (this.kanban.modalManager && this.kanban.modalManager.historyModal) {
         console.log('🚀 HistoryManager: Tentative ouverture historyModal...');
         
-        // Diagnostic de l'état de la modale avant ouverture
+        // Diagnostic COMPLET de l'état de la modale avant ouverture
         const historyModalEl = document.getElementById('history-modal');
         if (historyModalEl) {
-          console.log('📋 HistoryModal element:', {
-            display: window.getComputedStyle(historyModalEl).display,
-            visibility: window.getComputedStyle(historyModalEl).visibility,
-            zIndex: window.getComputedStyle(historyModalEl).zIndex,
-            classes: historyModalEl.className
+          const rect = historyModalEl.getBoundingClientRect();
+          const computedStyle = window.getComputedStyle(historyModalEl);
+          
+          console.log('🔍 DIAGNOSTIC COMPLET AVANT OUVERTURE:', {
+            // État de base
+            exists: !!historyModalEl,
+            display: computedStyle.display,
+            visibility: computedStyle.visibility,
+            opacity: computedStyle.opacity,
+            zIndex: computedStyle.zIndex,
+            position: computedStyle.position,
+            
+            // Position et taille
+            rect: {
+              top: rect.top,
+              left: rect.left,
+              width: rect.width,
+              height: rect.height,
+              visible: rect.width > 0 && rect.height > 0
+            },
+            
+            // Classes et contenu
+            classes: historyModalEl.className.split(' '),
+            hasContent: historyModalEl.innerHTML.length,
+            
+            // Parent et contexte
+            parent: historyModalEl.parentElement?.tagName,
+            siblings: historyModalEl.parentElement?.children?.length || 0
           });
         }
         
         this.kanban.modalManager.historyModal.show();
         
-        // Forcer le z-index et la visibilité après ouverture
+        // Vérification et diagnostic APRÈS ouverture
         setTimeout(() => {
           if (historyModalEl) {
-            historyModalEl.style.zIndex = '2000'; // Plus haut que les autres modales
-            historyModalEl.style.display = 'block';
+            const rectAfter = historyModalEl.getBoundingClientRect();
+            const computedStyleAfter = window.getComputedStyle(historyModalEl);
             
-            console.log('✅ HistoryModal après ouverture:', {
-              display: window.getComputedStyle(historyModalEl).display,
-              zIndex: window.getComputedStyle(historyModalEl).zIndex,
-              position: historyModalEl.getBoundingClientRect(),
-              classes: historyModalEl.className,
-              isShown: historyModalEl.classList.contains('show')
+            console.log('🔍 DIAGNOSTIC COMPLET APRÈS OUVERTURE:', {
+              // État de base
+              display: computedStyleAfter.display,
+              visibility: computedStyleAfter.visibility,
+              opacity: computedStyleAfter.opacity,
+              zIndex: computedStyleAfter.zIndex,
+              
+              // Position et taille après ouverture
+              rectAfter: {
+                top: rectAfter.top,
+                left: rectAfter.left,
+                width: rectAfter.width,
+                height: rectAfter.height,
+                visible: rectAfter.width > 0 && rectAfter.height > 0,
+                inViewport: rectAfter.top >= 0 && rectAfter.left >= 0 && 
+                           rectAfter.bottom <= window.innerHeight && 
+                           rectAfter.right <= window.innerWidth
+              },
+              
+              // Classes Bootstrap
+              classes: historyModalEl.className.split(' '),
+              hasShowClass: historyModalEl.classList.contains('show'),
+              hasModalClass: historyModalEl.classList.contains('modal'),
+              
+              // Backdrop
+              backdrop: !!document.querySelector('.modal-backdrop'),
+              
+              // Contenu rendu
+              hasTimelineContent: !!document.getElementById('history-timeline')?.innerHTML?.length,
+              hasStatsContent: !!document.getElementById('history-stats')?.innerHTML?.length
             });
+            
+            // FORCER L'AFFICHAGE si pas visible
+            if (rectAfter.width === 0 || rectAfter.height === 0) {
+              console.log('⚠️ Modale pas visible - application styles de force');
+              historyModalEl.style.display = 'block !important';
+              historyModalEl.style.visibility = 'visible !important';
+              historyModalEl.style.opacity = '1 !important';
+              historyModalEl.style.zIndex = '2000 !important';
+              historyModalEl.style.position = 'fixed !important';
+              historyModalEl.style.top = '10% !important';
+              historyModalEl.style.left = '10% !important';
+              historyModalEl.style.width = '80% !important';
+              historyModalEl.style.height = '80% !important';
+            }
           }
           
           // Forcer aussi le backdrop
@@ -212,6 +273,29 @@ export class HistoryManager {
             backdrop.style.zIndex = '1999';
             console.log('🎭 Backdrop z-index forcé à 1999');
           }
+          
+          // Exposer une fonction de debug pour forcer l'ouverture
+          window.debugForceHistoryModal = () => {
+            console.log('🔧 FORCE DEBUG: Tentative d\'affichage forcé de la modale');
+            if (historyModalEl) {
+              historyModalEl.style.cssText = `
+                display: block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                z-index: 2000 !important;
+                position: fixed !important;
+                top: 50px !important;
+                left: 50px !important;
+                width: 80vw !important;
+                height: 80vh !important;
+                background: white !important;
+                border: 2px solid red !important;
+              `;
+              console.log('✅ Styles forcés appliqués - regardez maintenant !');
+            }
+          };
+          
+          console.log('💡 AIDE DEBUG: Si vous ne voyez toujours rien, tapez dans la console: debugForceHistoryModal()');
         }, 100);
       } else {
         console.log('❌ HistoryModal ou ModalManager indisponible:', {
