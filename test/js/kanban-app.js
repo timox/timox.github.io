@@ -2229,31 +2229,9 @@ class KanbanManager {
     // Nettoyer les anciens event listeners sur le container
     $container.off('.kanban-events');
     
-    // BOUTONS HISTORIQUE - délégation avec contexte préservé
-    $container.on('click.kanban-events', '.btn-timeline', $.proxy(function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation(); // Empêcher autres gestionnaires
-      
-      // Protection anti-flood allégée au niveau du gestionnaire
-      const now = Date.now();
-      if (this._lastTimelineClick && now - this._lastTimelineClick < 200) {
-        console.log('🛡️ Timeline click bloqué (trop rapide)');
-        return false;
-      }
-      this._lastTimelineClick = now;
-      
-      const taskId = parseInt($(e.currentTarget).data('task-id'), 10);
-      console.log('🎯 Timeline clicked for task:', taskId);
-      
-      if (taskId && this.historyManager && typeof this.historyManager.openTaskHistory === 'function') {
-        this.historyManager.openTaskHistory(taskId);
-      } else {
-        console.warn('❌ Cannot open history:', { taskId, hasHistoryManager: !!this.historyManager });
-      }
-      
-      return false; // Empêcher propagation
-    }, this)); // $.proxy() préserve le contexte 'this'
+    // BOUTONS HISTORIQUE - Supprimé: gestion centralisée dans HistoryManager.js
+    // Les boutons .btn-timeline sont maintenant gérés par HistoryManager avec listener global
+    console.log('🎯 Boutons timeline délégués à HistoryManager');
     
     // TITRES DE TÂCHES - délégation pour édition
     $container.on('click.kanban-events', '.item-title', $.proxy(function(e) {

@@ -66,9 +66,10 @@ export class HistoryManager {
     // Widget d'édition de commentaire
     this.setupCommentEditWidget();
     
-    // Écouteurs pour les boutons d'historique sur les cartes
+    // Écouteurs pour les boutons d'historique sur les cartes (support des deux classes)
     document.addEventListener('click', (e) => {
-      if (e.target.matches('.btn-history, .btn-history *')) {
+      if (e.target.matches('.btn-history, .btn-history *, .btn-timeline, .btn-timeline *')) {
+        console.log('🎯 HistoryManager: Click détecté sur bouton historique', e.target);
         e.preventDefault();
         e.stopPropagation();
         
@@ -85,7 +86,7 @@ export class HistoryManager {
           console.log('🔓 HistoryManager: protection anti-spam levée');
         }, 1000); // Reset après 1s
         
-        const button = e.target.closest('.btn-history');
+        const button = e.target.closest('.btn-history, .btn-timeline');
         const taskId = parseInt(button.dataset.taskId, 10);
         
         if (!isNaN(taskId)) {
