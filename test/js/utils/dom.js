@@ -338,7 +338,7 @@ export function addEventListenerSafe(elementId, event, handler, options = {}) {
  * Initialise les tooltips Bootstrap
  * @param {string} selector - Sélecteur CSS pour les tooltips
  */
-export function initializeTooltips(selector = '[data-bs-toggle="tooltip"]') {
+export function initializeTooltips(selector = '[data-bs-toggle="tooltip"], [title]:not(select):not(option)') {
   const tooltipTriggerList = document.querySelectorAll(selector);
   const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
   return tooltipList;

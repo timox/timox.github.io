@@ -455,6 +455,26 @@ export class HistoryManager {
               } else {
                 this.logger?.debug('Changement de statut invalide ignoré:', entry.details);
               }
+            } else if (entry.action === 'jalons_update') {
+              // Changements de jalons
+              const normalizedTimestamp = this.normalizeTimestamp(entry.timestamp);
+              history.push({
+                timestamp: normalizedTimestamp,
+                statut: entry.status || task.statut,
+                date_entree: normalizedTimestamp,
+                note: `🎯 Jalons: ${entry.details}`,
+                user: entry.user || 'Utilisateur'
+              });
+            } else if (entry.action === 'strategies_update') {
+              // Changements de stratégies
+              const normalizedTimestamp = this.normalizeTimestamp(entry.timestamp);
+              history.push({
+                timestamp: normalizedTimestamp,
+                statut: entry.status || task.statut,
+                date_entree: normalizedTimestamp,
+                note: `🎯 Stratégies: ${entry.details}`,
+                user: entry.user || 'Utilisateur'
+              });
             } else if (entry.action === 'update' || entry.action === 'field_change') {
               // Filtrer les doublons de commentaires (éviter "Commentaire modifié:")
               const isCommentUpdate = entry.details && 

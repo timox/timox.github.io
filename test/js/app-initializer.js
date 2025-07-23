@@ -340,7 +340,7 @@ export class KanbanAppInitializer {
    * Initialise les tooltips Bootstrap
    */
   initializeTooltips() {
-    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"], [title]');
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"], [title]:not(select):not(option)');
     const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => 
       new bootstrap.Tooltip(tooltipTriggerEl, {
         delay: { show: 500, hide: 100 }
@@ -495,7 +495,10 @@ export class KanbanAppInitializer {
       
       // Debug
       debug: () => this.getDebugInfo(),
-      toggleDebug: () => this.toggleDebugMode()
+      toggleDebug: () => this.toggleDebugMode(),
+      
+      // Utilitaires
+      cleanTooltips: () => this.forceCleanTooltips()
     };
     
     console.log('🔌 APIs publiques exposées');
@@ -520,15 +523,37 @@ export class KanbanAppInitializer {
    * Effectue le nettoyage périodique
    */
   performHousekeeping() {
-    // Nettoyer les tooltips orphelins
+    // Nettoyer les tooltips orphelins et bloqués
     document.querySelectorAll('.tooltip').forEach(tooltip => {
-      if (!document.body.contains(tooltip)) {
+      // Supprimer si pas dans le body ou si pas d'élément associé
+      if (!document.body.contains(tooltip) || !tooltip.previousElementSibling) {
+        tooltip.remove();
+      }
+    });
+    
+    // Nettoyer les tooltips sans trigger valide
+    document.querySelectorAll('.tooltip.show').forEach(tooltip => {
+      const trigger = document.querySelector(`[aria-describedby="${tooltip.id}"]`);
+      if (!trigger || !trigger.offsetParent) {
         tooltip.remove();
       }
     });
     
     // Nettoyer le localStorage
     this.cleanupLocalStorage();
+  }
+  
+  /**
+   * Force le nettoyage immédiat des tooltips
+   */
+  forceCleanTooltips() {
+    // Supprimer tous les tooltips visibles
+    document.querySelectorAll('.tooltip').forEach(tooltip => tooltip.remove());
+    
+    // Supprimer tous les backdrops de tooltips
+    document.querySelectorAll('.tooltip-backdrop').forEach(backdrop => backdrop.remove());
+    
+    console.log('🧹 Tooltips forcés nettoyés');
   }
   
   /**
