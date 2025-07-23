@@ -1701,11 +1701,21 @@ export class ModalManager {
     
     // Mettre à jour le titre
     const modalTitle = document.getElementById('history-modal-label');
+    console.log('🔍 Debug history-modal-label (ModalManager):', {
+      element: modalTitle,
+      exists: !!modalTitle,
+      innerHTML: modalTitle?.innerHTML,
+      taskTitle: task?.titre,
+      taskId: taskId
+    });
+    
     if (modalTitle) {
       modalTitle.innerHTML = `
         <i class="bi bi-clock-history me-2"></i>
         Historique de la tâche #${taskId} - ${task.titre}
       `;
+    } else {
+      console.error('❌ Élément history-modal-label introuvable dans le DOM (ModalManager)');
     }
     
     // Déléguer le rendu à HistoryManager

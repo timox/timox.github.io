@@ -102,6 +102,21 @@ export class HistoryManager {
   openTaskHistory(taskId) {
     console.log(`🎯 HistoryManager: openTaskHistory appelé pour tâche ${taskId}`);
     
+    // Debug: vérifier la présence de tous les éléments nécessaires
+    const historyModal = document.getElementById('history-modal');
+    const historyModalLabel = document.getElementById('history-modal-label');
+    const historyTimeline = document.getElementById('history-timeline');
+    const historyStats = document.getElementById('history-stats');
+    
+    console.log('🔍 Debug éléments DOM historique:', {
+      historyModal: !!historyModal,
+      historyModalLabel: !!historyModalLabel,
+      historyTimeline: !!historyTimeline,
+      historyStats: !!historyStats,
+      modalManager: !!this.kanban.modalManager,
+      historyManagerRef: !!this.kanban.historyManager
+    });
+    
     // 🛡️ PROTECTION RENFORCÉE: Éviter les appels multiples sur openTaskHistory
     const now = Date.now();
     if (this._taskHistoryOpening === taskId || (this._lastHistoryOpen && now - this._lastHistoryOpen < 1000)) {
@@ -153,11 +168,21 @@ export class HistoryManager {
       
       // Mettre à jour le titre de la modale
       const modalTitle = document.getElementById('history-modal-label');
+      console.log('🔍 Debug history-modal-label:', {
+        element: modalTitle,
+        exists: !!modalTitle,
+        innerHTML: modalTitle?.innerHTML,
+        taskTitle: task?.titre,
+        taskId: taskId
+      });
+      
       if (modalTitle) {
         modalTitle.innerHTML = `
           <i class="bi bi-clock-history me-2"></i>
           Historique de la tâche #${taskId} - ${task.titre}
         `;
+      } else {
+        console.error('❌ Élément history-modal-label introuvable dans le DOM');
       }
       
       // Rendre l'historique
