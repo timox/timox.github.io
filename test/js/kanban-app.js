@@ -2281,6 +2281,8 @@ class KanbanManager {
 // L'initialisation est gérée par app-initializer.js via DOMContentLoaded
 
 // === EXPORT POUR UTILISATION EXTERNE ===
+export { KanbanManager };
+
 window.KanbanApp = {
   KanbanManager,
   displayError,
