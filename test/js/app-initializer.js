@@ -92,22 +92,8 @@ export class KanbanAppInitializer {
       
     } catch (error) {
       console.error('❌ Erreur lors de l\'initialisation:', error);
-      
-      if (this.retryCount < this.maxRetries) {
-        this.retryCount++;
-        console.log(`🔄 Tentative de récupération ${this.retryCount}/${this.maxRetries}...`);
-        
-        // Attendre avant de réessayer
-        await this.delay(2000 * this.retryCount);
-        
-        // Réinitialiser la promesse pour permettre une nouvelle tentative
-        this.initializationPromise = null;
-        
-        return this.init();
-      } else {
-        displayError(`Échec de l'initialisation après ${this.maxRetries} tentatives: ${error.message}`);
-        throw error;
-      }
+      displayError(`Erreur d'initialisation: ${error.message}`);
+      throw error;
     }
   }
   
@@ -149,13 +135,12 @@ export class KanbanAppInitializer {
     console.log('⚙️ Initialisation des composants de base...');
     
     try {
-      // Importer et initialiser le KanbanManager principal (si pas déjà créé)
+      // Réutiliser KanbanManager existant si disponible
       if (!window.kanbanManager) {
-        const { KanbanManager } = await import('./kanban-app.js');
-        this.components.kanbanManager = new KanbanManager();
-        window.kanbanManager = this.components.kanbanManager;
+        console.log('❌ KanbanManager non trouvé - vérifiez que kanban-app.js est chargé');
+        throw new Error('KanbanManager non disponible');
       } else {
-        console.log('✅ KanbanManager existant réutilisé');
+        console.log('✅ KanbanManager existant utilisé');
         this.components.kanbanManager = window.kanbanManager;
       }
       

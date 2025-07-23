@@ -114,6 +114,9 @@ class KanbanManager {
     this.modal = null;
     this.historyModal = null;
     
+    // État d'initialisation
+    this.isInitialized = false;
+    
     // NOUVEAU: Managers
     this.filterManager = null;
     this.viewModeManager = null;
@@ -161,6 +164,9 @@ class KanbanManager {
       this.initEventDelegation();
       
       this.refreshKanban();
+      
+      // Marquer comme initialisé APRÈS tout le processus
+      this.isInitialized = true;
       
       displaySuccess('Kanban initialisé avec succès');
       
