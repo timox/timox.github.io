@@ -13,6 +13,16 @@
   --kanban-transition: all 0.2s ease;
 }
 
+/* === Fix SortableJS will-change CSS error === */
+/* SortableJS v1.15.0 sets will-change to empty string which is invalid CSS */
+.sortable-ghost,
+.sortable-drag,
+.sortable-chosen,
+[data-sortable="true"] *,
+.kanban-item {
+  will-change: auto !important;
+}
+
 /* === Base === */
 body {
   background-color: var(--kanban-bg);
