@@ -100,6 +100,8 @@ export class HistoryManager {
    * @param {number} taskId - ID de la tâche
    */
   openTaskHistory(taskId) {
+    console.log(`🎯 HistoryManager: openTaskHistory appelé pour tâche ${taskId}`);
+    
     // 🛡️ PROTECTION SUPPLÉMENTAIRE: Éviter les appels multiples sur openTaskHistory
     if (this._taskHistoryOpening === taskId) {
       console.log(`🚫 HistoryManager: openTaskHistory déjà en cours pour tâche ${taskId}`);
@@ -107,7 +109,9 @@ export class HistoryManager {
     }
     
     const task = this.kanban.currentRecords?.find(r => r.id === taskId);
+    console.log(`🔍 Tâche trouvée:`, !!task, task ? task.titre : 'N/A');
     if (!task) {
+      console.error('❌ Tâche non trouvée pour ID:', taskId);
       displayError('Tâche non trouvée');
       return;
     }

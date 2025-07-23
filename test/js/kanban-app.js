@@ -2231,6 +2231,7 @@ class KanbanManager {
     
     // BOUTONS HISTORIQUE - délégation avec contexte préservé
     $container.on('click.kanban-events', '.btn-timeline', $.proxy(function(e) {
+      console.log('🎯 CLICK détecté sur bouton timeline!', e.currentTarget);
       e.preventDefault();
       e.stopPropagation();
       
@@ -2238,6 +2239,8 @@ class KanbanManager {
       console.log('🎯 Historique jQuery délégation, taskId:', taskId);
       console.log('🔍 Context this:', !!this);
       console.log('🔍 HistoryManager existe:', !!this.historyManager);
+      console.log('🔍 HistoryManager type:', typeof this.historyManager);
+      console.log('🔍 openTaskHistory type:', typeof this.historyManager?.openTaskHistory);
       
       if (taskId && this.historyManager && typeof this.historyManager.openTaskHistory === 'function') {
         console.log('✅ Appel historyManager.openTaskHistory');
