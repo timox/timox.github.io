@@ -78,12 +78,12 @@ export class HistoryManager {
           return;
         }
         
-        // Protection immédiate plus longue
+        // Protection immédiate réduite
         this._historyOpening = true;
         setTimeout(() => { 
           this._historyOpening = false; 
           console.log('🔓 HistoryManager: protection anti-spam levée');
-        }, 3000); // Reset après 3s au lieu de 1s
+        }, 1000); // Reset après 1s
         
         const button = e.target.closest('.btn-history');
         const taskId = parseInt(button.dataset.taskId, 10);
@@ -102,24 +102,15 @@ export class HistoryManager {
   openTaskHistory(taskId) {
     console.log(`🎯 HistoryManager: openTaskHistory appelé pour tâche ${taskId}`);
     
-    // Debug: vérifier la présence de tous les éléments nécessaires
-    const historyModal = document.getElementById('history-modal');
-    const historyModalLabel = document.getElementById('history-modal-label');
-    const historyTimeline = document.getElementById('history-timeline');
-    const historyStats = document.getElementById('history-stats');
+    // Vérification rapide des éléments DOM (debug réduit)
+    if (!document.getElementById('history-modal-label')) {
+      console.error('❌ Élément history-modal-label manquant');
+      return;
+    }
     
-    console.log('🔍 Debug éléments DOM historique:', {
-      historyModal: !!historyModal,
-      historyModalLabel: !!historyModalLabel,
-      historyTimeline: !!historyTimeline,
-      historyStats: !!historyStats,
-      modalManager: !!this.kanban.modalManager,
-      historyManagerRef: !!this.kanban.historyManager
-    });
-    
-    // 🛡️ PROTECTION RENFORCÉE: Éviter les appels multiples sur openTaskHistory
+    // 🛡️ PROTECTION ALLÉGÉE: Éviter les appels multiples sur openTaskHistory
     const now = Date.now();
-    if (this._taskHistoryOpening === taskId || (this._lastHistoryOpen && now - this._lastHistoryOpen < 1000)) {
+    if (this._taskHistoryOpening === taskId || (this._lastHistoryOpen && now - this._lastHistoryOpen < 300)) {
       console.log(`🚫 HistoryManager: openTaskHistory déjà en cours ou trop récent pour tâche ${taskId}`);
       return;
     }
@@ -138,7 +129,7 @@ export class HistoryManager {
     setTimeout(() => { 
       this._taskHistoryOpening = null; 
       console.log(`🔓 HistoryManager: protection openTaskHistory levée pour tâche ${taskId}`);
-    }, 2000);
+    }, 500);
     
     this.currentTaskHistory = task;
     
@@ -168,13 +159,8 @@ export class HistoryManager {
       
       // Mettre à jour le titre de la modale
       const modalTitle = document.getElementById('history-modal-label');
-      console.log('🔍 Debug history-modal-label:', {
-        element: modalTitle,
-        exists: !!modalTitle,
-        innerHTML: modalTitle?.innerHTML,
-        taskTitle: task?.titre,
-        taskId: taskId
-      });
+      // Debug allégé
+      console.log(`📝 Mise à jour titre historique: ${task?.titre}`);
       
       if (modalTitle) {
         modalTitle.innerHTML = `

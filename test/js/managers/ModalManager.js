@@ -1701,13 +1701,8 @@ export class ModalManager {
     
     // Mettre à jour le titre
     const modalTitle = document.getElementById('history-modal-label');
-    console.log('🔍 Debug history-modal-label (ModalManager):', {
-      element: modalTitle,
-      exists: !!modalTitle,
-      innerHTML: modalTitle?.innerHTML,
-      taskTitle: task?.titre,
-      taskId: taskId
-    });
+    // Debug simplifié
+    console.log(`🏷️ ModalManager: màj titre pour tâche ${taskId}`);
     
     if (modalTitle) {
       modalTitle.innerHTML = `

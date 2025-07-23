@@ -2235,9 +2235,9 @@ class KanbanManager {
       e.stopPropagation();
       e.stopImmediatePropagation(); // Empêcher autres gestionnaires
       
-      // Protection anti-flood au niveau du gestionnaire
+      // Protection anti-flood allégée au niveau du gestionnaire
       const now = Date.now();
-      if (this._lastTimelineClick && now - this._lastTimelineClick < 500) {
+      if (this._lastTimelineClick && now - this._lastTimelineClick < 200) {
         console.log('🛡️ Timeline click bloqué (trop rapide)');
         return false;
       }
