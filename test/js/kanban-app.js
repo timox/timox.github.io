@@ -1729,6 +1729,22 @@ class KanbanManager {
   initEventListeners() {
     console.log('🔧 Initialisation des event listeners...');
     
+    // Protection anti-flood d'événements
+    let lastClickTime = 0;
+    const CLICK_THROTTLE = 100; // ms
+    
+    // Protection anti-flood spécifique pour body.modal-open
+    $(document).off('click.antiflood').on('click.antiflood', 'body.modal-open', (e) => {
+      const now = Date.now();
+      if (now - lastClickTime < CLICK_THROTTLE) {
+        console.log('🛡️ Click flood détecté et bloqué');
+        e.stopImmediatePropagation();
+        e.preventDefault();
+        return false;
+      }
+      lastClickTime = now;
+    });
+    
     // Bouton nouvelle tâche - Utiliser jQuery pour cohérence
     $(document).off('click', '#btn-nouvelle-tache').on('click', '#btn-nouvelle-tache', (e) => {
       console.log('🆕 Clic bouton nouvelle tâche (jQuery)');
