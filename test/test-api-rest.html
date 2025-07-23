@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Test API REST Grist</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+    .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+    .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+    .info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+    pre { background: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    button:hover { background: #0056b3; }
+    input[type="text"] { width: 300px; padding: 8px; margin: 5px; border: 1px solid #ccc; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <h1>🧪 Test API REST Grist</h1>
+  
+  <div class="info">
+    <strong>Instructions:</strong><br>
+    1. Entrez votre URL Grist, Doc ID et clé API<br>
+    2. Cliquez sur "Tester la connexion"<br>
+    3. Si ça marche, testez la récupération des données
+  </div>
+
+  <h2>Configuration</h2>
+  <div>
+    <label>URL de base Grist:</label><br>
+    <input type="text" id="baseUrl" value="https://grist.numerique.gouv.fr/api/docs" placeholder="https://grist.numerique.gouv.fr/api/docs">
+  </div>
+  <div>
+    <label>Document ID:</label><br>
+    <input type="text" id="docId" value="5UqT5e2BAEUt6An73e1pTd" placeholder="Votre ID de document Grist">
+  </div>
+  <div>
+    <label>Clé API:</label><br>
+    <input type="text" id="apiKey" value="246a54fe9f95afca85b8d0f1acb4c421406200e9" placeholder="Votre clé API Grist">
+  </div>
+  <div>
+    <label>Table à tester:</label><br>
+    <input type="text" id="tableId" value="Ssir_principale_task" placeholder="Nom de la table">
+  </div>
+
+  <h2>Tests</h2>
+  <button onclick="testConnection()">🔌 Tester la connexion</button>
+  <button onclick="testFetchTable()">📥 Récupérer une table</button>
+  <button onclick="compareWithIframe()">⚖️ Comparer avec iframe</button>
+
+  <h2>Résultats</h2>
+  <div id="results"></div>
+
+  <script type="module">
+    import { GristRestApi } from './js/api/GristRestApi.js';
+    
+    window.gristRestApi = null;
+    
+    window.testConnection = async function() {
+      const results = document.getElementById('results');
+      
+      try {
+        const config = {
+          baseUrl: document.getElementById('baseUrl').value,
+          docId: document.getElementById('docId').value,
+          apiKey: document.getElementById('apiKey').value
+        };
+        
+        if (!config.docId || !config.apiKey) {
+          throw new Error('Document ID et clé API requis');
+        }
+        
+        results.innerHTML += '<div class="info">🔄 Test de connexion en cours...</div>';
+        
+        window.gristRestApi = new GristRestApi(config);
+        const docInfo = await window.gristRestApi.testConnection();
+        
+        results.innerHTML += `
+          <div class="success">
+            ✅ <strong>Connexion réussie !</strong><br>
+            Document: ${docInfo.name || 'Sans nom'}<br>
+            ID: ${docInfo.id || config.docId}
+          </div>
+          <pre>${JSON.stringify(docInfo, null, 2)}</pre>
+        `;
+        
+      } catch (error) {
+        results.innerHTML += `
+          <div class="error">
+            ❌ <strong>Erreur de connexion:</strong><br>
+            ${error.message}
+          </div>
+        `;
+      }
+    };
+    
+    window.testFetchTable = async function() {
+      const results = document.getElementById('results');
+      
+      if (!window.gristRestApi) {
+        results.innerHTML += '<div class="error">❌ Testez d\'abord la connexion</div>';
+        return;
+      }
+      
+      try {
+        const tableId = document.getElementById('tableId').value;
+        
+        results.innerHTML += `<div class="info">🔄 Récupération table ${tableId}...</div>`;
+        
+        const tableData = await window.gristRestApi.fetchTable(tableId);
+        const recordCount = tableData.id ? tableData.id.length : 0;
+        
+        results.innerHTML += `
+          <div class="success">
+            ✅ <strong>Table récupérée !</strong><br>
+            ${recordCount} enregistrements trouvés<br>
+            Colonnes: ${Object.keys(tableData).join(', ')}
+          </div>
+          <details>
+            <summary>Voir les données (format Grist)</summary>
+            <pre>${JSON.stringify(tableData, null, 2)}</pre>
+          </details>
+        `;
+        
+      } catch (error) {
+        results.innerHTML += `
+          <div class="error">
+            ❌ <strong>Erreur récupération table:</strong><br>
+            ${error.message}
+          </div>
+        `;
+      }
+    };
+    
+    window.compareWithIframe = async function() {
+      const results = document.getElementById('results');
+      
+      results.innerHTML += `
+        <div class="info">
+          ⚖️ <strong>Comparaison iframe vs API REST:</strong><br><br>
+          
+          <strong>Mode iframe actuel:</strong><br>
+          ❌ Erreurs CSS will-change de SortableJS<br>
+          ❌ Conflits CSS avec Grist<br>
+          ❌ Performance limitée par l'iframe<br>
+          ❌ Debugging difficile<br>
+          ✅ Intégration native Grist<br><br>
+          
+          <strong>Mode API REST:</strong><br>
+          ✅ Pas d'erreurs CSS externes<br>
+          ✅ Contrôle total du CSS<br>
+          ✅ Meilleure performance<br>
+          ✅ Debugging facile<br>
+          ✅ Interface entièrement personnalisable<br>
+          ⚠️ Nécessite une clé API<br>
+          ⚠️ Code à adapter
+        </div>
+      `;
+    };
+    
+    // Instructions pour récupérer la configuration
+    document.getElementById('results').innerHTML = `
+      <div class="info">
+        <strong>📋 Comment obtenir votre configuration:</strong><br><br>
+        
+        <strong>1. Document ID:</strong><br>
+        • Ouvrez votre document Grist<br>
+        • L'ID est dans l'URL: docs.getgrist.com/o/docs/<strong>VOTRE_DOC_ID</strong><br><br>
+        
+        <strong>2. Clé API:</strong><br>
+        • Grist → Profil utilisateur → API Keys<br>
+        • Créez une nouvelle clé avec accès lecture/écriture<br><br>
+        
+        <strong>3. URL de base:</strong><br>
+        • Grist cloud: https://docs.getgrist.com/api/docs<br>
+        • Auto-hébergé: https://votre-instance.com/api/docs
+      </div>
+    `;
+  </script>
+</body>
+</html>
