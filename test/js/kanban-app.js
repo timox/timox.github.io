@@ -2239,8 +2239,13 @@ class KanbanManager {
       console.log('🎯 Historique jQuery délégation, taskId:', taskId);
       console.log('🔍 Context this:', !!this);
       console.log('🔍 HistoryManager existe:', !!this.historyManager);
-      console.log('🔍 HistoryManager type:', typeof this.historyManager);
-      console.log('🔍 openTaskHistory type:', typeof this.historyManager?.openTaskHistory);
+      
+      try {
+        console.log('🔍 HistoryManager type:', typeof this.historyManager);
+        console.log('🔍 openTaskHistory type:', typeof this.historyManager?.openTaskHistory);
+      } catch (e) {
+        console.error('❌ Erreur accès HistoryManager:', e);
+      }
       
       if (taskId && this.historyManager && typeof this.historyManager.openTaskHistory === 'function') {
         console.log('✅ Appel historyManager.openTaskHistory');
