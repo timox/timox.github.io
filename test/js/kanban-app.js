@@ -775,10 +775,10 @@ class KanbanManager {
     }
     
     const totalEvents = notesEventCount + commentCount + statusChangeCount;
-    if (totalEvents === 0) return '';
     
+    // Toujours afficher le bouton timeline (même sans historique)
     return `<button class="btn-timeline" data-task-id="${record.id}" data-no-tooltip="true">
-      <i class="bi bi-clock-history"></i> ${totalEvents}
+      <i class="bi bi-clock-history"></i> ${totalEvents > 0 ? totalEvents : 'Voir'}
     </button>`;
   }
 
