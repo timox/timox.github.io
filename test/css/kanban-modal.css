@@ -1,39 +1,29 @@
 /* === CSS Modal Styles - Kanban App === */
 /* Styles spécifiques pour les modales de l'application Kanban */
 
-/* === Z-INDEX FIXES === */
-/* Force le z-index de la modale historique pour qu'elle apparaisse au-dessus des autres */
-#history-modal.modal {
-  --bs-modal-zindex: 2000 !important;
-  z-index: 2000 !important;
+/* === Z-INDEX FIXES SIMPLIFIÉS === */
+/* Modale historique avec styles simples pour éviter les conflits */
+#history-modal {
+  z-index: 1060 !important; /* Standard Bootstrap modal z-index */
 }
 
-/* Force le backdrop de la modale historique */
-#history-modal + .modal-backdrop,
-.modal-backdrop.history-modal-backdrop,
-.modal-backdrop:has(+ #history-modal),
-.modal-backdrop[data-modal="history"] {
-  z-index: 1999 !important;
-  background-color: rgba(0, 0, 0, 0.5) !important;
-  display: block !important;
-}
-
-/* === TAILLE MODALE HISTORIQUE === */
-/* Empêcher que la modale historique bouffe tout l'écran */
 #history-modal .modal-dialog {
-  max-width: 90vw;
-  max-height: 90vh;
-  margin: 2rem auto;
+  width: 80%;
+  max-width: 800px;
+  margin: 30px auto;
 }
 
 #history-modal .modal-content {
-  max-height: 85vh;
-  overflow: hidden;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: white;
 }
 
 #history-modal .modal-body {
-  max-height: 60vh;
+  padding: 20px;
+  max-height: 500px;
   overflow-y: auto;
+  background: white;
 }
 
 /* === Interface Stratégie Accordéon === */
@@ -321,52 +311,22 @@
   padding: 1.5rem;
 }
 
-/* === Timeline Styles === */
+/* === Timeline Styles Simplifiés === */
 .timeline-container {
-  position: relative;
-  padding: 1rem 0;
-}
-
-.timeline-line {
-  position: absolute;
-  left: 1.5rem;
-  top: 0;
-  bottom: 0;
-  width: 3px !important;
-  background: linear-gradient(180deg, #007bff, #6610f2) !important;
-  border-radius: 1.5px;
+  padding: 10px 0;
 }
 
 .timeline-entry {
-  position: relative;
-  padding-left: 4rem;
-  margin-bottom: 2rem;
-  background: white;
-  border-radius: 8px;
-  padding: 1.5rem;
-  padding-left: 4rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  border-left: 4px solid #007bff;
-  transition: all 0.3s ease;
+  margin-bottom: 15px;
+  padding: 15px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  border-left: 3px solid #007bff;
 }
 
 .timeline-entry:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-}
-
-.timeline-entry::before {
-  content: '';
-  position: absolute;
-  left: -2.8rem;
-  top: 1.5rem;
-  width: 16px;
-  height: 16px;
-  background: #007bff;
-  border: 3px solid white;
-  border-radius: 50%;
-  box-shadow: 0 0 0 3px #007bff;
-  z-index: 2;
+  background: #e9ecef;
 }
 
 .timeline-entry-header {
@@ -386,6 +346,23 @@
   font-weight: 600;
   color: #495057;
   margin-bottom: 0.25rem;
+}
+
+/* Titre de tâche cliquable simple */
+.timeline-task-title {
+  color: #007bff;
+  text-decoration: none;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-block;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: background-color 0.2s;
+}
+
+.timeline-task-title:hover {
+  background-color: #e3f2fd;
+  text-decoration: underline;
 }
 
 .timeline-entry-action {

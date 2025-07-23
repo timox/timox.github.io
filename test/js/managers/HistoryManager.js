@@ -653,8 +653,23 @@ export class HistoryManager {
     
     const { timeline, task } = historyData;
     
+    // En-tête avec titre de tâche cliquable
+    let headerHTML = '';
+    if (task && task.titre) {
+      headerHTML = `
+        <div class="timeline-header" style="margin-bottom: 20px; padding: 15px; background: #e3f2fd; border-radius: 6px;">
+          <h5 style="margin: 0; color: #1565c0;">
+            <span class="timeline-task-title" onclick="window.kanbanManager?.modalManager?.openTaskModal(${task.id})">
+              ${task.titre}
+            </span>
+          </h5>
+          <small class="text-muted">Cliquez sur le titre pour éditer la tâche</small>
+        </div>
+      `;
+    }
+    
     if (timeline.length === 0) {
-      timelineContainer.innerHTML = `
+      timelineContainer.innerHTML = headerHTML + `
         <div class="text-center text-muted py-4">
           <i class="bi bi-clock-history fs-1"></i>
           <p class="mt-2">Aucun historique disponible</p>
@@ -663,7 +678,7 @@ export class HistoryManager {
       return;
     }
     
-    let timelineHTML = '';
+    let timelineHTML = headerHTML + '<div class="timeline-container">';
     
     timeline.forEach((entry, index) => {
       if (entry.type === 'status_change') {
@@ -673,6 +688,7 @@ export class HistoryManager {
       }
     });
     
+    timelineHTML += '</div>';
     timelineContainer.innerHTML = timelineHTML;
   }
   
@@ -726,18 +742,15 @@ export class HistoryManager {
     }
     
     return `
-      <div class="timeline-entry ${currentClass}">
-        <div class="timeline-status">
-          ${statusIcon}
-          ${entry.statut}
-          ${isCurrent ? '<span class="badge bg-success ms-2">Actuel</span>' : ''}
+      <div class="timeline-entry">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <div>
+            <strong>${entry.statut}</strong>
+            ${isCurrent ? '<span class="badge bg-success ms-2">Actuel</span>' : ''}
+          </div>
+          <small class="text-muted">${formattedDate}</small>
         </div>
-        <div class="timeline-dates">
-          <i class="bi bi-calendar3"></i>
-          ${formattedDate}
-        </div>
-        ${durationHTML}
-        ${noteHTML}
+        ${entry.note ? `<div class="text-muted">${entry.note}</div>` : ''}
       </div>
     `;
   }
@@ -769,24 +782,16 @@ export class HistoryManager {
     console.log('HistoryManager: Rendu commentaire avec bouton édition:', commentId);
     
     return `
-      <div class="timeline-entry timeline-entry-comment" data-comment-id="${commentId}">
-        <div class="timeline-status">
-          <div class="timeline-status-left">
-            <i class="bi bi-chat-square-text text-info"></i>
-            <button class="btn btn-sm btn-outline-secondary btn-edit-comment" 
-                    data-comment-id="${commentId}"
-                    title="Éditer ce commentaire">
-              ✏️
-            </button>
-            <span class="timeline-status-text">Commentaire${latestBadge}</span>
+      <div class="timeline-entry">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <div>
+            <strong>💬 Commentaire</strong>
+            ${latestBadge}
           </div>
+          <small class="text-muted">${formattedDate}${userInfo}</small>
         </div>
-        <div class="timeline-dates">
-          <i class="bi bi-calendar3"></i>
-          ${formattedDate}${userInfo}
-        </div>
-        <div class="timeline-comment">
-          <div class="comment-content" data-original="${entry.content.replace(/"/g, '&quot;')}">${entry.content}</div>
+        <div style="margin-top: 8px; padding: 8px; background: white; border-radius: 4px;">
+          ${entry.content}
         </div>
       </div>
     `;
