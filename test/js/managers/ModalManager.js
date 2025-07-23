@@ -1871,7 +1871,12 @@ export class ModalManager {
     const container = document.getElementById(containerId);
     const hiddenSelect = document.getElementById(selectId);
     
-    if (!container || !hiddenSelect) return;
+    if (!container || !hiddenSelect) {
+      console.warn(`ModalManager: Container ${containerId} ou select ${selectId} non trouvé`);
+      return;
+    }
+    
+    console.log(`Populating ${containerId} with options:`, options);
     
     // Vider le container
     container.innerHTML = '';
@@ -1879,8 +1884,14 @@ export class ModalManager {
     // Vider et remplir le select caché (pour compatibilité)
     hiddenSelect.innerHTML = '';
     
+    // Ajouter d'abord l'option 'L' dans le select caché
+    const lOption = document.createElement('option');
+    lOption.value = 'L';
+    lOption.textContent = 'L';
+    hiddenSelect.appendChild(lOption);
+    
     options.forEach((option, index) => {
-      if (index === 0 && option === 'L') return; // Ignorer le marqueur 'L'
+      if (index === 0 && option === 'L') return; // Ignorer le marqueur 'L' dans les checkboxes
       
       // Créer la case à cocher
       const checkboxDiv = document.createElement('div');
@@ -1889,8 +1900,9 @@ export class ModalManager {
       const checkbox = document.createElement('input');
       checkbox.className = 'form-check-input';
       checkbox.type = 'checkbox';
-      checkbox.id = `${selectId}-${index}`;
+      checkbox.id = `${selectId}-checkbox-${index}`;
       checkbox.value = option;
+      checkbox.name = selectId; // Ajouter un name pour le groupement
       
       const label = document.createElement('label');
       label.className = 'form-check-label';
@@ -1908,10 +1920,13 @@ export class ModalManager {
       hiddenSelect.appendChild(optionElement);
       
       // Event listener pour synchroniser avec le select caché
-      checkbox.addEventListener('change', () => {
+      checkbox.addEventListener('change', (e) => {
+        console.log(`Checkbox ${option} changed to:`, e.target.checked);
         this.syncCheckboxToSelect(containerId, selectId);
       });
     });
+    
+    console.log(`Created ${container.children.length} checkboxes in ${containerId}`);
   }
   
   /**
@@ -1921,7 +1936,10 @@ export class ModalManager {
     const container = document.getElementById(containerId);
     const hiddenSelect = document.getElementById(selectId);
     
-    if (!container || !hiddenSelect) return;
+    if (!container || !hiddenSelect) {
+      console.warn(`Sync failed: ${containerId} or ${selectId} not found`);
+      return;
+    }
     
     const checkboxes = container.querySelectorAll('input[type="checkbox"]:checked');
     const selectedValues = ['L']; // Toujours inclure le marqueur 'L'
@@ -1930,10 +1948,15 @@ export class ModalManager {
       selectedValues.push(checkbox.value);
     });
     
+    console.log(`Syncing ${selectId} with values:`, selectedValues);
+    
     // Mettre à jour le select caché
     Array.from(hiddenSelect.options).forEach(option => {
       option.selected = selectedValues.includes(option.value);
     });
+    
+    // Déclencher un événement change pour informer les autres composants
+    hiddenSelect.dispatchEvent(new Event('change', { bubbles: true }));
   }
   
   /**

@@ -31,9 +31,10 @@ export class ViewModeManager {
    * Crée les contrôles de mode de vue
    */
   createViewModeControls() {
-    const searchCol = document.querySelector('.kanban-controls .col-md-3');
-    if (!searchCol) {
-      this.logger.error('Colonne de recherche introuvable');
+    // Chercher le bandeau haut (header) où se trouve "environnement de test"
+    const headerContainer = document.querySelector('.kanban-header .d-flex');
+    if (!headerContainer) {
+      this.logger.error('Bandeau header introuvable');
       return;
     }
     
@@ -43,31 +44,34 @@ export class ViewModeManager {
       return;
     }
     
-    // Créer un conteneur pour les modes de vue au-dessus du champ de recherche
+    // Créer un conteneur pour les modes de vue dans le bandeau haut
     const viewModeContainer = document.createElement('div');
     viewModeContainer.id = 'view-mode-controls';
-    viewModeContainer.className = 'mb-2';
+    viewModeContainer.className = 'd-flex align-items-center gap-2';
     
     viewModeContainer.innerHTML = `
-      <div class="d-flex align-items-center gap-2 flex-wrap">
-        <span class="text-muted small">Modes:</span>
-        <div class="btn-group btn-group-sm" role="group" aria-label="Modes de vue">
-          <button type="button" class="btn btn-outline-secondary active" data-mode="compact" title="Mode compact (1)">
-            <i class="bi bi-grid-3x2"></i>
-          </button>
-          <button type="button" class="btn btn-outline-secondary" data-mode="detailed" title="Mode détaillé (2)">
-            <i class="bi bi-card-list"></i>
-          </button>
-          <button type="button" class="btn btn-outline-secondary" data-mode="focus" title="Mode focus (3)">
-            <i class="bi bi-zoom-in"></i>
-          </button>
-        </div>
+      <div class="btn-group btn-group-sm" role="group" aria-label="Modes de vue">
+        <button type="button" class="btn btn-outline-secondary active" data-mode="compact" title="Mode compact (1)">
+          <i class="bi bi-grid-3x2"></i>
+        </button>
+        <button type="button" class="btn btn-outline-secondary" data-mode="detailed" title="Mode détaillé (2)">
+          <i class="bi bi-card-list"></i>
+        </button>
+        <button type="button" class="btn btn-outline-secondary" data-mode="focus" title="Mode focus (3)">
+          <i class="bi bi-zoom-in"></i>
+        </button>
       </div>
     `;
     
-    // Insérer au début de la colonne de recherche
-    searchCol.insertBefore(viewModeContainer, searchCol.firstChild);
-    this.logger.info('Contrôles de vue créés et insérés dans la colonne de recherche');
+    // Insérer avant le bouton "Nouvelle Tâche"
+    const newTaskButton = headerContainer.querySelector('#btn-nouvelle-tache');
+    if (newTaskButton) {
+      headerContainer.insertBefore(viewModeContainer, newTaskButton);
+    } else {
+      headerContainer.appendChild(viewModeContainer);
+    }
+    
+    this.logger.info('Contrôles de vue créés et insérés dans le bandeau haut');
   }
   
   /**

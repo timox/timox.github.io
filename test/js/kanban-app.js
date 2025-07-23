@@ -1876,7 +1876,7 @@ class KanbanManager {
         this.currentRecords[recordIndex].statut = newStatus;
       }
       
-      this.refreshKanban();
+      // Ne pas rafraîchir immédiatement - la carte est déjà dans la bonne position
       this.signalLocalUpdate();
       
       // Envoyer la mise à jour à Grist
@@ -1895,6 +1895,11 @@ class KanbanManager {
     } catch (error) {
       console.error('Erreur déplacement:', error);
       displayError(`Erreur: ${error.message}`);
+      // En cas d'erreur, remettre la carte à sa position d'origine
+      const recordIndex = this.currentRecords.findIndex(r => r.id === taskId);
+      if (recordIndex !== -1) {
+        this.currentRecords[recordIndex].statut = record.statut; // Remettre l'ancien statut
+      }
       this.refreshKanban();
     } finally {
       this.isUpdating = false;
