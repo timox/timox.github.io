@@ -10,8 +10,12 @@
 
 /* Force le backdrop de la modale historique */
 #history-modal + .modal-backdrop,
-.modal-backdrop.history-modal-backdrop {
+.modal-backdrop.history-modal-backdrop,
+.modal-backdrop:has(+ #history-modal),
+.modal-backdrop[data-modal="history"] {
   z-index: 1999 !important;
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  display: block !important;
 }
 
 /* === TAILLE MODALE HISTORIQUE === */

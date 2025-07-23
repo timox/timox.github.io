@@ -102,9 +102,10 @@ export class HistoryManager {
   openTaskHistory(taskId) {
     console.log(`🎯 HistoryManager: openTaskHistory appelé pour tâche ${taskId}`);
     
-    // 🛡️ PROTECTION SUPPLÉMENTAIRE: Éviter les appels multiples sur openTaskHistory
-    if (this._taskHistoryOpening === taskId) {
-      console.log(`🚫 HistoryManager: openTaskHistory déjà en cours pour tâche ${taskId}`);
+    // 🛡️ PROTECTION RENFORCÉE: Éviter les appels multiples sur openTaskHistory
+    const now = Date.now();
+    if (this._taskHistoryOpening === taskId || (this._lastHistoryOpen && now - this._lastHistoryOpen < 1000)) {
+      console.log(`🚫 HistoryManager: openTaskHistory déjà en cours ou trop récent pour tâche ${taskId}`);
       return;
     }
     
@@ -116,8 +117,9 @@ export class HistoryManager {
       return;
     }
     
-    // Marquer cette tâche comme en cours d'ouverture
+    // Marquer cette tâche comme en cours d'ouverture et horodater
     this._taskHistoryOpening = taskId;
+    this._lastHistoryOpen = now;
     setTimeout(() => { 
       this._taskHistoryOpening = null; 
       console.log(`🔓 HistoryManager: protection openTaskHistory levée pour tâche ${taskId}`);
