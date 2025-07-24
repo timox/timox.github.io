@@ -1876,6 +1876,11 @@ class KanbanManager {
     try {
       this.isUpdating = true;
       
+      // Synchroniser avec KanbanManager si disponible
+      if (window.kanbanManager) {
+        window.kanbanManager.isUpdating = true;
+      }
+      
       // Mettre à jour les données locales
       const recordIndex = this.currentRecords.findIndex(r => r.id === taskId);
       if (recordIndex !== -1) {
@@ -1912,6 +1917,11 @@ class KanbanManager {
       this.refreshKanban();
     } finally {
       this.isUpdating = false;
+      
+      // Synchroniser avec KanbanManager si disponible
+      if (window.kanbanManager) {
+        window.kanbanManager.isUpdating = false;
+      }
     }
   }
   

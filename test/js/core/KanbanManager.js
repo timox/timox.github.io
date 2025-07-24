@@ -499,8 +499,12 @@ export class KanbanManager {
     // Mettre � jour les options des formulaires
     this.populateFormOptions();
     
-    // Rafra�chir l'affichage
-    this.refreshKanban();
+    // Rafra�chir l'affichage seulement si pas en cours de mise � jour
+    if (!this.isUpdating) {
+      this.refreshKanban();
+    } else {
+      console.log('KanbanManager: Refresh ignor� car mise � jour en cours');
+    }
   }
   
   /**

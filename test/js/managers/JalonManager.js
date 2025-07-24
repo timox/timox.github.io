@@ -62,6 +62,14 @@ export class JalonManager {
       });
     }
 
+    // Bouton calendrier pour date jalon
+    const btnJalonCalendar = document.getElementById('btn-jalon-calendar');
+    if (btnJalonCalendar) {
+      btnJalonCalendar.addEventListener('click', () => {
+        this.openDatePicker();
+      });
+    }
+
     // Reset form à la fermeture de la modale
     document.getElementById('jalonModal').addEventListener('hidden.bs.modal', () => {
       this.resetJalonForm();
@@ -542,6 +550,12 @@ export class JalonManager {
    */
   loadJalonsFromTask(taskData) {
     try {
+      // Si taskData est vide ou null, ne pas écraser les jalons existants
+      if (!taskData || Object.keys(taskData).length === 0) {
+        console.log('📋 Données de tâche vides, conservation des jalons existants');
+        return;
+      }
+      
       if (taskData.jalons) {
         if (typeof taskData.jalons === 'string') {
           const jalonsData = JSON.parse(taskData.jalons);
@@ -584,8 +598,13 @@ export class JalonManager {
       jalons: this.jalons,
       lastModified: Date.now()
     };
-    setFieldValue('popup-jalons', JSON.stringify(jalonsData));
-    console.log(`💾 Sauvegarde de ${this.jalons.length} jalons dans le formulaire`);
+    const jsonString = JSON.stringify(jalonsData);
+    setFieldValue('popup-jalons', jsonString);
+    console.log(`💾 Sauvegarde de ${this.jalons.length} jalons dans le formulaire:`, jsonString);
+    
+    // Vérifier que la sauvegarde a bien fonctionné
+    const savedValue = getFieldValue('popup-jalons');
+    console.log('🔍 Valeur sauvegardée récupérée:', savedValue);
   }
 
   /**
@@ -670,5 +689,27 @@ export class JalonManager {
   showValidationError(message) {
     // Afficher une alerte ou un toast
     alert(message); // Temporaire, à remplacer par un système de toast
+  }
+
+  /**
+   * Ouvre le sélecteur de date natif
+   */
+  openDatePicker() {
+    const dateInput = document.getElementById('jalon-date');
+    if (dateInput) {
+      // Retirer l'attribut readonly temporairement pour permettre l'interaction
+      dateInput.removeAttribute('readonly');
+      dateInput.focus();
+      dateInput.showPicker?.(); // API moderne pour afficher le picker
+      
+      // Remettre readonly après sélection
+      dateInput.addEventListener('change', () => {
+        dateInput.setAttribute('readonly', 'readonly');
+      }, { once: true });
+      
+      dateInput.addEventListener('blur', () => {
+        dateInput.setAttribute('readonly', 'readonly');
+      }, { once: true });
+    }
   }
 }

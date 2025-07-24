@@ -66,7 +66,7 @@ export function generateBureauBadges(bureauList, isCompact = false) {
   }
   
   // Extraction des bureaux (sans le 'L' initial de Grist)
-  const bureaux = bureauList.slice(1).filter(Boolean);
+  const bureaux = bureauList.filter(item => item !== 'L' && Boolean(item));
   
   if (bureaux.length === 0) {
     return '';
@@ -160,7 +160,7 @@ export function generateResponsablesBadges(responsablesList) {
     return '';
   }
   
-  const responsables = responsablesList.slice(1).filter(Boolean);
+  const responsables = responsablesList.filter(item => item !== 'L' && Boolean(item));
   
   if (responsables.length === 0) {
     return '';
@@ -305,8 +305,8 @@ export function validateBureauList(bureauList, availableBureaux = []) {
     return [];
   }
   
-  return bureauList.slice(1)
-    .filter(Boolean)
+  return bureauList
+    .filter(item => item !== 'L' && Boolean(item))
     .filter(bureau => isValidBureau(bureau, availableBureaux));
 }
 

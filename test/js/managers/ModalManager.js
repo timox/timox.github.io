@@ -1999,7 +1999,9 @@ export class ModalManager {
     
     // Réinitialiser les jalons
     if (this.kanban.jalonManager) {
-      this.kanban.jalonManager.loadJalonsFromTask({});
+      this.kanban.jalonManager.jalons = [];
+      this.kanban.jalonManager.updateJalonsDisplay();
+      this.kanban.jalonManager.saveJalonsToForm();
     }
   }
   
