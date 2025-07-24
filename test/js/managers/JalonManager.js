@@ -544,7 +544,17 @@ export class JalonManager {
     try {
       if (taskData.jalons) {
         if (typeof taskData.jalons === 'string') {
-          this.jalons = JSON.parse(taskData.jalons);
+          const jalonsData = JSON.parse(taskData.jalons);
+          // Nouveau format avec {jalons: [...]}
+          if (jalonsData && jalonsData.jalons && Array.isArray(jalonsData.jalons)) {
+            this.jalons = jalonsData.jalons;
+          }
+          // Ancien format (array direct)
+          else if (Array.isArray(jalonsData)) {
+            this.jalons = jalonsData;
+          } else {
+            this.jalons = [];
+          }
         } else if (Array.isArray(taskData.jalons)) {
           this.jalons = taskData.jalons;
         } else {
@@ -555,12 +565,14 @@ export class JalonManager {
       }
       
       this.updateJalonsDisplay();
+      this.saveJalonsToForm(); // Synchroniser avec le formulaire
       console.log(`📋 ${this.jalons.length} jalons chargés pour la tâche`);
       
     } catch (error) {
       console.error('Erreur lors du chargement des jalons:', error);
       this.jalons = [];
       this.updateJalonsDisplay();
+      this.saveJalonsToForm();
     }
   }
 
@@ -568,14 +580,34 @@ export class JalonManager {
    * Sauvegarde les jalons dans le champ caché du formulaire
    */
   saveJalonsToForm() {
-    setFieldValue('popup-jalons', JSON.stringify(this.jalons));
+    const jalonsData = {
+      jalons: this.jalons,
+      lastModified: Date.now()
+    };
+    setFieldValue('popup-jalons', JSON.stringify(jalonsData));
+    console.log(`💾 Sauvegarde de ${this.jalons.length} jalons dans le formulaire`);
   }
 
   /**
    * Récupère les jalons depuis le formulaire
    */
   getJalonsForSave() {
-    return getFieldValue('popup-jalons') || '[]';
+    const jalonsJson = getFieldValue('popup-jalons') || '[]';
+    try {
+      const jalonsData = JSON.parse(jalonsJson);
+      // Si c'est le nouveau format avec {jalons: [...]}
+      if (jalonsData && jalonsData.jalons && Array.isArray(jalonsData.jalons)) {
+        return JSON.stringify(jalonsData);
+      }
+      // Si c'est l'ancien format (array direct)
+      else if (Array.isArray(jalonsData)) {
+        return JSON.stringify({ jalons: jalonsData, lastModified: Date.now() });
+      }
+      return jalonsJson;
+    } catch (e) {
+      console.warn('Erreur parsing jalons:', e);
+      return '{"jalons": [], "lastModified": ' + Date.now() + '}';
+    }
   }
 
   // === UTILITAIRES ===

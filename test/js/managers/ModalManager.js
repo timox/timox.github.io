@@ -1879,7 +1879,7 @@ export class ModalManager {
     hiddenSelect.appendChild(lOption);
     
     options.forEach((option, index) => {
-      if (index === 0 && option === 'L') return; // Ignorer le marqueur 'L' dans les checkboxes
+      if (option === 'L') return; // Ignorer complètement le marqueur 'L' dans les checkboxes
       
       // Créer la case à cocher
       const checkboxDiv = document.createElement('div');

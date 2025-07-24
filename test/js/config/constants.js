@@ -128,6 +128,7 @@ export const BUREAU_ICONS = {
   'comsic': 'bi-shield-check',
   'rssi': 'bi-shield-lock',
   'dpo': 'bi-file-earmark-person',
+  'cgssi': 'bi-shield-check',
   'default': 'bi-building'
 };
 
