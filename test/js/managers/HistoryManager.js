@@ -1265,10 +1265,11 @@ export class HistoryManager {
    * Crée le widget d'édition de commentaire dans le DOM
    */
   createCommentEditWidget() {
-    // Vérifier si le widget existe déjà
-    if (document.getElementById('accordion-comment-edit-widget')) {
-      console.log('HistoryManager: Widget d\'édition accordéon existe déjà');
-      return;
+    // Supprimer le widget existant s'il y en a un
+    const existingWidget = document.getElementById('accordion-comment-edit-widget');
+    if (existingWidget) {
+      console.log('HistoryManager: Suppression du widget existant');
+      existingWidget.remove();
     }
     
     console.log('HistoryManager: Création du widget d\'édition de commentaires pour accordéon');
@@ -1276,7 +1277,8 @@ export class HistoryManager {
     // Créer le HTML du widget avec structure corrigée
     const widgetHTML = `
       <div id="accordion-comment-edit-widget" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1070;">
-        <div class="comment-edit-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;" onclick="event.target === this && document.getElementById('accordion-btn-close-comment-edit').click()">
+        <div class="comment-edit-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; pointer-events: none;">
+          <div class="comment-edit-modal-container" style="pointer-events: auto;">
           <div class="comment-edit-modal" style="background: white; border-radius: 8px; max-width: 700px; width: 95%; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
             <div class="comment-edit-header" style="padding: 1rem; border-bottom: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: center;">
               <h5 style="margin: 0; color: #333;"><i class="bi bi-pencil me-2"></i>Édition de commentaire</h5>
@@ -1289,10 +1291,10 @@ export class HistoryManager {
               <div class="mb-2">
                 <small class="text-muted">Date: <span id="accordion-comment-edit-date"></span></small>
               </div>
-              <textarea id="accordion-comment-edit-text" class="form-control" rows="6" 
+              <textarea id="accordion-comment-edit-text" rows="6" 
                         placeholder="Modifiez votre commentaire..." 
-                        style="resize: vertical; min-height: 120px; border: 2px solid #007bff; background: white;"
-                        autocomplete="off" spellcheck="true"></textarea>
+                        style="width: 100%; min-height: 120px; padding: 10px; border: 2px solid #007bff; background: white; font-family: inherit; font-size: 14px; line-height: 1.4; resize: vertical; outline: none;"
+                        ></textarea>
             </div>
             
             <div class="comment-edit-footer" style="padding: 1rem; border-top: 1px solid #dee2e6; display: flex; justify-content: flex-end; gap: 0.5rem;">
@@ -1304,12 +1306,77 @@ export class HistoryManager {
               </button>
             </div>
           </div>
+          </div>
         </div>
       </div>
     `;
     
     // Ajouter au body
     document.body.insertAdjacentHTML('beforeend', widgetHTML);
+    
+    // Attacher les event listeners après création
+    this.attachCommentEditListeners();
+  }
+  
+  /**
+   * Attache les event listeners au widget d'édition
+   */
+  attachCommentEditListeners() {
+    const textarea = document.getElementById('accordion-comment-edit-text');
+    const closeBtn = document.getElementById('accordion-btn-close-comment-edit');
+    const cancelBtn = document.getElementById('accordion-btn-cancel-comment-edit');
+    const saveBtn = document.getElementById('accordion-btn-save-comment-edit');
+    
+    console.log('🔧 Attachement des listeners:', {
+      textarea: !!textarea,
+      closeBtn: !!closeBtn,
+      cancelBtn: !!cancelBtn,
+      saveBtn: !!saveBtn
+    });
+    
+    // Event listeners pour les boutons
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => this.closeCommentEditWidget());
+    }
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', () => this.closeCommentEditWidget());
+    }
+    if (saveBtn) {
+      saveBtn.addEventListener('click', () => this.saveCommentEdit());
+    }
+    
+    // Event listeners spéciaux pour le textarea
+    if (textarea) {
+      // Forcer la focusabilité
+      textarea.setAttribute('contenteditable', 'true');
+      textarea.style.pointerEvents = 'auto';
+      textarea.tabIndex = 0;
+      
+      // Listeners pour debugging
+      textarea.addEventListener('focus', function() {
+        console.log('✅ Textarea: Focus reçu');
+        this.style.border = '2px solid #28a745';
+      });
+      
+      textarea.addEventListener('blur', function() {
+        console.log('❌ Textarea: Focus perdu');
+        this.style.border = '2px solid #007bff';
+      });
+      
+      textarea.addEventListener('click', function(e) {
+        console.log('🖱️ Textarea: Clic détecté');
+        e.stopPropagation();
+        this.focus();
+      });
+      
+      textarea.addEventListener('keydown', function(e) {
+        console.log('⌨️ Textarea: Touche pressée:', e.key);
+      });
+      
+      textarea.addEventListener('input', function(e) {
+        console.log('📝 Textarea: Contenu modifié:', this.value.length, 'caractères');
+      });
+    }
   }
   
   /**
@@ -1434,8 +1501,24 @@ export class HistoryManager {
     const dateElement = commentElement.querySelector('.timeline-entry-timestamp') || 
                        commentElement.querySelector('.comment-timestamp') ||
                        commentElement.querySelector('.timeline-dates') || 
-                       commentElement.querySelector('.comment-meta');
-    const dateText = dateElement ? dateElement.textContent.trim() : 'Date inconnue';
+                       commentElement.querySelector('.comment-meta') ||
+                       commentElement.querySelector('[class*="timestamp"]') ||
+                       commentElement.querySelector('[class*="date"]');
+    
+    let dateText = 'Date inconnue';
+    if (dateElement) {
+      dateText = dateElement.textContent.trim();
+      console.log('✅ Date trouvée:', dateText, 'depuis élément:', dateElement.className);
+    } else {
+      console.warn('❌ Aucun élément de date trouvé dans:', commentElement.innerHTML);
+      // Essayer de trouver une date dans le texte
+      const dateRegex = /\d{1,2}\/\d{1,2}\/\d{4}|\d{4}-\d{2}-\d{2}/;
+      const match = commentElement.textContent.match(dateRegex);
+      if (match) {
+        dateText = match[0];
+        console.log('📅 Date extraite du texte:', dateText);
+      }
+    }
     
     // Stocker les informations du commentaire en cours d'édition
     this.currentEditingComment = {
@@ -1469,23 +1552,23 @@ export class HistoryManager {
     
     widget.style.display = 'block';
     
-    // Focus sur le textarea avec délai plus long et sélection du texte
+    // Focus simple et direct sur le textarea
     setTimeout(() => {
       if (textArea) {
+        console.log('🎯 Tentative de focus sur le textarea');
         textArea.focus();
-        textArea.select(); // Sélectionner tout le texte pour faciliter l'édition
         
-        // Vérifier que le focus a bien fonctionné
-        if (document.activeElement === textArea) {
-          console.log('HistoryManager: Focus appliqué avec succès sur le textarea');
-        } else {
-          console.warn('HistoryManager: Échec du focus, tentative forcée');
-          // Tentative forcée
-          textArea.click();
-          textArea.focus();
-        }
+        // Vérification après un court délai
+        setTimeout(() => {
+          if (document.activeElement === textArea) {
+            console.log('✅ Focus réussi !');
+            textArea.setSelectionRange(textArea.value.length, textArea.value.length);
+          } else {
+            console.warn('❌ Focus échoué, élément actif:', document.activeElement);
+          }
+        }, 50);
       }
-    }, 300);
+    }, 100);
   }
   
   /**

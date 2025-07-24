@@ -173,15 +173,32 @@ export class JalonManager {
    * Collecte les données du formulaire de jalon
    */
   collectJalonFormData() {
+    // Vérifier que les éléments existent
+    const titreElement = document.getElementById('jalon-titre');
+    const dateElement = document.getElementById('jalon-date');
+    const commentaireElement = document.getElementById('jalon-commentaire');
+    const statutElement = document.getElementById('jalon-statut');
+    
+    if (!titreElement || !dateElement || !commentaireElement || !statutElement) {
+      console.error('❌ Éléments de formulaire jalon manquants:', {
+        titre: !!titreElement,
+        date: !!dateElement,
+        commentaire: !!commentaireElement,
+        statut: !!statutElement
+      });
+    }
+    
     const data = {
       id: this.currentEditingId || this.generateJalonId(),
       type: this.selectedType || 'reunion',
-      titre: document.getElementById('jalon-titre').value.trim(),
-      date: document.getElementById('jalon-date').value,
-      commentaire: document.getElementById('jalon-commentaire').value.trim(),
-      statut: document.getElementById('jalon-statut').value,
+      titre: titreElement ? titreElement.value.trim() : '',
+      date: dateElement ? dateElement.value : '',
+      commentaire: commentaireElement ? commentaireElement.value.trim() : '',
+      statut: statutElement ? statutElement.value : 'planifie',
       created_at: new Date().toISOString()
     };
+    
+    console.log('📝 Données jalon collectées:', data);
 
     // Ajouter les champs spécifiques selon le type
     switch (data.type) {
@@ -244,6 +261,14 @@ export class JalonManager {
       this.jalons.push(jalonData);
       console.log('➕ Jalon ajouté:', jalonData.titre, `(Total: ${this.jalons.length})`);
     }
+    
+    // Debugging approfondi
+    console.log('🔍 État des jalons après ajout:');
+    console.log('   - Nombre total:', this.jalons.length);
+    console.log('   - Jalons:', this.jalons.map(j => ({ id: j.id, titre: j.titre, date: j.date })));
+    
+    // Immédiatement synchroniser avec le formulaire
+    this.saveJalonsToForm();
   }
 
   /**
@@ -594,6 +619,7 @@ export class JalonManager {
       this.updateJalonsDisplay();
       this.saveJalonsToForm(); // Synchroniser avec le formulaire
       console.log(`📋 ${this.jalons.length} jalons chargés pour la tâche`);
+      console.log('🔍 Détail des jalons chargés:', this.jalons.map(j => ({ id: j.id, titre: j.titre, date: j.date })));
       
     } catch (error) {
       console.error('Erreur lors du chargement des jalons:', error);
@@ -629,35 +655,17 @@ export class JalonManager {
    * Récupère les jalons depuis le formulaire pour sauvegarde
    */
   getJalonsForSave() {
-    const jalonsJson = getFieldValue('popup-jalons') || '{"jalons":[],"lastModified":0}';
-    try {
-      const jalonsData = JSON.parse(jalonsJson);
-      // Si c'est le nouveau format avec {jalons: [...]}
-      if (jalonsData && jalonsData.jalons && Array.isArray(jalonsData.jalons)) {
-        return {
-          jalons: jalonsData.jalons,
-          lastModified: jalonsData.lastModified || Date.now()
-        };
-      }
-      // Si c'est l'ancien format (array direct)
-      else if (Array.isArray(jalonsData)) {
-        return { 
-          jalons: jalonsData, 
-          lastModified: Date.now() 
-        };
-      }
-      // Format inconnu, retourner structure vide
-      return { 
-        jalons: [], 
-        lastModified: Date.now() 
-      };
-    } catch (e) {
-      console.warn('Erreur parsing jalons pour sauvegarde:', e);
-      return { 
-        jalons: this.jalons || [], // Utiliser les jalons actuels en cas d'erreur
-        lastModified: Date.now() 
-      };
-    }
+    // Utiliser directement les jalons en mémoire qui sont à jour
+    const jalonsData = {
+      jalons: this.jalons || [],
+      lastModified: Date.now()
+    };
+    
+    console.log('🔍 JalonManager.getJalonsForSave() - Jalons actuels:', this.jalons.length);
+    console.log('📊 Détail des jalons:', this.jalons);
+    
+    // Retourner la string JSON directement pour Grist
+    return JSON.stringify(jalonsData);
   }
 
   // === UTILITAIRES ===

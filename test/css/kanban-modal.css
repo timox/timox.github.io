@@ -361,18 +361,18 @@
 
 /* === Timeline Styles Simplifiés === */
 .timeline-container {
-  padding: 10px 0;
+  padding: 5px 0;
 }
 
 .timeline-entry {
-  margin-bottom: 6px;
-  padding: 6px 10px;
+  margin-bottom: 3px;
+  padding: 4px 8px;
   background: #f8f9fa;
   border: 1px solid #dee2e6;
-  border-radius: 4px;
+  border-radius: 3px;
   border-left: 3px solid #007bff;
-  font-size: 0.85rem;
-  line-height: 1.3;
+  font-size: 0.8rem;
+  line-height: 1.2;
 }
 
 .timeline-entry:hover {
@@ -383,7 +383,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.2rem;
 }
 
 .timeline-entry-timestamp {
@@ -395,8 +395,8 @@
 .timeline-entry-user {
   font-weight: 500;
   color: #495057;
-  margin-bottom: 0.15rem;
-  font-size: 0.8rem;
+  margin-bottom: 0.05rem;
+  font-size: 0.75rem;
 }
 
 /* Titre de tâche cliquable simple */
@@ -426,19 +426,19 @@
 
 .timeline-entry-details {
   color: #495057;
-  line-height: 1.4;
-  margin-bottom: 0.3rem;
-  font-size: 0.8rem;
+  line-height: 1.2;
+  margin-bottom: 0.1rem;
+  font-size: 0.75rem;
 }
 
 .timeline-entry-status {
   display: inline-block;
-  padding: 0.25rem 0.75rem;
-  border-radius: 1rem;
-  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.75rem;
+  font-size: 0.65rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 /* === Status Colors === */
@@ -495,9 +495,9 @@
 .comment-item {
   background: white !important;
   border: 1px solid #e9ecef !important;
-  border-radius: 8px !important;
-  padding: 1.2rem !important;
-  margin-bottom: 1rem !important;
+  border-radius: 6px !important;
+  padding: 0.8rem !important;
+  margin-bottom: 0.6rem !important;
   box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
 }
 
@@ -505,8 +505,8 @@
   display: flex !important;
   justify-content: space-between !important;
   align-items: center !important;
-  margin-bottom: 0.8rem !important;
-  padding-bottom: 0.8rem !important;
+  margin-bottom: 0.4rem !important;
+  padding-bottom: 0.4rem !important;
   border-bottom: 1px solid #f1f3f4 !important;
 }
 

@@ -1221,17 +1221,17 @@ export class ModalManager {
     }
     */
     
-    // Vérifier et formater les jalons pour Grist
+    // Vérifier les jalons pour Grist (déjà au format JSON string)
     if (gristData.jalons !== null && gristData.jalons !== undefined) {
-      console.log('🔄 Jalons avant conversion:', typeof gristData.jalons, gristData.jalons);
+      console.log('🔄 Jalons reçus:', typeof gristData.jalons, gristData.jalons.length, 'caractères');
       if (typeof gristData.jalons !== 'string') {
         console.log('🔧 Conversion jalons en JSON string pour Grist');
         gristData.jalons = JSON.stringify(gristData.jalons || []);
       }
       console.log('✅ Jalons prêts pour sauvegarde:', gristData.jalons.length, 'caractères');
-      console.log('📝 Contenu final jalons:', gristData.jalons);
     } else {
       console.log('⚠️ Aucun jalon à sauvegarder (null/undefined)');
+      gristData.jalons = '{"jalons":[],"lastModified":0}'; // Valeur par défaut
     }
     
     // TEMPORAIRE : Supprimer strategie_ids jusqu'à ce que la colonne soit créée
