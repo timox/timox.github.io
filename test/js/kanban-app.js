@@ -870,8 +870,14 @@ class KanbanManager {
     // Peupler les selects de base
     populateSelect('popup-urgence', urgence || [], true);
     populateSelect('popup-impact', impact || [], true);
-    populateSelect('popup-bureau', bureau || [], false);
-    populateSelect('popup-qui', responsables || [], false);
+    // Utiliser le ModalManager pour peupler les cases à cocher
+    if (this.modalManager) {
+      this.modalManager.populateSelectOptions();
+    } else {
+      // Fallback pour les selects classiques
+      populateSelect('popup-bureau', bureau || [], false);
+      populateSelect('popup-qui', responsables || [], false);
+    }
     populateSelect('popup-projet', projet || [], true);
     
     // CORRIGÉ: Laisser le FilterManager gérer les filtres
@@ -1876,7 +1882,10 @@ class KanbanManager {
         this.currentRecords[recordIndex].statut = newStatus;
       }
       
-      // Ne pas rafraîchir immédiatement - la carte est déjà dans la bonne position
+      // Mettre à jour visuellement le statut sur la carte
+      this.updateCardStatus(itemEl, newStatus);
+      
+      // Signaler la mise à jour
       this.signalLocalUpdate();
       
       // Envoyer la mise à jour à Grist
@@ -1904,6 +1913,63 @@ class KanbanManager {
     } finally {
       this.isUpdating = false;
     }
+  }
+  
+  /**
+   * Met à jour visuellement le statut d'une carte
+   */
+  updateCardStatus(cardElement, newStatus) {
+    if (!cardElement) return;
+    
+    console.log(`Mise à jour visuelle carte ${cardElement.dataset.id} vers statut: ${newStatus}`);
+    
+    // Mettre à jour l'attribut data-status
+    cardElement.dataset.status = newStatus;
+    
+    // Si la carte a une classe de statut, la mettre à jour
+    const statusClasses = ['status-a-faire', 'status-en-cours', 'status-termine', 'status-backlog'];
+    statusClasses.forEach(cls => cardElement.classList.remove(cls));
+    
+    const statusClass = 'status-' + newStatus.toLowerCase().replace(/[àâäçéèêëïîôöùûüÿ\s]/g, match => {
+      const replacements = {
+        'à': 'a', 'â': 'a', 'ä': 'a', 'ç': 'c', 'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',
+        'ï': 'i', 'î': 'i', 'ô': 'o', 'ö': 'o', 'ù': 'u', 'û': 'u', 'ü': 'u', 'ÿ': 'y',
+        ' ': '-'
+      };
+      return replacements[match] || match;
+    });
+    
+    cardElement.classList.add(statusClass);
+    
+    // Mettre à jour tout badge de statut visible
+    const statusBadges = cardElement.querySelectorAll('.status-badge, .badge[data-field="statut"]');
+    statusBadges.forEach(badge => {
+      badge.textContent = newStatus;
+      
+      // Appliquer les couleurs selon le statut
+      badge.className = badge.className.replace(/bg-\w+/, '');
+      switch (newStatus) {
+        case 'À faire':
+          badge.classList.add('bg-primary');
+          break;
+        case 'En cours':
+          badge.classList.add('bg-warning', 'text-dark');
+          break;
+        case 'Terminé':
+          badge.classList.add('bg-success');
+          break;
+        default:
+          badge.classList.add('bg-secondary');
+      }
+    });
+    
+    // Mettre à jour tous les éléments texte du statut
+    const statusTexts = cardElement.querySelectorAll('.task-status, [data-field="statut"]');
+    statusTexts.forEach(text => {
+      text.textContent = newStatus;
+    });
+    
+    console.log(`✅ Carte ${cardElement.dataset.id} mise à jour visuellement`);
   }
 
   // === GESTION DES MISES À JOUR GRIST ===

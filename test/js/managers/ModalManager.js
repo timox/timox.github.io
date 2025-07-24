@@ -1846,6 +1846,8 @@ export class ModalManager {
     populateSelect('popup-projet', projet || [], true);
     
     // Peupler les cases à cocher
+    console.log('Bureau options:', bureau);
+    console.log('Responsables options:', responsables);
     this.populateCheckboxOptions('popup-bureau-checkboxes', 'popup-bureau', bureau || []);
     this.populateCheckboxOptions('popup-qui-checkboxes', 'popup-qui', responsables || []);
   }
@@ -1913,6 +1915,18 @@ export class ModalManager {
     });
     
     console.log(`Created ${container.children.length} checkboxes in ${containerId}`);
+    
+    // Test immédiat - créer une case à cocher de test si aucune option
+    if (options.length <= 1) {
+      console.warn(`Aucune option trouvée pour ${containerId}, création d'une case de test`);
+      const testDiv = document.createElement('div');
+      testDiv.className = 'form-check';
+      testDiv.innerHTML = `
+        <input class="form-check-input" type="checkbox" id="${selectId}-test" value="Test">
+        <label class="form-check-label" for="${selectId}-test">Test Option</label>
+      `;
+      container.appendChild(testDiv);
+    }
   }
   
   /**
