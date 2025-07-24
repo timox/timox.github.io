@@ -1869,26 +1869,44 @@ class KanbanManager {
     const targetContainer = evt.to;
     const taskId = parseInt(itemEl.dataset.id, 10);
     
-    // Chercher le conteneur avec data-status-id en remontant l'arbre DOM
+    // Chercher le conteneur avec data-status-id ou data-status en remontant l'arbre DOM
     let statusContainer = targetContainer;
-    while (statusContainer && !statusContainer.dataset.statusId) {
+    let newStatus = null;
+    
+    while (statusContainer && !newStatus) {
+      // Essayer d'abord data-status-id (pour mode focus)
+      if (statusContainer.dataset.statusId) {
+        newStatus = statusContainer.dataset.statusId;
+        break;
+      }
+      // Puis data-status (pour mode normal)
+      if (statusContainer.dataset.status) {
+        newStatus = statusContainer.dataset.status;
+        break;
+      }
       statusContainer = statusContainer.parentElement;
     }
-    
-    const newStatus = statusContainer?.dataset.statusId;
     
     console.log('🔄 handleDragEnd appelé:', {
       taskId,
       newStatus,
       targetContainer: targetContainer ? targetContainer.id : 'null',
       statusContainer: statusContainer ? statusContainer.id : 'null',
-      originalStatusId: targetContainer ? targetContainer.dataset.statusId : 'N/A',
-      foundStatusId: statusContainer ? statusContainer.dataset.statusId : 'N/A'
+      targetStatusId: targetContainer ? targetContainer.dataset.statusId : 'N/A',
+      targetStatus: targetContainer ? targetContainer.dataset.status : 'N/A',
+      foundStatusId: statusContainer ? statusContainer.dataset.statusId : 'N/A',
+      foundStatus: statusContainer ? statusContainer.dataset.status : 'N/A'
     });
 
     // Vérifier que newStatus est défini
     if (!newStatus) {
       console.error('handleDragEnd: newStatus est undefined, arrêt du traitement');
+      console.error('Conteneurs vérifiés:', {
+        targetContainer: targetContainer,
+        statusContainer: statusContainer,
+        targetClasses: targetContainer ? targetContainer.className : 'N/A',
+        statusClasses: statusContainer ? statusContainer.className : 'N/A'
+      });
       return;
     }
 
