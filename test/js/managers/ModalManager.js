@@ -650,6 +650,7 @@ export class ModalManager {
     setFieldValue('popup-strategie-sous-objectif', '');
     setFieldValue('popup-strategie-action', '');
     setFieldValue('popup-strategie-id', '');
+    setFieldValue('popup-strategie-ids', ''); // Réinitialiser les stratégies multiples
     
     // Réinitialiser l'interface accordéon
     document.querySelectorAll('.strategy-action.selected').forEach(el => {
@@ -836,6 +837,10 @@ export class ModalManager {
     
     console.log('Final state - isNewTask:', this.isNewTask, 'currentTaskId:', this.currentTaskId);
     
+    // RÉINITIALISATION COMPLÈTE avant de charger les nouvelles données
+    // Réinitialiser jalons dans le formulaire (au cas où)
+    setFieldValue('popup-jalons', '{"jalons":[],"lastModified":0}');
+    
     // Champs de base
     setFieldValue('popup-titre', tache.titre || '');
     
@@ -857,7 +862,8 @@ export class ModalManager {
     setFieldValue('popup-urgence', tache.urgence || '');
     setFieldValue('popup-impact', tache.impact || '');
     
-    // Stratégies depuis Grist - peupler avec support multi-stratégies
+    // Stratégies depuis Grist - TOUJOURS réinitialiser d'abord
+    this.resetStrategySelection();
     if (tache.strategie_ids) {
       this.populateStrategyFieldsFromIds(tache.strategie_ids);
     } else if (tache.strategie_id) {
