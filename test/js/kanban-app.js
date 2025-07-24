@@ -1868,7 +1868,29 @@ class KanbanManager {
     const itemEl = evt.item;
     const targetContainer = evt.to;
     const taskId = parseInt(itemEl.dataset.id, 10);
-    const newStatus = targetContainer.dataset.statusId;
+    
+    // Chercher le conteneur avec data-status-id en remontant l'arbre DOM
+    let statusContainer = targetContainer;
+    while (statusContainer && !statusContainer.dataset.statusId) {
+      statusContainer = statusContainer.parentElement;
+    }
+    
+    const newStatus = statusContainer?.dataset.statusId;
+    
+    console.log('🔄 handleDragEnd appelé:', {
+      taskId,
+      newStatus,
+      targetContainer: targetContainer ? targetContainer.id : 'null',
+      statusContainer: statusContainer ? statusContainer.id : 'null',
+      originalStatusId: targetContainer ? targetContainer.dataset.statusId : 'N/A',
+      foundStatusId: statusContainer ? statusContainer.dataset.statusId : 'N/A'
+    });
+
+    // Vérifier que newStatus est défini
+    if (!newStatus) {
+      console.error('handleDragEnd: newStatus est undefined, arrêt du traitement');
+      return;
+    }
 
     const record = this.currentRecords.find(r => r.id === taskId);
     if (!record || record.statut === newStatus) return;
@@ -1930,6 +1952,11 @@ class KanbanManager {
    */
   updateCardStatus(cardElement, newStatus) {
     if (!cardElement) return;
+    
+    if (!newStatus) {
+      console.error('updateCardStatus: newStatus est undefined/null');
+      return;
+    }
     
     console.log(`Mise à jour visuelle carte ${cardElement.dataset.id} vers statut: ${newStatus}`);
     
