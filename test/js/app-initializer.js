@@ -340,14 +340,45 @@ export class KanbanAppInitializer {
    * Initialise les tooltips Bootstrap
    */
   initializeTooltips() {
+    // D'abord, disposer de tous les tooltips existants
+    this.disposeExistingTooltips();
+    
     const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"], [title]:not(select):not(option)');
-    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => 
-      new bootstrap.Tooltip(tooltipTriggerEl, {
-        delay: { show: 500, hide: 100 }
-      })
-    );
+    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => {
+      // Éviter de créer un tooltip s'il en existe déjà un
+      const existingTooltip = bootstrap.Tooltip.getInstance(tooltipTriggerEl);
+      if (existingTooltip) {
+        existingTooltip.dispose();
+      }
+      
+      return new bootstrap.Tooltip(tooltipTriggerEl, {
+        delay: { show: 500, hide: 100 },
+        placement: 'top',
+        trigger: 'hover focus'
+      });
+    });
     
     console.log(`💡 ${tooltipList.length} tooltips initialisés`);
+  }
+  
+  /**
+   * Dispose tous les tooltips existants
+   */
+  disposeExistingTooltips() {
+    // Trouver tous les éléments avec des tooltips Bootstrap
+    document.querySelectorAll('[data-bs-toggle="tooltip"], [title]:not(select):not(option)').forEach(element => {
+      const tooltip = bootstrap.Tooltip.getInstance(element);
+      if (tooltip) {
+        tooltip.dispose();
+      }
+    });
+    
+    // Nettoyer les tooltips "orphelins" qui pourraient rester dans le DOM
+    document.querySelectorAll('.tooltip').forEach(tooltipEl => {
+      if (tooltipEl.parentNode) {
+        tooltipEl.parentNode.removeChild(tooltipEl);
+      }
+    });
   }
   
   /**
@@ -382,11 +413,19 @@ export class KanbanAppInitializer {
    * Crée les boutons d'actions rapides
    */
   createQuickActionButtons() {
-    const header = document.querySelector('.kanban-header .col-auto');
-    if (!header) return;
+    console.log('🔘 Création des boutons d\'actions rapides...');
+    const header = document.querySelector('.kanban-header .d-flex');
+    if (!header) {
+      console.warn('Header .kanban-header .d-flex non trouvé pour les boutons d\'actions');
+      console.log('Headers disponibles:', document.querySelectorAll('.kanban-header'));
+      return;
+    }
     
     // Vérifier s'ils existent déjà
-    if (header.querySelector('.quick-actions')) return;
+    if (header.querySelector('.quick-actions')) {
+      console.log('✅ Boutons d\'actions rapides déjà présents');
+      return;
+    }
     
     const quickActionsDiv = document.createElement('div');
     quickActionsDiv.className = 'quick-actions me-2';
@@ -404,13 +443,20 @@ export class KanbanAppInitializer {
       </div>
     `;
     
-    // Insérer avant les boutons existants
-    header.insertBefore(quickActionsDiv, header.firstChild);
+    // Insérer après le titre et avant le bouton "Nouvelle Tâche"
+    const newTaskBtn = header.querySelector('#btn-nouvelle-tache');
+    if (newTaskBtn) {
+      header.insertBefore(quickActionsDiv, newTaskBtn);
+    } else {
+      header.appendChild(quickActionsDiv);
+    }
     
     // Attacher les événements
     document.getElementById('btn-stats').addEventListener('click', () => this.showStatistics());
     document.getElementById('btn-export').addEventListener('click', () => this.exportData());
     document.getElementById('btn-help').addEventListener('click', () => this.showHelp());
+    
+    console.log('✅ Boutons d\'actions rapides créés et événements attachés');
   }
   
   /**

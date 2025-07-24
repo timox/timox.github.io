@@ -339,9 +339,53 @@ export function addEventListenerSafe(elementId, event, handler, options = {}) {
  * @param {string} selector - Sélecteur CSS pour les tooltips
  */
 export function initializeTooltips(selector = '[data-bs-toggle="tooltip"], [title]:not(select):not(option)') {
+  // D'abord, disposer de tous les tooltips existants
+  document.querySelectorAll(selector).forEach(element => {
+    const existingTooltip = bootstrap.Tooltip.getInstance(element);
+    if (existingTooltip) {
+      existingTooltip.dispose();
+    }
+  });
+  
+  // Nettoyer les tooltips orphelins dans le DOM
+  document.querySelectorAll('.tooltip').forEach(tooltipEl => {
+    if (tooltipEl.parentNode) {
+      tooltipEl.parentNode.removeChild(tooltipEl);
+    }
+  });
+  
   const tooltipTriggerList = document.querySelectorAll(selector);
-  const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+  const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => 
+    new bootstrap.Tooltip(tooltipTriggerEl, {
+      delay: { show: 500, hide: 100 },
+      placement: 'top',
+      trigger: 'hover focus'
+    })
+  );
+  
+  console.log(`💡 ${tooltipList.length} tooltips réinitialisés`);
   return tooltipList;
+}
+
+/**
+ * Force la fermeture de tous les tooltips ouverts
+ */
+export function hideAllTooltips() {
+  // Fermer tous les tooltips via leur instance Bootstrap
+  document.querySelectorAll('[data-bs-toggle="tooltip"], [title]:not(select):not(option)').forEach(element => {
+    const tooltip = bootstrap.Tooltip.getInstance(element);
+    if (tooltip) {
+      tooltip.hide();
+    }
+  });
+  
+  // Forcer la suppression des éléments tooltip du DOM
+  document.querySelectorAll('.tooltip.show, .tooltip.fade').forEach(tooltipEl => {
+    tooltipEl.classList.remove('show', 'fade');
+    if (tooltipEl.parentNode) {
+      tooltipEl.parentNode.removeChild(tooltipEl);
+    }
+  });
 }
 
 /**

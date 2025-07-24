@@ -52,7 +52,8 @@ import {
   validateForm,
   addEventListenerSafe,
   toggleVisibility,
-  initializeTooltips
+  initializeTooltips,
+  hideAllTooltips
 } from './utils/dom.js';
 
 // NOUVEAU: Import des managers
@@ -936,6 +937,13 @@ class KanbanManager {
     }
     this.isRefreshing = true;
     
+    // Nettoyer les tooltips qui pourraient être restés ouverts
+    try {
+      hideAllTooltips();
+    } catch (error) {
+      this.logger.debug("Erreur nettoyage tooltips:", error);
+    }
+    
     if (!this.kanbanContainer) {
       console.log("🔧 Conteneur manquant, création automatique pour Grist...");
       this.createKanbanContainer();
@@ -1088,8 +1096,11 @@ class KanbanManager {
     
     // Réinitialiser les tooltips après refresh pour inclure les nouveaux éléments
     try {
+      // D'abord fermer tous les tooltips ouverts
+      hideAllTooltips();
+      // Puis réinitialiser
       initializeTooltips('[data-bs-toggle="tooltip"], [title]');
-      this.logger.debug("Tooltips réinitialisés après refresh");
+      this.logger.debug("Tooltips nettoyés et réinitialisés après refresh");
     } catch (error) {
       this.logger.debug("Erreur initialisation tooltips:", error);
     }

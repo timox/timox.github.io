@@ -720,6 +720,52 @@ export class ModalManager {
       const firstField = document.getElementById('popup-titre');
       if (firstField) firstField.focus();
     }, 300);
+    
+    // Assurer que le textarea description peut recevoir le focus
+    this.ensureDescriptionFocus();
+  }
+  
+  /**
+   * Assure que le textarea description peut recevoir le focus
+   */
+  ensureDescriptionFocus() {
+    const descriptionField = document.getElementById('popup-description');
+    if (!descriptionField) return;
+    
+    // Supprimer les attributs qui empêchent le focus
+    descriptionField.removeAttribute('readonly');
+    descriptionField.removeAttribute('disabled');
+    
+    // Assurer que le champ est focusable
+    descriptionField.tabIndex = 0;
+    
+    // Éviter de lier plusieurs fois les mêmes événements
+    if (descriptionField.dataset.focusHandlerAdded) return;
+    descriptionField.dataset.focusHandlerAdded = 'true';
+    
+    // Ajouter un gestionnaire de clic pour forcer le focus
+    descriptionField.addEventListener('click', function(e) {
+      e.stopPropagation();
+      console.log('🖱️ Clic sur textarea description');
+      setTimeout(() => {
+        this.focus();
+        this.setSelectionRange(this.value.length, this.value.length);
+      }, 10);
+    });
+    
+    // Ajouter un gestionnaire pour débugger les problèmes de focus
+    descriptionField.addEventListener('focus', function() {
+      console.log('✅ Focus obtenu sur textarea description');
+    });
+    
+    descriptionField.addEventListener('blur', function() {
+      console.log('❌ Focus perdu sur textarea description');
+    });
+    
+    // Gestionnaire pour forcer le focus au survol
+    descriptionField.addEventListener('mouseenter', function() {
+      console.log('🐭 Survol textarea description');
+    });
   }
   
   /**

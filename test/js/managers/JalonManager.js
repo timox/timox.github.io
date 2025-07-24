@@ -132,15 +132,17 @@ export class JalonManager {
 
     if (isEdit) {
       // Mode édition
+      const oldJalon = this.jalons.find(j => j.id === this.currentEditingId);
       this.updateJalon(this.currentEditingId, jalonData);
       
-      // Ajouter à l'historique
+      // Ajouter à l'historique avec détails
       if (taskId && this.kanban.userActionManager) {
+        const details = this.getJalonModificationDetails(oldJalon, jalonData);
         await this.kanban.userActionManager.addHistoryEntry(
           taskId,
           'jalon_modifie',
-          `Jalon modifié: ${jalonData.titre}`,
-          '', // oldValue
+          `Jalon modifié: ${jalonData.titre} (${jalonData.date}) - ${details}`,
+          JSON.stringify(oldJalon), // oldValue
           JSON.stringify(jalonData), // newValue
           ''
         );
@@ -154,7 +156,7 @@ export class JalonManager {
         await this.kanban.userActionManager.addHistoryEntry(
           taskId,
           'jalon_ajoute',
-          `Nouveau jalon ajouté: ${jalonData.titre}`,
+          `Nouveau jalon ajouté: ${jalonData.titre} (${jalonData.date}) - Type: ${this.getJalonTypeLabel(jalonData.type)}`,
           '', // oldValue
           JSON.stringify(jalonData), // newValue
           ''
@@ -233,8 +235,15 @@ export class JalonManager {
    * Ajoute un nouveau jalon
    */
   addJalon(jalonData) {
-    this.jalons.push(jalonData);
-    console.log('➕ Jalon ajouté:', jalonData);
+    // Vérifier qu'on n'ajoute pas un doublon basé sur l'ID
+    const existingIndex = this.jalons.findIndex(j => j.id === jalonData.id);
+    if (existingIndex !== -1) {
+      console.warn('⚠️ Jalon avec même ID déjà existant, mise à jour:', jalonData.id);
+      this.jalons[existingIndex] = jalonData;
+    } else {
+      this.jalons.push(jalonData);
+      console.log('➕ Jalon ajouté:', jalonData.titre, `(Total: ${this.jalons.length})`);
+    }
   }
 
   /**
@@ -266,7 +275,7 @@ export class JalonManager {
         await this.kanban.userActionManager.addHistoryEntry(
           taskId,
           'jalon_supprime',
-          `Jalon supprimé: ${jalonData.titre}`,
+          `Jalon supprimé: ${jalonData.titre} (${jalonData.date}) - Type: ${this.getJalonTypeLabel(jalonData.type)}`,
           JSON.stringify(jalonData), // oldValue
           '', // newValue
           ''
@@ -542,9 +551,21 @@ export class JalonManager {
    */
   loadJalonsFromTask(taskData) {
     try {
-      // Si taskData est vide ou null, ne pas écraser les jalons existants
-      if (!taskData || Object.keys(taskData).length === 0) {
-        console.log('📋 Données de tâche vides, conservation des jalons existants');
+      // Si taskData est null/undefined, vider les jalons
+      if (!taskData) {
+        this.jalons = [];
+        this.updateJalonsDisplay();
+        this.saveJalonsToForm();
+        console.log('📋 TaskData null, jalons vidés');
+        return;
+      }
+      
+      // Si taskData est un objet vide (nouvelle tâche), vider les jalons
+      if (Object.keys(taskData).length === 0) {
+        this.jalons = [];
+        this.updateJalonsDisplay();
+        this.saveJalonsToForm();
+        console.log('📋 Nouvelle tâche, jalons vidés');
         return;
       }
       
@@ -553,16 +574,16 @@ export class JalonManager {
           const jalonsData = JSON.parse(taskData.jalons);
           // Nouveau format avec {jalons: [...]}
           if (jalonsData && jalonsData.jalons && Array.isArray(jalonsData.jalons)) {
-            this.jalons = jalonsData.jalons;
+            this.jalons = [...jalonsData.jalons]; // Clone pour éviter les références
           }
           // Ancien format (array direct)
           else if (Array.isArray(jalonsData)) {
-            this.jalons = jalonsData;
+            this.jalons = [...jalonsData]; // Clone pour éviter les références
           } else {
             this.jalons = [];
           }
         } else if (Array.isArray(taskData.jalons)) {
-          this.jalons = taskData.jalons;
+          this.jalons = [...taskData.jalons]; // Clone pour éviter les références
         } else {
           this.jalons = [];
         }
@@ -605,24 +626,37 @@ export class JalonManager {
   }
 
   /**
-   * Récupère les jalons depuis le formulaire
+   * Récupère les jalons depuis le formulaire pour sauvegarde
    */
   getJalonsForSave() {
-    const jalonsJson = getFieldValue('popup-jalons') || '[]';
+    const jalonsJson = getFieldValue('popup-jalons') || '{"jalons":[],"lastModified":0}';
     try {
       const jalonsData = JSON.parse(jalonsJson);
       // Si c'est le nouveau format avec {jalons: [...]}
       if (jalonsData && jalonsData.jalons && Array.isArray(jalonsData.jalons)) {
-        return jalonsData; // Retourner l'objet, pas la string
+        return {
+          jalons: jalonsData.jalons,
+          lastModified: jalonsData.lastModified || Date.now()
+        };
       }
       // Si c'est l'ancien format (array direct)
       else if (Array.isArray(jalonsData)) {
-        return { jalons: jalonsData, lastModified: Date.now() }; // Retourner l'objet
+        return { 
+          jalons: jalonsData, 
+          lastModified: Date.now() 
+        };
       }
-      return JSON.parse(jalonsJson); // Parser et retourner l'objet
+      // Format inconnu, retourner structure vide
+      return { 
+        jalons: [], 
+        lastModified: Date.now() 
+      };
     } catch (e) {
-      console.warn('Erreur parsing jalons:', e);
-      return { jalons: [], lastModified: Date.now() }; // Retourner l'objet
+      console.warn('Erreur parsing jalons pour sauvegarde:', e);
+      return { 
+        jalons: this.jalons || [], // Utiliser les jalons actuels en cas d'erreur
+        lastModified: Date.now() 
+      };
     }
   }
 
@@ -684,6 +718,40 @@ export class JalonManager {
   showValidationError(message) {
     // Afficher une alerte ou un toast
     alert(message); // Temporaire, à remplacer par un système de toast
+  }
+
+  /**
+   * Génère les détails des modifications d'un jalon
+   */
+  getJalonModificationDetails(oldJalon, newJalon) {
+    if (!oldJalon) return 'Nouveau jalon';
+    
+    const changes = [];
+    
+    // Vérifier les changements principaux
+    if (oldJalon.titre !== newJalon.titre) {
+      changes.push(`Titre: "${oldJalon.titre}" → "${newJalon.titre}"`);
+    }
+    
+    if (oldJalon.date !== newJalon.date) {
+      const oldDate = new Date(oldJalon.date).toLocaleDateString('fr-FR');
+      const newDate = new Date(newJalon.date).toLocaleDateString('fr-FR');
+      changes.push(`Date: ${oldDate} → ${newDate}`);
+    }
+    
+    if (oldJalon.type !== newJalon.type) {
+      changes.push(`Type: ${this.getJalonTypeLabel(oldJalon.type)} → ${this.getJalonTypeLabel(newJalon.type)}`);
+    }
+    
+    if (oldJalon.statut !== newJalon.statut) {
+      changes.push(`Statut: ${oldJalon.statut} → ${newJalon.statut}`);
+    }
+    
+    if (oldJalon.commentaire !== newJalon.commentaire) {
+      changes.push('Commentaire modifié');
+    }
+    
+    return changes.length > 0 ? changes.join(', ') : 'Modification mineure';
   }
 
 }
