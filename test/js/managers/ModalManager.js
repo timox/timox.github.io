@@ -813,28 +813,16 @@ export class ModalManager {
       
       let result;
       
-      console.log('=== DEBUG: Envoi vers Grist ===');
-      console.log('IsNewTask:', this.isNewTask);
-      console.log('TABLE_ID:', TABLE_ID);
-      console.log('CurrentTaskId:', this.currentTaskId);
-      console.log('CurrentTaskId type:', typeof this.currentTaskId);
-      console.log('Action à envoyer:', this.isNewTask ? 'AddRecord' : 'UpdateRecord');
+      // Logs de debug simplifiés
+      if (this.kanban.config?.enableDebugMode) {
+        console.log('Saving task:', this.isNewTask ? 'CREATE' : 'UPDATE', this.currentTaskId);
+      }
       
       // Validation critique
       if (!this.isNewTask && (!this.currentTaskId || this.currentTaskId === null)) {
-        console.error('🚨 ERREUR CRITIQUE: Tentative UpdateRecord avec currentTaskId null!');
-        console.error('📊 État actuel ModalManager:');
-        console.error('   → this.isNewTask:', this.isNewTask);
-        console.error('   → this.currentTaskId:', this.currentTaskId);
-        console.error('   → this.currentTask:', this.currentTask);
-        console.error('   → typeof currentTaskId:', typeof this.currentTaskId);
-        console.error('   → currentTask?.id:', this.currentTask?.id);
-        
         // Tentative de récupération depuis currentTask
         if (this.currentTask && this.currentTask.id) {
-          console.warn('🔧 RÉCUPÉRATION: Tentative récupération ID depuis currentTask');
           this.currentTaskId = this.currentTask.id;
-          console.warn('   → currentTaskId récupéré:', this.currentTaskId);
         } else {
           displayError('Erreur: ID de tâche manquant pour la mise à jour');
           return;
@@ -844,32 +832,34 @@ export class ModalManager {
       if (this.isNewTask) {
         // Création
         const action = ['AddRecord', TABLE_ID, null, gristData];
-        console.log('Action AddRecord complète:', action);
         result = await grist.docApi.applyUserActions([action]);
         
         // Enregistrer l'action utilisateur pour la création
         const userActionManager = getUserActionManager();
         if (userActionManager && result && result.retValues && result.retValues[0]) {
           const newTaskId = result.retValues[0];
-          console.log('New task created with ID:', newTaskId);
-          
-          // Capturer le contenu du champ description pour l'historique
           const descriptionContent = getFieldValue('popup-description').trim();
           
-          // Toujours créer une entrée de création de tâche
-          await userActionManager.createTaskAction(newTaskId, gristData);
+          // Enregistrer en parallèle pour accélérer
+          const historyPromises = [
+            userActionManager.createTaskAction(newTaskId, gristData)
+          ];
           
-          // Si il y a un commentaire, l'ajouter comme commentaire séparé
           if (descriptionContent) {
-            await userActionManager.addHistoryEntry(
-              newTaskId,
-              'comment',
-              `Commentaire initial: ${descriptionContent}`,
-              '',
-              descriptionContent,
-              gristData.statut || 'À faire'
+            historyPromises.push(
+              userActionManager.addHistoryEntry(
+                newTaskId,
+                'comment',
+                `Commentaire initial: ${descriptionContent}`,
+                '',
+                descriptionContent,
+                gristData.statut || 'À faire'
+              )
             );
           }
+          
+          // Exécuter en parallèle sans attendre
+          Promise.allSettled(historyPromises).catch(console.warn);
         }
         
         displaySuccess('Tâche créée avec succès');
@@ -879,84 +869,77 @@ export class ModalManager {
       } else {
         // Mise à jour
         const action = ['UpdateRecord', TABLE_ID, this.currentTaskId, gristData];
-        console.log('Action UpdateRecord complète:', action);
         result = await grist.docApi.applyUserActions([action]);
         
         // Enregistrer l'action utilisateur pour la mise à jour
         const userActionManager = getUserActionManager();
         if (userActionManager) {
-          // Capturer le contenu du champ description pour l'historique
           const descriptionContent = getFieldValue('popup-description').trim();
-          
-          // Vérifier les changements de jalons spécifiquement
           const oldJalons = this.currentTask?.jalons || null;
           const newJalons = gristData.jalons || null;
           const jalonsChanged = this.hasJalonsChanged(oldJalons, newJalons);
-          
-          // Vérifier les changements de stratégies spécifiquement
           const oldStrategies = this.currentTask?.strategie_id || null;
           const newStrategies = gristData.strategie_id || null;
           const strategiesChanged = this.hasStrategiesChanged(oldStrategies, newStrategies);
           
+          // Préparer toutes les opérations d'historique en parallèle
+          const historyPromises = [];
+          
           if (descriptionContent) {
-            // Si il y a un commentaire, l'ajouter spécifiquement à l'historique
-            await userActionManager.addHistoryEntry(
-              this.currentTaskId,
-              'comment',
-              `Commentaire ajouté: ${descriptionContent}`,
-              '',
-              descriptionContent,
-              gristData.statut || this.currentTask?.statut
+            historyPromises.push(
+              userActionManager.addHistoryEntry(
+                this.currentTaskId,
+                'comment',
+                `Commentaire ajouté: ${descriptionContent}`,
+                '',
+                descriptionContent,
+                gristData.statut || this.currentTask?.statut
+              )
             );
             
-            // Ne pas traiter les autres changements si c'est juste un commentaire
-            // Vérifier si les autres champs ont réellement changé
             const hasOtherChanges = this.hasSignificantChanges(this.currentTask, gristData, ['description']);
-            
             if (hasOtherChanges) {
-              // Il y a d'autres changements en plus du commentaire
-              await userActionManager.updateTaskAction(
-                this.currentTaskId, 
-                this.currentTask, 
-                gristData, 
-                'Task updated via modal'
+              historyPromises.push(
+                userActionManager.updateTaskAction(this.currentTaskId, this.currentTask, gristData, 'Task updated via modal')
               );
             }
           } else {
-            // Pas de commentaire, enregistrer normalement les changements
-            await userActionManager.updateTaskAction(
-              this.currentTaskId, 
-              this.currentTask, 
-              gristData, 
-              'Task updated via modal'
+            historyPromises.push(
+              userActionManager.updateTaskAction(this.currentTaskId, this.currentTask, gristData, 'Task updated via modal')
             );
           }
           
-          // Tracker spécifiquement les jalons si ils ont changé
+          // Ajouter les changements spéciaux aux promesses
           if (jalonsChanged) {
             const jalonsDetails = this.getJalonsChangeDetails(oldJalons, newJalons);
-            await userActionManager.addHistoryEntry(
-              this.currentTaskId,
-              'jalons_update',
-              jalonsDetails.message,
-              jalonsDetails.oldSummary,
-              jalonsDetails.newSummary,
-              gristData.statut || this.currentTask?.statut
+            historyPromises.push(
+              userActionManager.addHistoryEntry(
+                this.currentTaskId,
+                'jalons_update',
+                jalonsDetails.message,
+                jalonsDetails.oldSummary,
+                jalonsDetails.newSummary,
+                gristData.statut || this.currentTask?.statut
+              )
             );
           }
           
-          // Tracker spécifiquement les stratégies si elles ont changé
           if (strategiesChanged) {
             const strategiesDetails = this.getStrategiesChangeDetails(oldStrategies, newStrategies);
-            await userActionManager.addHistoryEntry(
-              this.currentTaskId,
-              'strategies_update',
-              strategiesDetails.message,
-              strategiesDetails.oldSummary,
-              strategiesDetails.newSummary,
-              gristData.statut || this.currentTask?.statut
+            historyPromises.push(
+              userActionManager.addHistoryEntry(
+                this.currentTaskId,
+                'strategies_update',
+                strategiesDetails.message,
+                strategiesDetails.oldSummary,
+                strategiesDetails.newSummary,
+                gristData.statut || this.currentTask?.statut
+              )
             );
           }
+          
+          // Exécuter toutes les opérations d'historique en parallèle sans attendre
+          Promise.allSettled(historyPromises).catch(console.warn);
         }
         
         displaySuccess('Tâche mise à jour avec succès');
@@ -969,7 +952,10 @@ export class ModalManager {
         }
       }
       
-      console.log('Résultat Grist:', result);
+      // Log résultat seulement en mode debug
+      if (this.kanban.config?.enableDebugMode) {
+        console.log('Résultat Grist:', result);
+      }
       
       // Signaler la mise à jour locale
       if (this.kanban.signalLocalUpdate) {

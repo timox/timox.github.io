@@ -28,12 +28,13 @@
 
 /* Modale d'édition de tâche */
 #popup-tache .modal-dialog {
-  max-width: 900px;
-  width: 85%;
+  max-width: 1200px;
+  width: 95%;
 }
 
 #popup-tache .modal-body {
-  padding: 25px;
+  padding: 30px;
+  min-height: 600px;
 }
 
 /* Cases à cocher pour bureaux et responsables */
@@ -61,6 +62,16 @@
 .checkbox-group .form-check-label {
   font-size: 0.9rem;
   cursor: pointer;
+}
+
+/* Correction des tooltips dans les modales */
+.modal .tooltip {
+  z-index: 1070 !important; /* Au-dessus des modales (1060) mais sous les dropdowns */
+}
+
+.modal .checkbox-group .form-check-label {
+  position: relative;
+  z-index: 1;
 }
 
 /* === Interface Stratégie Accordéon === */
