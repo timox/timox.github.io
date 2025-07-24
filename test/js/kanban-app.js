@@ -1187,11 +1187,11 @@ class KanbanManager {
 
     // Gérer les clics sur les flèches
     leftArrow.addEventListener('click', () => {
-      this.scrollContainer(-300);
+      this.scrollContainer(-500); // Augmenté pour voir plus de colonnes
     });
 
     rightArrow.addEventListener('click', () => {
-      this.scrollContainer(300);
+      this.scrollContainer(500); // Augmenté pour voir plus de colonnes
     });
 
     // Gérer la visibilité des flèches au scroll

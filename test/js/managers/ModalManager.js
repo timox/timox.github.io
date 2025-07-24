@@ -51,7 +51,8 @@ export class ModalManager {
     if (taskModalElement) {
       this.taskModal = new bootstrap.Modal(taskModalElement, {
         backdrop: 'static',
-        keyboard: false
+        keyboard: true,
+        focus: true
       });
     }
     
@@ -721,10 +722,52 @@ export class ModalManager {
       if (firstField) firstField.focus();
     }, 300);
     
-    // Assurer que le textarea description peut recevoir le focus
-    this.ensureDescriptionFocus();
+    // Assurer que tous les champs peuvent recevoir le focus
+    this.ensureAllFieldsFocus();
   }
   
+  /**
+   * Assure que tous les champs de la modale peuvent recevoir le focus
+   */
+  ensureAllFieldsFocus() {
+    // Liste des champs à vérifier
+    const fieldIds = [
+      'popup-titre',
+      'popup-description', 
+      'popup-urgence',
+      'popup-impact',
+      'popup-date-debut',
+      'popup-date-echeance',
+      'popup-projet'
+    ];
+    
+    fieldIds.forEach(fieldId => {
+      const field = document.getElementById(fieldId);
+      if (field) {
+        // Supprimer les attributs qui empêchent le focus
+        field.removeAttribute('readonly');
+        field.removeAttribute('disabled');
+        field.tabIndex = 0;
+        
+        // Ajouter un gestionnaire de clic pour forcer le focus
+        if (!field.dataset.focusHandlerAdded) {
+          field.dataset.focusHandlerAdded = 'true';
+          field.addEventListener('click', function() {
+            setTimeout(() => {
+              this.focus();
+              if (this.tagName === 'TEXTAREA' || this.type === 'text') {
+                this.setSelectionRange(this.value.length, this.value.length);
+              }
+            }, 10);
+          });
+        }
+      }
+    });
+    
+    // Appeler la méthode spécifique pour la description
+    this.ensureDescriptionFocus();
+  }
+
   /**
    * Assure que le textarea description peut recevoir le focus
    */

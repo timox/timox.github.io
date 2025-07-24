@@ -110,8 +110,8 @@ export class CardRenderer {
       priority: priority
     }, false);
     
-    // Résumé de description
-    const resumeDesc = this.generateDescriptionResume(record);
+    // Résumé de description (pas en mode compact, même si expanded)
+    const resumeDesc = (viewMode === VIEW_MODES.COMPACT) ? '' : this.generateDescriptionResume(record);
     
     // Container des dates
     const datesElement = generateDatesContainer({

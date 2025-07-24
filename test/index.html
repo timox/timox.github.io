@@ -340,19 +340,24 @@
                 <span id="date-status" class="text-muted">Aucune date définie</span>
               </div>
             </div>
-            <div class="col-md-6">
-              <label class="form-label">Bureaux</label>
-              <div id="popup-bureau-checkboxes" class="checkbox-group">
-                <!-- Cases à cocher générées dynamiquement -->
+            <!-- Bureaux et Responsables sur la même ligne -->
+            <div class="col-12">
+              <div class="row">
+                <div class="col-md-6">
+                  <label class="form-label">Bureaux</label>
+                  <div id="popup-bureau-checkboxes" class="checkbox-group">
+                    <!-- Cases à cocher générées dynamiquement -->
+                  </div>
+                  <select class="form-select d-none" id="popup-bureau" multiple></select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Responsables</label>
+                  <div id="popup-qui-checkboxes" class="checkbox-group">
+                    <!-- Cases à cocher générées dynamiquement -->
+                  </div>
+                  <select class="form-select d-none" id="popup-qui" multiple></select>
+                </div>
               </div>
-              <select class="form-select d-none" id="popup-bureau" multiple></select>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Responsables</label>
-              <div id="popup-qui-checkboxes" class="checkbox-group">
-                <!-- Cases à cocher générées dynamiquement -->
-              </div>
-              <select class="form-select d-none" id="popup-qui" multiple></select>
             </div>
           </div>
         </form>
