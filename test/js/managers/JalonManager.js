@@ -62,14 +62,6 @@ export class JalonManager {
       });
     }
 
-    // Bouton calendrier pour date jalon
-    const btnJalonCalendar = document.getElementById('btn-jalon-calendar');
-    if (btnJalonCalendar) {
-      btnJalonCalendar.addEventListener('click', () => {
-        this.openDatePicker();
-      });
-    }
-
     // Reset form à la fermeture de la modale
     document.getElementById('jalonModal').addEventListener('hidden.bs.modal', () => {
       this.resetJalonForm();
@@ -599,12 +591,17 @@ export class JalonManager {
       lastModified: Date.now()
     };
     const jsonString = JSON.stringify(jalonsData);
+    
+    console.log(`💾 Sauvegarde de ${this.jalons.length} jalons dans le formulaire`);
+    console.log('📊 Jalons à sauvegarder:', this.jalons);
+    console.log('📝 JSON généré:', jsonString);
+    
     setFieldValue('popup-jalons', jsonString);
-    console.log(`💾 Sauvegarde de ${this.jalons.length} jalons dans le formulaire:`, jsonString);
     
     // Vérifier que la sauvegarde a bien fonctionné
     const savedValue = getFieldValue('popup-jalons');
     console.log('🔍 Valeur sauvegardée récupérée:', savedValue);
+    console.log('✅ Sauvegarde réussie:', savedValue === jsonString);
   }
 
   /**
@@ -616,16 +613,16 @@ export class JalonManager {
       const jalonsData = JSON.parse(jalonsJson);
       // Si c'est le nouveau format avec {jalons: [...]}
       if (jalonsData && jalonsData.jalons && Array.isArray(jalonsData.jalons)) {
-        return JSON.stringify(jalonsData);
+        return jalonsData; // Retourner l'objet, pas la string
       }
       // Si c'est l'ancien format (array direct)
       else if (Array.isArray(jalonsData)) {
-        return JSON.stringify({ jalons: jalonsData, lastModified: Date.now() });
+        return { jalons: jalonsData, lastModified: Date.now() }; // Retourner l'objet
       }
-      return jalonsJson;
+      return JSON.parse(jalonsJson); // Parser et retourner l'objet
     } catch (e) {
       console.warn('Erreur parsing jalons:', e);
-      return '{"jalons": [], "lastModified": ' + Date.now() + '}';
+      return { jalons: [], lastModified: Date.now() }; // Retourner l'objet
     }
   }
 
@@ -668,9 +665,7 @@ export class JalonManager {
     const dateStr = date.toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      year: 'numeric'
     });
 
     if (diffDays === 0) {
@@ -691,25 +686,4 @@ export class JalonManager {
     alert(message); // Temporaire, à remplacer par un système de toast
   }
 
-  /**
-   * Ouvre le sélecteur de date natif
-   */
-  openDatePicker() {
-    const dateInput = document.getElementById('jalon-date');
-    if (dateInput) {
-      // Retirer l'attribut readonly temporairement pour permettre l'interaction
-      dateInput.removeAttribute('readonly');
-      dateInput.focus();
-      dateInput.showPicker?.(); // API moderne pour afficher le picker
-      
-      // Remettre readonly après sélection
-      dateInput.addEventListener('change', () => {
-        dateInput.setAttribute('readonly', 'readonly');
-      }, { once: true });
-      
-      dateInput.addEventListener('blur', () => {
-        dateInput.setAttribute('readonly', 'readonly');
-      }, { once: true });
-    }
-  }
 }
