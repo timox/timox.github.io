@@ -1906,7 +1906,11 @@ class KanbanManager {
       // Mettre à jour les données locales
       const recordIndex = this.currentRecords.findIndex(r => r.id === taskId);
       if (recordIndex !== -1) {
+        const oldStatus = this.currentRecords[recordIndex].statut;
         this.currentRecords[recordIndex].statut = newStatus;
+        console.log(`📊 Données locales mises à jour: ${taskId} ${oldStatus} → ${newStatus}`);
+      } else {
+        console.error(`❌ Record ${taskId} non trouvé dans currentRecords`);
       }
       
       // Mettre à jour visuellement le statut sur la carte
@@ -1927,6 +1931,9 @@ class KanbanManager {
       }
       
       console.log(`Succès mise à jour statut ${taskId}.`);
+      
+      // Attendre un peu avant de libérer le flag pour éviter les refresh prématurés
+      await new Promise(resolve => setTimeout(resolve, 100));
 
     } catch (error) {
       console.error('Erreur déplacement:', error);
@@ -2222,10 +2229,18 @@ class KanbanManager {
 
   // NOUVEAU: Callbacks pour les managers
   onDataReloaded(records, options) {
+    console.log('📥 onDataReloaded appelé, isUpdating:', this.isUpdating);
+    
     this.currentRecords = records;
     this.gristOptions = { ...this.gristOptions, ...options };
-    this.refreshKanban();
-    this.populateSelectOptions();
+    
+    // Ne pas refresh si une mise à jour est en cours
+    if (!this.isUpdating) {
+      this.refreshKanban();
+      this.populateSelectOptions();
+    } else {
+      console.log('🔄 Refresh ignoré car mise à jour en cours');
+    }
   }
 
   // NOUVEAU: Méthodes de recherche pour FilterManager

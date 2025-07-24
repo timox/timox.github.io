@@ -962,9 +962,22 @@ export class ModalManager {
         this.kanban.signalLocalUpdate();
       }
       
-      // Fermer la modal et rafraîchir
+      // Marquer comme en cours de mise à jour pour éviter les refresh prématurés
+      if (this.kanban.isUpdating !== undefined) {
+        this.kanban.isUpdating = true;
+      }
+      
+      // Fermer la modal
       this.taskModal.hide();
-      this.kanban.refreshKanban();
+      
+      // Attendre un peu pour laisser Grist traiter la mise à jour
+      setTimeout(() => {
+        if (this.kanban.isUpdating !== undefined) {
+          this.kanban.isUpdating = false;
+        }
+        // Refresh seulement après avoir libéré le flag
+        this.kanban.refreshKanban();
+      }, 200);
       
     } catch (error) {
       console.error('ModalManager: Erreur sauvegarde complète:', error);
