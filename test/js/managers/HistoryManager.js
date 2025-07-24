@@ -1552,23 +1552,53 @@ export class HistoryManager {
     
     widget.style.display = 'block';
     
-    // Focus simple et direct sur le textarea
+    // Focus avec scrollIntoView et gestion des z-index
     setTimeout(() => {
       if (textArea) {
         console.log('🎯 Tentative de focus sur le textarea');
+        
+        // S'assurer que l'élément est visible et accessible
+        textArea.style.pointerEvents = 'auto';
+        textArea.style.zIndex = '1070'; // Au-dessus des modales
+        
+        // Scroll vers l'élément si nécessaire
+        textArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Force le focus avec les bonnes propriétés
+        textArea.removeAttribute('readonly');
+        textArea.removeAttribute('disabled');
         textArea.focus();
         
-        // Vérification après un court délai
+        // Double vérification avec fallback
         setTimeout(() => {
-          if (document.activeElement === textArea) {
+          if (document.activeElement !== textArea) {
+            console.log('⚠️ Échec du focus, tentative forcée');
+            // Clic programmatique pour activer le focus
+            textArea.click();
+            textArea.focus();
+            
+            setTimeout(() => {
+              if (document.activeElement === textArea) {
+                console.log('✅ Focus réussi après tentative forcée !');
+                textArea.setSelectionRange(textArea.value.length, textArea.value.length);
+              } else {
+                console.error('❌ Focus impossible, élément actif:', document.activeElement);
+                console.log('Textarea properties:', {
+                  disabled: textArea.disabled,
+                  readOnly: textArea.readOnly,
+                  style: textArea.getAttribute('style'),
+                  pointerEvents: getComputedStyle(textArea).pointerEvents,
+                  zIndex: getComputedStyle(textArea).zIndex
+                });
+              }
+            }, 100);
+          } else {
             console.log('✅ Focus réussi !');
             textArea.setSelectionRange(textArea.value.length, textArea.value.length);
-          } else {
-            console.warn('❌ Focus échoué, élément actif:', document.activeElement);
           }
-        }, 50);
+        }, 100);
       }
-    }, 100);
+    }, 150);
   }
   
   /**
