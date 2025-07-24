@@ -84,7 +84,7 @@ export class CardRenderer {
         </div>
         
         <!-- Titre de la tâche -->
-        <div class="compact-title editable-zone" title="${record.titre || ''}">${this.truncateText(record.titre || 'Sans titre', 50)}</div>
+        <div class="compact-title editable-zone" title="${record.titre || ''}">${record.titre || 'Sans titre'}</div>
         
         <!-- Indicateurs visuels cachés (pour les lecteurs d'écran) -->
         <div class="sr-only">

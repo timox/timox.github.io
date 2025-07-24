@@ -166,7 +166,8 @@
   
   .kanban-board-body {
     padding: 0.5rem;
-    max-height: 60vh;
+    height: calc(100vh - 200px);
+    max-height: none;
   }
   
   .kanban-item {
@@ -269,7 +270,8 @@
   }
   
   .focus-column {
-    max-height: 50vh;
+    height: calc(100vh - 200px);
+    max-height: none;
   }
 }
 

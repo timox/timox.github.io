@@ -196,6 +196,7 @@ body {
 
 .kanban-compact .kanban-board-body {
   flex: 1;
+  height: calc(100vh - 200px);
   overflow-y: auto;
   scrollbar-width: thin;
   padding: 0.5rem;
@@ -235,7 +236,7 @@ body {
 
 .kanban-detailed .kanban-board-body {
   padding: 1rem;
-  max-height: calc(100vh - 200px);
+  height: calc(100vh - 200px);
   overflow-y: auto;
 }
 
@@ -265,7 +266,7 @@ body {
 
 .kanban-focus .kanban-board-body {
   padding: 1.5rem;
-  max-height: calc(100vh - 280px);
+  height: calc(100vh - 280px);
   overflow-y: auto;
 }
 
@@ -325,6 +326,8 @@ body {
 .kanban-board-body {
   padding: 1rem;
   min-height: 150px;
+  height: calc(100vh - 250px);
+  overflow-y: auto;
 }
 
 /* === Cartes === */
@@ -428,6 +431,12 @@ body {
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.04);
   transition: all 0.2s ease;
+  
+  /* Contraindre la largeur des cartes compactes */
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .kanban-item-compact:hover {
@@ -460,6 +469,19 @@ body {
   border-radius: 4px;
   transition: background-color 0.2s ease;
   color: #2c3e50; /* Même couleur que le titre normal pour la cohérence */
+  
+  /* Gestion du débordement de texte */
+  word-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+  overflow-wrap: break-word;
+  
+  /* Limiter à 2 lignes maximum */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-height: calc(1.3em * 2); /* 2 lignes avec line-height 1.3 */
 }
 
 .compact-title:hover {

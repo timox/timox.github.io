@@ -1275,8 +1275,8 @@ export class HistoryManager {
     
     // Créer le HTML du widget avec structure corrigée
     const widgetHTML = `
-      <div id="accordion-comment-edit-widget" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1055;">
-        <div class="comment-edit-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;">
+      <div id="accordion-comment-edit-widget" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1070;">
+        <div class="comment-edit-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;" onclick="event.target === this && document.getElementById('accordion-btn-close-comment-edit').click()">
           <div class="comment-edit-modal" style="background: white; border-radius: 8px; max-width: 700px; width: 95%; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
             <div class="comment-edit-header" style="padding: 1rem; border-bottom: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: center;">
               <h5 style="margin: 0; color: #333;"><i class="bi bi-pencil me-2"></i>Édition de commentaire</h5>
@@ -1290,7 +1290,9 @@ export class HistoryManager {
                 <small class="text-muted">Date: <span id="accordion-comment-edit-date"></span></small>
               </div>
               <textarea id="accordion-comment-edit-text" class="form-control" rows="6" 
-                        placeholder="Modifiez votre commentaire..." style="resize: vertical; min-height: 120px;"></textarea>
+                        placeholder="Modifiez votre commentaire..." 
+                        style="resize: vertical; min-height: 120px; border: 2px solid #007bff; background: white;"
+                        autocomplete="off" spellcheck="true"></textarea>
             </div>
             
             <div class="comment-edit-footer" style="padding: 1rem; border-top: 1px solid #dee2e6; display: flex; justify-content: flex-end; gap: 0.5rem;">
@@ -1429,7 +1431,9 @@ export class HistoryManager {
     const originalContent = contentElement.dataset.original || contentElement.textContent;
     
     // Chercher l'élément de date (compatible modale historique ET accordéon)
-    const dateElement = commentElement.querySelector('.timeline-dates') || 
+    const dateElement = commentElement.querySelector('.timeline-entry-timestamp') || 
+                       commentElement.querySelector('.comment-timestamp') ||
+                       commentElement.querySelector('.timeline-dates') || 
                        commentElement.querySelector('.comment-meta');
     const dateText = dateElement ? dateElement.textContent.trim() : 'Date inconnue';
     
@@ -1452,6 +1456,10 @@ export class HistoryManager {
     textArea.value = originalContent;
     dateSpan.textContent = dateText;
     
+    // S'assurer que le textarea est activé
+    textArea.disabled = false;
+    textArea.readOnly = false;
+    
     // Afficher le widget
     const widget = document.getElementById('accordion-comment-edit-widget');
     if (!widget) {
@@ -1461,10 +1469,23 @@ export class HistoryManager {
     
     widget.style.display = 'block';
     
-    // Focus sur le textarea
+    // Focus sur le textarea avec délai plus long et sélection du texte
     setTimeout(() => {
-      textArea.focus();
-    }, 100);
+      if (textArea) {
+        textArea.focus();
+        textArea.select(); // Sélectionner tout le texte pour faciliter l'édition
+        
+        // Vérifier que le focus a bien fonctionné
+        if (document.activeElement === textArea) {
+          console.log('HistoryManager: Focus appliqué avec succès sur le textarea');
+        } else {
+          console.warn('HistoryManager: Échec du focus, tentative forcée');
+          // Tentative forcée
+          textArea.click();
+          textArea.focus();
+        }
+      }
+    }, 300);
   }
   
   /**
