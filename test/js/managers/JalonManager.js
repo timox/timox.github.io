@@ -8,9 +8,10 @@ export class JalonManager {
   constructor(kanban) {
     this.kanban = kanban;
     this.jalons = []; // Jalons de la tâche actuellement ouverte
-    this.jalonsCache = new Map(); // Cache des jalons par tâche ID
+    // ❌ CACHE SUPPRIMÉ - Approche stateless pour éviter la propagation entre tâches
+    // this.jalonsCache = new Map();
     this.currentEditingId = null;
-    this.currentTaskId = null; // AJOUT: ID de la tâche en cours d'édition
+    this.currentTaskId = null; // ID de la tâche en cours d'édition
     this.jalonModal = null;
     
     this.init();
@@ -30,19 +31,14 @@ export class JalonManager {
    * Définit l'ID de la tâche en cours d'édition
    */
   setCurrentTaskId(taskId) {
-    // Si on change de tâche, sauvegarder les jalons actuels et charger les nouveaux
+    // Si on change de tâche, réinitialiser complètement (approche stateless)
     if (this.currentTaskId !== taskId) {
       this.logger.debug(`Changement de tâche ${this.currentTaskId} → ${taskId}`);
       
-      // Sauvegarder les jalons de la tâche précédente dans le cache
-      if (this.currentTaskId !== null && this.jalons.length > 0) {
-        this.jalonsCache.set(this.currentTaskId, [...this.jalons]);
-        this.logger.debug(`Jalons de la tâche ${this.currentTaskId} sauvegardés:`, this.jalons.length);
-      }
-      
-      // Charger les jalons de la nouvelle tâche depuis le cache
-      this.jalons = this.jalonsCache.get(taskId) || [];
-      this.logger.debug(`Jalons de la tâche ${taskId} chargés:`, this.jalons.length);
+      // ❌ CACHE SUPPRIMÉ - Approche stateless, reset complet à chaque tâche
+      // Réinitialiser complètement les jalons (ils seront rechargés depuis la DB)
+      this.jalons = [];
+      this.logger.debug(`Jalons réinitialisés pour la tâche ${taskId}`);
       
       this.updateJalonsDisplay();
     }
@@ -307,11 +303,7 @@ export class JalonManager {
       this.logger.debug('Jalon ajouté:', jalonData.titre, `(Total: ${this.jalons.length})`);
     }
     
-    // Mettre à jour le cache si on a un ID de tâche
-    if (this.currentTaskId) {
-      this.jalonsCache.set(this.currentTaskId, [...this.jalons]);
-      this.logger.debug(`Cache mis à jour pour la tâche ${this.currentTaskId}: ${this.jalons.length} jalons`);
-    }
+    // ❌ CACHE SUPPRIMÉ - Approche stateless: pas de cache, les jalons restent en mémoire uniquement pour la session
     
     // Immédiatement synchroniser avec le formulaire
     this.saveJalonsToForm();
@@ -326,11 +318,7 @@ export class JalonManager {
       this.jalons[index] = { ...this.jalons[index], ...jalonData };
       this.logger.debug('Jalon mis à jour:', jalonData.titre);
       
-      // Mettre à jour le cache
-      if (this.currentTaskId) {
-        this.jalonsCache.set(this.currentTaskId, [...this.jalons]);
-        this.logger.debug(`Cache mis à jour après édition pour la tâche ${this.currentTaskId}`);
-      }
+      // ❌ CACHE SUPPRIMÉ - Approche stateless: pas de mise à jour de cache
     }
   }
 
@@ -359,11 +347,7 @@ export class JalonManager {
         // Supprimer du tableau
         this.jalons.splice(index, 1);
         
-        // Mettre à jour le cache
-        if (this.currentTaskId) {
-          this.jalonsCache.set(this.currentTaskId, [...this.jalons]);
-          this.logger.debug(`Cache mis à jour après suppression pour la tâche ${this.currentTaskId}`);
-        }
+        // ❌ CACHE SUPPRIMÉ - Approche stateless: pas de mise à jour de cache
         
         // Mettre à jour l'affichage
         this.updateJalonsDisplay();
@@ -630,11 +614,7 @@ export class JalonManager {
     if (jalon) {
       jalon.statut = newStatus;
       
-      // Mettre à jour le cache
-      if (this.currentTaskId) {
-        this.jalonsCache.set(this.currentTaskId, [...this.jalons]);
-        this.logger.debug(`Cache mis à jour après changement de statut pour la tâche ${this.currentTaskId}`);
-      }
+      // ❌ CACHE SUPPRIMÉ - Approche stateless: pas de mise à jour de cache
       
       this.updateJalonsDisplay();
       this.saveJalonsToForm();
@@ -740,12 +720,7 @@ export class JalonManager {
       // Définir la tâche courante (ceci gère automatiquement le cache)
       this.setCurrentTaskId(taskId);
       
-      // Si on a déjà des jalons en cache pour cette tâche, les utiliser
-      if (this.jalonsCache.has(taskId)) {
-        this.logger.debug(`Jalons trouvés en cache pour la tâche ${taskId}`);
-        // Les jalons sont déjà chargés par setCurrentTaskId
-        return;
-      }
+      // ❌ CACHE SUPPRIMÉ - Approche stateless: toujours recharger depuis la DB
       
       // Sinon, charger depuis les données de la tâche
       if (taskData.jalons) {
@@ -765,15 +740,13 @@ export class JalonManager {
           jalonsFromDB = [...taskData.jalons]; // Clone pour éviter les références
         }
         
-        // Mettre à jour les jalons et le cache
+        // Mettre à jour les jalons (sans cache)
         this.jalons = jalonsFromDB;
-        this.jalonsCache.set(taskId, [...jalonsFromDB]);
         
         this.logger.debug(`${jalonsFromDB.length} jalons chargés depuis la DB pour la tâche ${taskId}`);
       } else {
         // Pas de jalons dans la DB
         this.jalons = [];
-        this.jalonsCache.set(taskId, []);
         this.logger.debug(`Aucun jalon en DB pour la tâche ${taskId}`);
       }
       

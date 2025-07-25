@@ -577,10 +577,24 @@ export class ModalManager {
     // Rechercher et sélectionner chaque stratégie - VERSION SIMPLE
     if (this.kanban.strategiesData && this.kanban.strategiesData.length > 0) {
       idsArray.forEach(strategyId => {
+        // Debug pour comprendre les données reçues
+        this.logger.debug('Processing strategy ID:', {
+          original: strategyId,
+          isArray: Array.isArray(strategyId),
+          type: typeof strategyId,
+          length: Array.isArray(strategyId) ? strategyId.length : 'N/A'
+        });
+        
         // Extraire l'ID depuis le format Grist ["L", id] si nécessaire
         let searchId = strategyId;
         if (Array.isArray(strategyId) && strategyId.length === 2 && strategyId[0] === 'L') {
           searchId = strategyId[1];
+        }
+        
+        // Ignorer les IDs invalides ou vides
+        if (!searchId || searchId === 'L' || (Array.isArray(searchId) && searchId.length === 0)) {
+          this.logger.debug('Skipping invalid strategy ID:', strategyId);
+          return; // Continue to next iteration
         }
         
         const strategy = this.kanban.strategiesData.find(s => s.id == searchId);
@@ -588,7 +602,11 @@ export class ModalManager {
           this.addStrategyToSelection(strategy);
           this.preSelectStrategyInAccordion(strategy);
         } else {
-          this.logger.warn(`Strategy not found for ID: ${strategyId}`);
+          this.logger.warn(`Strategy not found for ID:`, {
+            original: strategyId,
+            searchId: searchId,
+            available: this.kanban.strategiesData.map(s => s.id).slice(0, 5)
+          });
         }
       });
       
