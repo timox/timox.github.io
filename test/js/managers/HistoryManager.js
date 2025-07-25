@@ -1759,7 +1759,7 @@ export class HistoryManager {
         
         // Ajouter un badge "Modifié" si pas déjà présent
         const statusDiv = timelineEntry.querySelector('.timeline-status');
-        if (!statusDiv.querySelector('.badge-edited')) {
+        if (statusDiv && !statusDiv.querySelector('.badge-edited')) {
           const editedBadge = document.createElement('span');
           editedBadge.className = 'badge bg-warning ms-2 badge-edited';
           editedBadge.textContent = 'Modifié';

@@ -29,8 +29,6 @@ export class ModalManager {
     this.currentTaskId = null;
     this.currentTask = null;
     this.isNewTask = false;
-    this.selectedStrategies = [];
-    this.strategiesCache = new Map(); // Cache des stratégies par tâche ID
     
     this.init();
   }
@@ -562,51 +560,21 @@ export class ModalManager {
   }
   
   
-  /**
-   * Gère le cache des stratégies pour une tâche spécifique
-   * @param {string|number} taskId - ID de la tâche
-   */
-  setCurrentTaskStrategies(taskId) {
-    // Si on change de tâche, sauvegarder les stratégies actuelles et charger les nouvelles
-    if (this.currentTaskId !== taskId) {
-      console.log(`🔄 ModalManager: Changement de tâche pour stratégies ${this.currentTaskId} → ${taskId}`);
-      
-      // Sauvegarder les stratégies de la tâche précédente dans le cache
-      if (this.currentTaskId !== null && this.selectedStrategies.length > 0) {
-        this.strategiesCache.set(this.currentTaskId, [...this.selectedStrategies]);
-        console.log(`💾 Stratégies de la tâche ${this.currentTaskId} sauvegardées:`, this.selectedStrategies.length);
-      }
-      
-      // Charger les stratégies de la nouvelle tâche depuis le cache
-      this.selectedStrategies = this.strategiesCache.get(taskId) || [];
-      console.log(`📋 Stratégies de la tâche ${taskId} chargées:`, this.selectedStrategies.length);
-    }
-  }
+
 
   /**
-   * Peuple les champs de stratégie basés sur les strategie_ids multiples
-   * @param {string|array} strategyIds - IDs de stratégies (JSON string ou array)
+   * Peuple les champs de stratégie - VERSION SIMPLE
+   * @param {string|array} strategyIds - IDs de stratégies de la DB
    */
   populateStrategyFieldsFromIds(strategyIds) {
-    // Si on a déjà des stratégies en cache pour cette tâche, les utiliser
-    if (this.currentTaskId && this.strategiesCache.has(this.currentTaskId)) {
-      console.log(`💾 Stratégies trouvées en cache pour la tâche ${this.currentTaskId}`);
-      // Les stratégies sont déjà chargées par setCurrentTaskStrategies
-      this.updateStrategyTags();
-      this.updateStrategyPreview();
-      this.updateStrategyIds();
-      return;
-    }
-    
-    // Sinon, charger depuis les données de la tâche
-    // Réinitialiser d'abord
+    // Reset complet à chaque fois
     this.resetStrategySelection();
     
     if (!strategyIds) {
       return;
     }
     
-    // Conversion en array si nécessaire
+    // Parse simple des IDs
     let idsArray = [];
     try {
       if (typeof strategyIds === 'string') {
@@ -614,7 +582,6 @@ export class ModalManager {
       } else if (Array.isArray(strategyIds)) {
         idsArray = strategyIds;
       } else {
-        // Fallback pour compatibilité avec ancien système (ID unique)
         idsArray = [strategyIds];
       }
     } catch (e) {
@@ -626,10 +593,8 @@ export class ModalManager {
       return;
     }
     
-    // Rechercher et pré-sélectionner chaque stratégie
+    // Rechercher et sélectionner chaque stratégie - VERSION SIMPLE
     if (this.kanban.strategiesData && this.kanban.strategiesData.length > 0) {
-      let strategiesFromDB = [];
-      
       idsArray.forEach(strategyId => {
         // Extraire l'ID depuis le format Grist ["L", id] si nécessaire
         let searchId = strategyId;
@@ -639,7 +604,6 @@ export class ModalManager {
         
         const strategy = this.kanban.strategiesData.find(s => s.id == searchId);
         if (strategy) {
-          strategiesFromDB.push(strategy);
           this.addStrategyToSelection(strategy);
           this.preSelectStrategyInAccordion(strategy);
         } else {
@@ -647,13 +611,7 @@ export class ModalManager {
         }
       });
       
-      // Mettre à jour le cache
-      if (this.currentTaskId) {
-        this.strategiesCache.set(this.currentTaskId, [...strategiesFromDB]);
-        console.log(`💾 Cache mis à jour pour la tâche ${this.currentTaskId}:`, strategiesFromDB.length, 'stratégies');
-      }
-      
-      // Mettre à jour l'affichage après toutes les sélections
+      // Mettre à jour l'affichage
       this.updateStrategyTags();
       this.updateStrategyPreview();
       this.updateStrategyIds();
@@ -824,6 +782,9 @@ export class ModalManager {
       return;
     }
     
+    // ✅ SOLUTION SIMPLE : Reset complet avant toute chose
+    this.resetTaskForm();
+    
     console.log('=== DEBUG: openTaskModal ===');
     console.log('Task parameter:', task);
     console.log('Task ID:', task?.id);
@@ -848,8 +809,6 @@ export class ModalManager {
         : '<i class="bi bi-pencil-square me-2"></i>Modifier Tâche';
     }
     
-    // Gérer le cache des stratégies AVANT de peupler les champs
-    this.setCurrentTaskStrategies(this.currentTaskId);
     
     // Informer le JalonManager de la tâche en cours
     if (this.kanban.jalonManager) {

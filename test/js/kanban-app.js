@@ -769,8 +769,13 @@ class KanbanManager {
   }
 
   getMultipleStrategiesInfo(strategieIds) {
-    if (!strategieIds || !this.strategiesData) {
-      console.log('🔍 getMultipleStrategiesInfo: pas de données', { strategieIds, hasStrategiesData: !!this.strategiesData });
+    if (!this.strategiesData) {
+      console.log('🔍 getMultipleStrategiesInfo: pas de strategiesData');
+      return [];
+    }
+    
+    if (!strategieIds || strategieIds === null || strategieIds === '') {
+      console.log('🔍 getMultipleStrategiesInfo: strategieIds vide/null', { strategieIds, hasStrategiesData: !!this.strategiesData });
       return [];
     }
     
