@@ -404,6 +404,19 @@ export class JalonManager {
         this.logger.debug('✅ Jalon supprimé avec conversion de type');
         return;
       }
+      
+      // Debug exhaustif si toujours pas trouvé
+      this.logger.error('Échec suppression jalon, debug complet:');
+      this.logger.error('ID recherché:', id, typeof id);
+      this.logger.error('Jalons disponibles:');
+      this.jalons.forEach((j, index) => {
+        this.logger.error(`  [${index}] ID: "${j.id}" (${typeof j.id}) - Titre: "${j.titre}"`);
+        this.logger.error(`      String match: ${String(j.id) === String(id)}`);
+        this.logger.error(`      == match: ${j.id == id}`);
+        this.logger.error(`      === match: ${j.id === id}`);
+      });
+      this.logger.error('CurrentTaskId:', this.currentTaskId);
+      this.logger.error('Nombre total jalons:', this.jalons.length);
     }
   }
 

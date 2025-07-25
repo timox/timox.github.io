@@ -1439,14 +1439,37 @@ export class HistoryManager {
       return;
     }
     
-    // Sauvegarder l'ID du commentaire dans le widget pour récupération
+    // Sauvegarder l'ID du commentaire dans le widget pour récupération (multiples sources)
     widget.dataset.commentId = commentId;
+    textArea.dataset.commentId = commentId;
+    textArea.setAttribute('data-comment-id', commentId);
     textArea.setAttribute('data-original', originalContent);
     
     widget.style.display = 'block';
     
-    // Focus direct, point final
+    // Focus avec debugging
+    this.logger.debug('Tentative de focus sur textarea:', {
+      textArea: !!textArea,
+      disabled: textArea.disabled,
+      readOnly: textArea.readOnly,
+      style: textArea.style.display,
+      visible: textArea.offsetParent !== null
+    });
+    
+    // Focus immédiat
     textArea.focus();
+    
+    // Vérifier que le focus a fonctionné
+    setTimeout(() => {
+      this.logger.debug('Focus result:', {
+        activeElement: document.activeElement === textArea,
+        hasFocus: textArea === document.activeElement
+      });
+      if (document.activeElement !== textArea) {
+        this.logger.warn('Focus échoué, nouvelle tentative...');
+        textArea.focus();
+      }
+    }, 100);
   }
   
   /**
@@ -1490,30 +1513,50 @@ export class HistoryManager {
       const textArea = document.getElementById('accordion-comment-edit-text');
       const dateSpan = document.getElementById('accordion-comment-edit-date');
       
-      if (widget && widget.style.display === 'block' && textArea && textArea.value) {
+      this.logger.debug('État détaillé du widget:', {
+        widget: !!widget,
+        widgetDisplay: widget?.style.display,
+        widgetDataset: widget?.dataset,
+        textArea: !!textArea,
+        textAreaValue: textArea?.value,
+        textAreaDataset: textArea?.dataset,
+        dateSpan: !!dateSpan,
+        dateText: dateSpan?.textContent
+      });
+      
+      if (widget && widget.style.display === 'block' && textArea) {
         // Recréer l'objet depuis les données du widget
         this.logger.warn('Tentative de récupération du commentaire depuis le widget');
         
-        // Essayer de récupérer l'ID depuis les données du widget
-        const commentId = widget.dataset.commentId || textArea.dataset.commentId;
+        // Essayer de récupérer l'ID depuis les données du widget (plus de sources)
+        const commentId = widget.dataset.commentId || 
+                         textArea.dataset.commentId || 
+                         textArea.getAttribute('data-comment-id') ||
+                         dateSpan?.dataset.commentId;
+        
+        this.logger.debug('ID trouvé:', commentId);
+        
         if (commentId) {
           this.currentEditingComment = {
             id: commentId,
-            originalContent: textArea.defaultValue || textArea.getAttribute('data-original'),
+            originalContent: textArea.defaultValue || textArea.getAttribute('data-original') || textArea.placeholder,
             element: null // On n'a plus la référence de l'élément
           };
-          this.logger.info('Commentaire récupéré avec succès');
+          this.logger.info('Commentaire récupéré avec succès:', this.currentEditingComment);
         } else {
           this.logger.error('Impossible de récupérer l\'ID du commentaire');
+          this.logger.debug('Tous les attributs data du widget:', Object.keys(widget?.dataset || {}));
+          this.logger.debug('Tous les attributs data du textArea:', Object.keys(textArea?.dataset || {}));
           displayError('Erreur: Session d\'édition expirée. Veuillez réessayer.');
           return;
         }
       } else {
         this.logger.error('Aucun commentaire en cours d\'édition');
-        this.logger.debug('État du widget:', {
-          widgetVisible: widget?.style.display,
-          textareaValue: textArea?.value,
-          dateText: dateSpan?.textContent
+        this.logger.debug('Conditions de récupération échouées:', {
+          hasWidget: !!widget,
+          widgetVisible: widget?.style.display === 'block',
+          hasTextArea: !!textArea,
+          textAreaHasValue: !!textArea?.value
         });
         displayError('Erreur: Aucun commentaire sélectionné pour édition');
         return;
