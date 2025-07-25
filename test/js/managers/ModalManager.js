@@ -667,13 +667,23 @@ export class ModalManager {
       let strategiesFromDB = [];
       
       strategyIds.forEach(strategyId => {
+        // Ignorer les IDs invalides ou vides (même logique que dans populateStrategyFieldsFromGristReferences)
+        if (!strategyId || strategyId === 'L' || (Array.isArray(strategyId) && strategyId.length === 0)) {
+          this.logger.debug('Skipping invalid strategy ID in loadStrategiesFromIds:', strategyId);
+          return; // Continue to next iteration
+        }
+        
         const strategy = this.kanban.strategiesData.find(s => s.id == strategyId);
         if (strategy) {
           strategiesFromDB.push(strategy);
           this.addStrategyToSelection(strategy);
           this.preSelectStrategyInAccordion(strategy);
         } else {
-          this.logger.warn(`Strategy not found for ID: ${strategyId}`);
+          this.logger.warn(`Strategy not found for ID:`, {
+            original: strategyId,
+            searchId: strategyId,
+            available: this.kanban.strategiesData.map(s => s.id).slice(0, 5)
+          });
         }
       });
       

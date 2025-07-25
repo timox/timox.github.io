@@ -1507,6 +1507,14 @@ export class HistoryManager {
     this.logger.info('saveCommentEdit appelé');
     this.logger.debug('currentEditingComment:', this.currentEditingComment);
     
+    // Debug initial complet
+    this.logger.debug('État initial complet:', {
+      hasCurrentEditingComment: !!this.currentEditingComment,
+      widgetExists: !!document.getElementById('accordion-comment-edit-widget'),
+      textAreaExists: !!document.getElementById('accordion-comment-edit-text'),
+      dateSpanExists: !!document.getElementById('accordion-comment-edit-date')
+    });
+    
     // Si pas de commentaire en cours, essayer de récupérer depuis le widget ouvert
     if (!this.currentEditingComment) {
       const widget = document.getElementById('accordion-comment-edit-widget');
