@@ -1661,8 +1661,15 @@ export class HistoryManager {
     }
     
     try {
-      // Extraire l'ID de la tâche du commentId
-      const taskId = this.currentTaskHistory?.id;
+      // Extraire l'ID de la tâche - essayer plusieurs sources
+      let taskId = this.currentTaskHistory?.id;
+      
+      // Si pas trouvé dans currentTaskHistory, essayer le ModalManager
+      if (!taskId && this.kanban?.modalManager?.currentTaskId) {
+        taskId = this.kanban.modalManager.currentTaskId;
+        console.log('📋 ID de tâche récupéré depuis ModalManager:', taskId);
+      }
+      
       if (!taskId) {
         throw new Error('ID de tâche non trouvé');
       }

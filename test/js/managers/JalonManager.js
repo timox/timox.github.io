@@ -27,6 +27,12 @@ export class JalonManager {
    * Définit l'ID de la tâche en cours d'édition
    */
   setCurrentTaskId(taskId) {
+    // Si on change de tâche, vider les jalons précédents
+    if (this.currentTaskId !== taskId) {
+      console.log(`🔄 JalonManager: Changement de tâche ${this.currentTaskId} → ${taskId}`);
+      this.jalons = [];
+      this.updateJalonsDisplay();
+    }
     this.currentTaskId = taskId;
   }
 
