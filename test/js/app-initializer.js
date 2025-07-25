@@ -23,7 +23,7 @@ export class KanbanAppInitializer {
     // Composants de l'application
     this.components = {
       kanbanManager: null,
-      viewManager: null,
+      viewModeManager: null,
       strategicData: null
     };
     
@@ -208,7 +208,7 @@ export class KanbanAppInitializer {
     }
     
     // Initialiser le mode de vue préféré
-    this.components.viewManager.initializeViewMode();
+    this.components.viewModeManager.initializeViewMode();
     
     console.log('✅ Interface utilisateur configurée');
   }
