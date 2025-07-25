@@ -2,6 +2,7 @@
 // Gestionnaire pour les filtres, la recherche et les modes de vue (VERSION CORRIGÉE)
 
 import { getFieldValue, setFieldValue, debounce } from '../utils/dom.js';
+import { LoggerManager } from '../utils/LoggerManager.js';
 
 /**
  * Gestionnaire pour les filtres et la recherche du Kanban
@@ -9,6 +10,7 @@ import { getFieldValue, setFieldValue, debounce } from '../utils/dom.js';
 export class FilterManager {
   constructor(kanbanManager) {
     this.kanban = kanbanManager;
+    this.logger = LoggerManager.getInstance();
     
     // État des filtres
     this.filters = {
@@ -35,7 +37,7 @@ export class FilterManager {
    * Initialise le gestionnaire de filtres
    */
   init() {
-    console.log('FilterManager: Initialisation...');
+    this.logger.debug('FilterManager initializing');
     
     // Attendre que le DOM soit prêt
     if (document.readyState === 'loading') {
@@ -57,7 +59,7 @@ export class FilterManager {
     this.populateFilterOptions();
     this.isInitialized = true;
     
-    console.log('FilterManager: Gestionnaire de filtres initialisé');
+    this.logger.debug('FilterManager initialized');
   }
   
   /**
@@ -78,9 +80,9 @@ export class FilterManager {
     // Logging des éléments trouvés/manquants
     Object.entries(this.elements).forEach(([key, element]) => {
       if (!element) {
-        console.warn(`FilterManager: Élément ${key} non trouvé`);
+        this.logger.warn(`Filter element ${key} not found`);
       } else {
-        console.log(`FilterManager: Élément ${key} trouvé`);
+        this.logger.debug(`Filter element ${key} found`);
       }
     });
   }
@@ -110,7 +112,7 @@ export class FilterManager {
     if (this.elements.filterBureau) {
       this.elements.filterBureau.addEventListener('change', (e) => {
         this.filters.bureau = e.target.value || '';
-        console.log('FilterManager: Filtre bureau changé:', this.filters.bureau);
+        this.logger.debug(`Bureau filter changed: ${this.filters.bureau}`);
         this.applyFilters();
       });
     }
@@ -118,7 +120,7 @@ export class FilterManager {
     if (this.elements.filterQui) {
       this.elements.filterQui.addEventListener('change', (e) => {
         this.filters.qui = e.target.value || '';
-        console.log('FilterManager: Filtre qui changé:', this.filters.qui);
+        this.logger.debug(`Qui filter changed: ${this.filters.qui}`);
         this.applyFilters();
       });
     }
@@ -126,7 +128,7 @@ export class FilterManager {
     if (this.elements.filterProjet) {
       this.elements.filterProjet.addEventListener('change', (e) => {
         this.filters.projet = e.target.value || '';
-        console.log('FilterManager: Filtre projet changé:', this.filters.projet);
+        this.logger.debug(`Projet filter changed: ${this.filters.projet}`);
         this.applyFilters();
       });
     }
@@ -134,7 +136,7 @@ export class FilterManager {
     if (this.elements.filterStatut) {
       this.elements.filterStatut.addEventListener('change', (e) => {
         this.filters.statut = e.target.value || '';
-        console.log('FilterManager: Filtre statut changé:', this.filters.statut);
+        this.logger.debug(`Statut filter changed: ${this.filters.statut}`);
         
         // CORRIGÉ: Synchroniser avec ViewModeManager en mode focus
         if (this.kanban.viewMode === 'focus' && this.kanban.viewModeManager) {
@@ -162,7 +164,7 @@ export class FilterManager {
       });
     }
     
-    console.log('FilterManager: Event listeners configurés');
+    this.logger.debug('Filter event listeners configured');
   }
   
   /**
@@ -170,7 +172,7 @@ export class FilterManager {
    */
   populateFilterOptions() {
     if (!this.kanban.gristOptions) {
-      console.warn('FilterManager: Pas de gristOptions disponibles');
+      this.logger.warn('No gristOptions available for filter population');
       return;
     }
     
@@ -196,7 +198,7 @@ export class FilterManager {
       this.populateSelect(this.elements.filterStatut, statut, 'Tous les statuts');
     }
     
-    console.log('FilterManager: Options des filtres peuplées');
+    this.logger.debug('Filter options populated');
   }
   
   /**
@@ -232,7 +234,7 @@ export class FilterManager {
    * Effectue la recherche textuelle
    */
   performSearch() {
-    console.log('FilterManager: Recherche effectuée:', this.filters.search);
+    this.logger.debug(`Search performed: ${this.filters.search}`);
     this.applyFilters();
   }
   
@@ -241,11 +243,11 @@ export class FilterManager {
    */
   applyFilters() {
     if (!this.kanban || !this.kanban.currentRecords) {
-      console.warn('FilterManager: Données Kanban non disponibles');
+      this.logger.warn('Kanban data not available for filtering');
       return;
     }
     
-    console.log('FilterManager: Application des filtres:', this.filters);
+    this.logger.debug('Applying filters');
     
     // Mettre à jour l'état du KanbanManager
     this.kanban.filters = { ...this.filters };
@@ -352,7 +354,7 @@ export class FilterManager {
       }
     }
     
-    console.log(`FilterManager: ${filteredCount}/${totalRecords} tâches affichées`);
+    this.logger.info(`Filtered results: ${filteredCount}/${totalRecords} tasks displayed`);
   }
   
   /**
@@ -381,7 +383,7 @@ export class FilterManager {
     // Appliquer les changements
     this.applyFilters();
     
-    console.log('FilterManager: Tous les filtres réinitialisés');
+    this.logger.debug('All filters reset');
   }
   
   /**
@@ -425,12 +427,12 @@ export class FilterManager {
         break;
         
       default:
-        console.warn(`FilterManager: Filtre rapide inconnu: ${type}`);
+        this.logger.warn(`Unknown quick filter type: ${type}`);
         return;
     }
     
     this.applyFilters();
-    console.log(`FilterManager: Filtre rapide "${type}" appliqué`);
+    this.logger.debug(`Quick filter "${type}" applied`);
   }
   
   /**
@@ -446,7 +448,7 @@ export class FilterManager {
       
       localStorage.setItem('kanban-filters', JSON.stringify(filterState));
     } catch (error) {
-      console.warn('FilterManager: Impossible de sauvegarder les filtres:', error);
+      this.logger.warn('Cannot save filters:', error.message);
     }
   }
   
@@ -479,10 +481,10 @@ export class FilterManager {
       // Mettre à jour l'interface
       this.updateInterfaceFromState();
       
-      console.log('FilterManager: Filtres restaurés depuis localStorage');
+      this.logger.debug('Filters restored from localStorage');
       
     } catch (error) {
-      console.warn('FilterManager: Erreur lors du chargement des filtres:', error);
+      this.logger.warn('Error loading filters:', error.message);
       localStorage.removeItem('kanban-filters');
     }
   }
@@ -617,6 +619,6 @@ export class FilterManager {
     // Sauvegarder une dernière fois
     this.saveFilters();
     
-    console.log('FilterManager: Ressources nettoyées');
+    this.logger.debug('FilterManager resources cleaned up');
   }
 }

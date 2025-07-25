@@ -328,60 +328,41 @@ this.logger.debug(`Comparaison: "${columnName}" === "${focusColumnName}" ?`, col
 
 ---
 
-## 🎯 **GESTIONNAIRE D'ÉVÉNEMENTS CENTRALISÉ** - **NOUVEAU 2025-07-21**
+## 🎯 **GESTIONNAIRE D'ÉVÉNEMENTS** - **ÉTAT ACTUEL 2025-07-25**
 
 ### Architecture des Event Listeners
 
-**⚠️ PRINCIPE FONDAMENTAL**: UN SEUL gestionnaire d'événements global pour éviter les conflits.
+**⚠️ ÉTAT ACTUEL**: Event listeners dispersés mais fonctionnels dans les managers respectifs.
 
+**Structure actuelle**:
+- `ModalManager.setupEventListeners()` → Event listeners pour modales et formulaires
+- `HistoryManager.setupEventListeners()` → Event listeners pour édition commentaires  
+- `kanban-app.js` → Délégation jQuery pour les cartes et interactions
+- Event listeners directs dans chaque manager
+
+**Fonctionnement**:
 ```javascript
-// ✅ NOUVEAU: SimpleClickHandler - Point d'entrée unique
-class SimpleClickHandler {
-  constructor(kanbanManager) {
-    // UN SEUL listener global avec capture prioritaire
-    document.addEventListener('click', (e) => this.handleClick(e), true);
-  }
-  
-  handleClick(e) {
-    // 🎯 PRIORITÉS STRICTES (ordre d'évaluation fixe):
-    // 1. Boutons système (save, delete, new task)
-    // 2. Timeline et historique  
-    // 3. Stratégies
-    // 4. Cartes kanban
-    // 5. Badges passifs (tooltips seulement)
-    // 6. Filtres et navigation
-  }
-}
+// jQuery délégation dans kanban-app.js
+$(document).on('click', '.edit-task-btn', function(e) {
+  // Gestion des clics sur édition de tâche
+});
+
+// Event listeners directs dans ModalManager
+$('#btn-save-task').on('click', () => {
+  this.saveTask();
+});
 ```
 
-### Migration des Event Listeners
+**✅ AVANTAGES ACTUELS**:
+- ✅ Système fonctionnel et testé
+- ✅ Séparation des responsabilités par manager
+- ✅ Utilisation de jQuery pour la stabilité
+- ✅ Délégation d'événements pour les éléments dynamiques
 
-**✅ SUPPRIMÉS** - Event listeners dispersés dans:
-- `ModalManager.setupEventListeners()` → Désactivé
-- `HistoryManager.setupEventListeners()` → Désactivé  
-- `kanban-app.js` attachCardEventListeners → Simplifié
-- Listeners directs sur éléments → Centralisés
-
-**✅ AVANTAGES**:
-- ❌ Plus de conflits entre handlers
-- ❌ Plus de double-exécution d'actions
-- ❌ Plus de voiles noirs persistants
-- ✅ Comportement 100% prévisible
-- ✅ Debug centralisé avec logs détaillés
-- ✅ Maintenance simplifiée
-
-### Règles de Développement
-
-```javascript
-// ❌ INTERDIT: Ajouter des listeners directs
-element.addEventListener('click', handler); // NON !
-
-// ✅ OBLIGATOIRE: Ajouter la logique dans SimpleClickHandler
-if (e.target.id === 'mon-nouveau-bouton') {
-  this.handleMonNouveauBouton();
-  return;
-}
-```
+**🔧 AMÉLIORATIONS RÉCENTES**:
+- Focus simplifié pour édition commentaires
+- Reset intelligent des formulaires
+- Utilisation systématique de jQuery
 
 ---
 

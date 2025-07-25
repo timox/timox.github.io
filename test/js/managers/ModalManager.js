@@ -17,6 +17,7 @@ import {
 
 import { TABLE_ID } from '../config/constants.js';
 import { getUserActionManager } from '../utils/UserActionManager.js';
+import { LoggerManager } from '../utils/LoggerManager.js';
 
 /**
  * Gestionnaire pour les modales et formulaires
@@ -24,6 +25,7 @@ import { getUserActionManager } from '../utils/UserActionManager.js';
 export class ModalManager {
   constructor(kanbanManager) {
     this.kanban = kanbanManager;
+    this.logger = LoggerManager.getInstance();
     this.taskModal = null;
     this.historyModal = null;
     this.currentTaskId = null;
@@ -40,7 +42,7 @@ export class ModalManager {
     this.initializeModals();
     this.setupEventListeners();
     this.setupStrategySelects();
-    console.log('ModalManager: Gestionnaire de modales initialisé');
+    this.logger.debug('ModalManager initialized');
   }
   
   /**
@@ -82,13 +84,13 @@ export class ModalManager {
       .on('click.modal-events', '#btn-save-task', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        console.log('🔄 Bouton sauvegarder cliqué');
+        this.logger.debug('Save button clicked');
         this.saveTask();
       })
       .on('click.modal-events', '#btn-delete-task', (e) => {
         e.preventDefault(); 
         e.stopPropagation();
-        console.log('🗑️ Bouton supprimer cliqué');
+        this.logger.debug('Delete button clicked');
         this.deleteTask();
       });
     
@@ -103,7 +105,7 @@ export class ModalManager {
     // Bouton toggle accordéon historique des commentaires (délégation d'événements)
     document.addEventListener('click', (e) => {
       if (e.target.matches('#btn-toggle-comment-history, #btn-toggle-comment-history *')) {
-        console.log('ModalManager: Clic sur bouton toggle historique');
+        this.logger.debug('History toggle button clicked');
         // Laisser Bootstrap gérer l'accordéon, mais charger les données
         setTimeout(() => {
           this.loadCommentHistoryInAccordion();
@@ -114,7 +116,7 @@ export class ModalManager {
     // Écouteur pour quand l'accordéon s'ouvre (événement Bootstrap)
     document.addEventListener('shown.bs.collapse', (e) => {
       if (e.target.id === 'comment-history-accordion') {
-        console.log('ModalManager: Accordéon historique ouvert');
+        this.logger.debug('History accordion opened');
         this.loadCommentHistoryInAccordion();
       }
     });
@@ -149,7 +151,7 @@ export class ModalManager {
     const strategyBrowser = document.getElementById('strategy-browser');
     
     if (!strategyBrowser) {
-      console.warn('ModalManager: strategy-browser non trouvé');
+      this.logger.warn('Strategy browser element not found');
       return;
     }
     
@@ -157,17 +159,13 @@ export class ModalManager {
     this.selectedStrategies = [];
     
     // Vérifier si on a des données stratégiques disponibles
-    console.log('ModalManager: Vérification strategiesData:', {
-      exists: !!this.kanban.strategiesData,
-      length: this.kanban.strategiesData?.length || 0,
-      sample: this.kanban.strategiesData?.[0]
-    });
+    this.logger.debug(`Strategy data check: ${this.kanban.strategiesData?.length || 0} strategies available`);
     
     if (this.kanban.strategiesData && this.kanban.strategiesData.length > 0) {
-      console.log('ModalManager: Génération interface accordéon depuis données intégrées');
+      this.logger.debug('Rendering strategy accordion from integrated data');
       this.renderStrategyAccordion(strategyBrowser);
     } else {
-      console.warn('ModalManager: Génération interface accordéon avec données par défaut');
+      this.logger.warn('Rendering strategy accordion with fallback data');
       this.renderFallbackStrategyAccordion(strategyBrowser);
     }
     
@@ -331,11 +329,7 @@ export class ModalManager {
     // Afficher les détails de la stratégie cliquée
     this.updateStrategyDetails(strategy);
     
-    console.log('Stratégies sélectionnées:', this.selectedStrategies.map(s => ({
-      id: s.id,
-      objectif: s.objectif,
-      action: s.action
-    })));
+    this.logger.debug(`Selected strategies: ${this.selectedStrategies.length} items`);
   }
   
   /**
@@ -349,7 +343,7 @@ export class ModalManager {
       // Mettre à jour le cache si on a un ID de tâche
       if (this.currentTaskId) {
         this.strategiesCache.set(this.currentTaskId, [...this.selectedStrategies]);
-        console.log(`💾 Cache mis à jour après ajout de stratégie pour la tâche ${this.currentTaskId}`);
+        this.logger.debug(`Strategy cache updated after addition for task ${this.currentTaskId}`);
       }
     }
   }
@@ -363,7 +357,7 @@ export class ModalManager {
     // Mettre à jour le cache
     if (this.currentTaskId) {
       this.strategiesCache.set(this.currentTaskId, [...this.selectedStrategies]);
-      console.log(`💾 Cache mis à jour après suppression de stratégie pour la tâche ${this.currentTaskId}`);
+      this.logger.debug(`Strategy cache updated after removal for task ${this.currentTaskId}`);
     }
     
     // Mettre à jour l'état visuel de la carte correspondante
@@ -446,11 +440,7 @@ export class ModalManager {
     const gristReferences = strategyIds.map(id => ["L", id]);
     setFieldValue('popup-strategie-id', JSON.stringify(gristReferences));
     
-    console.log('🔄 Stratégies mises à jour:', {
-      selectedCount: strategyIds.length,
-      ids: strategyIds,
-      gristFormat: gristReferences
-    });
+    this.logger.debug(`Strategies updated: ${strategyIds.length} selected`);
   }
   
   /**
@@ -476,7 +466,7 @@ export class ModalManager {
     // Mettre à jour le cache
     if (this.currentTaskId) {
       this.strategiesCache.set(this.currentTaskId, []);
-      console.log(`💾 Cache vidé pour la tâche ${this.currentTaskId}`);
+      this.logger.debug(`Strategy cache cleared for task ${this.currentTaskId}`);
     }
     
     // Mettre à jour l'interface
@@ -492,7 +482,7 @@ export class ModalManager {
     this.updateStrategyIds();
     this.hideStrategyDetails();
     
-    console.log('Toutes les stratégies désélectionnées');
+    this.logger.debug('All strategies deselected');
   }
   
   /**
@@ -585,7 +575,7 @@ export class ModalManager {
         idsArray = [strategyIds];
       }
     } catch (e) {
-      console.warn('Erreur parsing strategie_ids:', e);
+      this.logger.warn('Error parsing strategy IDs:', e.message);
       return;
     }
     
@@ -607,7 +597,7 @@ export class ModalManager {
           this.addStrategyToSelection(strategy);
           this.preSelectStrategyInAccordion(strategy);
         } else {
-          console.warn('Stratégie non trouvée pour ID:', strategyId, '(recherché:', searchId, ')');
+          this.logger.warn(`Strategy not found for ID: ${strategyId}`);
         }
       });
       
@@ -616,13 +606,9 @@ export class ModalManager {
       this.updateStrategyPreview();
       this.updateStrategyIds();
       
-      console.log('Stratégies pré-sélectionnées:', this.selectedStrategies.map(s => ({
-        id: s.id,
-        objectif: s.objectif,
-        action: s.action
-      })));
+      this.logger.debug(`Pre-selected strategies: ${this.selectedStrategies.length} items`);
     } else {
-      console.warn('Données stratégiques non disponibles pour peupler les champs');
+      this.logger.warn('Strategy data not available for populating fields');
     }
   }
   
@@ -631,11 +617,11 @@ export class ModalManager {
    * @param {string|array} gristReferences - Références Grist [["L", id1], ["L", id2], ...]
    */
   populateStrategyFieldsFromGristReferences(gristReferences) {
-    console.log('🔄 Chargement stratégies depuis Grist:', gristReferences);
+    this.logger.debug(`Loading strategies from Grist: ${gristReferences?.length || 0} references`);
     
     // Si on a déjà des stratégies en cache pour cette tâche, les utiliser
     if (this.currentTaskId && this.strategiesCache.has(this.currentTaskId)) {
-      console.log(`💾 Stratégies trouvées en cache pour la tâche ${this.currentTaskId}`);
+      this.logger.debug(`Strategies found in cache for task ${this.currentTaskId}`);
       this.updateStrategyTags();
       this.updateStrategyPreview();
       this.updateStrategyIds();
@@ -664,11 +650,11 @@ export class ModalManager {
         strategyIds = [gristReferences];
       }
     } catch (e) {
-      console.warn('Erreur parsing références Grist:', e);
+      this.logger.warn('Error parsing Grist references:', e.message);
       return;
     }
     
-    console.log('🔍 IDs extraits:', strategyIds);
+    this.logger.debug(`Extracted strategy IDs: ${strategyIds.length} items`);
     
     if (!Array.isArray(strategyIds) || strategyIds.length === 0) {
       return;
@@ -685,14 +671,14 @@ export class ModalManager {
           this.addStrategyToSelection(strategy);
           this.preSelectStrategyInAccordion(strategy);
         } else {
-          console.warn('Stratégie non trouvée pour ID:', strategyId);
+          this.logger.warn(`Strategy not found for ID: ${strategyId}`);
         }
       });
       
       // Mettre à jour le cache
       if (this.currentTaskId) {
         this.strategiesCache.set(this.currentTaskId, [...strategiesFromDB]);
-        console.log(`💾 Cache mis à jour pour la tâche ${this.currentTaskId}:`, strategiesFromDB.length, 'stratégies');
+        this.logger.debug(`Strategy cache updated for task ${this.currentTaskId}: ${strategiesFromDB.length} strategies`);
       }
       
       // Mettre à jour l'affichage
@@ -700,7 +686,7 @@ export class ModalManager {
       this.updateStrategyPreview();
       this.updateStrategyIds();
       
-      console.log('✅ Stratégies chargées depuis Grist:', strategiesFromDB.length);
+      this.logger.info(`Strategies loaded from Grist: ${strategiesFromDB.length} items`);
     }
   }
   
@@ -749,24 +735,15 @@ export class ModalManager {
    * Réinitialise la sélection de stratégie
    */
   resetStrategySelection() {
-    // Réinitialiser les champs cachés
-    setFieldValue('popup-strategie-objectif', '');
-    setFieldValue('popup-strategie-sous-objectif', '');
-    setFieldValue('popup-strategie-action', '');
-    setFieldValue('popup-strategie-id', ''); // Références multiples Grist
+    // Reset champs stratégie avec jQuery
+    $('#popup-strategie-objectif, #popup-strategie-sous-objectif, #popup-strategie-action, #popup-strategie-id').val('');
     
-    // Réinitialiser l'interface accordéon
-    document.querySelectorAll('.strategy-action.selected').forEach(el => {
-      el.classList.remove('selected');
-      const indicator = el.querySelector('.strategy-selected-indicator');
-      if (indicator) indicator.style.display = 'none';
-    });
+    // Reset interface accordéon avec jQuery
+    $('.strategy-action.selected').removeClass('selected');
+    $('.strategy-selected-indicator').hide();
     
-    // Réinitialiser le preview
-    const preview = document.getElementById('selected-strategy-preview');
-    if (preview) {
-      preview.textContent = '';
-    }
+    // Reset preview
+    $('#selected-strategy-preview').text('');
     
     // Masquer les détails
     this.hideStrategyDetails();
@@ -782,24 +759,17 @@ export class ModalManager {
       return;
     }
     
-    // ✅ SOLUTION SIMPLE : Reset complet avant toute chose
-    this.resetTaskForm();
-    
-    console.log('=== DEBUG: openTaskModal ===');
-    console.log('Task parameter:', task);
-    console.log('Task ID:', task?.id);
-    console.log('Task type:', typeof task?.id);
+    // ✅ RESET intelligent : seulement si nouvelle tâche ou changement de tâche
+    const isChangingTask = !task || this.currentTaskId !== task?.id;
+    if (isChangingTask) {
+      this.resetTaskForm();
+    }
     
     this.isNewTask = !task || !task.id;
     this.currentTask = task;
     this.currentTaskId = task?.id || null;
     
-    console.log('✅ openTaskModal - État après initialisation:');
-    console.log('   → IsNewTask:', this.isNewTask);
-    console.log('   → CurrentTaskId:', this.currentTaskId);
-    console.log('   → CurrentTask.id:', this.currentTask?.id);
-    console.log('   → Task parameter received:', !!task);
-    console.log('CurrentTask:', this.currentTask);
+    this.logger.debug(`Opening task modal: ${this.isNewTask ? 'new task' : 'edit task ' + this.currentTaskId}`);
     
     // Mettre à jour le titre de la modal
     const modalTitle = document.getElementById('popup-tache-label');
@@ -897,7 +867,6 @@ export class ModalManager {
     // Ajouter un gestionnaire de clic pour forcer le focus
     descriptionField.addEventListener('click', function(e) {
       e.stopPropagation();
-      console.log('🖱️ Clic sur textarea description');
       setTimeout(() => {
         this.focus();
         this.setSelectionRange(this.value.length, this.value.length);
@@ -906,16 +875,13 @@ export class ModalManager {
     
     // Ajouter un gestionnaire pour débugger les problèmes de focus
     descriptionField.addEventListener('focus', function() {
-      console.log('✅ Focus obtenu sur textarea description');
     });
     
     descriptionField.addEventListener('blur', function() {
-      console.log('❌ Focus perdu sur textarea description');
     });
     
     // Gestionnaire pour forcer le focus au survol
     descriptionField.addEventListener('mouseenter', function() {
-      console.log('🐭 Survol textarea description');
     });
   }
   
@@ -925,9 +891,7 @@ export class ModalManager {
    */
   // === REMPLISSAGE DU FORMULAIRE CORRIGÉ ===
   populateTaskForm(tache, isNewTask) {
-    console.log('=== DEBUG: populateTaskForm ===');
-    console.log('Tache parameter:', tache);
-    console.log('isNewTask parameter:', isNewTask);
+    this.logger.debug(`Populating task form: ${isNewTask ? 'new task' : 'edit mode'}`);
     
     // S'assurer que tache est un objet
     if (!tache) {
@@ -936,13 +900,11 @@ export class ModalManager {
     
     // Utiliser le paramètre isNewTask s'il est fourni
     if (isNewTask !== undefined) {
-      console.log('Using isNewTask parameter:', isNewTask);
       this.isNewTask = isNewTask;
       this.currentTaskId = this.isNewTask ? null : (tache.id || null);
       this.currentTask = this.isNewTask ? null : tache;
     }
     
-    console.log('Final state - isNewTask:', this.isNewTask, 'currentTaskId:', this.currentTaskId);
     
     // Champs de base
     setFieldValue('popup-titre', tache.titre || '');
@@ -984,12 +946,11 @@ export class ModalManager {
     
     // Charger les jalons si disponibles
     if (this.kanban.jalonManager) {
-      console.log('🔍 DEBUG jalons - tache.jalons:', tache.jalons);
-      console.log('🔍 DEBUG jalons - type:', typeof tache.jalons);
+      this.logger.debug(`Processing jalons: ${typeof tache.jalons} - ${tache.jalons}`);
       this.kanban.jalonManager.loadJalonsFromTask(tache);
     }
     
-    console.log('✅ Formulaire rempli');
+    this.logger.debug('Task form populated');
   }
 
 
@@ -1015,7 +976,7 @@ export class ModalManager {
       
       // Logs de debug simplifiés
       if (this.kanban.config?.enableDebugMode) {
-        console.log('Saving task:', this.isNewTask ? 'CREATE' : 'UPDATE', this.currentTaskId);
+        this.logger.info(`Saving task: ${this.isNewTask ? 'CREATE' : 'UPDATE'} ${this.currentTaskId || 'new'}`);
       }
       
       // Validation critique
@@ -1059,7 +1020,7 @@ export class ModalManager {
           }
           
           // Exécuter en parallèle sans attendre
-          Promise.allSettled(historyPromises).catch(console.warn);
+          Promise.allSettled(historyPromises).catch(e => this.logger.warn('History promises failed:', e.message));
         }
         
         displaySuccess('Tâche créée avec succès');
@@ -1139,7 +1100,7 @@ export class ModalManager {
           }
           
           // Exécuter toutes les opérations d'historique en parallèle sans attendre
-          Promise.allSettled(historyPromises).catch(console.warn);
+          Promise.allSettled(historyPromises).catch(e => this.logger.warn('History promises failed:', e.message));
         }
         
         displaySuccess('Tâche mise à jour avec succès');
@@ -1154,7 +1115,7 @@ export class ModalManager {
       
       // Log résultat seulement en mode debug
       if (this.kanban.config?.enableDebugMode) {
-        console.log('Résultat Grist:', result);
+        this.logger.debug('Grist save result received');
       }
       
       // Signaler la mise à jour locale
@@ -1180,15 +1141,12 @@ export class ModalManager {
       }, 200);
       
     } catch (error) {
-      console.error('ModalManager: Erreur sauvegarde complète:', error);
-      console.error('Error stack:', error.stack);
-      console.error('Error name:', error.name);
-      console.error('Error message:', error.message);
+      this.logger.error('Complete save error:', error.message);
       
       // Afficher l'erreur détaillée
       let errorMessage = `Erreur lors de la sauvegarde: ${error.message}`;
       if (error.stack) {
-        console.error('Stack trace complet:', error.stack);
+        this.logger.error('Error details:', error.stack);
         errorMessage += '\n(Voir console pour détails)';
       }
       
@@ -1201,8 +1159,6 @@ export class ModalManager {
    * @returns {object} Données collectées
    */
   collectFormData() {
-    console.log('=== DEBUG: collectFormData ===');
-    
     const data = {
       titre: getFieldValue('popup-titre').trim(),
       statut: getFieldValue('popup-statut-text'),
@@ -1215,16 +1171,7 @@ export class ModalManager {
       jalons: this.kanban.jalonManager ? this.kanban.jalonManager.getJalonsForSave() : null
     };
     
-    // Debug chaque champ collecté
-    console.log('Titre:', data.titre);
-    console.log('Statut:', data.statut);
-    console.log('Projet:', data.projet);
-    console.log('Jalons collectés:', data.jalons);
-    console.log('Urgence:', data.urgence);
-    console.log('Impact:', data.impact);
-    console.log('Bureau (raw):', data.bureau);
-    console.log('Qui (raw):', data.qui);
-    console.log('Strategie_id (références multiples):', data.strategie_id);
+    this.logger.debug(`Collecting form data: ${data.titre || 'untitled'} (${data.statut})`);
     
     // CHAMP DESCRIPTION SUPPRIMÉ - Tous les commentaires sont maintenant dans notes.history
     // Le champ de saisie popup-description sert uniquement pour les nouveaux commentaires
@@ -1233,9 +1180,7 @@ export class ModalManager {
     if (this.kanban.datePickerManager) {
       data.date_echeance = this.kanban.datePickerManager.getDateForGrist();
     }
-    console.log('Date_echeance:', data.date_echeance);
     
-    console.log('=== Data collectée complète ===', data);
     return data;
   }
   
@@ -1245,8 +1190,7 @@ export class ModalManager {
    * @returns {object} Données formatées pour Grist
    */
   prepareTaskDataForGrist(taskData) {
-    console.log('=== DEBUG: prepareTaskDataForGrist ===');
-    console.log('Input taskData:', taskData);
+    this.logger.debug('Preparing task data for Grist API');
     
     const gristData = { ...taskData };
     
@@ -1264,15 +1208,11 @@ export class ModalManager {
     }
     
     // Assurer que les listes sont dans le bon format (based on old example mapGristRecords)
-    console.log('Bureau avant traitement:', gristData.bureau, typeof gristData.bureau);
     if (!Array.isArray(gristData.bureau) || gristData.bureau[0] !== 'L') {
-      console.log('Bureau corrigé vers format Grist');
       gristData.bureau = ['L'];
     }
     
-    console.log('Qui avant traitement:', gristData.qui, typeof gristData.qui);
     if (!Array.isArray(gristData.qui) || gristData.qui[0] !== 'L') {
-      console.log('Qui corrigé vers format Grist');
       gristData.qui = ['L'];
     }
     
@@ -1285,16 +1225,13 @@ export class ModalManager {
     }
     
     // Strategie_id doit rester au format références multiples (pas de conversion en nombre)
-    console.log('Strategie_id final:', gristData.strategie_id, typeof gristData.strategie_id);
     
     // Remove historique_statuts - it's a Date field, not JSON
     delete gristData.historique_statuts;
-    console.log('Removed historique_statuts field (Date field, not JSON)');
     
     // Nettoyer les valeurs nulles/undefined problématiques
     Object.keys(gristData).forEach(key => {
       if (gristData[key] === undefined) {
-        console.log(`Nettoyage: ${key} undefined -> null`);
         gristData[key] = null;
       }
     });
@@ -1327,14 +1264,10 @@ export class ModalManager {
     
     // Vérifier les jalons pour Grist (déjà au format JSON string)
     if (gristData.jalons !== null && gristData.jalons !== undefined) {
-      console.log('🔄 Jalons reçus:', typeof gristData.jalons, gristData.jalons.length, 'caractères');
       if (typeof gristData.jalons !== 'string') {
-        console.log('🔧 Conversion jalons en JSON string pour Grist');
         gristData.jalons = JSON.stringify(gristData.jalons || []);
       }
-      console.log('✅ Jalons prêts pour sauvegarde:', gristData.jalons.length, 'caractères');
     } else {
-      console.log('⚠️ Aucun jalon à sauvegarder (null/undefined)');
       gristData.jalons = '{"jalons":[],"lastModified":0}'; // Valeur par défaut
     }
     
@@ -1344,25 +1277,17 @@ export class ModalManager {
         // Vérifier si c'est déjà au format JSON Grist
         const parsed = JSON.parse(gristData.strategie_id);
         if (Array.isArray(parsed)) {
-          console.log('✅ Strategie_id au format références multiples:', parsed);
         }
       } catch (e) {
         // Si c'est un nombre simple, le convertir au format références multiples
         const strategyId = parseInt(gristData.strategie_id);
         if (!isNaN(strategyId)) {
           gristData.strategie_id = JSON.stringify([["L", strategyId]]);
-          console.log('🔄 Strategie_id converti au format références multiples:', gristData.strategie_id);
         }
       }
     }
     
-    console.log('=== FINAL gristData pour envoi ===');
-    console.log('Données préparées pour Grist:', gristData);
-    
-    // Validation finale des types
-    Object.entries(gristData).forEach(([key, value]) => {
-      console.log(`${key}: ${value} (type: ${typeof value}, isArray: ${Array.isArray(value)})`);
-    });
+    this.logger.debug('Task data prepared for Grist API');
     
     return gristData;
   }
@@ -1372,7 +1297,7 @@ export class ModalManager {
    */
    // === SUPPRESSION DE TÂCHE ===
   async deleteTask() {
-    console.log('Delete button clicked!', this.currentTaskId);
+    this.logger.info(`Deleting task: ${this.currentTaskId}`);
     
     if (!this.currentTaskId) {
       alert('Aucune tâche sélectionnée pour suppression');
@@ -1415,45 +1340,35 @@ export class ModalManager {
       // Rafraîchir le kanban avec un petit délai pour laisser la modal se fermer
       setTimeout(() => {
         if (this.kanban && this.kanban.refreshKanban) {
-          console.log('🗑️ Rafraîchissement du kanban...');
+          this.logger.debug('Refreshing kanban after deletion');
           this.kanban.refreshKanban();
         } else {
-          console.error('Impossible de rafraîchir le kanban: référence manquante');
+          this.logger.warn('Cannot refresh kanban: missing reference');
           // Fallback: recharger la page si le kanban n'est pas accessible
           window.location.reload();
         }
       }, 100);
       
     } catch (error) {
-      console.error('Erreur suppression:', error);
+      this.logger.error('Task deletion failed:', error.message);
       displayError(`Erreur lors de la suppression: ${error.message}`);
     }
   }
 // === MÉTHODE DE DIAGNOSTIC ===
   diagnoseModals() {
-    console.log('🔍 DIAGNOSTIC DES MODALES:');
-    console.log('- Bootstrap disponible:', typeof bootstrap !== 'undefined');
-    console.log('- Modal element existe:', !!document.getElementById('popup-tache'));
-    console.log('- Modal instance créée:', !!this.modal);
-    console.log('- History modal element existe:', !!document.getElementById('history-modal'));
-    console.log('- History modal instance créée:', !!this.historyModal);
-    console.log('- Bouton nouvelle tâche existe:', !!document.getElementById('btn-nouvelle-tache'));
-    
-    if (this.modal) {
-      console.log('- Modal peut être ouverte:', typeof this.modal.show === 'function');
-    }
+    this.logger.debug('Running modal diagnostics');
   }
 
   // === RESET COMPLET DES MODALES ===
   resetModals() {
-    console.log('🔄 Reset complet des modales...');
+    this.logger.debug('Resetting all modals');
     
     // Détruire les instances existantes
     if (this.modal) {
       try {
         this.modal.dispose();
       } catch (e) {
-        console.warn('Erreur lors de la destruction de la modal:', e);
+        this.logger.warn('Error destroying modal:', e.message);
       }
     }
     
@@ -1461,7 +1376,7 @@ export class ModalManager {
       try {
         this.historyModal.dispose();
       } catch (e) {
-        console.warn('Erreur lors de la destruction de la modal historique:', e);
+        this.logger.warn('Error destroying history modal:', e.message);
       }
     }
     
@@ -1514,10 +1429,7 @@ export class ModalManager {
    * Charge l'historique des commentaires dans l'accordéon de la modale
    */
   loadCommentHistoryInAccordion() {
-    console.log('ModalManager: loadCommentHistoryInAccordion appelée');
-    console.log('ModalManager: currentTask:', this.currentTask);
-    console.log('ModalManager: currentTaskId:', this.currentTaskId);
-    console.log('ModalManager: historyManager:', !!this.kanban.historyManager);
+    this.logger.debug(`Loading comment history for task ${this.currentTaskId}`);
     
     // Afficher un message de chargement
     const accordionContent = document.getElementById('comment-history-content');
@@ -1532,7 +1444,7 @@ export class ModalManager {
 
     // Vérifier si on a une tâche courante
     if (!this.currentTask && !this.currentTaskId) {
-      console.warn('ModalManager: Aucune tâche courante pour charger l\'historique');
+      this.logger.warn('No current task available for loading history');
       this.showAccordionError('Aucune tâche sélectionnée');
       return;
     }
@@ -1540,14 +1452,12 @@ export class ModalManager {
     // Si on n'a pas currentTask mais qu'on a currentTaskId, essayer de la récupérer
     let taskToProcess = this.currentTask;
     if (!taskToProcess && this.currentTaskId) {
-      console.log('ModalManager: Tentative de récupération de la tâche depuis currentTaskId:', this.currentTaskId);
       taskToProcess = this.kanban.currentRecords?.find(r => r.id === this.currentTaskId);
       
       if (taskToProcess) {
-        console.log('ModalManager: Tâche récupérée avec succès:', taskToProcess.titre);
         this.currentTask = taskToProcess; // Sauvegarder pour les prochains appels
       } else {
-        console.error('ModalManager: Impossible de trouver la tâche avec ID:', this.currentTaskId);
+        this.logger.error(`Cannot find task with ID: ${this.currentTaskId}`);
         this.showAccordionError('Tâche non trouvée dans les données');
         return;
       }
@@ -1555,35 +1465,23 @@ export class ModalManager {
 
     // Vérifier le HistoryManager
     if (!this.kanban.historyManager) {
-      console.error('HistoryManager non disponible');
+      this.logger.error('HistoryManager not available');
       this.showAccordionError('Gestionnaire d\'historique non disponible');
       return;
     }
 
     try {
-      console.log('ModalManager: Parsing historique pour tâche ID:', taskToProcess.id);
-      console.log('ModalManager: Données de la tâche:', {
-        id: taskToProcess.id,
-        titre: taskToProcess.titre,
-        hasNotes: !!taskToProcess.notes,
-        hasHistoriqueStatuts: !!taskToProcess.historique_statuts,
-        notesLength: taskToProcess.notes?.length || 0
-      });
+      this.logger.debug(`Parsing history for task ${taskToProcess.id}: ${taskToProcess.titre}`);
       
       // Parser l'historique
       const historyData = this.kanban.historyManager.parseTaskHistory(taskToProcess);
-      console.log('ModalManager: Données historique reçues:', {
-        totalComments: historyData.comments?.length || 0,
-        totalHistory: historyData.history?.length || 0,
-        totalTimeline: historyData.timeline?.length || 0,
-        hasData: !!(historyData.comments?.length || historyData.history?.length)
-      });
+      this.logger.debug(`History data loaded: ${historyData.comments?.length || 0} comments + ${historyData.history?.length || 0} history entries`);
       
       // Afficher les données dans l'accordéon
       this.renderCommentHistoryInAccordion(historyData);
       
     } catch (error) {
-      console.error('ModalManager: Erreur lors du parsing de l\'historique:', error);
+      this.logger.error('Error parsing history:', error.message);
       this.showAccordionError('Erreur lors du chargement de l\'historique: ' + error.message);
     }
   }
@@ -1597,7 +1495,7 @@ export class ModalManager {
     const commentCountBadge = document.getElementById('comment-count-badge');
     
     if (!accordionContent || !commentCountBadge) {
-      console.error('Éléments accordéon non trouvés');
+      this.logger.error('Accordion elements not found');
       return;
     }
 
@@ -1739,7 +1637,6 @@ export class ModalManager {
           entry.timestamp.toISOString() : String(entry.timestamp);
         const commentId = `comment-${timestampString.replace(/[^\d]/g, '')}`;
         
-        console.log('ModalManager: Génération commentaire ID:', commentId, 'pour timestamp:', timestampString);
         
         finalHTML += `
           <div class="comment-item mb-3 p-3 border rounded" data-comment-id="${commentId}">
@@ -1882,7 +1779,7 @@ export class ModalManager {
 
     accordionContent.innerHTML = unifiedHTML;
     
-    console.log('ModalManager: Timeline complète unifiée chargée:', timeline.length, 'entrées');
+    this.logger.debug(`Unified timeline loaded: ${timeline.length} entries`);
   }
 
   /**
@@ -1984,7 +1881,7 @@ export class ModalManager {
     // Mettre à jour le titre
     const modalTitle = document.getElementById('history-modal-label');
     // Debug simplifié
-    console.log(`🏷️ ModalManager: màj titre pour tâche ${taskId}`);
+    this.logger.debug(`Updating title for task ${taskId}`);
     
     if (modalTitle) {
       modalTitle.innerHTML = `
@@ -1992,7 +1889,7 @@ export class ModalManager {
         Historique de la tâche #${taskId} - ${task.titre}
       `;
     } else {
-      console.error('❌ Élément history-modal-label introuvable dans le DOM (ModalManager)');
+      this.logger.error('History modal label element not found in DOM');
     }
     
     // Déléguer le rendu à HistoryManager
@@ -2008,7 +1905,7 @@ export class ModalManager {
    * Ferme toutes les modales ouvertes
    */
   closeAllModals() {
-    console.log('🚪 Fermeture de toutes les modales...');
+    this.logger.debug('Closing all modals');
     
     // Modales principales
     if (this.taskModal) {
@@ -2068,8 +1965,7 @@ export class ModalManager {
     populateSelect('popup-projet', projet || [], true);
     
     // Peupler les cases à cocher
-    console.log('Bureau options:', bureau);
-    console.log('Responsables options:', responsables);
+    this.logger.debug(`Populating options: ${bureau?.length || 0} bureau, ${responsables?.length || 0} responsables`);
     this.populateCheckboxOptions('popup-bureau-checkboxes', 'popup-bureau', bureau || []);
     this.populateCheckboxOptions('popup-qui-checkboxes', 'popup-qui', responsables || []);
   }
@@ -2082,11 +1978,10 @@ export class ModalManager {
     const hiddenSelect = document.getElementById(selectId);
     
     if (!container || !hiddenSelect) {
-      console.warn(`ModalManager: Container ${containerId} ou select ${selectId} non trouvé`);
+      this.logger.warn(`Container ${containerId} or select ${selectId} not found`);
       return;
     }
     
-    console.log(`Populating ${containerId} with options:`, options);
     
     // Vider le container
     container.innerHTML = '';
@@ -2131,16 +2026,14 @@ export class ModalManager {
       
       // Event listener pour synchroniser avec le select caché
       checkbox.addEventListener('change', (e) => {
-        console.log(`Checkbox ${option} changed to:`, e.target.checked);
         this.syncCheckboxToSelect(containerId, selectId);
       });
     });
     
-    console.log(`Created ${container.children.length} checkboxes in ${containerId}`);
     
     // Test immédiat - créer une case à cocher de test si aucune option
     if (options.length <= 1) {
-      console.warn(`Aucune option trouvée pour ${containerId}, création d'une case de test`);
+      this.logger.warn(`No options found for ${containerId}`);
       const testDiv = document.createElement('div');
       testDiv.className = 'form-check';
       testDiv.innerHTML = `
@@ -2159,7 +2052,7 @@ export class ModalManager {
     const hiddenSelect = document.getElementById(selectId);
     
     if (!container || !hiddenSelect) {
-      console.warn(`Sync failed: ${containerId} or ${selectId} not found`);
+      this.logger.warn(`Sync failed: ${containerId} or ${selectId} not found`);
       return;
     }
     
@@ -2170,7 +2063,6 @@ export class ModalManager {
       selectedValues.push(checkbox.value);
     });
     
-    console.log(`Syncing ${selectId} with values:`, selectedValues);
     
     // Mettre à jour le select caché
     Array.from(hiddenSelect.options).forEach(option => {
@@ -2198,28 +2090,31 @@ export class ModalManager {
   }
   
   /**
-   * Réinitialise le formulaire de tâche
+   * Réinitialise le formulaire - Version jQuery simplifiée
    */
   resetTaskForm() {
-    resetForm('task-form');
+    // Reset formulaire complet avec jQuery
+    $('#task-form')[0].reset();
     
-    // Réinitialiser les selects multiples
-    setSelectedOptions('popup-bureau', ['L']);
-    setSelectedOptions('popup-qui', ['L']);
+    // Reset selects multiples
+    $('#popup-bureau').val(['L']);
+    $('#popup-qui').val(['L']);
     
-    // Synchroniser avec les cases à cocher
-    this.syncSelectToCheckbox('popup-bureau-checkboxes', 'popup-bureau');
-    this.syncSelectToCheckbox('popup-qui-checkboxes', 'popup-qui');
+    // Reset checkboxes
+    $('#popup-bureau-checkboxes input, #popup-qui-checkboxes input').prop('checked', false);
     
-    // Réinitialiser la stratégie
+    // Reset description
+    $('#popup-description').val('');
+    
+    // Reset stratégies
     this.resetStrategySelection();
     
-    // Réinitialiser la date
+    // Reset date picker
     if (this.kanban.datePickerManager) {
       this.kanban.datePickerManager.reset();
     }
     
-    // Réinitialiser les jalons
+    // Reset jalons
     if (this.kanban.jalonManager) {
       this.kanban.jalonManager.jalons = [];
       this.kanban.jalonManager.updateJalonsDisplay();
@@ -2382,7 +2277,7 @@ export class ModalManager {
     this.currentTask = null;
     this.currentTaskId = null;
     
-    console.log('ModalManager: Ressources nettoyées');
+    this.logger.debug('ModalManager resources cleaned up');
   }
   
   /**
@@ -2491,7 +2386,7 @@ export class ModalManager {
       }
       return 0;
     } catch (error) {
-      console.warn('Erreur parsing jalons pour comptage:', error);
+      this.logger.warn('Error parsing jalons for count:', error.message);
       return 0;
     }
   }
@@ -2567,7 +2462,7 @@ export class ModalManager {
       };
       
     } catch (error) {
-      console.warn('Erreur parsing jalons pour détails:', error);
+      this.logger.warn('Error parsing jalons for details:', error.message);
       return {
         message: 'Jalons modifiés (erreur parsing)',
         oldSummary: 'Erreur',
@@ -2627,7 +2522,7 @@ export class ModalManager {
       };
       
     } catch (error) {
-      console.warn('Erreur parsing stratégies pour détails:', error);
+      this.logger.warn('Error parsing strategies for details:', error.message);
       return {
         message: 'Stratégies modifiées (erreur parsing)',
         oldSummary: 'Erreur',

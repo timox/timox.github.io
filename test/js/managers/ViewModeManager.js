@@ -116,7 +116,7 @@ export class ViewModeManager {
    */
   setViewMode(mode) {
     if (!Object.values(VIEW_MODES).includes(mode)) {
-      console.warn('ViewModeManager: Mode de vue invalide:', mode);
+      this.logger.warn(`Invalid view mode: ${mode}`);
       return;
     }
     
@@ -132,7 +132,7 @@ export class ViewModeManager {
     // Sauvegarder la préférence
     this.saveViewMode();
     
-    console.log(`ViewModeManager: Mode de vue changé vers "${mode}"`);
+    this.logger.info(`View mode changed to "${mode}"`);
   }
   
   /**
@@ -428,7 +428,7 @@ export class ViewModeManager {
       localStorage.setItem('kanban-view-mode', this.currentMode);
       localStorage.setItem('kanban-focus-column', this.focusColumn || '');
     } catch (error) {
-      console.warn('ViewModeManager: Impossible de sauvegarder le mode de vue');
+      this.logger.warn('Cannot save view mode to localStorage');
     }
   }
   
@@ -449,7 +449,7 @@ export class ViewModeManager {
       }
       
     } catch (error) {
-      console.warn('ViewModeManager: Erreur lors du chargement du mode de vue sauvegardé');
+      this.logger.warn('Error loading saved view mode from localStorage');
     }
   }
   
@@ -587,6 +587,6 @@ export class ViewModeManager {
       viewModeControls.remove();
     }
     
-    console.log('ViewModeManager: Ressources nettoyées');
+    this.logger.debug('ViewModeManager resources cleaned up');
   }
 }
