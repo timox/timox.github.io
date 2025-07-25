@@ -29,6 +29,8 @@ export class ModalManager {
     this.currentTaskId = null;
     this.currentTask = null;
     this.isNewTask = false;
+    this.selectedStrategies = [];
+    this.strategiesCache = new Map(); // Cache des stratégies par tâche ID
     
     this.init();
   }
@@ -345,6 +347,12 @@ export class ModalManager {
     // Éviter les doublons
     if (!this.selectedStrategies.find(s => s.id === strategy.id)) {
       this.selectedStrategies.push(strategy);
+      
+      // Mettre à jour le cache si on a un ID de tâche
+      if (this.currentTaskId) {
+        this.strategiesCache.set(this.currentTaskId, [...this.selectedStrategies]);
+        console.log(`💾 Cache mis à jour après ajout de stratégie pour la tâche ${this.currentTaskId}`);
+      }
     }
   }
   
@@ -353,6 +361,12 @@ export class ModalManager {
    */
   removeStrategyFromSelection(strategyId) {
     this.selectedStrategies = this.selectedStrategies.filter(s => s.id !== strategyId);
+    
+    // Mettre à jour le cache
+    if (this.currentTaskId) {
+      this.strategiesCache.set(this.currentTaskId, [...this.selectedStrategies]);
+      console.log(`💾 Cache mis à jour après suppression de stratégie pour la tâche ${this.currentTaskId}`);
+    }
     
     // Mettre à jour l'état visuel de la carte correspondante
     const actionCard = document.querySelector(`[data-strategy-id="${strategyId}"]`);
@@ -428,10 +442,17 @@ export class ModalManager {
    */
   updateStrategyIds() {
     const strategyIds = this.selectedStrategies.map(s => s.id);
-    setFieldValue('popup-strategie-ids', JSON.stringify(strategyIds));
     
-    // Compatibilité avec l'ancien système (premier ID seulement)
-    setFieldValue('popup-strategie-id', strategyIds.length > 0 ? strategyIds[0] : '');
+    // Utiliser strategie_id (références multiples dans Grist) au lieu de strategie_ids
+    // Format pour références multiples Grist: [["L", id1], ["L", id2], ...]
+    const gristReferences = strategyIds.map(id => ["L", id]);
+    setFieldValue('popup-strategie-id', JSON.stringify(gristReferences));
+    
+    console.log('🔄 Stratégies mises à jour:', {
+      selectedCount: strategyIds.length,
+      ids: strategyIds,
+      gristFormat: gristReferences
+    });
   }
   
   /**
@@ -453,6 +474,12 @@ export class ModalManager {
   clearAllStrategies() {
     // Vider la collection
     this.selectedStrategies = [];
+    
+    // Mettre à jour le cache
+    if (this.currentTaskId) {
+      this.strategiesCache.set(this.currentTaskId, []);
+      console.log(`💾 Cache vidé pour la tâche ${this.currentTaskId}`);
+    }
     
     // Mettre à jour l'interface
     document.querySelectorAll('.strategy-action.selected').forEach(el => {
@@ -536,10 +563,42 @@ export class ModalManager {
   
   
   /**
+   * Gère le cache des stratégies pour une tâche spécifique
+   * @param {string|number} taskId - ID de la tâche
+   */
+  setCurrentTaskStrategies(taskId) {
+    // Si on change de tâche, sauvegarder les stratégies actuelles et charger les nouvelles
+    if (this.currentTaskId !== taskId) {
+      console.log(`🔄 ModalManager: Changement de tâche pour stratégies ${this.currentTaskId} → ${taskId}`);
+      
+      // Sauvegarder les stratégies de la tâche précédente dans le cache
+      if (this.currentTaskId !== null && this.selectedStrategies.length > 0) {
+        this.strategiesCache.set(this.currentTaskId, [...this.selectedStrategies]);
+        console.log(`💾 Stratégies de la tâche ${this.currentTaskId} sauvegardées:`, this.selectedStrategies.length);
+      }
+      
+      // Charger les stratégies de la nouvelle tâche depuis le cache
+      this.selectedStrategies = this.strategiesCache.get(taskId) || [];
+      console.log(`📋 Stratégies de la tâche ${taskId} chargées:`, this.selectedStrategies.length);
+    }
+  }
+
+  /**
    * Peuple les champs de stratégie basés sur les strategie_ids multiples
    * @param {string|array} strategyIds - IDs de stratégies (JSON string ou array)
    */
   populateStrategyFieldsFromIds(strategyIds) {
+    // Si on a déjà des stratégies en cache pour cette tâche, les utiliser
+    if (this.currentTaskId && this.strategiesCache.has(this.currentTaskId)) {
+      console.log(`💾 Stratégies trouvées en cache pour la tâche ${this.currentTaskId}`);
+      // Les stratégies sont déjà chargées par setCurrentTaskStrategies
+      this.updateStrategyTags();
+      this.updateStrategyPreview();
+      this.updateStrategyIds();
+      return;
+    }
+    
+    // Sinon, charger depuis les données de la tâche
     // Réinitialiser d'abord
     this.resetStrategySelection();
     
@@ -569,6 +628,8 @@ export class ModalManager {
     
     // Rechercher et pré-sélectionner chaque stratégie
     if (this.kanban.strategiesData && this.kanban.strategiesData.length > 0) {
+      let strategiesFromDB = [];
+      
       idsArray.forEach(strategyId => {
         // Extraire l'ID depuis le format Grist ["L", id] si nécessaire
         let searchId = strategyId;
@@ -578,12 +639,19 @@ export class ModalManager {
         
         const strategy = this.kanban.strategiesData.find(s => s.id == searchId);
         if (strategy) {
+          strategiesFromDB.push(strategy);
           this.addStrategyToSelection(strategy);
           this.preSelectStrategyInAccordion(strategy);
         } else {
           console.warn('Stratégie non trouvée pour ID:', strategyId, '(recherché:', searchId, ')');
         }
       });
+      
+      // Mettre à jour le cache
+      if (this.currentTaskId) {
+        this.strategiesCache.set(this.currentTaskId, [...strategiesFromDB]);
+        console.log(`💾 Cache mis à jour pour la tâche ${this.currentTaskId}:`, strategiesFromDB.length, 'stratégies');
+      }
       
       // Mettre à jour l'affichage après toutes les sélections
       this.updateStrategyTags();
@@ -597,6 +665,84 @@ export class ModalManager {
       })));
     } else {
       console.warn('Données stratégiques non disponibles pour peupler les champs');
+    }
+  }
+  
+  /**
+   * Peuple les stratégies depuis le format références multiples de Grist
+   * @param {string|array} gristReferences - Références Grist [["L", id1], ["L", id2], ...]
+   */
+  populateStrategyFieldsFromGristReferences(gristReferences) {
+    console.log('🔄 Chargement stratégies depuis Grist:', gristReferences);
+    
+    // Si on a déjà des stratégies en cache pour cette tâche, les utiliser
+    if (this.currentTaskId && this.strategiesCache.has(this.currentTaskId)) {
+      console.log(`💾 Stratégies trouvées en cache pour la tâche ${this.currentTaskId}`);
+      this.updateStrategyTags();
+      this.updateStrategyPreview();
+      this.updateStrategyIds();
+      return;
+    }
+    
+    this.resetStrategySelection();
+    
+    if (!gristReferences) {
+      return;
+    }
+    
+    // Convertir les références Grist en array d'IDs
+    let strategyIds = [];
+    try {
+      if (typeof gristReferences === 'string') {
+        const parsed = JSON.parse(gristReferences);
+        if (Array.isArray(parsed)) {
+          // Format Grist: [["L", id1], ["L", id2], ...]
+          strategyIds = parsed.map(ref => Array.isArray(ref) && ref[0] === 'L' ? ref[1] : ref).filter(id => id);
+        }
+      } else if (Array.isArray(gristReferences)) {
+        strategyIds = gristReferences.map(ref => Array.isArray(ref) && ref[0] === 'L' ? ref[1] : ref).filter(id => id);
+      } else {
+        // Fallback: ID simple
+        strategyIds = [gristReferences];
+      }
+    } catch (e) {
+      console.warn('Erreur parsing références Grist:', e);
+      return;
+    }
+    
+    console.log('🔍 IDs extraits:', strategyIds);
+    
+    if (!Array.isArray(strategyIds) || strategyIds.length === 0) {
+      return;
+    }
+    
+    // Charger les stratégies correspondantes
+    if (this.kanban.strategiesData && this.kanban.strategiesData.length > 0) {
+      let strategiesFromDB = [];
+      
+      strategyIds.forEach(strategyId => {
+        const strategy = this.kanban.strategiesData.find(s => s.id == strategyId);
+        if (strategy) {
+          strategiesFromDB.push(strategy);
+          this.addStrategyToSelection(strategy);
+          this.preSelectStrategyInAccordion(strategy);
+        } else {
+          console.warn('Stratégie non trouvée pour ID:', strategyId);
+        }
+      });
+      
+      // Mettre à jour le cache
+      if (this.currentTaskId) {
+        this.strategiesCache.set(this.currentTaskId, [...strategiesFromDB]);
+        console.log(`💾 Cache mis à jour pour la tâche ${this.currentTaskId}:`, strategiesFromDB.length, 'stratégies');
+      }
+      
+      // Mettre à jour l'affichage
+      this.updateStrategyTags();
+      this.updateStrategyPreview();
+      this.updateStrategyIds();
+      
+      console.log('✅ Stratégies chargées depuis Grist:', strategiesFromDB.length);
     }
   }
   
@@ -649,8 +795,7 @@ export class ModalManager {
     setFieldValue('popup-strategie-objectif', '');
     setFieldValue('popup-strategie-sous-objectif', '');
     setFieldValue('popup-strategie-action', '');
-    setFieldValue('popup-strategie-id', '');
-    setFieldValue('popup-strategie-ids', ''); // Réinitialiser les stratégies multiples
+    setFieldValue('popup-strategie-id', ''); // Références multiples Grist
     
     // Réinitialiser l'interface accordéon
     document.querySelectorAll('.strategy-action.selected').forEach(el => {
@@ -710,6 +855,9 @@ export class ModalManager {
     if (this.kanban.jalonManager) {
       this.kanban.jalonManager.setCurrentTaskId(this.currentTaskId);
     }
+    
+    // Gérer le cache des stratégies pour cette tâche
+    this.setCurrentTaskStrategies(this.currentTaskId);
     
     // Afficher/masquer le bouton supprimer
     toggleVisibility('btn-delete-task', !this.isNewTask, 'inline-block');
@@ -858,14 +1006,12 @@ export class ModalManager {
     setFieldValue('popup-urgence', tache.urgence || '');
     setFieldValue('popup-impact', tache.impact || '');
     
-    // Stratégies depuis Grist - réinitialiser puis peupler si nécessaire
-    if (tache.strategie_ids) {
-      this.populateStrategyFieldsFromIds(tache.strategie_ids);
-    } else if (tache.strategie_id) {
-      // Fallback compatibilité ancien système
-      this.populateStrategyFieldsFromId(tache.strategie_id);
+    // Stratégies depuis Grist - gérer le format références multiples
+    if (tache.strategie_id) {
+      // Le champ strategie_id contient maintenant les références multiples
+      this.populateStrategyFieldsFromGristReferences(tache.strategie_id);
     } else {
-      // Seulement réinitialiser si pas de stratégies à charger
+      // Aucune stratégie - réinitialiser
       this.resetStrategySelection();
     }
     
@@ -1106,8 +1252,7 @@ export class ModalManager {
       impact: getFieldValue('popup-impact') || null,
       bureau: getSelectedOptionsAsGristFormat('popup-bureau'),
       qui: getSelectedOptionsAsGristFormat('popup-qui'),
-      strategie_ids: getFieldValue('popup-strategie-ids') || null,
-      strategie_id: getFieldValue('popup-strategie-id') || null, // Compatibilité
+      strategie_id: getFieldValue('popup-strategie-id') || null, // Références multiples Grist
       jalons: this.kanban.jalonManager ? this.kanban.jalonManager.getJalonsForSave() : null
     };
     
@@ -1120,8 +1265,7 @@ export class ModalManager {
     console.log('Impact:', data.impact);
     console.log('Bureau (raw):', data.bureau);
     console.log('Qui (raw):', data.qui);
-    console.log('Strategie_ids:', data.strategie_ids);
-    console.log('Strategie_id (compat):', data.strategie_id);
+    console.log('Strategie_id (références multiples):', data.strategie_id);
     
     // CHAMP DESCRIPTION SUPPRIMÉ - Tous les commentaires sont maintenant dans notes.history
     // Le champ de saisie popup-description sert uniquement pour les nouveaux commentaires
@@ -1181,13 +1325,8 @@ export class ModalManager {
       gristData.qui = ['L'];
     }
     
-    // Convertir strategie_id en nombre si nécessaire
-    console.log('Strategie_id avant traitement:', gristData.strategie_id, typeof gristData.strategie_id);
-    if (gristData.strategie_id && typeof gristData.strategie_id === 'string') {
-      const strategyId = parseInt(gristData.strategie_id);
-      gristData.strategie_id = isNaN(strategyId) ? null : strategyId;
-      console.log('Strategie_id après conversion:', gristData.strategie_id);
-    }
+    // Strategie_id doit rester au format références multiples (pas de conversion en nombre)
+    console.log('Strategie_id final:', gristData.strategie_id, typeof gristData.strategie_id);
     
     // Remove historique_statuts - it's a Date field, not JSON
     delete gristData.historique_statuts;
@@ -1240,11 +1379,22 @@ export class ModalManager {
       gristData.jalons = '{"jalons":[],"lastModified":0}'; // Valeur par défaut
     }
     
-    // TEMPORAIRE : Supprimer strategie_ids jusqu'à ce que la colonne soit créée
-    // TODO: Enlever cette ligne quand la colonne strategie_ids sera ajoutée à Grist
-    if (gristData.strategie_ids !== undefined) {
-      console.log('⚠️ Suppression temporaire du champ strategie_ids (colonne pas encore créée)');
-      delete gristData.strategie_ids;
+    // Conversion du format strategie_id si nécessaire pour les références multiples
+    if (gristData.strategie_id && typeof gristData.strategie_id === 'string') {
+      try {
+        // Vérifier si c'est déjà au format JSON Grist
+        const parsed = JSON.parse(gristData.strategie_id);
+        if (Array.isArray(parsed)) {
+          console.log('✅ Strategie_id au format références multiples:', parsed);
+        }
+      } catch (e) {
+        // Si c'est un nombre simple, le convertir au format références multiples
+        const strategyId = parseInt(gristData.strategie_id);
+        if (!isNaN(strategyId)) {
+          gristData.strategie_id = JSON.stringify([["L", strategyId]]);
+          console.log('🔄 Strategie_id converti au format références multiples:', gristData.strategie_id);
+        }
+      }
     }
     
     console.log('=== FINAL gristData pour envoi ===');
@@ -2305,7 +2455,7 @@ export class ModalManager {
     
     const relevantFields = [
       'titre', 'statut', 'projet', 'urgence', 'impact', 'bureau', 'qui', 
-      'strategie_ids', 'strategie_id', 'date_debut', 'date_echeance', 'jalons'
+      'strategie_id', 'date_debut', 'date_echeance', 'jalons'
     ];
     
     // Filtrer les champs exclus

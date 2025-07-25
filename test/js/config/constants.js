@@ -39,7 +39,7 @@ export const REQUIRED_COLUMNS = [
   // Removed: historique_statuts (Date field, not JSON)
 ];
 
-export const OPTIONAL_COLUMNS = ['date_debut', 'date_echeance', 'jalons', 'strategie_ids'];
+export const OPTIONAL_COLUMNS = ['date_debut', 'date_echeance', 'jalons'];
 
 // === CONSTANTES DE L'INTERFACE ===
 export const VIEW_MODES = {

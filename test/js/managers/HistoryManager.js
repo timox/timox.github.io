@@ -1552,53 +1552,92 @@ export class HistoryManager {
     
     widget.style.display = 'block';
     
-    // Focus avec scrollIntoView et gestion des z-index
+    // Gestion du focus améliorée et plus robuste
     setTimeout(() => {
       if (textArea) {
         console.log('🎯 Tentative de focus sur le textarea');
         
-        // S'assurer que l'élément est visible et accessible
-        textArea.style.pointerEvents = 'auto';
-        textArea.style.zIndex = '1070'; // Au-dessus des modales
-        
-        // Scroll vers l'élément si nécessaire
-        textArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        
-        // Force le focus avec les bonnes propriétés
+        // Nettoyer les attributs problématiques
         textArea.removeAttribute('readonly');
         textArea.removeAttribute('disabled');
-        textArea.focus();
+        textArea.disabled = false;
+        textArea.readOnly = false;
         
-        // Double vérification avec fallback
-        setTimeout(() => {
+        // S'assurer que l'élément est visible et accessible
+        textArea.style.pointerEvents = 'auto';
+        textArea.style.zIndex = '2000'; // Très au-dessus de tout
+        textArea.style.position = 'relative';
+        textArea.tabIndex = 0;
+        
+        // Forcer la visibilité du parent
+        const widget = textArea.closest('#accordion-comment-edit-widget');
+        if (widget) {
+          widget.style.zIndex = '1999';
+          widget.style.position = 'fixed';
+        }
+        
+        // Scroll vers l'élément avec plus d'agressivité
+        textArea.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center',
+          inline: 'center'
+        });
+        
+        // Stratégie multiple de focus
+        const attemptFocus = (attempt = 1) => {
+          console.log(`🎯 Tentative ${attempt} de focus`);
+          
+          // Méthode 1: Focus direct
+          textArea.focus();
+          
+          // Méthode 2: Clic programmatique si le focus direct échoue
           if (document.activeElement !== textArea) {
-            console.log('⚠️ Échec du focus, tentative forcée');
-            // Clic programmatique pour activer le focus
+            console.log(`⚠️ Focus direct échec, tentative clic (${attempt})`);
             textArea.click();
             textArea.focus();
-            
-            setTimeout(() => {
-              if (document.activeElement === textArea) {
-                console.log('✅ Focus réussi après tentative forcée !');
-                textArea.setSelectionRange(textArea.value.length, textArea.value.length);
-              } else {
-                console.error('❌ Focus impossible, élément actif:', document.activeElement);
-                console.log('Textarea properties:', {
-                  disabled: textArea.disabled,
-                  readOnly: textArea.readOnly,
-                  style: textArea.getAttribute('style'),
-                  pointerEvents: getComputedStyle(textArea).pointerEvents,
-                  zIndex: getComputedStyle(textArea).zIndex
-                });
-              }
-            }, 100);
-          } else {
-            console.log('✅ Focus réussi !');
-            textArea.setSelectionRange(textArea.value.length, textArea.value.length);
           }
-        }, 100);
+          
+          // Méthode 3: Sélection forcée
+          if (document.activeElement === textArea) {
+            console.log(`✅ Focus réussi à la tentative ${attempt} !`);
+            textArea.setSelectionRange(textArea.value.length, textArea.value.length);
+            return true;
+          }
+          
+          // Réessayer si ce n'est pas la dernière tentative
+          if (attempt < 5) {
+            setTimeout(() => attemptFocus(attempt + 1), 50);
+          } else {
+            console.log('❌ Focus définitivement échoué après 5 tentatives');
+            console.log('Active element:', document.activeElement);
+            console.log('TextArea properties:', {
+              disabled: textArea.disabled,
+              readOnly: textArea.readOnly,
+              tabIndex: textArea.tabIndex,
+              offsetWidth: textArea.offsetWidth,
+              offsetHeight: textArea.offsetHeight,
+              style: textArea.style.cssText
+            });
+            
+            // Dernier recours: forcer le curseur visuellement
+            textArea.style.border = '3px solid #ff6b6b';
+            textArea.style.boxShadow = '0 0 10px rgba(255, 107, 107, 0.5)';
+            
+            // Ajouter un message d'aide
+            const helpText = textArea.parentNode.querySelector('.focus-help');
+            if (!helpText) {
+              const help = document.createElement('div');
+              help.className = 'focus-help text-warning small mt-1';
+              help.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Cliquez dans la zone de texte pour éditer';
+              textArea.parentNode.appendChild(help);
+            }
+          }
+        };
+        
+        // Commencer les tentatives de focus
+        attemptFocus();
       }
-    }, 150);
+    }, 200);
   }
   
   /**

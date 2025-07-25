@@ -6,7 +6,8 @@ import { setFieldValue, getFieldValue } from '../utils/dom.js';
 export class JalonManager {
   constructor(kanban) {
     this.kanban = kanban;
-    this.jalons = [];
+    this.jalons = []; // Jalons de la tâche actuellement ouverte
+    this.jalonsCache = new Map(); // Cache des jalons par tâche ID
     this.currentEditingId = null;
     this.currentTaskId = null; // AJOUT: ID de la tâche en cours d'édition
     this.jalonModal = null;
@@ -27,10 +28,20 @@ export class JalonManager {
    * Définit l'ID de la tâche en cours d'édition
    */
   setCurrentTaskId(taskId) {
-    // Si on change de tâche, vider les jalons précédents
+    // Si on change de tâche, sauvegarder les jalons actuels et charger les nouveaux
     if (this.currentTaskId !== taskId) {
       console.log(`🔄 JalonManager: Changement de tâche ${this.currentTaskId} → ${taskId}`);
-      this.jalons = [];
+      
+      // Sauvegarder les jalons de la tâche précédente dans le cache
+      if (this.currentTaskId !== null && this.jalons.length > 0) {
+        this.jalonsCache.set(this.currentTaskId, [...this.jalons]);
+        console.log(`💾 Jalons de la tâche ${this.currentTaskId} sauvegardés:`, this.jalons.length);
+      }
+      
+      // Charger les jalons de la nouvelle tâche depuis le cache
+      this.jalons = this.jalonsCache.get(taskId) || [];
+      console.log(`📋 Jalons de la tâche ${taskId} chargés:`, this.jalons.length);
+      
       this.updateJalonsDisplay();
     }
     this.currentTaskId = taskId;
@@ -268,6 +279,12 @@ export class JalonManager {
       console.log('➕ Jalon ajouté:', jalonData.titre, `(Total: ${this.jalons.length})`);
     }
     
+    // Mettre à jour le cache si on a un ID de tâche
+    if (this.currentTaskId) {
+      this.jalonsCache.set(this.currentTaskId, [...this.jalons]);
+      console.log(`💾 Cache mis à jour pour la tâche ${this.currentTaskId}:`, this.jalons.length, 'jalons');
+    }
+    
     // Debugging approfondi
     console.log('🔍 État des jalons après ajout:');
     console.log('   - Nombre total:', this.jalons.length);
@@ -285,6 +302,12 @@ export class JalonManager {
     if (index !== -1) {
       this.jalons[index] = { ...this.jalons[index], ...jalonData };
       console.log('✏️ Jalon mis à jour:', jalonData);
+      
+      // Mettre à jour le cache
+      if (this.currentTaskId) {
+        this.jalonsCache.set(this.currentTaskId, [...this.jalons]);
+        console.log(`💾 Cache mis à jour après édition pour la tâche ${this.currentTaskId}`);
+      }
     }
   }
 
@@ -292,28 +315,61 @@ export class JalonManager {
    * Supprime un jalon
    */
   async deleteJalon(id) {
+    console.log('🗑️ deleteJalon appelé avec ID:', id);
+    
+    if (!id) {
+      console.error('❌ ID de jalon manquant pour la suppression');
+      return;
+    }
+    
     const index = this.jalons.findIndex(j => j.id === id);
+    console.log('📍 Index trouvé:', index, 'dans', this.jalons.length, 'jalons');
+    
     if (index !== -1) {
       const jalonData = this.jalons[index];
       const taskId = this.getCurrentTaskId();
       
-      this.jalons.splice(index, 1);
-      this.updateJalonsDisplay();
-      this.saveJalonsToForm();
+      console.log('📋 Suppression du jalon:', {
+        id: jalonData.id,
+        titre: jalonData.titre,
+        taskId: taskId
+      });
       
-      // Ajouter à l'historique
-      if (taskId && this.kanban.userActionManager) {
-        await this.kanban.userActionManager.addHistoryEntry(
-          taskId,
-          'jalon_supprime',
-          `Jalon supprimé: ${jalonData.titre} (${jalonData.date}) - Type: ${this.getJalonTypeLabel(jalonData.type)}`,
-          JSON.stringify(jalonData), // oldValue
-          '', // newValue
-          ''
-        );
+      try {
+        // Supprimer du tableau
+        this.jalons.splice(index, 1);
+        
+        // Mettre à jour le cache
+        if (this.currentTaskId) {
+          this.jalonsCache.set(this.currentTaskId, [...this.jalons]);
+          console.log(`💾 Cache mis à jour après suppression pour la tâche ${this.currentTaskId}`);
+        }
+        
+        // Mettre à jour l'affichage
+        this.updateJalonsDisplay();
+        this.saveJalonsToForm();
+        
+        // Ajouter à l'historique
+        if (taskId && this.kanban.userActionManager) {
+          await this.kanban.userActionManager.addHistoryEntry(
+            taskId,
+            'jalon_supprime',
+            `Jalon supprimé: ${jalonData.titre} (${jalonData.date}) - Type: ${this.getJalonTypeLabel(jalonData.type)}`,
+            JSON.stringify(jalonData), // oldValue
+            '', // newValue
+            ''
+          );
+        }
+        
+        console.log('✅ Jalon supprimé avec succès:', id);
+        
+      } catch (error) {
+        console.error('❌ Erreur lors de la suppression du jalon:', error);
+        throw error;
       }
-      
-      console.log('🗑️ Jalon supprimé:', id);
+    } else {
+      console.warn('⚠️ Jalon non trouvé pour suppression. ID:', id);
+      console.log('🔍 Jalons disponibles:', this.jalons.map(j => ({ id: j.id, titre: j.titre })));
     }
   }
 
@@ -489,9 +545,40 @@ export class JalonManager {
     // Boutons de suppression
     document.querySelectorAll('.btn-delete-jalon').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const jalonId = e.target.closest('[data-jalon-id]').dataset.jalonId;
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Rechercher l'ID de jalon de manière plus robuste
+        let jalonId;
+        
+        // Méthode 1: depuis le bouton lui-même
+        if (btn.dataset.jalonId) {
+          jalonId = btn.dataset.jalonId;
+        }
+        // Méthode 2: depuis le parent avec data-jalon-id
+        else {
+          const jalonElement = btn.closest('[data-jalon-id]');
+          if (jalonElement) {
+            jalonId = jalonElement.dataset.jalonId;
+          }
+        }
+        
+        if (!jalonId) {
+          console.error('❌ Impossible de trouver l\'ID du jalon à supprimer');
+          console.log('Bouton:', btn);
+          console.log('Event target:', e.target);
+          console.log('Closest data-jalon-id:', btn.closest('[data-jalon-id]'));
+          return;
+        }
+        
+        console.log('🗑️ Suppression du jalon ID:', jalonId);
+        
         if (confirm('Êtes-vous sûr de vouloir supprimer ce jalon ?')) {
-          this.deleteJalon(jalonId);
+          try {
+            this.deleteJalon(jalonId);
+          } catch (error) {
+            console.error('❌ Erreur lors de la suppression du jalon:', error);
+          }
         }
       });
     });
@@ -504,6 +591,13 @@ export class JalonManager {
     const jalon = this.jalons.find(j => j.id === jalonId);
     if (jalon) {
       jalon.statut = newStatus;
+      
+      // Mettre à jour le cache
+      if (this.currentTaskId) {
+        this.jalonsCache.set(this.currentTaskId, [...this.jalons]);
+        console.log(`💾 Cache mis à jour après changement de statut pour la tâche ${this.currentTaskId}`);
+      }
+      
       this.updateJalonsDisplay();
       this.saveJalonsToForm();
       console.log(`📊 Statut jalon ${jalonId} mis à jour: ${newStatus}`);
@@ -582,50 +676,63 @@ export class JalonManager {
    */
   loadJalonsFromTask(taskData) {
     try {
-      // Si taskData est null/undefined, vider les jalons
-      if (!taskData) {
+      // Extraire l'ID de la tâche
+      const taskId = taskData?.id || taskData?.id_task;
+      
+      // Si pas de taskData ou pas d'ID, réinitialiser
+      if (!taskData || !taskId) {
+        console.log('🔄 loadJalonsFromTask: Pas de taskData ou d\'ID, réinitialisation');
+        this.setCurrentTaskId(null);
         this.jalons = [];
         this.updateJalonsDisplay();
         this.saveJalonsToForm();
-        console.log('📋 TaskData null, jalons vidés');
         return;
       }
       
-      // Si taskData est un objet vide (nouvelle tâche), vider les jalons
-      if (Object.keys(taskData).length === 0) {
-        this.jalons = [];
-        this.updateJalonsDisplay();
-        this.saveJalonsToForm();
-        console.log('📋 Nouvelle tâche, jalons vidés');
+      // Définir la tâche courante (ceci gère automatiquement le cache)
+      this.setCurrentTaskId(taskId);
+      
+      // Si on a déjà des jalons en cache pour cette tâche, les utiliser
+      if (this.jalonsCache.has(taskId)) {
+        console.log(`💾 Jalons trouvés en cache pour la tâche ${taskId}`);
+        // Les jalons sont déjà chargés par setCurrentTaskId
         return;
       }
       
+      // Sinon, charger depuis les données de la tâche
       if (taskData.jalons) {
+        let jalonsFromDB = [];
+        
         if (typeof taskData.jalons === 'string') {
           const jalonsData = JSON.parse(taskData.jalons);
           // Nouveau format avec {jalons: [...]}
           if (jalonsData && jalonsData.jalons && Array.isArray(jalonsData.jalons)) {
-            this.jalons = [...jalonsData.jalons]; // Clone pour éviter les références
+            jalonsFromDB = [...jalonsData.jalons]; // Clone pour éviter les références
           }
           // Ancien format (array direct)
           else if (Array.isArray(jalonsData)) {
-            this.jalons = [...jalonsData]; // Clone pour éviter les références
-          } else {
-            this.jalons = [];
+            jalonsFromDB = [...jalonsData]; // Clone pour éviter les références
           }
         } else if (Array.isArray(taskData.jalons)) {
-          this.jalons = [...taskData.jalons]; // Clone pour éviter les références
-        } else {
-          this.jalons = [];
+          jalonsFromDB = [...taskData.jalons]; // Clone pour éviter les références
         }
+        
+        // Mettre à jour les jalons et le cache
+        this.jalons = jalonsFromDB;
+        this.jalonsCache.set(taskId, [...jalonsFromDB]);
+        
+        console.log(`📋 ${jalonsFromDB.length} jalons chargés depuis la DB pour la tâche ${taskId}`);
+        console.log('🔍 Détail des jalons chargés:', jalonsFromDB.map(j => ({ id: j.id, titre: j.titre, date: j.date })));
+        console.log(`💾 Cache mis à jour pour la tâche ${taskId}:`, this.jalonsCache.get(taskId)?.length || 0, 'jalons');
       } else {
+        // Pas de jalons dans la DB
         this.jalons = [];
+        this.jalonsCache.set(taskId, []);
+        console.log(`📋 Aucun jalon en DB pour la tâche ${taskId}`);
       }
       
       this.updateJalonsDisplay();
-      this.saveJalonsToForm(); // Synchroniser avec le formulaire
-      console.log(`📋 ${this.jalons.length} jalons chargés pour la tâche`);
-      console.log('🔍 Détail des jalons chargés:', this.jalons.map(j => ({ id: j.id, titre: j.titre, date: j.date })));
+      this.saveJalonsToForm();
       
     } catch (error) {
       console.error('Erreur lors du chargement des jalons:', error);
