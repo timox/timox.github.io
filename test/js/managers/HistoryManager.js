@@ -1703,15 +1703,40 @@ export class HistoryManager {
       // Extraire l'ID de la tâche - essayer plusieurs sources
       let taskId = this.currentTaskHistory?.id;
       
-      // Si pas trouvé dans currentTaskHistory, essayer le ModalManager
+      // Méthode 1: Depuis ModalManager
       if (!taskId && this.kanban?.modalManager?.currentTaskId) {
         taskId = this.kanban.modalManager.currentTaskId;
         console.log('📋 ID de tâche récupéré depuis ModalManager:', taskId);
       }
       
-      if (!taskId) {
-        throw new Error('ID de tâche non trouvé');
+      // Méthode 2: Depuis currentTaskHistory avec autres propriétés
+      if (!taskId && this.currentTaskHistory) {
+        taskId = this.currentTaskHistory.id_task || this.currentTaskHistory.taskId;
+        if (taskId) {
+          console.log('📋 ID de tâche récupéré depuis currentTaskHistory (id_task):', taskId);
+        }
       }
+      
+      // Méthode 3: Depuis l'URL ou contexte actuel
+      if (!taskId) {
+        // Essayer de récupérer depuis le DOM ou d'autres sources
+        const modalElement = document.getElementById('popup-tache');
+        if (modalElement && modalElement.dataset.taskId) {
+          taskId = modalElement.dataset.taskId;
+          console.log('📋 ID de tâche récupéré depuis DOM:', taskId);
+        }
+      }
+      
+      if (!taskId) {
+        console.error('❌ ID de tâche non trouvé. État debug:', {
+          currentTaskHistory: this.currentTaskHistory,
+          modalManagerTaskId: this.kanban?.modalManager?.currentTaskId,
+          modalManagerCurrent: this.kanban?.modalManager?.currentTask
+        });
+        throw new Error('ID de tâche non trouvé - impossible de sauvegarder le commentaire');
+      }
+      
+      console.log('✅ ID de tâche confirmé pour sauvegarde:', taskId);
       
       // Désactiver le bouton de sauvegarde et afficher un loader
       const saveBtn = document.getElementById('accordion-btn-save-comment-edit');

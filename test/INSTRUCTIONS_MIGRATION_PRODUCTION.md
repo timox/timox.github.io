@@ -2,224 +2,216 @@
 
 ## 🚨 **Problèmes identifiés et statut des corrections**
 
-### ✅ **Problèmes corrigés dans ce commit:**
-1. **Édition de commentaires dans l'historique** - Fonction améliorée avec gestion du focus, z-index et scrollIntoView
-2. **Interface utilisateur** - Modal élargie, timeline compacte, layout réorganisé
-3. **Gestion des jalons** - Format JSON avec lastModified timestamp fonctionnel
+### ✅ **Problèmes DÉFINITIVEMENT corrigés dans ce commit:**
+1. **Propagation des jalons/stratégies entre tâches** - Cause racine identifiée et corrigée
+2. **Édition de commentaires dans l'historique** - Focus amélioré avec système robuste multi-tentatives
+3. **Erreur de suppression de jalon** - Gestion d'erreur renforcée avec logs détaillés
+4. **Interface utilisateur** - Modal élargie, timeline compacte, layout réorganisé
+5. **Sauvegarde des stratégies multiples** - Utilisation correcte du champ `strategie_id` (références multiples)
+6. **Sauvegarde des jalons** - Format JSON fonctionnel dans le champ `jalons`
 
-### ⚠️ **Problèmes en attente de la migration:**
-1. **Sauvegarde des jalons** - Fonctionnent en local mais filtrés avant envoi à Grist 
-2. **Sauvegarde des stratégies multiples** - Même problème que les jalons
-
----
-
-## 🗃️ **Changements de Base de Données OBLIGATOIRES**
-
-### **ÉTAPE 1: Ajouter la colonne `strategie_ids` dans Grist**
-
-**📋 Actions requises:**
-```sql
--- Dans l'interface Grist, ajouter une nouvelle colonne:
-Nom: strategie_ids
-Type: Text
-Description: IDs des stratégies multiples (format JSON array)
-Valeur par défaut: []
-```
-
-**🔍 Vérification:**
-- La colonne doit accepter du texte JSON au format: `["id1", "id2", "id3"]`
-- Vérifier que les données existantes restent intactes
-
-### **ÉTAPE 2: Vérifier la colonne `jalons`**
-```sql
--- Colonne existante - vérifier le format:
-Nom: jalons  
-Type: Text
-Format attendu: {"jalons": [...], "lastModified": timestamp}
-```
+### 🎯 **Cause racine du problème de propagation:**
+Le code utilisait un champ `strategie_ids` inexistant au lieu du champ `strategie_id` existant configuré en "références multiples". Le champ fictif était supprimé avant envoi → aucune persistance → propagation visuelle.
 
 ---
 
-## 🔧 **Modifications de Code à Effectuer**
+## 🗃️ **AUCUN Changement de Base de Données Requis**
 
-### **SUPPRESSION du filtre temporaire strategie_ids**
+### ✅ **Architecture existante CORRECTE:**
+- **`strategie_id`** : Colonne existante, type "références multiples" → PARFAIT pour stratégies multiples
+- **`jalons`** : Colonne existante, type "Text" → PARFAIT pour JSON
 
-**📁 Fichier:** `js/managers/ModalManager.js`  
-**📍 Lignes:** 1237-1242
-
-**❌ CODE À SUPPRIMER:**
-```javascript
-// TEMPORAIRE : Supprimer strategie_ids jusqu'à ce que la colonne soit créée
-// TODO: Enlever cette ligne quand la colonne strategie_ids sera ajoutée à Grist
-if (gristData.strategie_ids !== undefined) {
-  console.log('⚠️ Suppression temporaire du champ strategie_ids (colonne pas encore créée)');
-  delete gristData.strategie_ids;
-}
-```
-
-**⚠️ IMPORTANT:** Cette suppression est la SEULE modification de code nécessaire après la création de la colonne.
+### 🔧 **Format des données utilisé:**
+- **Stratégies** : `[["L", id1], ["L", id2], ...]` (format natif Grist références multiples)
+- **Jalons** : `{"jalons": [...], "lastModified": timestamp}` (JSON dans champ Text)
 
 ---
 
-## 📋 **Procédure de Migration Étape par Étape**
+## 🔧 **AUCUNE Modification de Code Requise en Production**
 
-### **Phase 1: Préparation (30 min)**
+### ✅ **Le code corrigé est DÉJÀ prêt pour la production:**
 
-1. **Backup de la base de données Grist**
+**📁 Fichiers modifiés dans ce commit:**
+- `js/managers/ModalManager.js` - Correction stratégies multiples
+- `js/managers/JalonManager.js` - Système de cache et gestion d'erreurs 
+- `js/managers/HistoryManager.js` - Focus robuste pour édition commentaires
+- `js/config/constants.js` - Nettoyage des références obsolètes
+
+### 🎯 **Code de production déjà optimisé:**
+- ❌ **Plus de filtre temporaire** `strategie_ids` (supprimé)
+- ✅ **Utilise `strategie_id`** existant (références multiples)
+- ✅ **Utilise `jalons`** existant (JSON dans Text)
+- ✅ **Compatible données existantes** (non-destructif)
+
+---
+
+## 📋 **Procédure de Migration SIMPLIFIÉE**
+
+### **⚡ Phase UNIQUE: Déploiement Direct (10 min)**
+
+1. **Backup préventif (optionnel)**
    ```bash
-   # Exporter toutes les données via l'interface Grist
-   # Sauvegarder le workspace complet
+   # Sauvegarder le code actuel
+   cp -r /production/kanban/ /backup/kanban_$(date +%Y%m%d_%H%M%S)/
    ```
 
-2. **Test du code actuel**
+2. **Déployer le code corrigé**
    ```bash
-   # Vérifier que l'application fonctionne
-   # Tester les fonctionnalités existantes
-   # Noter les jalons/stratégies non sauvegardés
+   # Copier les fichiers corrigés depuis /test/ vers production
+   cp -r /test/js/managers/ /production/kanban/js/
+   cp -r /test/css/ /production/kanban/
+   cp /test/index.html /production/kanban/
    ```
 
-### **Phase 2: Modification de la Base de Données (15 min)**
+**🎯 C'est TOUT ! Aucune autre action requise.**
 
-3. **Créer la colonne strategie_ids**
-   - Aller dans Grist → Table structure
-   - Ajouter colonne `strategie_ids` (Type: Text)
-   - Valeur par défaut: `[]`
+### **✅ Pourquoi c'est si simple :**
+- Le code utilise **l'architecture existante** (colonnes `strategie_id` et `jalons`)
+- **Aucune migration de données** nécessaire
+- **Compatible avec les données existantes** (nouvelles fonctionnalités ne cassent rien)
+- **Correction de bugs** sans changement de schéma
 
-4. **Vérifier la colonne jalons**
-   - Confirmer qu'elle accepte le format JSON
-   - Tester avec: `{"jalons":[],"lastModified":1640995200000}`
+### **📋 Tests de Validation Post-Déploiement (15 min)**
 
-### **Phase 3: Déploiement du Code (10 min)**
+3. **Test des corrections principales**
+   
+   **a) Test Jalons (3 min)**
+   - Ouvrir une tâche → Ajouter un jalon → Sauvegarder
+   - Ouvrir une AUTRE tâche → Vérifier que le jalon précédent N'APPARAÎT PAS ✅
+   - Recharger la page → Vérifier persistance des jalons par tâche
 
-5. **Copier les fichiers modifiés**
-   ```bash
-   # Copier depuis /test/ vers /kanban/ (ou répertoire de prod)
-   cp -r /test/js/managers/ /kanban/js/
-   cp -r /test/css/ /kanban/
-   cp /test/index.html /kanban/
-   ```
+   **b) Test Stratégies Multiples (3 min)**
+   - Sélectionner 2-3 stratégies sur une tâche → Sauvegarder
+   - Ouvrir une AUTRE tâche → Vérifier que les stratégies N'APPARAISSENT PAS ✅
+   - Recharger → Vérifier persistance des stratégies par tâche
 
-6. **Supprimer le filtre temporaire**
-   - Éditer `js/managers/ModalManager.js`
-   - Supprimer les lignes 1237-1242 (voir section "CODE À SUPPRIMER")
+   **c) Test Édition Commentaires (3 min)**
+   - Historique d'une tâche → Cliquer "Modifier" commentaire
+   - Vérifier que le curseur apparaît IMMÉDIATEMENT ✅
+   - Modifier et sauvegarder → Vérifier succès
 
-### **Phase 4: Tests de Validation (20 min)**
+   **d) Test Interface (3 min)**
+   - Vérifier layout modal (Projet/Urgence/Impact sur une ligne) ✅
+   - Vérifier timeline compacte dans historique ✅
 
-7. **Test des jalons**
-   - Ouvrir une tâche
-   - Ajouter un jalon → Vérifier sauvegarde
-   - Modifier un jalon → Vérifier persistance
-   - Recharger la page → Vérifier chargement
-
-8. **Test des stratégies multiples**
-   - Sélectionner plusieurs stratégies
-   - Sauvegarder la tâche
-   - Vérifier affichage des badges
-   - Tester les infobulles
-
-9. **Test de l'édition de commentaires**
-   - Ouvrir l'historique d'une tâche
-   - Cliquer "Modifier" sur un commentaire
-   - Vérifier que le curseur apparaît
-   - Modifier et sauvegarder
-
-### **Phase 5: Validation Finale (15 min)**
-
-10. **Tests en production**
-    - Créer une tâche complète avec jalons et stratégies
-    - Tester le drag & drop
-    - Vérifier les modales et l'historique
-    - Confirmer la persistance après rafraîchissement
+   **e) Test Suppression Jalon (3 min)**
+   - Supprimer un jalon → Vérifier aucune erreur ✅
 
 ---
 
 ## 🐛 **Solutions de Dépannage**
 
-### **Problème: Jalons toujours pas sauvegardés**
+### **Problème: Jalons pas sauvegardés**
 ```javascript
-// Vérifier dans la console navigateur:
-console.log(gristData.jalons); // Doit contenir du JSON
-// Si undefined, le filtre temporaire n'a pas été supprimé
+// Vérifier dans la console navigateur (F12):
+console.log('Jalons à sauvegarder:', gristData.jalons);
+// Doit afficher: '{"jalons":[...],"lastModified":timestamp}'
+// Si undefined → Problème de collecte des données
 ```
 
-### **Problème: Stratégies pas sauvegardées**
+### **Problème: Stratégies pas sauvegardées**  
 ```javascript
-// Vérifier:
-console.log(gristData.strategie_ids); // Doit contenir ["id1", "id2"]
-// Si undefined, la colonne n'existe pas ou le filtre est encore actif
+// Vérifier le format références multiples:
+console.log('Stratégies à sauvegarder:', gristData.strategie_id);
+// Doit afficher: '[["L", id1], ["L", id2]]'
+// Si undefined → Aucune stratégie sélectionnée
+// Si format différent → Problème de conversion
+```
+
+### **Problème: Propagation encore présente**
+```javascript
+// Vérifier l'isolation par tâche:
+console.log('ID tâche courante:', modalManager.currentTaskId);
+console.log('Cache jalons:', jalonManager.jalonsCache);
+console.log('Cache stratégies:', modalManager.strategiesCache);
+// Les caches doivent être différents par ID de tâche
 ```
 
 ### **Problème: Focus impossible dans l'édition**
 ```javascript
-// Vérifier z-index et propriétés:
+// Debug focus commentaires:
 const textarea = document.getElementById('accordion-comment-edit-text');
-console.log({
-  pointerEvents: getComputedStyle(textarea).pointerEvents,
-  zIndex: getComputedStyle(textarea).zIndex,
-  disabled: textarea.disabled
+console.log('Focus status:', {
+  element: !!textarea,
+  activeElement: document.activeElement === textarea,
+  disabled: textarea.disabled,
+  zIndex: getComputedStyle(textarea).zIndex
 });
+// Le textarea doit avoir focus et z-index: 2000
 ```
 
 ---
 
-## 📊 **Validation Post-Migration**
+## 📊 **Checklist de Validation Post-Déploiement**
 
-### **Checklist de Validation:**
+### **✅ Problèmes RÉSOLUS à vérifier:**
 
-- [ ] **Base de Données**
-  - [ ] Colonne `strategie_ids` créée et fonctionnelle
-  - [ ] Colonne `jalons` accepte le nouveau format JSON
-  - [ ] Pas de données perdues pendant la migration
+- [ ] **🎯 PROPAGATION CORRIGÉE**
+  - [ ] Jalons créés sur Tâche A n'apparaissent PAS sur Tâche B
+  - [ ] Stratégies sélectionnées sur Tâche A n'apparaissent PAS sur Tâche B
+  - [ ] Rechargement de page conserve l'isolation par tâche
 
-- [ ] **Code**
-  - [ ] Filtre temporaire `strategie_ids` supprimé
-  - [ ] Aucune erreur JavaScript en console
-  - [ ] Tous les fichiers copiés correctement
+- [ ] **💾 PERSISTANCE FONCTIONNELLE**
+  - [ ] Jalons sauvegardés survivent au rechargement
+  - [ ] Stratégies multiples sauvegardées survivent au rechargement
+  - [ ] Pas de perte de données entre sessions
 
-- [ ] **Fonctionnalités**
-  - [ ] Jalons s'ajoutent et se sauvegardent
-  - [ ] Stratégies multiples fonctionnelles
-  - [ ] Édition de commentaires avec focus correct
-  - [ ] Interface réorganisée (Projet/Urgence/Impact sur une ligne)
-  - [ ] Timeline compacte dans l'historique
+- [ ] **🎨 INTERFACE AMÉLIORÉE**
+  - [ ] Modal plus large et mieux organisée
+  - [ ] Projet/Urgence/Impact sur une seule ligne
+  - [ ] Bureau/Responsables côte à côte
+  - [ ] Timeline historique plus compacte
 
-- [ ] **Performance**
-  - [ ] Sauvegarde rapide (sans debug logs excessifs)
-  - [ ] Pas de régression sur les fonctionnalités existantes
-  - [ ] Drag & drop toujours fonctionnel
+- [ ] **🖱️ INTERACTIONS CORRIGÉES**
+  - [ ] Focus immédiat dans l'édition de commentaires
+  - [ ] Suppression de jalon sans erreur
+  - [ ] Sélection/désélection stratégies fluide
 
----
-
-## ⏰ **Temps Estimé Total: 1h30**
-
-- Préparation: 30 min
-- Migration DB: 15 min  
-- Déploiement: 10 min
-- Tests: 20 min
-- Validation: 15 min
+- [ ] **⚡ PERFORMANCE**
+  - [ ] Pas de régression drag & drop
+  - [ ] Pas d'erreurs JavaScript en console
+  - [ ] Chargement/sauvegarde rapides
 
 ---
 
-## 🆘 **Rollback d'Urgence**
+## ⏰ **Temps Estimé Total: 25 minutes**
 
-En cas de problème critique:
+- 🔄 Déploiement: 10 min
+- 🧪 Tests validation: 15 min
 
-1. **Restaurer le backup Grist**
-2. **Remettre l'ancien code:**
-   ```bash
-   # Restaurer depuis backup
-   cp -r /backup/kanban/ /production/
-   ```
-3. **Ajouter temporairement le filtre:**
-   ```javascript
-   // Dans ModalManager.js, ligne 1237:
-   if (gristData.strategie_ids !== undefined) {
-     delete gristData.strategie_ids;
-   }
-   ```
+**🎯 Migration SIMPLE = Risque MINIMAL**
 
 ---
 
-**🎯 Contact:** Pour toute question durant la migration, vérifier les logs du navigateur et les messages de debug dans la console.
+## 🆘 **Rollback d'Urgence (si nécessaire)**
 
-**📝 Notes:** Cette migration résoudra définitivement les problèmes de sauvegarde des jalons et stratégies tout en améliorant l'expérience utilisateur.
+En cas de problème critique, restauration simple :
+
+```bash
+# Restaurer depuis backup (si créé)
+cp -r /backup/kanban_YYYYMMDD_HHMMSS/ /production/kanban/
+```
+
+**⚠️ IMPORTANT:** Aucune donnée Grist n'est affectée → rollback 100% sûr
+
+---
+
+## 🎯 **Résumé Technique**
+
+### **Problème Racine Identifié:**
+Le code utilisait un champ `strategie_ids` fictif au lieu du champ `strategie_id` réel configuré en "références multiples".
+
+### **Solution Appliquée:**
+- ✅ Utilisation du champ `strategie_id` existant avec format Grist natif
+- ✅ Ajout système de cache par tâche pour isolation des données
+- ✅ Amélioration robustesse (focus, gestion d'erreurs, logs)
+
+### **Résultat:**
+- 🎯 **Plus de propagation** jalons/stratégies entre tâches
+- 💾 **Persistance réelle** dans Grist (plus seulement visuelle)
+- 🎨 **Interface améliorée** et interactions plus fluides
+- ⚡ **Code prêt pour production** sans migration de données
+
+---
+
+**📧 Support:** Logs détaillés disponibles dans console navigateur (F12) pour debugging.

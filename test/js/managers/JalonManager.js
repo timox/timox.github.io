@@ -534,10 +534,43 @@ export class JalonManager {
     // Boutons d'édition
     document.querySelectorAll('.btn-edit-jalon').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const jalonId = e.target.closest('[data-jalon-id]').dataset.jalonId;
-        const jalon = this.jalons.find(j => j.id === jalonId);
-        if (jalon) {
-          this.openJalonModal(jalon);
+        e.preventDefault();
+        e.stopPropagation();
+        
+        try {
+          // Rechercher l'ID de jalon de manière plus robuste
+          let jalonId;
+          
+          // Méthode 1: depuis le bouton lui-même
+          if (btn.dataset.jalonId) {
+            jalonId = btn.dataset.jalonId;
+          }
+          // Méthode 2: depuis le parent avec data-jalon-id
+          else {
+            const jalonElement = btn.closest('[data-jalon-id]');
+            if (jalonElement) {
+              jalonId = jalonElement.dataset.jalonId;
+            }
+          }
+          
+          if (!jalonId) {
+            console.error('❌ Impossible de trouver l\'ID du jalon à éditer');
+            console.log('Bouton:', btn);
+            console.log('Event target:', e.target);
+            return;
+          }
+          
+          console.log('✏️ Édition du jalon ID:', jalonId);
+          
+          const jalon = this.jalons.find(j => j.id === jalonId);
+          if (jalon) {
+            this.openJalonModal(jalon);
+          } else {
+            console.error('❌ Jalon non trouvé pour édition. ID:', jalonId);
+            console.log('🔍 Jalons disponibles:', this.jalons.map(j => ({ id: j.id, titre: j.titre })));
+          }
+        } catch (error) {
+          console.error('❌ Erreur lors de l\'édition du jalon:', error);
         }
       });
     });
@@ -746,9 +779,17 @@ export class JalonManager {
    * Sauvegarde les jalons dans le champ caché du formulaire
    */
   saveJalonsToForm() {
+    // Ne sauvegarder que si on a des jalons ou si c'est explicite
+    if (this.jalons.length === 0) {
+      // Éviter de sauvegarder un JSON vide inutile
+      setFieldValue('popup-jalons', '');
+      console.log('💾 Aucun jalon à sauvegarder - champ vidé');
+      return;
+    }
+    
     const jalonsData = {
       jalons: this.jalons,
-      lastModified: Date.now()
+      lastModified: new Date().toISOString() // Format ISO plus lisible
     };
     const jsonString = JSON.stringify(jalonsData);
     
@@ -768,10 +809,16 @@ export class JalonManager {
    * Récupère les jalons depuis le formulaire pour sauvegarde
    */
   getJalonsForSave() {
+    // Si pas de jalons, retourner null pour éviter de polluer la DB
+    if (!this.jalons || this.jalons.length === 0) {
+      console.log('🔍 JalonManager.getJalonsForSave() - Aucun jalon à sauvegarder');
+      return null;
+    }
+    
     // Utiliser directement les jalons en mémoire qui sont à jour
     const jalonsData = {
-      jalons: this.jalons || [],
-      lastModified: Date.now()
+      jalons: this.jalons,
+      lastModified: new Date().toISOString() // Format ISO plus lisible
     };
     
     console.log('🔍 JalonManager.getJalonsForSave() - Jalons actuels:', this.jalons.length);

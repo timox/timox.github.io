@@ -848,16 +848,16 @@ export class ModalManager {
         : '<i class="bi bi-pencil-square me-2"></i>Modifier Tâche';
     }
     
-    // Peupler les champs
-    this.populateTaskForm(task);
+    // Gérer le cache des stratégies AVANT de peupler les champs
+    this.setCurrentTaskStrategies(this.currentTaskId);
     
     // Informer le JalonManager de la tâche en cours
     if (this.kanban.jalonManager) {
       this.kanban.jalonManager.setCurrentTaskId(this.currentTaskId);
     }
     
-    // Gérer le cache des stratégies pour cette tâche
-    this.setCurrentTaskStrategies(this.currentTaskId);
+    // Peupler les champs APRÈS avoir configuré les caches
+    this.populateTaskForm(task);
     
     // Afficher/masquer le bouton supprimer
     toggleVisibility('btn-delete-task', !this.isNewTask, 'inline-block');
