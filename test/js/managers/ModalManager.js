@@ -837,10 +837,6 @@ export class ModalManager {
     
     console.log('Final state - isNewTask:', this.isNewTask, 'currentTaskId:', this.currentTaskId);
     
-    // RÉINITIALISATION COMPLÈTE avant de charger les nouvelles données
-    // Réinitialiser jalons dans le formulaire (au cas où)
-    setFieldValue('popup-jalons', '{"jalons":[],"lastModified":0}');
-    
     // Champs de base
     setFieldValue('popup-titre', tache.titre || '');
     
@@ -862,13 +858,15 @@ export class ModalManager {
     setFieldValue('popup-urgence', tache.urgence || '');
     setFieldValue('popup-impact', tache.impact || '');
     
-    // Stratégies depuis Grist - TOUJOURS réinitialiser d'abord
-    this.resetStrategySelection();
+    // Stratégies depuis Grist - réinitialiser puis peupler si nécessaire
     if (tache.strategie_ids) {
       this.populateStrategyFieldsFromIds(tache.strategie_ids);
     } else if (tache.strategie_id) {
       // Fallback compatibilité ancien système
       this.populateStrategyFieldsFromId(tache.strategie_id);
+    } else {
+      // Seulement réinitialiser si pas de stratégies à charger
+      this.resetStrategySelection();
     }
     
     // Bureaux et responsables (selects multiples)
@@ -881,6 +879,8 @@ export class ModalManager {
     
     // Charger les jalons si disponibles
     if (this.kanban.jalonManager) {
+      console.log('🔍 DEBUG jalons - tache.jalons:', tache.jalons);
+      console.log('🔍 DEBUG jalons - type:', typeof tache.jalons);
       this.kanban.jalonManager.loadJalonsFromTask(tache);
     }
     
