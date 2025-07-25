@@ -3,7 +3,7 @@
 
 import { normalizeDate, prepareDateForGrist } from '../utils/dates.js';
 import { setFieldValue, getFieldValue, toggleVisibility } from '../utils/dom.js';
-import { LoggerManager } from '../utils/LoggerManager.js';
+import { createModuleLogger } from '../utils/LoggerManager.js';
 
 /**
  * Gestionnaire pour le sélecteur de dates et la gestion des échéances
@@ -11,7 +11,7 @@ import { LoggerManager } from '../utils/LoggerManager.js';
 export class DatePickerManager {
   constructor(kanbanManager) {
     this.kanban = kanbanManager;
-    this.logger = LoggerManager.getInstance();
+    this.logger = createModuleLogger('DatePickerManager');
     this.flatpickrInstance = null;
     this.currentDate = null;
     

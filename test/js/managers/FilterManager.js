@@ -2,7 +2,7 @@
 // Gestionnaire pour les filtres, la recherche et les modes de vue (VERSION CORRIGÉE)
 
 import { getFieldValue, setFieldValue, debounce } from '../utils/dom.js';
-import { LoggerManager } from '../utils/LoggerManager.js';
+import { createModuleLogger } from '../utils/LoggerManager.js';
 
 /**
  * Gestionnaire pour les filtres et la recherche du Kanban
@@ -10,7 +10,7 @@ import { LoggerManager } from '../utils/LoggerManager.js';
 export class FilterManager {
   constructor(kanbanManager) {
     this.kanban = kanbanManager;
-    this.logger = LoggerManager.getInstance();
+    this.logger = createModuleLogger('FilterManager');
     
     // État des filtres
     this.filters = {

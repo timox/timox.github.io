@@ -17,7 +17,7 @@ import {
 
 import { TABLE_ID } from '../config/constants.js';
 import { getUserActionManager } from '../utils/UserActionManager.js';
-import { LoggerManager } from '../utils/LoggerManager.js';
+import { createModuleLogger } from '../utils/LoggerManager.js';
 
 /**
  * Gestionnaire pour les modales et formulaires
@@ -25,7 +25,7 @@ import { LoggerManager } from '../utils/LoggerManager.js';
 export class ModalManager {
   constructor(kanbanManager) {
     this.kanban = kanbanManager;
-    this.logger = LoggerManager.getInstance();
+    this.logger = createModuleLogger('ModalManager');
     this.taskModal = null;
     this.historyModal = null;
     this.currentTaskId = null;
