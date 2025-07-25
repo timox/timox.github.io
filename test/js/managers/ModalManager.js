@@ -32,6 +32,9 @@ export class ModalManager {
     this.currentTask = null;
     this.isNewTask = false;
     
+    // Approche stateless - pas de cache, reset complet à chaque tâche
+    this.selectedStrategies = [];
+    
     this.init();
   }
   
@@ -340,11 +343,7 @@ export class ModalManager {
     if (!this.selectedStrategies.find(s => s.id === strategy.id)) {
       this.selectedStrategies.push(strategy);
       
-      // Mettre à jour le cache si on a un ID de tâche
-      if (this.currentTaskId) {
-        this.strategiesCache.set(this.currentTaskId, [...this.selectedStrategies]);
-        this.logger.debug(`Strategy cache updated after addition for task ${this.currentTaskId}`);
-      }
+      // Plus de cache - approche stateless
     }
   }
   
@@ -354,11 +353,7 @@ export class ModalManager {
   removeStrategyFromSelection(strategyId) {
     this.selectedStrategies = this.selectedStrategies.filter(s => s.id !== strategyId);
     
-    // Mettre à jour le cache
-    if (this.currentTaskId) {
-      this.strategiesCache.set(this.currentTaskId, [...this.selectedStrategies]);
-      this.logger.debug(`Strategy cache updated after removal for task ${this.currentTaskId}`);
-    }
+    // Plus de cache - approche stateless
     
     // Mettre à jour l'état visuel de la carte correspondante
     const actionCard = document.querySelector(`[data-strategy-id="${strategyId}"]`);
@@ -463,11 +458,7 @@ export class ModalManager {
     // Vider la collection
     this.selectedStrategies = [];
     
-    // Mettre à jour le cache
-    if (this.currentTaskId) {
-      this.strategiesCache.set(this.currentTaskId, []);
-      this.logger.debug(`Strategy cache cleared for task ${this.currentTaskId}`);
-    }
+    // Plus de cache - approche stateless
     
     // Mettre à jour l'interface
     document.querySelectorAll('.strategy-action.selected').forEach(el => {
@@ -619,15 +610,8 @@ export class ModalManager {
   populateStrategyFieldsFromGristReferences(gristReferences) {
     this.logger.debug(`Loading strategies from Grist: ${gristReferences?.length || 0} references`);
     
-    // Si on a déjà des stratégies en cache pour cette tâche, les utiliser
-    if (this.currentTaskId && this.strategiesCache.has(this.currentTaskId)) {
-      this.logger.debug(`Strategies found in cache for task ${this.currentTaskId}`);
-      this.updateStrategyTags();
-      this.updateStrategyPreview();
-      this.updateStrategyIds();
-      return;
-    }
-    
+    // Reset complet des stratégies à chaque tâche (approche stateless)
+    this.selectedStrategies = [];
     this.resetStrategySelection();
     
     if (!gristReferences) {
@@ -675,11 +659,7 @@ export class ModalManager {
         }
       });
       
-      // Mettre à jour le cache
-      if (this.currentTaskId) {
-        this.strategiesCache.set(this.currentTaskId, [...strategiesFromDB]);
-        this.logger.debug(`Strategy cache updated for task ${this.currentTaskId}: ${strategiesFromDB.length} strategies`);
-      }
+      // Plus de cache - approche stateless
       
       // Mettre à jour l'affichage
       this.updateStrategyTags();

@@ -343,6 +343,10 @@ export class JalonManager {
       return;
     }
     
+    this.logger.debug('Tentative suppression jalon ID:', id);
+    this.logger.debug('Jalons actuels:', this.jalons.map(j => ({ id: j.id, titre: j.titre })));
+    this.logger.debug('CurrentTaskId:', this.currentTaskId);
+    
     const index = this.jalons.findIndex(j => j.id === id);
     
     if (index !== -1) {
@@ -385,6 +389,21 @@ export class JalonManager {
       }
     } else {
       this.logger.warn('Jalon non trouvé pour suppression. ID:', id);
+      this.logger.debug('IDs disponibles:', this.jalons.map(j => j.id));
+      this.logger.debug('Types des IDs:', this.jalons.map(j => typeof j.id));
+      this.logger.debug('ID recherché type:', typeof id);
+      
+      // Essayer de trouver avec conversion de type
+      const altIndex = this.jalons.findIndex(j => String(j.id) === String(id));
+      if (altIndex !== -1) {
+        this.logger.warn('Jalon trouvé avec conversion de type, suppression...');
+        const jalonData = this.jalons[altIndex];
+        this.jalons.splice(altIndex, 1);
+        this.updateJalonsDisplay();
+        this.saveJalonsToForm();
+        this.logger.debug('✅ Jalon supprimé avec conversion de type');
+        return;
+      }
     }
   }
 
