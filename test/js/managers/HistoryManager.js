@@ -1167,12 +1167,15 @@ export class HistoryManager {
       }
     }, 100);
     
-    // Fermer avec Escape
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && this.isCommentEditOpen()) {
-        this.closeCommentEditWidget();
-      }
-    });
+    // Fermer avec Escape (éviter les listeners multiples)
+    if (!this.escapeListenerAdded) {
+      this.escapeListenerAdded = true;
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && this.isCommentEditOpen()) {
+          this.closeCommentEditWidget();
+        }
+      });
+    }
   }
   
   /**
@@ -1436,6 +1439,10 @@ export class HistoryManager {
       return;
     }
     
+    // Sauvegarder l'ID du commentaire dans le widget pour récupération
+    widget.dataset.commentId = commentId;
+    textArea.setAttribute('data-original', originalContent);
+    
     widget.style.display = 'block';
     
     // Focus direct, point final
@@ -1477,15 +1484,40 @@ export class HistoryManager {
     this.logger.info('saveCommentEdit appelé');
     this.logger.debug('currentEditingComment:', this.currentEditingComment);
     
+    // Si pas de commentaire en cours, essayer de récupérer depuis le widget ouvert
     if (!this.currentEditingComment) {
-      this.logger.error('Aucun commentaire en cours d\'édition');
-      this.logger.debug('État du widget:', {
-        widgetVisible: document.getElementById('accordion-comment-edit-widget')?.style.display,
-        textareaValue: document.getElementById('accordion-comment-edit-text')?.value,
-        dateText: document.getElementById('accordion-comment-edit-date')?.textContent
-      });
-      displayError('Erreur: Aucun commentaire sélectionné pour édition');
-      return;
+      const widget = document.getElementById('accordion-comment-edit-widget');
+      const textArea = document.getElementById('accordion-comment-edit-text');
+      const dateSpan = document.getElementById('accordion-comment-edit-date');
+      
+      if (widget && widget.style.display === 'block' && textArea && textArea.value) {
+        // Recréer l'objet depuis les données du widget
+        this.logger.warn('Tentative de récupération du commentaire depuis le widget');
+        
+        // Essayer de récupérer l'ID depuis les données du widget
+        const commentId = widget.dataset.commentId || textArea.dataset.commentId;
+        if (commentId) {
+          this.currentEditingComment = {
+            id: commentId,
+            originalContent: textArea.defaultValue || textArea.getAttribute('data-original'),
+            element: null // On n'a plus la référence de l'élément
+          };
+          this.logger.info('Commentaire récupéré avec succès');
+        } else {
+          this.logger.error('Impossible de récupérer l\'ID du commentaire');
+          displayError('Erreur: Session d\'édition expirée. Veuillez réessayer.');
+          return;
+        }
+      } else {
+        this.logger.error('Aucun commentaire en cours d\'édition');
+        this.logger.debug('État du widget:', {
+          widgetVisible: widget?.style.display,
+          textareaValue: textArea?.value,
+          dateText: dateSpan?.textContent
+        });
+        displayError('Erreur: Aucun commentaire sélectionné pour édition');
+        return;
+      }
     }
     
     const newContent = document.getElementById('accordion-comment-edit-text').value.trim();

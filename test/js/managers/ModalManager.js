@@ -2114,6 +2114,11 @@ export class ModalManager {
       this.kanban.datePickerManager.reset();
     }
     
+    // Reset jalons pour nouvelle tâche
+    if (this.kanban.jalonManager) {
+      this.kanban.jalonManager.clearJalonsForNewTask();
+    }
+    
     // Reset jalons
     if (this.kanban.jalonManager) {
       this.kanban.jalonManager.jalons = [];

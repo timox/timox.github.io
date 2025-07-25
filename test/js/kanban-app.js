@@ -2384,8 +2384,13 @@ class KanbanManager {
 }
 
 // === INITIALISATION ===
-// SUPPRIMÉ: Double initialisation avec app-initializer.js
-// L'initialisation est gérée par app-initializer.js via DOMContentLoaded
+// Créer l'instance globale pour app-initializer.js
+document.addEventListener('DOMContentLoaded', () => {
+  if (!window.kanbanManager) {
+    console.log('🚀 Initialisation KanbanManager...');
+    window.kanbanManager = new KanbanManager();
+  }
+});
 
 // === EXPORT POUR UTILISATION EXTERNE ===
 export { KanbanManager };

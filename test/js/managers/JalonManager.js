@@ -85,6 +85,32 @@ export class JalonManager {
     document.getElementById('jalonModal').addEventListener('hidden.bs.modal', () => {
       this.resetJalonForm();
     });
+
+    // Délégation d'événements pour les boutons de suppression (éléments dynamiques)
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('.btn-delete-jalon')) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const btn = e.target.closest('.btn-delete-jalon');
+        const jalonId = btn.dataset.jalonId;
+        
+        if (!jalonId) {
+          this.logger.error('ID de jalon manquant pour la suppression');
+          return;
+        }
+        
+        this.logger.debug('Suppression du jalon ID:', jalonId);
+        
+        if (confirm('Êtes-vous sûr de vouloir supprimer ce jalon ?')) {
+          try {
+            this.deleteJalon(jalonId);
+          } catch (error) {
+            this.logger.error('Erreur lors de la suppression du jalon:', error);
+          }
+        }
+      }
+    });
   }
 
   /**
@@ -561,43 +587,7 @@ export class JalonManager {
       });
     });
 
-    // Boutons de suppression
-    document.querySelectorAll('.btn-delete-jalon').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        // Rechercher l'ID de jalon de manière plus robuste
-        let jalonId;
-        
-        // Méthode 1: depuis le bouton lui-même
-        if (btn.dataset.jalonId) {
-          jalonId = btn.dataset.jalonId;
-        }
-        // Méthode 2: depuis le parent avec data-jalon-id
-        else {
-          const jalonElement = btn.closest('[data-jalon-id]');
-          if (jalonElement) {
-            jalonId = jalonElement.dataset.jalonId;
-          }
-        }
-        
-        if (!jalonId) {
-          this.logger.error('Impossible de trouver l\'ID du jalon à supprimer');
-          return;
-        }
-        
-        this.logger.debug('Suppression du jalon ID:', jalonId);
-        
-        if (confirm('Êtes-vous sûr de vouloir supprimer ce jalon ?')) {
-          try {
-            this.deleteJalon(jalonId);
-          } catch (error) {
-            this.logger.error('Erreur lors de la suppression du jalon:', error);
-          }
-        }
-      });
-    });
+    // Event listeners pour suppression gérés par délégation dans setupEventListeners()
   }
 
   /**
@@ -674,6 +664,16 @@ export class JalonManager {
     document.getElementById('jalon-criteres').value = '';
     document.getElementById('jalon-format').value = '';
     document.getElementById('jalon-destinataire').value = '';
+  }
+
+  /**
+   * Vide les jalons pour une nouvelle tâche
+   */
+  clearJalonsForNewTask() {
+    this.logger.debug('Clearing jalons for new task');
+    this.jalons = [];
+    this.currentTaskId = null;
+    this.updateJalonsDisplay();
 
     // Désélectionner les types
     document.querySelectorAll('.jalon-type-card').forEach(card => {

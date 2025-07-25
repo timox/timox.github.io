@@ -424,6 +424,13 @@ export class CardRenderer {
       
       // Support clavier
       zone.addEventListener('keydown', (e) => {
+        // Ignorer si on est dans un champ de saisie ou modal ouverte
+        if (e.target.matches('input, textarea, select') || 
+            document.querySelector('.modal.show') ||
+            document.querySelector('#accordion-comment-edit-widget[style*="block"]')) {
+          return;
+        }
+        
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           zone.click();
