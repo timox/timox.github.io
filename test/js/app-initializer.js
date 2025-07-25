@@ -630,7 +630,11 @@ export class KanbanAppInitializer {
    */
   autoSave() {
     try {
-      const state = this.components.kanbanManager.exportFullState();
+      // Utiliser les données existantes au lieu d'une méthode inexistante
+      const state = {
+        records: this.components.kanbanManager.currentRecords || [],
+        timestamp: Date.now()
+      };
       localStorage.setItem('kanban-autosave', JSON.stringify(state));
     } catch (e) {
       console.warn('Erreur sauvegarde automatique:', e);
