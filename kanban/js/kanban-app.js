@@ -453,7 +453,16 @@ class KanbanManager {
       }
       
       if (ok) { 
-        rec.id = parseInt(rec.id, 10); 
+        rec.id = parseInt(rec.id, 10);
+        
+        // Debug spécifique pour la tâche 122
+        if (rec.id === 122) {
+          console.log(`🔍 Tâche 122 - strategie_id brut:`, rec.strategie_id);
+          console.log(`🔍 Type:`, typeof rec.strategie_id);
+          console.log(`🔍 Array:`, Array.isArray(rec.strategie_id));
+          console.log(`🔍 JSON:`, JSON.stringify(rec.strategie_id));
+        }
+        
         if (!isNaN(rec.id)) records.push(rec); 
       }
     }
