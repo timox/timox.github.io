@@ -1635,22 +1635,26 @@ export class HistoryManager {
         // Sauvegarder dans Grist
         await this.updateCommentInGrist(taskId, this.currentEditingComment.id, newContent);
         
-        // Mise à jour dans l'interface
-        const contentElement = this.currentEditingComment.element.querySelector('.comment-content');
-        contentElement.textContent = newContent;
-        contentElement.dataset.original = newContent;
-        
-        // Ajouter une indication visuelle que le commentaire a été modifié
-        const timelineEntry = this.currentEditingComment.element;
-        timelineEntry.classList.add('comment-edited');
-        
-        // Ajouter un badge "Modifié" si pas déjà présent
-        const statusDiv = timelineEntry.querySelector('.timeline-status');
-        if (statusDiv && !statusDiv.querySelector('.badge-edited')) {
-          const editedBadge = document.createElement('span');
-          editedBadge.className = 'badge bg-warning ms-2 badge-edited';
-          editedBadge.textContent = 'Modifié';
-          statusDiv.appendChild(editedBadge);
+        // Mise à jour dans l'interface (si l'élément existe encore)
+        if (this.currentEditingComment && this.currentEditingComment.element) {
+          const contentElement = this.currentEditingComment.element.querySelector('.comment-content');
+          if (contentElement) {
+            contentElement.textContent = newContent;
+            contentElement.dataset.original = newContent;
+            
+            // Ajouter une indication visuelle que le commentaire a été modifié
+            const timelineEntry = this.currentEditingComment.element;
+            timelineEntry.classList.add('comment-edited');
+            
+            // Ajouter un badge "Modifié" si pas déjà présent
+            const statusDiv = timelineEntry.querySelector('.timeline-status');
+            if (statusDiv && !statusDiv.querySelector('.badge-edited')) {
+              const editedBadge = document.createElement('span');
+              editedBadge.className = 'badge bg-warning ms-2 badge-edited';
+              editedBadge.textContent = 'Modifié';
+              statusDiv.appendChild(editedBadge);
+            }
+          }
         }
         
         displaySuccess('Commentaire mis à jour avec succès');

@@ -2122,14 +2122,24 @@ export class ModalManager {
       this.kanban.datePickerManager.reset();
     }
     
-    // Reset jalons pour nouvelle tâche
-    if (this.kanban.jalonManager) {
-      this.kanban.jalonManager.clearJalonsForNewTask();
-    }
-    
-    // Reset jalons
+    // Reset jalons - FORCE le nettoyage DOM complet
     if (this.kanban.jalonManager) {
       this.kanban.jalonManager.jalons = [];
+      this.kanban.jalonManager.currentTaskId = null;
+      
+      // Force le nettoyage du DOM des jalons
+      const jalonsContainer = document.querySelector('.jalons-list, [class*="jalon"]');
+      if (jalonsContainer) {
+        jalonsContainer.innerHTML = '';
+      }
+      
+      // Nettoyer tous les éléments jalons visibles
+      document.querySelectorAll('.jalon-item, .jalon-header, [class*="jalon-"]').forEach(el => {
+        if (el.closest('.jalon-list, .jalons-container')) {
+          el.remove();
+        }
+      });
+      
       this.kanban.jalonManager.updateJalonsDisplay();
       this.kanban.jalonManager.saveJalonsToForm();
     }

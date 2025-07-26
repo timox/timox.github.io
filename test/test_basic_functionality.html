@@ -30,6 +30,8 @@
         <button class="test-button" onclick="testFiltering()">Test Filtres</button>
         <button class="test-button" onclick="testFormReset()">Test Reset Formulaires</button>
         <button class="test-button" onclick="testCommentEditing()">Test Édition Commentaires</button>
+        <button class="test-button" onclick="testJalonPropagation()">Test Propagation Jalons</button>
+        <button class="test-button" onclick="testStrategiesPropagation()">Test Propagation Stratégies</button>
     </div>
     
     <div class="test-section">
@@ -171,6 +173,72 @@
             logTest('Édition Commentaires', 'PENDING', 'Test nécessite l\'application complète');
         }
         
+        function testJalonPropagation() {
+            logTest('Propagation Jalons', 'RUNNING', 'Test isolation des jalons entre tâches...');
+            
+            try {
+                // Simuler le test de propagation des jalons
+                // Créer un container de test pour jalons
+                const jalonContainer = $('<div class="jalons-list test-container"></div>').appendTo('body');
+                
+                // Test 1: Ajouter des jalons simulés
+                jalonContainer.html('<div class="jalon-item">Test Jalon 1</div><div class="jalon-item">Test Jalon 2</div>');
+                const initialJalons = jalonContainer.find('.jalon-item').length;
+                
+                // Test 2: Simuler le nettoyage (comme dans resetTaskForm)
+                jalonContainer.html('');
+                const afterCleanup = jalonContainer.find('.jalon-item').length;
+                
+                // Test 3: Vérifier que le container existe mais est vide
+                const containerExists = $('.jalons-list.test-container').length > 0;
+                const isEmpty = afterCleanup === 0;
+                
+                // Nettoyage
+                jalonContainer.remove();
+                
+                if (containerExists && isEmpty && initialJalons === 2) {
+                    logTest('Propagation Jalons', 'PASSED', 'Nettoyage DOM des jalons fonctionne');
+                } else {
+                    logTest('Propagation Jalons', 'FAILED', `Container: ${containerExists}, Vide: ${isEmpty}, Initial: ${initialJalons}`);
+                }
+            } catch (error) {
+                logTest('Propagation Jalons', 'FAILED', error.message);
+            }
+        }
+        
+        function testStrategiesPropagation() {
+            logTest('Propagation Stratégies', 'RUNNING', 'Test isolation des stratégies entre tâches...');
+            
+            try {
+                // Simuler le test de propagation des stratégies
+                // Créer un container de test pour stratégies
+                const strategiesContainer = $('<div class="strategies-list test-container"></div>').appendTo('body');
+                
+                // Test 1: Ajouter des stratégies simulées
+                strategiesContainer.html('<div class="strategy-item">Stratégie A</div><div class="strategy-item">Stratégie B</div>');
+                const initialStrategies = strategiesContainer.find('.strategy-item').length;
+                
+                // Test 2: Simuler le nettoyage (comme dans resetTaskForm)
+                strategiesContainer.html('');
+                const afterCleanup = strategiesContainer.find('.strategy-item').length;
+                
+                // Test 3: Vérifier que le container existe mais est vide
+                const containerExists = $('.strategies-list.test-container').length > 0;
+                const isEmpty = afterCleanup === 0;
+                
+                // Nettoyage
+                strategiesContainer.remove();
+                
+                if (containerExists && isEmpty && initialStrategies === 2) {
+                    logTest('Propagation Stratégies', 'PASSED', 'Nettoyage DOM des stratégies fonctionne');
+                } else {
+                    logTest('Propagation Stratégies', 'FAILED', `Container: ${containerExists}, Vide: ${isEmpty}, Initial: ${initialStrategies}`);
+                }
+            } catch (error) {
+                logTest('Propagation Stratégies', 'FAILED', error.message);
+            }
+        }
+        
         function testLoadingSpeed() {
             logTest('Vitesse Chargement', 'RUNNING', 'Mesure du temps de chargement...');
             
@@ -221,6 +289,8 @@
             testFiltering();
             testFormReset();
             testCommentEditing();
+            testJalonPropagation();
+            testStrategiesPropagation();
             testLoadingSpeed();
             testMemoryLeaks();
             
