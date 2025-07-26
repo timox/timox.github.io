@@ -2453,10 +2453,42 @@ export class ModalManager {
    * @returns {boolean} True si les jalons ont changé
    */
   hasJalonsChanged(oldJalons, newJalons) {
-    // Normaliser en strings pour comparaison
-    const oldStr = typeof oldJalons === 'string' ? oldJalons : JSON.stringify(oldJalons || []);
-    const newStr = typeof newJalons === 'string' ? newJalons : JSON.stringify(newJalons || []);
-    return oldStr !== newStr;
+    // Normaliser en objects pour comparaison sémantique
+    try {
+      const oldObj = oldJalons ? (typeof oldJalons === 'string' ? JSON.parse(oldJalons) : oldJalons) : { jalons: [] };
+      const newObj = newJalons ? (typeof newJalons === 'string' ? JSON.parse(newJalons) : newJalons) : { jalons: [] };
+      
+      // Normaliser les structures (s'assurer qu'elles ont la même forme)
+      const normalizeJalons = (obj) => ({
+        jalons: obj.jalons || [],
+        lastModified: obj.lastModified || 0
+      });
+      
+      const normalizedOld = normalizeJalons(oldObj);
+      const normalizedNew = normalizeJalons(newObj);
+      
+      // Comparaison des jalons en tant que telle (ignorer lastModified sauf si les jalons changent)
+      const oldJalonsArray = normalizedOld.jalons;
+      const newJalonsArray = normalizedNew.jalons;
+      
+      const changed = JSON.stringify(oldJalonsArray) !== JSON.stringify(newJalonsArray);
+      
+      if (changed) {
+        console.log('🔍 Jalons changed detected:', {
+          old: oldJalonsArray,
+          new: newJalonsArray
+        });
+      }
+      
+      return changed;
+      
+    } catch (error) {
+      console.warn('Error parsing jalons in hasJalonsChanged:', error);
+      // Fallback sur comparaison string
+      const oldStr = typeof oldJalons === 'string' ? oldJalons : JSON.stringify(oldJalons || []);
+      const newStr = typeof newJalons === 'string' ? newJalons : JSON.stringify(newJalons || []);
+      return oldStr !== newStr;
+    }
   }
 
   /**
