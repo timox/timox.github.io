@@ -66,15 +66,15 @@ export class FilterManager {
    * Configure les éléments de filtre
    */
   setupFilterElements() {
-    // Vérification de la présence des éléments
+    // Vérification de la présence des éléments avec jQuery
     this.elements = {
-      searchInput: document.getElementById('search-input'),
-      filterBureau: document.getElementById('filter-bureau'),
-      filterQui: document.getElementById('filter-qui'),
-      filterProjet: document.getElementById('filter-projet'),
-      filterStatut: document.getElementById('filter-statut'),
-      showTermine: document.getElementById('show-termine'),
-      clearFiltersBtn: document.getElementById('btn-clear-filters')
+      searchInput: $('#search-input')[0],
+      filterBureau: $('#filter-bureau')[0],
+      filterQui: $('#filter-qui')[0],
+      filterProjet: $('#filter-projet')[0],
+      filterStatut: $('#filter-statut')[0],
+      showTermine: $('#show-termine')[0],
+      clearFiltersBtn: $('#btn-clear-filters')[0]
     };
     
     // Logging des éléments trouvés/manquants
@@ -333,24 +333,22 @@ export class FilterManager {
     const filteredCount = filteredRecords.length;
     
     // Mettre à jour le compteur dans l'interface (si l'élément existe)
-    let statsElement = document.getElementById('filter-stats');
-    if (!statsElement) {
+    let $statsElement = $('#filter-stats');
+    if (!$statsElement.length) {
       // Créer l'élément s'il n'existe pas
-      statsElement = document.createElement('small');
-      statsElement.id = 'filter-stats';
-      statsElement.className = 'text-muted ms-3';
+      $statsElement = $('<small id="filter-stats" class="text-muted ms-3"></small>');
       
-      const controlsRow = document.querySelector('.kanban-controls .row');
-      if (controlsRow) {
-        controlsRow.appendChild(statsElement);
+      const $controlsRow = $('.kanban-controls .row');
+      if ($controlsRow.length) {
+        $controlsRow.append($statsElement);
       }
     }
     
-    if (statsElement) {
+    if ($statsElement.length) {
       if (filteredCount === totalRecords) {
-        statsElement.innerHTML = `<span class="text-muted">${totalRecords} tâche${totalRecords > 1 ? 's' : ''}</span>`;
+        $statsElement.html(`<span class="text-muted">${totalRecords} tâche${totalRecords > 1 ? 's' : ''}</span>`);
       } else {
-        statsElement.innerHTML = `<span class="text-info">${filteredCount} / ${totalRecords} tâche${totalRecords > 1 ? 's' : ''}</span>`;
+        $statsElement.html(`<span class="text-info">${filteredCount} / ${totalRecords} tâche${totalRecords > 1 ? 's' : ''}</span>`);
       }
     }
     

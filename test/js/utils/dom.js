@@ -11,31 +11,30 @@ import { MESSAGES } from '../config/constants.js';
 export function displayError(message, containerId = 'error-container') {
   console.error("ERREUR:", message);
   
-  const container = document.getElementById(containerId);
-  if (container) {
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'alert alert-danger m-3 alert-dismissible fade show';
-    errorDiv.innerHTML = `
-      <strong>Erreur Kanban:</strong> ${message}
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  const $container = $(`#${containerId}`);
+  if ($container.length) {
+    const errorHtml = `
+      <div class="alert alert-danger m-3 alert-dismissible fade show">
+        <strong>Erreur Kanban:</strong> ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
     `;
     
-    // Nettoyer les erreurs précédentes
-    container.innerHTML = '';
-    container.appendChild(errorDiv);
+    // Nettoyer les erreurs précédentes et ajouter la nouvelle
+    $container.html(errorHtml);
     
     // Auto-suppression après 10 secondes
     setTimeout(() => {
-      if (errorDiv.parentNode) {
-        errorDiv.remove();
-      }
+      $container.find('.alert').fadeOut(() => {
+        $container.empty();
+      });
     }, 10000);
   }
   
   // Nettoyer le kanban si il affiche "Chargement"
-  const kanbanContainer = document.getElementById('kanban-container');
-  if (kanbanContainer && kanbanContainer.innerHTML.includes('Chargement')) {
-    kanbanContainer.innerHTML = '';
+  const $kanbanContainer = $('#kanban-container');
+  if ($kanbanContainer.length && $kanbanContainer.html().includes('Chargement')) {
+    $kanbanContainer.empty();
   }
 }
 
@@ -45,23 +44,22 @@ export function displayError(message, containerId = 'error-container') {
  * @param {string} containerId - ID du container
  */
 export function displaySuccess(message, containerId = 'error-container') {
-  const container = document.getElementById(containerId);
-  if (container) {
-    const successDiv = document.createElement('div');
-    successDiv.className = 'alert alert-success m-3 alert-dismissible fade show';
-    successDiv.innerHTML = `
-      <strong>Succès:</strong> ${message}
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  const $container = $(`#${containerId}`);
+  if ($container.length) {
+    const successHtml = `
+      <div class="alert alert-success m-3 alert-dismissible fade show">
+        <strong>Succès:</strong> ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
     `;
     
-    container.innerHTML = '';
-    container.appendChild(successDiv);
+    $container.html(successHtml);
     
     // Auto-suppression après 5 secondes
     setTimeout(() => {
-      if (successDiv.parentNode) {
-        successDiv.remove();
-      }
+      $container.find('.alert').fadeOut(() => {
+        $container.empty();
+      });
     }, 5000);
   }
 }
@@ -72,9 +70,9 @@ export function displaySuccess(message, containerId = 'error-container') {
  * @param {string} spinnerId - ID du spinner
  */
 export function toggleLoadingSpinner(show, spinnerId = 'loading-spinner') {
-  const spinner = document.getElementById(spinnerId);
-  if (spinner) {
-    spinner.style.display = show ? 'block' : 'none';
+  const $spinner = $(`#${spinnerId}`);
+  if ($spinner.length) {
+    $spinner.toggle(show);
   }
 }
 
@@ -86,28 +84,23 @@ export function toggleLoadingSpinner(show, spinnerId = 'loading-spinner') {
  * @param {string} emptyText - Texte de l'option vide
  */
 export function populateSelect(selectId, options, addEmptyOption = true, emptyText = null) {
-  const select = document.getElementById(selectId);
-  if (!select) return;
+  const $select = $(`#${selectId}`);
+  if (!$select.length) return;
   
-  select.innerHTML = '';
+  $select.empty();
   
   if (!Array.isArray(options)) return;
   
   // Option vide pour les selects simples
-  if (addEmptyOption && !select.multiple) {
-    const emptyOption = document.createElement('option');
-    emptyOption.value = "";
-    emptyOption.text = emptyText || (selectId.startsWith('filter-') ? "Tous" : "-- Choisir --");
-    select.appendChild(emptyOption);
+  if (addEmptyOption && !$select.prop('multiple')) {
+    const defaultText = emptyText || (selectId.startsWith('filter-') ? "Tous" : "-- Choisir --");
+    $select.append(`<option value="">${defaultText}</option>`);
   }
   
   // Ajouter les options
   options.forEach(value => {
     if (value !== null && typeof value !== 'undefined') {
-      const option = document.createElement('option');
-      option.value = value;
-      option.text = value;
-      select.appendChild(option);
+      $select.append(`<option value="${value}">${value}</option>`);
     }
   });
 }
@@ -118,17 +111,17 @@ export function populateSelect(selectId, options, addEmptyOption = true, emptyTe
  * @param {Array} valuesWithL - Valeurs au format Grist (avec 'L' initial)
  */
 export function setSelectedOptions(selectId, valuesWithL) {
-  const select = document.getElementById(selectId);
-  if (!select) return;
+  const $select = $(`#${selectId}`);
+  if (!$select.length) return;
   
   // Extraire les valeurs (sans le 'L' initial de Grist)
   const values = Array.isArray(valuesWithL) && valuesWithL[0] === 'L' ? valuesWithL.slice(1) : [];
   const lowerValues = values.map(v => String(v).trim().toLowerCase());
   
   // Marquer les options sélectionnées
-  Array.from(select.options).forEach(option => {
-    const optionValue = String(option.value).trim().toLowerCase();
-    option.selected = lowerValues.includes(optionValue);
+  $select.find('option').each(function() {
+    const optionValue = String($(this).val()).trim().toLowerCase();
+    $(this).prop('selected', lowerValues.includes(optionValue));
   });
 }
 
@@ -138,14 +131,15 @@ export function setSelectedOptions(selectId, valuesWithL) {
  * @returns {Array} Valeurs au format Grist (['L', ...values])
  */
 export function getSelectedOptionsAsGristFormat(selectId) {
-  const select = document.getElementById(selectId);
-  if (!select) return ['L'];
+  const $select = $(`#${selectId}`);
+  if (!$select.length) return ['L'];
   
-  const selectedValues = Array.from(select.selectedOptions)
-    .map(option => option.value)
-    .filter(value => value && value.trim() !== ''); // Filter out empty values
+  const selectedValues = $select.val() || [];
+  const validValues = Array.isArray(selectedValues) ? 
+    selectedValues.filter(value => value && value.trim() !== '') : 
+    [selectedValues].filter(value => value && value.trim() !== '');
   
-  return selectedValues.length > 0 ? ['L', ...selectedValues] : ['L'];
+  return validValues.length > 0 ? ['L', ...validValues] : ['L'];
 }
 
 /**
@@ -153,10 +147,7 @@ export function getSelectedOptionsAsGristFormat(selectId) {
  * @param {string} elementId - ID de l'élément à nettoyer
  */
 export function clearElement(elementId) {
-  const element = document.getElementById(elementId);
-  if (element) {
-    element.innerHTML = '';
-  }
+  $(`#${elementId}`).empty();
 }
 
 /**
@@ -165,10 +156,7 @@ export function clearElement(elementId) {
  * @param {*} value - Valeur à définir
  */
 export function setFieldValue(fieldId, value) {
-  const field = document.getElementById(fieldId);
-  if (field) {
-    field.value = value || "";
-  }
+  $(`#${fieldId}`).val(value || "");
 }
 
 /**
@@ -177,8 +165,7 @@ export function setFieldValue(fieldId, value) {
  * @returns {string} Valeur du champ
  */
 export function getFieldValue(fieldId) {
-  const field = document.getElementById(fieldId);
-  return field ? field.value : "";
+  return $(`#${fieldId}`).val() || "";
 }
 
 /**
@@ -187,14 +174,10 @@ export function getFieldValue(fieldId) {
  * @param {boolean} enabled - Activer ou désactiver
  */
 export function toggleElement(elementId, enabled) {
-  const element = document.getElementById(elementId);
-  if (element) {
-    element.disabled = !enabled;
-    if (enabled) {
-      element.classList.remove('disabled');
-    } else {
-      element.classList.add('disabled');
-    }
+  const $element = $(`#${elementId}`);
+  if ($element.length) {
+    $element.prop('disabled', !enabled);
+    $element.toggleClass('disabled', !enabled);
   }
 }
 
@@ -205,9 +188,9 @@ export function toggleElement(elementId, enabled) {
  * @param {string} displayType - Type d'affichage (block, inline, flex...)
  */
 export function toggleVisibility(elementId, visible, displayType = 'block') {
-  const element = document.getElementById(elementId);
-  if (element) {
-    element.style.display = visible ? displayType : 'none';
+  const $element = $(`#${elementId}`);
+  if ($element.length) {
+    $element.css('display', visible ? displayType : 'none');
   }
 }
 
@@ -217,10 +200,7 @@ export function toggleVisibility(elementId, visible, displayType = 'block') {
  * @param {string} className - Classe à ajouter
  */
 export function addClass(elementId, className) {
-  const element = document.getElementById(elementId);
-  if (element) {
-    element.classList.add(className);
-  }
+  $(`#${elementId}`).addClass(className);
 }
 
 /**
@@ -229,10 +209,7 @@ export function addClass(elementId, className) {
  * @param {string} className - Classe à supprimer
  */
 export function removeClass(elementId, className) {
-  const element = document.getElementById(elementId);
-  if (element) {
-    element.classList.remove(className);
-  }
+  $(`#${elementId}`).removeClass(className);
 }
 
 /**
@@ -241,10 +218,7 @@ export function removeClass(elementId, className) {
  * @param {string} className - Classe à basculer
  */
 export function toggleClass(elementId, className) {
-  const element = document.getElementById(elementId);
-  if (element) {
-    element.classList.toggle(className);
-  }
+  $(`#${elementId}`).toggleClass(className);
 }
 
 /**
@@ -252,10 +226,7 @@ export function toggleClass(elementId, className) {
  * @param {string} elementId - ID de l'élément
  */
 export function focusElement(elementId) {
-  const element = document.getElementById(elementId);
-  if (element) {
-    element.focus();
-  }
+  $(`#${elementId}`).focus();
 }
 
 /**
