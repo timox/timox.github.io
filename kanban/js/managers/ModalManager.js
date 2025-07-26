@@ -428,21 +428,21 @@ export class ModalManager {
    * Met à jour le champ caché avec les IDs de stratégies
    */
   updateStrategyIds() {
-    const strategyIds = this.selectedStrategies.map(s => s.id);
+    // CORRECTION: Le champ Grist est du TEXTE, pas des références numériques !
+    // On envoie directement les textes des actions
+    const strategyActions = this.selectedStrategies.map(s => s.action);
     
-    // Format TOUJOURS en liste de références multiples (changement Grist)
-    // Même pour 1 seule stratégie: [["L", id]]
     let gristFormat;
-    if (strategyIds.length === 0) {
+    if (strategyActions.length === 0) {
       gristFormat = [];
     } else {
-      // Toujours format liste: [["L", id1], ["L", id2], ...]
-      gristFormat = strategyIds.map(id => ["L", id]);
+      // Format liste de textes pour Grist
+      gristFormat = strategyActions;
     }
     
-    setFieldValue('popup-strategie-id', JSON.stringify(gristFormat));
+    setFieldValue('popup-strategie-id', gristFormat);
     
-    this.logger.debug(`Strategies updated: ${strategyIds.length} selected, format liste:`, gristFormat);
+    this.logger.debug(`Strategies updated: ${strategyActions.length} selected, actions:`, gristFormat);
   }
   
   /**
