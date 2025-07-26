@@ -1601,17 +1601,25 @@ class KanbanManager {
       this.signalLocalUpdate();
       
       // Envoyer la mise à jour à Grist
+      console.log(`Début sauvegarde statut ${taskId}: ${record.statut} -> ${newStatus}`);
       await grist.docApi.applyUserActions([
         ['UpdateRecord', TABLE_ID, taskId, { statut: newStatus }]
       ]);
+      console.log(`Grist sauvegardé pour ${taskId}`);
       
       // Enregistrer l'action utilisateur pour le changement de statut
-      const userActionManager = getUserActionManager();
-      if (userActionManager) {
-        await userActionManager.statusChangeAction(taskId, record.statut, newStatus);
+      try {
+        const userActionManager = getUserActionManager();
+        if (userActionManager) {
+          await userActionManager.statusChangeAction(taskId, record.statut, newStatus);
+        }
+        console.log(`UserAction enregistrée pour ${taskId}`);
+      } catch (userActionError) {
+        console.warn(`Erreur UserAction (non bloquante):`, userActionError);
       }
       
       // Refresh seulement APRÈS confirmation Grist
+      console.log(`Refresh kanban après sauvegarde ${taskId}`);
       this.refreshKanban();
       console.log(`Succès mise à jour statut ${taskId}.`);
 
