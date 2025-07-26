@@ -1458,9 +1458,10 @@ export class HistoryManager {
       visible: textArea.offsetParent !== null
     });
     
-    // Focus avec petit délai pour que la modal soit affichée
+    // Focus avec sélection automatique du texte
     setTimeout(() => {
       textArea.focus();
+      textArea.select(); // Sélectionne tout le texte
     }, 150);
   }
   
