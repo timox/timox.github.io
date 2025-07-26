@@ -1625,9 +1625,11 @@ class KanbanManager {
         console.warn(`Erreur UserAction (non bloquante):`, userActionError);
       }
       
-      // Re-fetch les données depuis Grist pour être sûr
-      console.log(`Re-fetch données après sauvegarde ${taskId}`);
-      await this.loadDataFromGrist();
+      // Petit délai puis refresh pour laisser Grist se synchroniser
+      setTimeout(() => {
+        console.log(`Refresh kanban après délai pour ${taskId}`);
+        this.refreshKanban();
+      }, 200);
       console.log(`Succès mise à jour statut ${taskId}.`);
 
     } catch (error) {
