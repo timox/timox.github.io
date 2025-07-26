@@ -1391,6 +1391,8 @@ export class HistoryManager {
                        commentElement.querySelector('.comment-timestamp') ||
                        commentElement.querySelector('.timeline-dates') || 
                        commentElement.querySelector('.comment-meta') ||
+                       commentElement.querySelector('.timeline-meta') ||
+                       commentElement.querySelector('.text-muted') ||
                        commentElement.querySelector('[class*="timestamp"]') ||
                        commentElement.querySelector('[class*="date"]');
     
