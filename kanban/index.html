@@ -21,24 +21,19 @@
     <!-- Header -->
     <div class="kanban-header">
       <div class="container-fluid">
-        <div class="row align-items-center">
-          <div class="col">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <div class="flex-grow-1">
             <h1 class="h3 mb-0 d-flex align-items-center">
               <i class="bi bi-kanban me-2"></i>
               Tableau Kanban
-              <a href="https://github.com/timox/timox.github.io/blob/main/README.md" 
-                 target="_blank" 
-                 class="btn btn-sm btn-outline-info ms-2"
-                 title="Voir le README sur GitHub">
-                <i class="bi bi-github me-1"></i>README
-              </a>
             </h1>
           </div>
-          <div class="col-auto">
-            <button type="button" class="btn btn-primary btn-sm" id="btn-nouvelle-tache" aria-label="Créer une nouvelle tâche">
-              <i class="bi bi-plus-lg me-1"></i>Nouvelle Tâche
-            </button>
-          </div>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-nouvelle-tache" aria-label="Créer une nouvelle tâche">
+            <i class="bi bi-plus-lg me-1"></i>Nouvelle Tâche
+          </button>
+          <a href="stats.html" class="btn btn-outline-success btn-sm" title="Voir les statistiques">
+            <i class="bi bi-graph-up me-1"></i>Statistiques
+          </a>
         </div>
       </div>
     </div>
