@@ -778,7 +778,11 @@ class KanbanManager {
     const idsArray = Array.isArray(strategieIds) ? strategieIds : [strategieIds];
     console.log(`🔄 IDs à traiter:`, idsArray);
     
-    const result = idsArray
+    // Filtrer les marqueurs Grist "L" et garder seulement les vrais IDs
+    const cleanIds = idsArray.filter(id => id !== "L" && id !== null && id !== undefined);
+    console.log(`🧹 IDs nettoyés (sans 'L'):`, cleanIds);
+    
+    const result = cleanIds
       .map(id => {
         const found = this.strategiesData.find(strategy => strategy.id === id);
         console.log(`🔎 Recherche ID ${id}:`, found ? `Trouvé: ${found.objectif}` : 'Non trouvé');
