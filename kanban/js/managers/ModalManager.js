@@ -1264,7 +1264,17 @@ export class ModalManager {
       gristData.qui = ['L'];
     }
     
-    // Strategie_id doit rester au format références multiples (pas de conversion en nombre)
+    // Pour strategie_id (Reference simple), convertir en format ['L', id]
+    if (gristData.strategie_id) {
+      // Si c'est juste un ID numérique, le convertir
+      if (typeof gristData.strategie_id === 'number' || 
+          (typeof gristData.strategie_id === 'string' && !isNaN(parseInt(gristData.strategie_id)))) {
+        gristData.strategie_id = ['L', parseInt(gristData.strategie_id)];
+      }
+      // Si c'est déjà au bon format, ne rien faire
+    } else {
+      gristData.strategie_id = null;
+    }
     
     // Remove historique_statuts - it's a Date field, not JSON
     delete gristData.historique_statuts;

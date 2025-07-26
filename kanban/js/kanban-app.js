@@ -774,15 +774,22 @@ class KanbanManager {
       return [];
     }
     
-    // Format Grist: liste de références [["L", id1], ["L", id2], ...] 
+    // Format Grist: référence simple ["L", id] ou liste [["L", id1], ["L", id2]]
     let idsArray = [];
     
     if (Array.isArray(strategieIds)) {
-      // Extraire les vrais IDs en filtrant les "L"
-      idsArray = strategieIds
-        .map(item => Array.isArray(item) && item[0] === "L" ? item[1] : item)
-        .filter(id => id !== "L" && id !== null && id !== undefined);
-      console.log(`🔄 Format liste de références:`, strategieIds, `→`, idsArray);
+      // Vérifier si c'est une référence simple ["L", 8] ou une liste [["L", 8], ["L", 22]]
+      if (strategieIds.length === 2 && strategieIds[0] === "L" && typeof strategieIds[1] === "number") {
+        // Référence simple: ["L", 8]
+        idsArray = [strategieIds[1]];
+        console.log(`🔄 Format référence simple:`, strategieIds, `→`, idsArray);
+      } else {
+        // Liste de références: [["L", 8], ["L", 22]]
+        idsArray = strategieIds
+          .map(item => Array.isArray(item) && item[0] === "L" ? item[1] : item)
+          .filter(id => id !== "L" && id !== null && id !== undefined);
+        console.log(`🔄 Format liste de références:`, strategieIds, `→`, idsArray);
+      }
     } else if (strategieIds !== null && strategieIds !== undefined) {
       idsArray = [strategieIds];
       console.log(`🔄 Format legacy:`, strategieIds, `→ [${strategieIds}]`);
