@@ -787,18 +787,11 @@ class KanbanManager {
     let idsArray = [];
     
     if (Array.isArray(strategieIds)) {
-      // Vérifier si c'est une référence simple ["L", 8] ou une liste [["L", 8], ["L", 22]]
-      if (strategieIds.length === 2 && strategieIds[0] === "L" && typeof strategieIds[1] === "number") {
-        // Référence simple: ["L", 8]
-        idsArray = [strategieIds[1]];
-        console.log(`🔄 Format référence simple:`, strategieIds, `→`, idsArray);
-      } else {
-        // Liste de références: [["L", 8], ["L", 22]]
-        idsArray = strategieIds
-          .map(item => Array.isArray(item) && item[0] === "L" ? item[1] : item)
-          .filter(id => id !== "L" && id !== null && id !== undefined);
-        console.log(`🔄 Format liste de références:`, strategieIds, `→`, idsArray);
-      }
+      // Format ReferenceList: [["L", 8]] ou [["L", 8], ["L", 22]]
+      idsArray = strategieIds
+        .map(item => Array.isArray(item) && item[0] === "L" ? item[1] : item)
+        .filter(id => id !== "L" && id !== null && id !== undefined);
+      console.log(`🔄 Format ReferenceList:`, strategieIds, `→`, idsArray);
     } else if (typeof strategieIds === 'string' && strategieIds.startsWith('L,')) {
       // Format string "L,8" → extraire l'ID numérique
       const idNumber = parseInt(strategieIds.substring(2), 10);

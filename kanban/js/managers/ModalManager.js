@@ -1264,14 +1264,21 @@ export class ModalManager {
       gristData.qui = ['L'];
     }
     
-    // Pour strategie_id (Reference simple), convertir en format ['L', id]
+    // Pour strategie_id (ReferenceList), convertir en format [["L", id]]
     if (gristData.strategie_id) {
-      // Si c'est juste un ID numérique, le convertir
+      // Si c'est juste un ID numérique, le convertir en ReferenceList
       if (typeof gristData.strategie_id === 'number' || 
           (typeof gristData.strategie_id === 'string' && !isNaN(parseInt(gristData.strategie_id)))) {
-        gristData.strategie_id = ['L', parseInt(gristData.strategie_id)];
+        gristData.strategie_id = [["L", parseInt(gristData.strategie_id)]];
       }
-      // Si c'est déjà au bon format, ne rien faire
+      // Si c'est au format string "L,8", le convertir en ReferenceList
+      else if (typeof gristData.strategie_id === 'string' && gristData.strategie_id.startsWith('L,')) {
+        const idNumber = parseInt(gristData.strategie_id.substring(2), 10);
+        if (!isNaN(idNumber)) {
+          gristData.strategie_id = [["L", idNumber]];
+        }
+      }
+      // Si c'est déjà au bon format [["L", 8]], ne rien faire
     } else {
       gristData.strategie_id = null;
     }
