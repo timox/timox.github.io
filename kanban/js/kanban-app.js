@@ -799,6 +799,13 @@ class KanbanManager {
           .filter(id => id !== "L" && id !== null && id !== undefined);
         console.log(`🔄 Format liste de références:`, strategieIds, `→`, idsArray);
       }
+    } else if (typeof strategieIds === 'string' && strategieIds.startsWith('L,')) {
+      // Format string "L,8" → extraire l'ID numérique
+      const idNumber = parseInt(strategieIds.substring(2), 10);
+      if (!isNaN(idNumber)) {
+        idsArray = [idNumber];
+        console.log(`🔄 Format string "L,X":`, strategieIds, `→ [${idNumber}]`);
+      }
     } else if (strategieIds !== null && strategieIds !== undefined) {
       idsArray = [strategieIds];
       console.log(`🔄 Format legacy:`, strategieIds, `→ [${strategieIds}]`);
