@@ -743,6 +743,9 @@ export class ModalManager {
    * Réinitialise la sélection de stratégie
    */
   resetStrategySelection() {
+    // Reset collection des stratégies sélectionnées - FORCE le nettoyage complet
+    this.selectedStrategies = [];
+    
     // Reset champs stratégie avec jQuery
     $('#popup-strategie-objectif, #popup-strategie-sous-objectif, #popup-strategie-action, #popup-strategie-id').val('');
     
@@ -750,11 +753,35 @@ export class ModalManager {
     $('.strategy-action.selected').removeClass('selected');
     $('.strategy-selected-indicator').hide();
     
+    // Force le nettoyage DOM des stratégies
+    const strategiesContainer = document.querySelector('.strategies-list, [class*="strategy"]');
+    if (strategiesContainer) {
+      // Ne pas vider complètement mais reset les sélections
+      document.querySelectorAll('.strategy-tag, .selected-strategies-tags').forEach(el => {
+        if (el.closest('.selected-strategies-container, .strategy-tags-container')) {
+          el.remove();
+        }
+      });
+    }
+    
+    // Nettoyer tous les éléments stratégies sélectionnées visibles
+    document.querySelectorAll('.strategy-tag, .selected-strategies-container [style*="display: block"]').forEach(el => {
+      if (el.classList.contains('strategy-tag')) {
+        el.remove();
+      } else if (el.classList.contains('selected-strategies-container')) {
+        el.style.display = 'none';
+      }
+    });
+    
     // Reset preview
     $('#selected-strategy-preview').text('');
     
     // Masquer les détails
     this.hideStrategyDetails();
+    
+    // Force update des tags et preview
+    this.updateStrategyTags();
+    this.updateStrategyPreview();
   }
   
   /**
