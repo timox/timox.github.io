@@ -1262,9 +1262,18 @@ export class HistoryManager {
       saveBtn.addEventListener('click', () => this.saveCommentEdit());
     }
     
-    // Textarea fonctionnel, point final
+    // Textarea fonctionnel avec gestion des touches
     if (textarea) {
       textarea.tabIndex = 0;
+      
+      // Empêcher la propagation des touches pour éviter la fermeture de modales
+      textarea.addEventListener('keydown', (e) => {
+        e.stopPropagation(); // Empêche les listeners globaux
+      });
+      
+      textarea.addEventListener('keyup', (e) => {
+        e.stopPropagation(); // Empêche les listeners globaux
+      });
     }
   }
   
