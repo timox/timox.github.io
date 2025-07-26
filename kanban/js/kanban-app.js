@@ -1630,8 +1630,27 @@ class KanbanManager {
     const taskId = parseInt(itemEl.dataset.id, 10);
     const newStatus = targetContainer.dataset.statusId;
 
+    console.log(`🐛 Debug drag&drop:`, {
+      taskId,
+      newStatus,
+      currentRecordsCount: this.currentRecords?.length || 0,
+      datasetId: itemEl.dataset.id,
+      datasetStatusId: targetContainer.dataset.statusId
+    });
+
     const record = this.currentRecords.find(r => r.id === taskId);
-    if (!record || record.statut === newStatus) return;
+    
+    console.log(`🐛 Record trouvé:`, {
+      found: !!record,
+      recordId: record?.id,
+      recordStatut: record?.statut,
+      newStatusMatch: record?.statut === newStatus
+    });
+
+    if (!record || record.statut === newStatus) {
+      console.log(`🛑 Drag&drop annulé:`, !record ? 'Record non trouvé' : 'Même statut');
+      return;
+    }
 
     try {
       this.isUpdating = true;
