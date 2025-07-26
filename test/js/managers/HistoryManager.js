@@ -1456,8 +1456,10 @@ export class HistoryManager {
       visible: textArea.offsetParent !== null
     });
     
-    // Focus direct simple
-    textArea.focus();
+    // Focus avec petit délai pour que la modal soit affichée
+    setTimeout(() => {
+      textArea.focus();
+    }, 150);
   }
   
   /**
