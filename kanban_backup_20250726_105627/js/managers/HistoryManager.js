@@ -1262,18 +1262,9 @@ export class HistoryManager {
       saveBtn.addEventListener('click', () => this.saveCommentEdit());
     }
     
-    // Textarea fonctionnel avec gestion des touches
+    // Textarea fonctionnel, point final
     if (textarea) {
       textarea.tabIndex = 0;
-      
-      // Empêcher la propagation des touches pour éviter la fermeture de modales
-      textarea.addEventListener('keydown', (e) => {
-        e.stopPropagation(); // Empêche les listeners globaux
-      });
-      
-      textarea.addEventListener('keyup', (e) => {
-        e.stopPropagation(); // Empêche les listeners globaux
-      });
     }
   }
   
@@ -1400,8 +1391,6 @@ export class HistoryManager {
                        commentElement.querySelector('.comment-timestamp') ||
                        commentElement.querySelector('.timeline-dates') || 
                        commentElement.querySelector('.comment-meta') ||
-                       commentElement.querySelector('.timeline-meta') ||
-                       commentElement.querySelector('.text-muted') ||
                        commentElement.querySelector('[class*="timestamp"]') ||
                        commentElement.querySelector('[class*="date"]');
     
@@ -1467,10 +1456,9 @@ export class HistoryManager {
       visible: textArea.offsetParent !== null
     });
     
-    // Focus avec sélection automatique du texte
+    // Focus avec petit délai pour que la modal soit affichée
     setTimeout(() => {
       textArea.focus();
-      textArea.select(); // Sélectionne tout le texte
     }, 150);
   }
   
@@ -1635,26 +1623,22 @@ export class HistoryManager {
         // Sauvegarder dans Grist
         await this.updateCommentInGrist(taskId, this.currentEditingComment.id, newContent);
         
-        // Mise à jour dans l'interface (si l'élément existe encore)
-        if (this.currentEditingComment && this.currentEditingComment.element) {
-          const contentElement = this.currentEditingComment.element.querySelector('.comment-content');
-          if (contentElement) {
-            contentElement.textContent = newContent;
-            contentElement.dataset.original = newContent;
-            
-            // Ajouter une indication visuelle que le commentaire a été modifié
-            const timelineEntry = this.currentEditingComment.element;
-            timelineEntry.classList.add('comment-edited');
-            
-            // Ajouter un badge "Modifié" si pas déjà présent
-            const statusDiv = timelineEntry.querySelector('.timeline-status');
-            if (statusDiv && !statusDiv.querySelector('.badge-edited')) {
-              const editedBadge = document.createElement('span');
-              editedBadge.className = 'badge bg-warning ms-2 badge-edited';
-              editedBadge.textContent = 'Modifié';
-              statusDiv.appendChild(editedBadge);
-            }
-          }
+        // Mise à jour dans l'interface
+        const contentElement = this.currentEditingComment.element.querySelector('.comment-content');
+        contentElement.textContent = newContent;
+        contentElement.dataset.original = newContent;
+        
+        // Ajouter une indication visuelle que le commentaire a été modifié
+        const timelineEntry = this.currentEditingComment.element;
+        timelineEntry.classList.add('comment-edited');
+        
+        // Ajouter un badge "Modifié" si pas déjà présent
+        const statusDiv = timelineEntry.querySelector('.timeline-status');
+        if (statusDiv && !statusDiv.querySelector('.badge-edited')) {
+          const editedBadge = document.createElement('span');
+          editedBadge.className = 'badge bg-warning ms-2 badge-edited';
+          editedBadge.textContent = 'Modifié';
+          statusDiv.appendChild(editedBadge);
         }
         
         displaySuccess('Commentaire mis à jour avec succès');

@@ -84,7 +84,7 @@ export class CardRenderer {
         </div>
         
         <!-- Titre de la tâche -->
-        <div class="compact-title editable-zone" title="${record.titre || ''}">${record.titre || 'Sans titre'}</div>
+        <div class="compact-title editable-zone" title="${record.titre || ''}">${this.truncateText(record.titre || 'Sans titre', 50)}</div>
         
         <!-- Indicateurs visuels cachés (pour les lecteurs d'écran) -->
         <div class="sr-only">
@@ -110,8 +110,8 @@ export class CardRenderer {
       priority: priority
     }, false);
     
-    // Résumé de description (pas en mode compact, même si expanded)
-    const resumeDesc = (viewMode === VIEW_MODES.COMPACT) ? '' : this.generateDescriptionResume(record);
+    // Résumé de description
+    const resumeDesc = this.generateDescriptionResume(record);
     
     // Container des dates
     const datesElement = generateDatesContainer({
@@ -424,13 +424,6 @@ export class CardRenderer {
       
       // Support clavier
       zone.addEventListener('keydown', (e) => {
-        // Ignorer si on est dans un champ de saisie ou modal ouverte
-        if (e.target.matches('input, textarea, select') || 
-            document.querySelector('.modal.show') ||
-            document.querySelector('#accordion-comment-edit-widget[style*="block"]')) {
-          return;
-        }
-        
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           zone.click();
@@ -467,8 +460,19 @@ export class CardRenderer {
       });
     });
     
-    // 🚫 SUPPRIMÉ: Écouteurs d'historique déjà gérés par HistoryManager (évite duplication)
-    // Les boutons .btn-history sont gérés par l'écouteur global dans HistoryManager.js:69-77
+    // Écouteurs pour les boutons d'historique
+    container.querySelectorAll('.btn-history').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        
+        const taskId = parseInt(btn.dataset.taskId, 10);
+        
+        if (!isNaN(taskId) && this.kanban.historyManager) {
+          this.kanban.historyManager.openTaskHistory(taskId);
+        }
+      });
+    });
   }
   
   /**

@@ -743,9 +743,6 @@ export class ModalManager {
    * Réinitialise la sélection de stratégie
    */
   resetStrategySelection() {
-    // Reset collection des stratégies sélectionnées - FORCE le nettoyage complet
-    this.selectedStrategies = [];
-    
     // Reset champs stratégie avec jQuery
     $('#popup-strategie-objectif, #popup-strategie-sous-objectif, #popup-strategie-action, #popup-strategie-id').val('');
     
@@ -753,35 +750,11 @@ export class ModalManager {
     $('.strategy-action.selected').removeClass('selected');
     $('.strategy-selected-indicator').hide();
     
-    // Force le nettoyage DOM des stratégies
-    const strategiesContainer = document.querySelector('.strategies-list, [class*="strategy"]');
-    if (strategiesContainer) {
-      // Ne pas vider complètement mais reset les sélections
-      document.querySelectorAll('.strategy-tag, .selected-strategies-tags').forEach(el => {
-        if (el.closest('.selected-strategies-container, .strategy-tags-container')) {
-          el.remove();
-        }
-      });
-    }
-    
-    // Nettoyer tous les éléments stratégies sélectionnées visibles
-    document.querySelectorAll('.strategy-tag, .selected-strategies-container [style*="display: block"]').forEach(el => {
-      if (el.classList.contains('strategy-tag')) {
-        el.remove();
-      } else if (el.classList.contains('selected-strategies-container')) {
-        el.style.display = 'none';
-      }
-    });
-    
     // Reset preview
     $('#selected-strategy-preview').text('');
     
     // Masquer les détails
     this.hideStrategyDetails();
-    
-    // Force update des tags et preview
-    this.updateStrategyTags();
-    this.updateStrategyPreview();
   }
   
   /**
@@ -2149,24 +2122,14 @@ export class ModalManager {
       this.kanban.datePickerManager.reset();
     }
     
-    // Reset jalons - FORCE le nettoyage DOM complet
+    // Reset jalons pour nouvelle tâche
+    if (this.kanban.jalonManager) {
+      this.kanban.jalonManager.clearJalonsForNewTask();
+    }
+    
+    // Reset jalons
     if (this.kanban.jalonManager) {
       this.kanban.jalonManager.jalons = [];
-      this.kanban.jalonManager.currentTaskId = null;
-      
-      // Force le nettoyage du DOM des jalons
-      const jalonsContainer = document.querySelector('.jalons-list, [class*="jalon"]');
-      if (jalonsContainer) {
-        jalonsContainer.innerHTML = '';
-      }
-      
-      // Nettoyer tous les éléments jalons visibles
-      document.querySelectorAll('.jalon-item, .jalon-header, [class*="jalon-"]').forEach(el => {
-        if (el.closest('.jalon-list, .jalons-container')) {
-          el.remove();
-        }
-      });
-      
       this.kanban.jalonManager.updateJalonsDisplay();
       this.kanban.jalonManager.saveJalonsToForm();
     }
