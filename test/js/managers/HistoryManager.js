@@ -1456,20 +1456,8 @@ export class HistoryManager {
       visible: textArea.offsetParent !== null
     });
     
-    // Focus immédiat
+    // Focus direct simple
     textArea.focus();
-    
-    // Vérifier que le focus a fonctionné
-    setTimeout(() => {
-      this.logger.debug('Focus result:', {
-        activeElement: document.activeElement === textArea,
-        hasFocus: textArea === document.activeElement
-      });
-      if (document.activeElement !== textArea) {
-        this.logger.warn('Focus échoué, nouvelle tentative...');
-        textArea.focus();
-      }
-    }, 100);
   }
   
   /**

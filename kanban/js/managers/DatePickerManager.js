@@ -3,6 +3,7 @@
 
 import { normalizeDate, prepareDateForGrist } from '../utils/dates.js';
 import { setFieldValue, getFieldValue, toggleVisibility } from '../utils/dom.js';
+import { createModuleLogger } from '../utils/LoggerManager.js';
 
 /**
  * Gestionnaire pour le sélecteur de dates et la gestion des échéances
@@ -10,6 +11,7 @@ import { setFieldValue, getFieldValue, toggleVisibility } from '../utils/dom.js'
 export class DatePickerManager {
   constructor(kanbanManager) {
     this.kanban = kanbanManager;
+    this.logger = createModuleLogger('DatePickerManager');
     this.flatpickrInstance = null;
     this.currentDate = null;
     
@@ -22,7 +24,7 @@ export class DatePickerManager {
   init() {
     this.setupDatePicker();
     this.setupEventListeners();
-    console.log('DatePickerManager: Gestionnaire de dates initialisé');
+    this.logger.debug('DatePickerManager initialized');
   }
   
   /**
@@ -31,7 +33,7 @@ export class DatePickerManager {
   setupDatePicker() {
     const dateInput = document.getElementById('popup-delai');
     if (!dateInput) {
-      console.warn('DatePickerManager: Champ de date non trouvé');
+      this.logger.warn('Date field not found');
       return;
     }
     
@@ -39,13 +41,14 @@ export class DatePickerManager {
     this.flatpickrInstance = flatpickr(dateInput, {
       locale: 'fr',
       dateFormat: 'Y-m-d',
+      enableTime: false,
       allowInput: false,
       clickOpens: false, // On ouvre manuellement
       onChange: (selectedDates, dateStr) => {
         this.handleDateChange(selectedDates, dateStr);
       },
       onReady: () => {
-        console.log('DatePickerManager: Flatpickr prêt');
+        this.logger.debug('Flatpickr ready');
       }
     });
   }
@@ -237,7 +240,7 @@ export class DatePickerManager {
         targetDate.setMonth(today.getMonth() + 1);
         break;
       default:
-        console.warn('DatePickerManager: Preset de date inconnu:', preset);
+        this.logger.warn(`Unknown date preset: ${preset}`);
         return;
     }
     
@@ -392,6 +395,6 @@ export class DatePickerManager {
       quickButtons.remove();
     }
     
-    console.log('DatePickerManager: Ressources nettoyées');
+    this.logger.debug('DatePickerManager resources cleaned up');
   }
 }

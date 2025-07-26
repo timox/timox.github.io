@@ -4,6 +4,7 @@
 import { TABLE_ID, REQUIRED_COLUMNS, OPTIONAL_COLUMNS, DEFAULT_BUREAUX, DEFAULT_RESPONSABLES } from '../config/constants.js';
 import { displayError, displaySuccess } from '../utils/dom.js';
 import { normalizeDate } from '../utils/dates.js';
+import { createModuleLogger } from '../utils/LoggerManager.js';
 
 /**
  * Gestionnaire pour l'interface avec Grist
@@ -16,6 +17,7 @@ export class GristManager {
     this.availableColumns = new Set();
     this.currentRecords = [];
     this.gristOptions = {};
+    this.logger = createModuleLogger('GristManager');
     
     this.init();
   }
@@ -28,9 +30,9 @@ export class GristManager {
       await this.waitForGristReady();
       await this.loadInitialData();
       this.isConnected = true;
-      console.log('GristManager: Connexion établie avec Grist');
+      this.logger.info('Connexion établie avec Grist');
     } catch (error) {
-      console.error('GristManager: Erreur d\'initialisation:', error);
+      this.logger.error('Erreur d\'initialisation:', error);
       displayError('Impossible de se connecter à Grist');
     }
   }
@@ -69,7 +71,7 @@ export class GristManager {
    */
   async loadInitialData() {
     try {
-      console.log('GristManager: Chargement des données...');
+      this.logger.debug('Chargement des données...');
       
       // Charger les enregistrements de la table principale
       const records = await grist.docApi.fetchTable(TABLE_ID);
@@ -77,14 +79,14 @@ export class GristManager {
       if (records && typeof records === 'object') {
         // Détecter les colonnes disponibles
         this.availableColumns = new Set(Object.keys(records));
-        console.log('GristManager: Colonnes détectées:', Array.from(this.availableColumns));
+        this.logger.debug('Colonnes détectées:', Array.from(this.availableColumns));
         
         // Vérifier les colonnes requises
         this.validateRequiredColumns();
         
         // Mapper les enregistrements
         this.currentRecords = this.mapGristRecords(records);
-        console.log(`GristManager: ${this.currentRecords.length} enregistrements chargés`);
+        this.logger.info(`${this.currentRecords.length} enregistrements chargés`);
         
         // Charger les options (listes déroulantes, etc.)
         await this.loadGristOptions();
@@ -94,7 +96,7 @@ export class GristManager {
       }
       
     } catch (error) {
-      console.error('GristManager: Erreur chargement données:', error);
+      this.logger.error('Erreur chargement données:', error);
       throw error;
     }
   }
@@ -106,13 +108,13 @@ export class GristManager {
     const missingColumns = REQUIRED_COLUMNS.filter(col => !this.availableColumns.has(col));
     
     if (missingColumns.length > 0) {
-      console.warn('GristManager: Colonnes manquantes:', missingColumns);
+      this.logger.warn('Colonnes manquantes:', missingColumns);
       displayError(`Colonnes manquantes dans Grist: ${missingColumns.join(', ')}`);
     }
     
     // Vérifier les colonnes optionnelles
     const availableOptional = OPTIONAL_COLUMNS.filter(col => this.availableColumns.has(col));
-    console.log('GristManager: Colonnes optionnelles disponibles:', availableOptional);
+    this.logger.debug('Colonnes optionnelles disponibles:', availableOptional);
   }
   
   /**
@@ -124,13 +126,13 @@ export class GristManager {
     const records = [];
     
     if (!gristData || typeof gristData !== 'object') {
-      console.warn('GristManager: Données Grist invalides');
+      this.logger.warn('Données Grist invalides');
       return [];
     }
     
     const keys = Object.keys(gristData);
     if (!keys.includes('id') || !Array.isArray(gristData.id)) {
-      console.warn('GristManager: Structure de données Grist invalide');
+      this.logger.warn('Structure de données Grist invalide');
       return [];
     }
     
@@ -219,10 +221,10 @@ export class GristManager {
         impacts: this.extractUniqueValues('impact', false)
       };
       
-      console.log('GristManager: Options extraites (avec défauts):', this.gristOptions);
+      this.logger.debug('Options extraites (avec défauts):', this.gristOptions);
       
     } catch (error) {
-      console.error('GristManager: Erreur chargement options:', error);
+      this.logger.error('Erreur chargement options:', error);
     }
   }
   
@@ -280,7 +282,7 @@ export class GristManager {
       
       if (recordId) {
         // Mise à jour
-        console.log(`GristManager: Mise à jour enregistrement ${recordId}`);
+        this.logger.debug(`Mise à jour enregistrement ${recordId}`);
         await grist.docApi.applyUserActions([
           ['UpdateRecord', TABLE_ID, recordId, gristData]
         ]);
@@ -291,7 +293,7 @@ export class GristManager {
         
       } else {
         // Création
-        console.log('GristManager: Création nouvel enregistrement');
+        this.logger.debug('Création nouvel enregistrement');
         const actionResult = await grist.docApi.applyUserActions([
           ['AddRecord', TABLE_ID, null, gristData]
         ]);
@@ -308,11 +310,11 @@ export class GristManager {
         }
       }
       
-      console.log('GristManager: Sauvegarde réussie');
+      this.logger.info('Sauvegarde réussie');
       return result;
       
     } catch (error) {
-      console.error('GristManager: Erreur sauvegarde:', error);
+      this.logger.error('Erreur sauvegarde:', error);
       throw error;
     } finally {
       this.isUpdating = false;
@@ -332,7 +334,7 @@ export class GristManager {
     this.isUpdating = true;
     
     try {
-      console.log(`GristManager: Suppression enregistrement ${recordId}`);
+      this.logger.debug(`Suppression enregistrement ${recordId}`);
       
       await grist.docApi.applyUserActions([
         ['RemoveRecord', TABLE_ID, recordId]
@@ -341,10 +343,10 @@ export class GristManager {
       // Supprimer localement
       this.removeLocalRecord(recordId);
       
-      console.log('GristManager: Suppression réussie');
+      this.logger.info('Suppression réussie');
       
     } catch (error) {
-      console.error('GristManager: Erreur suppression:', error);
+      this.logger.error('Erreur suppression:', error);
       throw error;
     } finally {
       this.isUpdating = false;
@@ -397,8 +399,7 @@ export class GristManager {
     const gristData = {};
     
     // Copier les champs simples
-    const simpleFields = ['titre', 'description', 'statut', 'projet', 'urgence', 'impact', 
-                         'strategie_objectif', 'strategie_sous_objectif', 'strategie_action', 'notes'];
+    const simpleFields = ['titre', 'description', 'statut', 'projet', 'urgence', 'impact', 'notes'];
     
     simpleFields.forEach(field => {
       if (recordData.hasOwnProperty(field)) {
@@ -413,6 +414,22 @@ export class GristManager {
     
     if (recordData.qui) {
       gristData.qui = Array.isArray(recordData.qui) ? recordData.qui : ['L'];
+    }
+    
+    // 🔧 CORRECTION: Traiter strategie_id selon le schema Grist (Reference)
+    if (recordData.strategie_id) {
+      // Si c'est déjà au format Grist ["L", ID], conserver tel quel
+      if (Array.isArray(recordData.strategie_id) && recordData.strategie_id.length === 2 && recordData.strategie_id[0] === 'L') {
+        gristData.strategie_id = recordData.strategie_id;
+      } 
+      // Si c'est un ID simple, convertir au format Grist
+      else if (typeof recordData.strategie_id === 'number' || typeof recordData.strategie_id === 'string') {
+        gristData.strategie_id = ['L', parseInt(recordData.strategie_id, 10)];
+      }
+      // Si c'est null/undefined, laisser null
+      else {
+        gristData.strategie_id = null;
+      }
     }
     
     // Traiter les dates
@@ -482,11 +499,11 @@ export class GristManager {
    */
   handleRecordsUpdate(records, mappings) {
     if (this.isUpdating) {
-      console.log('GristManager: Ignorer mise à jour (opération en cours)');
+      this.logger.debug('Ignorer mise à jour (opération en cours)');
       return;
     }
     
-    console.log('GristManager: Mise à jour des enregistrements depuis Grist');
+    this.logger.debug('Mise à jour des enregistrements depuis Grist');
     
     try {
       // Recharger les données complètes
@@ -497,7 +514,7 @@ export class GristManager {
         }
       });
     } catch (error) {
-      console.error('GristManager: Erreur lors de la mise à jour:', error);
+      this.logger.error('Erreur lors de la mise à jour:', error);
       displayError('Erreur lors de la synchronisation avec Grist');
     }
   }
@@ -507,7 +524,7 @@ export class GristManager {
    * @param {object} options - Nouvelles options
    */
   handleOptionsUpdate(options) {
-    console.log('GristManager: Mise à jour des options:', options);
+    this.logger.debug('Mise à jour des options:', options);
     // Traiter les changements d'options si nécessaire
   }
   
@@ -515,7 +532,7 @@ export class GristManager {
    * Gestionnaire d'édition des options
    */
   handleEditOptions() {
-    console.log('GristManager: Mode édition des options activé');
+    this.logger.debug('Mode édition des options activé');
     // Permettre à l'utilisateur de configurer le widget
   }
   
@@ -535,11 +552,11 @@ export class GristManager {
           this.kanban.onDataReloaded(this.currentRecords, this.gristOptions);
         }
         
-        console.log(`GristManager: ${this.currentRecords.length} enregistrements rechargés`);
+        this.logger.info(`${this.currentRecords.length} enregistrements rechargés`);
       }
       
     } catch (error) {
-      console.error('GristManager: Erreur rechargement:', error);
+      this.logger.error('Erreur rechargement:', error);
       throw error;
     }
   }
@@ -699,7 +716,7 @@ export class GristManager {
         docName: docInfo.name || 'Document sans nom'
       };
     } catch (error) {
-      console.warn('GristManager: Impossible de récupérer les infos utilisateur:', error);
+      this.logger.warn('Impossible de récupérer les infos utilisateur:', error);
       return null;
     }
   }
@@ -728,6 +745,6 @@ export class GristManager {
     this.gristOptions = {};
     this.availableColumns.clear();
     
-    console.log('GristManager: Ressources nettoyées');
+    this.logger.info('Ressources nettoyées');
   }
 }

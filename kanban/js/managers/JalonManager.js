@@ -2,24 +2,54 @@
 // Gestionnaire des jalons et étapes temporelles dans les tâches
 
 import { setFieldValue, getFieldValue } from '../utils/dom.js';
+import { createModuleLogger } from '../utils/LoggerManager.js';
 
 export class JalonManager {
   constructor(kanban) {
     this.kanban = kanban;
-    this.jalons = [];
+    this.jalons = []; // Jalons de la tâche actuellement ouverte
+    // ❌ CACHE SUPPRIMÉ - Approche stateless pour éviter la propagation entre tâches
+    // this.jalonsCache = new Map();
     this.currentEditingId = null;
+    this.currentTaskId = null; // ID de la tâche en cours d'édition
     this.jalonModal = null;
     
     this.init();
   }
 
   init() {
-    console.log('🗓️ Initialisation JalonManager...');
+    this.logger = createModuleLogger('JalonManager');
+    this.logger.debug('Initialisation JalonManager...');
     
     // Initialiser la modale Bootstrap
     this.jalonModal = new bootstrap.Modal(document.getElementById('jalonModal'));
     
     this.setupEventListeners();
+  }
+
+  /**
+   * Définit l'ID de la tâche en cours d'édition
+   */
+  setCurrentTaskId(taskId) {
+    // Si on change de tâche, réinitialiser complètement (approche stateless)
+    if (this.currentTaskId !== taskId) {
+      this.logger.debug(`Changement de tâche ${this.currentTaskId} → ${taskId}`);
+      
+      // ❌ CACHE SUPPRIMÉ - Approche stateless, reset complet à chaque tâche
+      // Réinitialiser complètement les jalons (ils seront rechargés depuis la DB)
+      this.jalons = [];
+      this.logger.debug(`Jalons réinitialisés pour la tâche ${taskId}`);
+      
+      this.updateJalonsDisplay();
+    }
+    this.currentTaskId = taskId;
+  }
+
+  /**
+   * Récupère l'ID de la tâche en cours d'édition
+   */
+  getCurrentTaskId() {
+    return this.currentTaskId;
   }
 
   setupEventListeners() {
@@ -50,6 +80,32 @@ export class JalonManager {
     // Reset form à la fermeture de la modale
     document.getElementById('jalonModal').addEventListener('hidden.bs.modal', () => {
       this.resetJalonForm();
+    });
+
+    // Délégation d'événements pour les boutons de suppression (éléments dynamiques)
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('.btn-delete-jalon')) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const btn = e.target.closest('.btn-delete-jalon');
+        const jalonId = btn.dataset.jalonId;
+        
+        if (!jalonId) {
+          this.logger.error('ID de jalon manquant pour la suppression');
+          return;
+        }
+        
+        this.logger.debug('Suppression du jalon ID:', jalonId);
+        
+        if (confirm('Êtes-vous sûr de vouloir supprimer ce jalon ?')) {
+          try {
+            this.deleteJalon(jalonId);
+          } catch (error) {
+            this.logger.error('Erreur lors de la suppression du jalon:', error);
+          }
+        }
+      }
     });
   }
 
@@ -105,19 +161,48 @@ export class JalonManager {
   /**
    * Sauvegarde le jalon (création ou modification)
    */
-  saveJalon() {
+  async saveJalon() {
     const jalonData = this.collectJalonFormData();
     
     if (!this.validateJalonData(jalonData)) {
       return;
     }
 
-    if (this.currentEditingId) {
+    const isEdit = !!this.currentEditingId;
+    const taskId = this.getCurrentTaskId();
+
+    if (isEdit) {
       // Mode édition
+      const oldJalon = this.jalons.find(j => j.id === this.currentEditingId);
       this.updateJalon(this.currentEditingId, jalonData);
+      
+      // Ajouter à l'historique avec détails
+      if (taskId && this.kanban.userActionManager) {
+        const details = this.getJalonModificationDetails(oldJalon, jalonData);
+        await this.kanban.userActionManager.addHistoryEntry(
+          taskId,
+          'jalon_modifie',
+          `Jalon modifié: ${jalonData.titre} (${jalonData.date}) - ${details}`,
+          JSON.stringify(oldJalon), // oldValue
+          JSON.stringify(jalonData), // newValue
+          ''
+        );
+      }
     } else {
       // Mode création
       this.addJalon(jalonData);
+      
+      // Ajouter à l'historique
+      if (taskId && this.kanban.userActionManager) {
+        await this.kanban.userActionManager.addHistoryEntry(
+          taskId,
+          'jalon_ajoute',
+          `Nouveau jalon ajouté: ${jalonData.titre} (${jalonData.date}) - Type: ${this.getJalonTypeLabel(jalonData.type)}`,
+          '', // oldValue
+          JSON.stringify(jalonData), // newValue
+          ''
+        );
+      }
     }
 
     this.jalonModal.hide();
@@ -129,15 +214,32 @@ export class JalonManager {
    * Collecte les données du formulaire de jalon
    */
   collectJalonFormData() {
+    // Vérifier que les éléments existent
+    const titreElement = document.getElementById('jalon-titre');
+    const dateElement = document.getElementById('jalon-date');
+    const commentaireElement = document.getElementById('jalon-commentaire');
+    const statutElement = document.getElementById('jalon-statut');
+    
+    if (!titreElement || !dateElement || !commentaireElement || !statutElement) {
+      this.logger.error('Éléments de formulaire jalon manquants:', {
+        titre: !!titreElement,
+        date: !!dateElement,
+        commentaire: !!commentaireElement,
+        statut: !!statutElement
+      });
+    }
+    
     const data = {
       id: this.currentEditingId || this.generateJalonId(),
       type: this.selectedType || 'reunion',
-      titre: document.getElementById('jalon-titre').value.trim(),
-      date: document.getElementById('jalon-date').value,
-      commentaire: document.getElementById('jalon-commentaire').value.trim(),
-      statut: document.getElementById('jalon-statut').value,
+      titre: titreElement ? titreElement.value.trim() : '',
+      date: dateElement ? dateElement.value : '',
+      commentaire: commentaireElement ? commentaireElement.value.trim() : '',
+      statut: statutElement ? statutElement.value : 'planifie',
       created_at: new Date().toISOString()
     };
+    
+    this.logger.debug('Données jalon collectées:', data);
 
     // Ajouter les champs spécifiques selon le type
     switch (data.type) {
@@ -191,8 +293,20 @@ export class JalonManager {
    * Ajoute un nouveau jalon
    */
   addJalon(jalonData) {
-    this.jalons.push(jalonData);
-    console.log('➕ Jalon ajouté:', jalonData);
+    // Vérifier qu'on n'ajoute pas un doublon basé sur l'ID
+    const existingIndex = this.jalons.findIndex(j => j.id === jalonData.id);
+    if (existingIndex !== -1) {
+      this.logger.warn('Jalon avec même ID déjà existant, mise à jour:', jalonData.id);
+      this.jalons[existingIndex] = jalonData;
+    } else {
+      this.jalons.push(jalonData);
+      this.logger.debug('Jalon ajouté:', jalonData.titre, `(Total: ${this.jalons.length})`);
+    }
+    
+    // ❌ CACHE SUPPRIMÉ - Approche stateless: pas de cache, les jalons restent en mémoire uniquement pour la session
+    
+    // Immédiatement synchroniser avec le formulaire
+    this.saveJalonsToForm();
   }
 
   /**
@@ -202,20 +316,91 @@ export class JalonManager {
     const index = this.jalons.findIndex(j => j.id === id);
     if (index !== -1) {
       this.jalons[index] = { ...this.jalons[index], ...jalonData };
-      console.log('✏️ Jalon mis à jour:', jalonData);
+      this.logger.debug('Jalon mis à jour:', jalonData.titre);
+      
+      // ❌ CACHE SUPPRIMÉ - Approche stateless: pas de mise à jour de cache
     }
   }
 
   /**
    * Supprime un jalon
    */
-  deleteJalon(id) {
+  async deleteJalon(id) {
+    if (!id) {
+      this.logger.error('ID de jalon manquant pour la suppression');
+      return;
+    }
+    
+    this.logger.debug('Tentative suppression jalon ID:', id);
+    this.logger.debug('Jalons actuels:', this.jalons.map(j => ({ id: j.id, titre: j.titre })));
+    this.logger.debug('CurrentTaskId:', this.currentTaskId);
+    
     const index = this.jalons.findIndex(j => j.id === id);
+    
     if (index !== -1) {
-      this.jalons.splice(index, 1);
-      this.updateJalonsDisplay();
-      this.saveJalonsToForm();
-      console.log('🗑️ Jalon supprimé:', id);
+      const jalonData = this.jalons[index];
+      const taskId = this.getCurrentTaskId();
+      
+      this.logger.debug('Suppression du jalon:', jalonData.titre);
+      
+      try {
+        // Supprimer du tableau
+        this.jalons.splice(index, 1);
+        
+        // ❌ CACHE SUPPRIMÉ - Approche stateless: pas de mise à jour de cache
+        
+        // Mettre à jour l'affichage
+        this.updateJalonsDisplay();
+        this.saveJalonsToForm();
+        
+        // Ajouter à l'historique
+        if (taskId && this.kanban.userActionManager) {
+          await this.kanban.userActionManager.addHistoryEntry(
+            taskId,
+            'jalon_supprime',
+            `Jalon supprimé: ${jalonData.titre} (${jalonData.date}) - Type: ${this.getJalonTypeLabel(jalonData.type)}`,
+            JSON.stringify(jalonData), // oldValue
+            '', // newValue
+            ''
+          );
+        }
+        
+        this.logger.debug('Jalon supprimé avec succès:', id);
+        
+      } catch (error) {
+        this.logger.error('Erreur lors de la suppression du jalon:', error);
+        throw error;
+      }
+    } else {
+      this.logger.warn('Jalon non trouvé pour suppression. ID:', id);
+      this.logger.debug('IDs disponibles:', this.jalons.map(j => j.id));
+      this.logger.debug('Types des IDs:', this.jalons.map(j => typeof j.id));
+      this.logger.debug('ID recherché type:', typeof id);
+      
+      // Essayer de trouver avec conversion de type
+      const altIndex = this.jalons.findIndex(j => String(j.id) === String(id));
+      if (altIndex !== -1) {
+        this.logger.warn('Jalon trouvé avec conversion de type, suppression...');
+        const jalonData = this.jalons[altIndex];
+        this.jalons.splice(altIndex, 1);
+        this.updateJalonsDisplay();
+        this.saveJalonsToForm();
+        this.logger.debug('✅ Jalon supprimé avec conversion de type');
+        return;
+      }
+      
+      // Debug exhaustif si toujours pas trouvé
+      this.logger.error('Échec suppression jalon, debug complet:');
+      this.logger.error('ID recherché:', id, typeof id);
+      this.logger.error('Jalons disponibles:');
+      this.jalons.forEach((j, index) => {
+        this.logger.error(`  [${index}] ID: "${j.id}" (${typeof j.id}) - Titre: "${j.titre}"`);
+        this.logger.error(`      String match: ${String(j.id) === String(id)}`);
+        this.logger.error(`      == match: ${j.id == id}`);
+        this.logger.error(`      === match: ${j.id === id}`);
+      });
+      this.logger.error('CurrentTaskId:', this.currentTaskId);
+      this.logger.error('Nombre total jalons:', this.jalons.length);
     }
   }
 
@@ -229,7 +414,7 @@ export class JalonManager {
 
     // Vérifier que les éléments existent
     if (!timeline || !countBadge) {
-      console.warn('JalonManager: Éléments DOM jalons non trouvés');
+      this.logger.warn('Éléments DOM jalons non trouvés');
       return;
     }
 
@@ -380,23 +565,45 @@ export class JalonManager {
     // Boutons d'édition
     document.querySelectorAll('.btn-edit-jalon').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const jalonId = e.target.closest('[data-jalon-id]').dataset.jalonId;
-        const jalon = this.jalons.find(j => j.id === jalonId);
-        if (jalon) {
-          this.openJalonModal(jalon);
+        e.preventDefault();
+        e.stopPropagation();
+        
+        try {
+          // Rechercher l'ID de jalon de manière plus robuste
+          let jalonId;
+          
+          // Méthode 1: depuis le bouton lui-même
+          if (btn.dataset.jalonId) {
+            jalonId = btn.dataset.jalonId;
+          }
+          // Méthode 2: depuis le parent avec data-jalon-id
+          else {
+            const jalonElement = btn.closest('[data-jalon-id]');
+            if (jalonElement) {
+              jalonId = jalonElement.dataset.jalonId;
+            }
+          }
+          
+          if (!jalonId) {
+            this.logger.error('Impossible de trouver l\'ID du jalon à éditer');
+            return;
+          }
+          
+          this.logger.debug('Édition du jalon ID:', jalonId);
+          
+          const jalon = this.jalons.find(j => j.id === jalonId);
+          if (jalon) {
+            this.openJalonModal(jalon);
+          } else {
+            this.logger.error('Jalon non trouvé pour édition. ID:', jalonId);
+          }
+        } catch (error) {
+          this.logger.error('Erreur lors de l\'édition du jalon:', error);
         }
       });
     });
 
-    // Boutons de suppression
-    document.querySelectorAll('.btn-delete-jalon').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const jalonId = e.target.closest('[data-jalon-id]').dataset.jalonId;
-        if (confirm('Êtes-vous sûr de vouloir supprimer ce jalon ?')) {
-          this.deleteJalon(jalonId);
-        }
-      });
-    });
+    // Event listeners pour suppression gérés par délégation dans setupEventListeners()
   }
 
   /**
@@ -406,9 +613,12 @@ export class JalonManager {
     const jalon = this.jalons.find(j => j.id === jalonId);
     if (jalon) {
       jalon.statut = newStatus;
+      
+      // ❌ CACHE SUPPRIMÉ - Approche stateless: pas de mise à jour de cache
+      
       this.updateJalonsDisplay();
       this.saveJalonsToForm();
-      console.log(`📊 Statut jalon ${jalonId} mis à jour: ${newStatus}`);
+      this.logger.debug(`Statut jalon ${jalonId} mis à jour: ${newStatus}`);
     }
   }
 
@@ -466,6 +676,16 @@ export class JalonManager {
     document.getElementById('jalon-criteres').value = '';
     document.getElementById('jalon-format').value = '';
     document.getElementById('jalon-destinataire').value = '';
+  }
+
+  /**
+   * Vide les jalons pour une nouvelle tâche
+   */
+  clearJalonsForNewTask() {
+    this.logger.debug('Clearing jalons for new task');
+    this.jalons = [];
+    this.currentTaskId = null;
+    this.updateJalonsDisplay();
 
     // Désélectionner les types
     document.querySelectorAll('.jalon-type-card').forEach(card => {
@@ -484,25 +704,60 @@ export class JalonManager {
    */
   loadJalonsFromTask(taskData) {
     try {
-      if (taskData.jalons) {
-        if (typeof taskData.jalons === 'string') {
-          this.jalons = JSON.parse(taskData.jalons);
-        } else if (Array.isArray(taskData.jalons)) {
-          this.jalons = taskData.jalons;
-        } else {
-          this.jalons = [];
-        }
-      } else {
+      // Extraire l'ID de la tâche
+      const taskId = taskData?.id || taskData?.id_task;
+      
+      // Si pas de taskData ou pas d'ID, réinitialiser
+      if (!taskData || !taskId) {
+        this.logger.debug('loadJalonsFromTask: Pas de taskData ou d\'ID, réinitialisation');
+        this.setCurrentTaskId(null);
         this.jalons = [];
+        this.updateJalonsDisplay();
+        this.saveJalonsToForm();
+        return;
+      }
+      
+      // Définir la tâche courante (ceci gère automatiquement le cache)
+      this.setCurrentTaskId(taskId);
+      
+      // ❌ CACHE SUPPRIMÉ - Approche stateless: toujours recharger depuis la DB
+      
+      // Sinon, charger depuis les données de la tâche
+      if (taskData.jalons) {
+        let jalonsFromDB = [];
+        
+        if (typeof taskData.jalons === 'string') {
+          const jalonsData = JSON.parse(taskData.jalons);
+          // Nouveau format avec {jalons: [...]}
+          if (jalonsData && jalonsData.jalons && Array.isArray(jalonsData.jalons)) {
+            jalonsFromDB = [...jalonsData.jalons]; // Clone pour éviter les références
+          }
+          // Ancien format (array direct)
+          else if (Array.isArray(jalonsData)) {
+            jalonsFromDB = [...jalonsData]; // Clone pour éviter les références
+          }
+        } else if (Array.isArray(taskData.jalons)) {
+          jalonsFromDB = [...taskData.jalons]; // Clone pour éviter les références
+        }
+        
+        // Mettre à jour les jalons (sans cache)
+        this.jalons = jalonsFromDB;
+        
+        this.logger.debug(`${jalonsFromDB.length} jalons chargés depuis la DB pour la tâche ${taskId}`);
+      } else {
+        // Pas de jalons dans la DB
+        this.jalons = [];
+        this.logger.debug(`Aucun jalon en DB pour la tâche ${taskId}`);
       }
       
       this.updateJalonsDisplay();
-      console.log(`📋 ${this.jalons.length} jalons chargés pour la tâche`);
+      this.saveJalonsToForm();
       
     } catch (error) {
-      console.error('Erreur lors du chargement des jalons:', error);
+      this.logger.error('Erreur lors du chargement des jalons:', error);
       this.jalons = [];
       this.updateJalonsDisplay();
+      this.saveJalonsToForm();
     }
   }
 
@@ -510,14 +765,46 @@ export class JalonManager {
    * Sauvegarde les jalons dans le champ caché du formulaire
    */
   saveJalonsToForm() {
-    setFieldValue('popup-jalons', JSON.stringify(this.jalons));
+    // Ne sauvegarder que si on a des jalons ou si c'est explicite
+    if (this.jalons.length === 0) {
+      // Éviter de sauvegarder un JSON vide inutile
+      setFieldValue('popup-jalons', '');
+      this.logger.debug('Aucun jalon à sauvegarder - champ vidé');
+      return;
+    }
+    
+    const jalonsData = {
+      jalons: this.jalons,
+      lastModified: new Date().toISOString() // Format ISO plus lisible
+    };
+    const jsonString = JSON.stringify(jalonsData);
+    
+    this.logger.debug(`Sauvegarde de ${this.jalons.length} jalons dans le formulaire`);
+    
+    setFieldValue('popup-jalons', jsonString);
+    
   }
 
   /**
-   * Récupère les jalons depuis le formulaire
+   * Récupère les jalons depuis le formulaire pour sauvegarde
    */
   getJalonsForSave() {
-    return getFieldValue('popup-jalons') || '[]';
+    // Si pas de jalons, retourner null pour éviter de polluer la DB
+    if (!this.jalons || this.jalons.length === 0) {
+      this.logger.debug('JalonManager.getJalonsForSave() - Aucun jalon à sauvegarder');
+      return null;
+    }
+    
+    // Utiliser directement les jalons en mémoire qui sont à jour
+    const jalonsData = {
+      jalons: this.jalons,
+      lastModified: new Date().toISOString() // Format ISO plus lisible
+    };
+    
+    this.logger.debug('JalonManager.getJalonsForSave() - Jalons actuels:', this.jalons.length);
+    
+    // Retourner la string JSON directement pour Grist
+    return JSON.stringify(jalonsData);
   }
 
   // === UTILITAIRES ===
@@ -559,9 +846,7 @@ export class JalonManager {
     const dateStr = date.toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      year: 'numeric'
     });
 
     if (diffDays === 0) {
@@ -581,4 +866,39 @@ export class JalonManager {
     // Afficher une alerte ou un toast
     alert(message); // Temporaire, à remplacer par un système de toast
   }
+
+  /**
+   * Génère les détails des modifications d'un jalon
+   */
+  getJalonModificationDetails(oldJalon, newJalon) {
+    if (!oldJalon) return 'Nouveau jalon';
+    
+    const changes = [];
+    
+    // Vérifier les changements principaux
+    if (oldJalon.titre !== newJalon.titre) {
+      changes.push(`Titre: "${oldJalon.titre}" → "${newJalon.titre}"`);
+    }
+    
+    if (oldJalon.date !== newJalon.date) {
+      const oldDate = new Date(oldJalon.date).toLocaleDateString('fr-FR');
+      const newDate = new Date(newJalon.date).toLocaleDateString('fr-FR');
+      changes.push(`Date: ${oldDate} → ${newDate}`);
+    }
+    
+    if (oldJalon.type !== newJalon.type) {
+      changes.push(`Type: ${this.getJalonTypeLabel(oldJalon.type)} → ${this.getJalonTypeLabel(newJalon.type)}`);
+    }
+    
+    if (oldJalon.statut !== newJalon.statut) {
+      changes.push(`Statut: ${oldJalon.statut} → ${newJalon.statut}`);
+    }
+    
+    if (oldJalon.commentaire !== newJalon.commentaire) {
+      changes.push('Commentaire modifié');
+    }
+    
+    return changes.length > 0 ? changes.join(', ') : 'Modification mineure';
+  }
+
 }
