@@ -5,14 +5,13 @@ import {
   STATUTS, 
   DEFAULT_BUREAUX, 
   DEFAULT_RESPONSABLES, 
-  TABLE_ID,
-  STRATEGY_DATA
+  TABLE_ID
 } from './config/constants.js';
 
 class StatsManager {
   constructor() {
     this.tasks = [];
-    this.strategiesData = STRATEGY_DATA || [];
+    this.strategiesData = [];
     this.charts = {};
     
     this.init();

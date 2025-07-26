@@ -11,7 +11,6 @@ import {
   OPTIONAL_COLUMNS,
   VIEW_MODES,
   getDefaultStatuts,
-  STRATEGY_DATA
 } from './config/constants.js';
 
 import {
@@ -369,29 +368,27 @@ class KanbanManager {
   // Chargement des stratégies depuis les données intégrées
   async loadStrategiesFromGrist() {
     try {
-      console.log('Chargement des stratégies depuis les données intégrées...');
+      console.log('Chargement des stratégies depuis Grist...');
       
-      if (STRATEGY_DATA && STRATEGY_DATA.length > 0) {
-        // Utiliser les données intégrées depuis constants.js
-        this.strategiesData = STRATEGY_DATA.map(strategy => ({
-          id: strategy.id,
-          id2: strategy.id, // Fallback pour compatibilité
-          objectif: strategy.objectif,
-          sous_objectif: strategy.sous_objectif,
-          action: strategy.action,
-          responsable: strategy.responsable,
-          echeance: strategy.echeance,
-          portee: strategy.portee
-        })).sort((a, b) => a.id - b.id);
-        
-        console.log(`✅ Stratégies chargées depuis données intégrées: ${this.strategiesData.length} stratégies`);
-        console.log('Aperçu des stratégies:', this.strategiesData.slice(0, 3));
-      } else {
-        console.warn('STRATEGY_DATA non disponible ou vide');
-        this.strategiesData = [];
-      }
+      const strategiesTable = grist.getTable('ssir_strategie');
+      const strategiesRecords = await strategiesTable.getRecords();
+      
+      this.strategiesData = strategiesRecords.map(record => ({
+        id: record.id,
+        id2: record.id,
+        objectif: record.objectif || '',
+        sous_objectif: record.sous_objectif || '',
+        action: record.action || '',
+        responsable: record.responsable || '',
+        echeance: record.echeance || '',
+        portee: record.portee || ''
+      })).sort((a, b) => a.id - b.id);
+      
+      console.log(`✅ ${this.strategiesData.length} stratégies chargées depuis Grist`);
+      console.log('Aperçu des stratégies:', this.strategiesData.slice(0, 3));
+      
     } catch (stratError) {
-      console.error('Erreur chargement stratégies intégrées:', stratError);
+      console.error('Erreur chargement stratégies depuis Grist:', stratError);
       this.strategiesData = [];
     }
   }
@@ -1638,11 +1635,8 @@ class KanbanManager {
         console.warn(`Erreur UserAction (non bloquante):`, userActionError);
       }
       
-      // Petit délai puis refresh pour laisser Grist se synchroniser
-      setTimeout(() => {
-        console.log(`Refresh kanban après délai pour ${taskId}`);
-        this.refreshKanban();
-      }, 200);
+      // Refresh direct depuis Grist après sauvegarde
+      this.refreshKanban();
       console.log(`Succès mise à jour statut ${taskId}.`);
 
     } catch (error) {
