@@ -11,7 +11,6 @@ import {
   OPTIONAL_COLUMNS,
   VIEW_MODES,
   getDefaultStatuts,
-  STRATEGY_DATA
 } from './config/constants.js';
 
 import {
@@ -369,29 +368,61 @@ class KanbanManager {
   // Chargement des stratégies depuis les données intégrées
   async loadStrategiesFromGrist() {
     try {
-      console.log('Chargement des stratégies depuis les données intégrées...');
+      console.log('Chargement des stratégies depuis Grist...');
       
-      if (STRATEGY_DATA && STRATEGY_DATA.length > 0) {
-        // Utiliser les données intégrées depuis constants.js
-        this.strategiesData = STRATEGY_DATA.map(strategy => ({
-          id: strategy.id,
-          id2: strategy.id, // Fallback pour compatibilité
-          objectif: strategy.objectif,
-          sous_objectif: strategy.sous_objectif,
-          action: strategy.action,
-          responsable: strategy.responsable,
-          echeance: strategy.echeance,
-          portee: strategy.portee
-        })).sort((a, b) => a.id - b.id);
-        
-        console.log(`✅ ${this.strategiesData.length} stratégies chargées depuis données intégrées`);
-        console.log('Aperçu des stratégies:', this.strategiesData.slice(0, 3));
-      } else {
-        console.warn('STRATEGY_DATA non disponible ou vide');
-        this.strategiesData = [];
+      // Vérifier le cache en sessionStorage (expire après fermeture du navigateur)
+      const cacheKey = 'kanban_strategies_cache';
+      const cached = sessionStorage.getItem(cacheKey);
+      
+      if (cached) {
+        const cacheData = JSON.parse(cached);
+        // Cache valide pendant 24h
+        if (cacheData.timestamp && (Date.now() - cacheData.timestamp < 24 * 60 * 60 * 1000)) {
+          this.strategiesData = cacheData.strategies;
+          console.log(`✅ ${this.strategiesData.length} stratégies chargées depuis le cache`);
+          return;
+        }
       }
+      
+      // Sinon charger depuis Grist
+      const strategiesData = await grist.docApi.fetchTable('ssir_strategie');
+      
+      if (!strategiesData || !strategiesData.id) {
+        console.warn('Données stratégies vides ou invalides');
+        this.strategiesData = [];
+        return;
+      }
+      
+      // Convertir le format Grist en tableau d'objets
+      const strategiesArray = [];
+      const ids = Object.keys(strategiesData.id);
+      
+      ids.forEach(key => {
+        strategiesArray.push({
+          id: strategiesData.id[key],
+          id2: strategiesData.id[key],
+          objectif: strategiesData.objectif?.[key] || '',
+          sous_objectif: strategiesData.sous_objectif?.[key] || '',
+          action: strategiesData.action?.[key] || '',
+          responsable: strategiesData.responsable?.[key] || '',
+          echeance: strategiesData.echeance?.[key] || '',
+          portee: strategiesData.portee?.[key] || ''
+        });
+      });
+      
+      this.strategiesData = strategiesArray.sort((a, b) => a.id - b.id);
+      
+      // Mettre en cache
+      sessionStorage.setItem(cacheKey, JSON.stringify({
+        strategies: this.strategiesData,
+        timestamp: Date.now()
+      }));
+      
+      console.log(`✅ ${this.strategiesData.length} stratégies chargées depuis Grist et mises en cache`);
+      console.log('Aperçu des stratégies:', this.strategiesData.slice(0, 3));
+      
     } catch (stratError) {
-      console.error('Erreur chargement stratégies intégrées:', stratError);
+      console.error('Erreur chargement stratégies depuis Grist:', stratError);
       this.strategiesData = [];
     }
   }
