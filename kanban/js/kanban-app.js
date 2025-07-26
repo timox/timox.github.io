@@ -1601,14 +1601,14 @@ class KanbanManager {
     const itemEl = evt.item;
     const targetContainer = evt.to;
     const taskId = parseInt(itemEl.dataset.id, 10);
-    const newStatus = targetContainer.dataset.statusId;
+    const newStatus = targetContainer.dataset.status;
 
     console.log(`🐛 Debug drag&drop:`, {
       taskId,
       newStatus,
       currentRecordsCount: this.currentRecords?.length || 0,
       datasetId: itemEl.dataset.id,
-      datasetStatusId: targetContainer.dataset.statusId
+      datasetStatus: targetContainer.dataset.status
     });
 
     const record = this.currentRecords.find(r => r.id === taskId);
