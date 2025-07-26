@@ -370,21 +370,55 @@ class KanbanManager {
     try {
       console.log('Chargement des stratégies depuis Grist...');
       
-      const strategiesTable = grist.getTable('ssir_strategie');
-      const strategiesRecords = await strategiesTable.getRecords();
+      // Vérifier le cache en sessionStorage (expire après fermeture du navigateur)
+      const cacheKey = 'kanban_strategies_cache';
+      const cached = sessionStorage.getItem(cacheKey);
       
-      this.strategiesData = strategiesRecords.map(record => ({
-        id: record.id,
-        id2: record.id,
-        objectif: record.objectif || '',
-        sous_objectif: record.sous_objectif || '',
-        action: record.action || '',
-        responsable: record.responsable || '',
-        echeance: record.echeance || '',
-        portee: record.portee || ''
-      })).sort((a, b) => a.id - b.id);
+      if (cached) {
+        const cacheData = JSON.parse(cached);
+        // Cache valide pendant 24h
+        if (cacheData.timestamp && (Date.now() - cacheData.timestamp < 24 * 60 * 60 * 1000)) {
+          this.strategiesData = cacheData.strategies;
+          console.log(`✅ ${this.strategiesData.length} stratégies chargées depuis le cache`);
+          return;
+        }
+      }
       
-      console.log(`✅ ${this.strategiesData.length} stratégies chargées depuis Grist`);
+      // Sinon charger depuis Grist
+      const strategiesData = await grist.docApi.fetchTable('ssir_strategie');
+      
+      if (!strategiesData || !strategiesData.id) {
+        console.warn('Données stratégies vides ou invalides');
+        this.strategiesData = [];
+        return;
+      }
+      
+      // Convertir le format Grist en tableau d'objets
+      const strategiesArray = [];
+      const ids = Object.keys(strategiesData.id);
+      
+      ids.forEach(key => {
+        strategiesArray.push({
+          id: strategiesData.id[key],
+          id2: strategiesData.id[key],
+          objectif: strategiesData.objectif?.[key] || '',
+          sous_objectif: strategiesData.sous_objectif?.[key] || '',
+          action: strategiesData.action?.[key] || '',
+          responsable: strategiesData.responsable?.[key] || '',
+          echeance: strategiesData.echeance?.[key] || '',
+          portee: strategiesData.portee?.[key] || ''
+        });
+      });
+      
+      this.strategiesData = strategiesArray.sort((a, b) => a.id - b.id);
+      
+      // Mettre en cache
+      sessionStorage.setItem(cacheKey, JSON.stringify({
+        strategies: this.strategiesData,
+        timestamp: Date.now()
+      }));
+      
+      console.log(`✅ ${this.strategiesData.length} stratégies chargées depuis Grist et mises en cache`);
       console.log('Aperçu des stratégies:', this.strategiesData.slice(0, 3));
       
     } catch (stratError) {
