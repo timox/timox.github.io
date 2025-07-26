@@ -421,25 +421,12 @@ class KanbanManager {
             rec[key] = v;
           }
           
-          // Debug pour strategie_id
-          if (key === 'strategie_id') {
-            console.log(`📋 Record ${i} - strategie_id:`, {
-              value: v,
-              type: typeof v,
-              isNull: v === null,
-              isEmpty: v === '',
-              isZero: v === 0
-            });
-          }
+          // Debug strategie_id supprimé pour performance
         } else if (key === 'id') { 
           ok = false; 
           break; 
         } else {
           rec[key] = null;
-          // Debug pour strategie_id quand manquant
-          if (key === 'strategie_id') {
-            console.log(`📋 Record ${i} - strategie_id MANQUANT (défini à null)`);
-          }
         }
       }
       
@@ -770,13 +757,7 @@ class KanbanManager {
   }
 
   getMultipleStrategiesInfo(strategieIds) {
-    console.log(`🔍 getMultipleStrategiesInfo appelé avec:`, {
-      strategieIds,
-      strategieIds_type: typeof strategieIds,
-      strategieIds_isArray: Array.isArray(strategieIds),
-      strategiesData_available: !!this.strategiesData,
-      strategiesData_length: this.strategiesData?.length || 0
-    });
+    // Debug supprimé pour performance
     
     if (!strategieIds || !this.strategiesData) {
       console.log(`❌ Retour vide: strategieIds=${strategieIds}, strategiesData=${!!this.strategiesData}`);
@@ -793,38 +774,30 @@ class KanbanManager {
       if (strategieIds.length === 2 && strategieIds[0] === 'L' && typeof strategieIds[1] === 'number') {
         // Un seul élément: ['L', 6]
         idsArray = [strategieIds[1]];
-        console.log(`🔄 Format ReferenceList (single):`, strategieIds, `→`, idsArray);
+        // Debug format supprimé
       } else {
         // Plusieurs éléments: [['L', 6], ['L', 8]]
         idsArray = strategieIds
           .map(item => Array.isArray(item) && item[0] === "L" ? item[1] : item)
           .filter(id => id !== "L" && id !== null && id !== undefined);
-        console.log(`🔄 Format ReferenceList (multiple):`, strategieIds, `→`, idsArray);
+        // Debug format supprimé
       }
     } else if (typeof strategieIds === 'string' && strategieIds.startsWith('L,')) {
       // Format string "L,8" → extraire l'ID numérique
       const idNumber = parseInt(strategieIds.substring(2), 10);
       if (!isNaN(idNumber)) {
         idsArray = [idNumber];
-        console.log(`🔄 Format string "L,X":`, strategieIds, `→ [${idNumber}]`);
+        // Debug format supprimé
       }
     } else if (strategieIds !== null && strategieIds !== undefined) {
       idsArray = [strategieIds];
-      console.log(`🔄 Format legacy:`, strategieIds, `→ [${strategieIds}]`);
+      // Debug format supprimé
     }
     
-    console.log(`🧹 IDs finaux à chercher:`, idsArray);
-    
+    // Recherche des stratégies (debug supprimé pour performance)
     const result = idsArray
-      .map(id => {
-        // Chercher par ID numérique (ID de ligne Grist)
-        const found = this.strategiesData.find(strategy => strategy.id === id);
-        console.log(`🔎 Recherche ID ${id}:`, found ? `Trouvé: ${found.objectif} → ${found.action}` : 'Non trouvé');
-        return found;
-      })
+      .map(id => this.strategiesData.find(strategy => strategy.id === id))
       .filter(strategy => strategy !== undefined);
-    
-    console.log(`✅ Résultat final getMultipleStrategiesInfo:`, result);
     return result;
   }
 
