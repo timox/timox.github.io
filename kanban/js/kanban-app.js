@@ -1597,7 +1597,7 @@ class KanbanManager {
         this.currentRecords[recordIndex].statut = newStatus;
       }
       
-      this.refreshKanban();
+      // NE PAS refresh immédiatement - laisser la carte où elle est visuellement
       this.signalLocalUpdate();
       
       // Envoyer la mise à jour à Grist
@@ -1611,6 +1611,8 @@ class KanbanManager {
         await userActionManager.statusChangeAction(taskId, record.statut, newStatus);
       }
       
+      // Refresh seulement APRÈS confirmation Grist
+      this.refreshKanban();
       console.log(`Succès mise à jour statut ${taskId}.`);
 
     } catch (error) {
