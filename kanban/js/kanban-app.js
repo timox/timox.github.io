@@ -774,26 +774,27 @@ class KanbanManager {
       return [];
     }
     
-    // Format Grist: liste de textes d'actions ["action1", "action2", ...]
-    let actionsArray = [];
+    // Format Grist: liste de références [["L", id1], ["L", id2], ...] 
+    let idsArray = [];
     
     if (Array.isArray(strategieIds)) {
-      // Liste de textes directement
-      actionsArray = strategieIds.filter(action => action && typeof action === 'string');
-      console.log(`🔄 Format liste de textes:`, strategieIds, `→`, actionsArray);
-    } else if (strategieIds && typeof strategieIds === 'string') {
-      // Action unique
-      actionsArray = [strategieIds];
-      console.log(`🔄 Format texte unique:`, strategieIds, `→ [${strategieIds}]`);
+      // Extraire les vrais IDs en filtrant les "L"
+      idsArray = strategieIds
+        .map(item => Array.isArray(item) && item[0] === "L" ? item[1] : item)
+        .filter(id => id !== "L" && id !== null && id !== undefined);
+      console.log(`🔄 Format liste de références:`, strategieIds, `→`, idsArray);
+    } else if (strategieIds !== null && strategieIds !== undefined) {
+      idsArray = [strategieIds];
+      console.log(`🔄 Format legacy:`, strategieIds, `→ [${strategieIds}]`);
     }
     
-    console.log(`🧹 Actions finales à chercher:`, actionsArray);
+    console.log(`🧹 IDs finaux à chercher:`, idsArray);
     
-    const result = actionsArray
-      .map(action => {
-        // Chercher par texte (action) car le champ Grist est du texte, pas un ID numérique
-        const found = this.strategiesData.find(strategy => strategy.action === action);
-        console.log(`🔎 Recherche action "${action}":`, found ? `Trouvé: ${found.objectif} → ${found.action}` : 'Non trouvé');
+    const result = idsArray
+      .map(id => {
+        // Chercher par ID numérique (ID de ligne Grist)
+        const found = this.strategiesData.find(strategy => strategy.id === id);
+        console.log(`🔎 Recherche ID ${id}:`, found ? `Trouvé: ${found.objectif} → ${found.action}` : 'Non trouvé');
         return found;
       })
       .filter(strategy => strategy !== undefined);
