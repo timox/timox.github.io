@@ -937,6 +937,13 @@ class KanbanManager {
     const filteredRecords = this.filterRecords(this.currentRecords || []);
     this.logger.debug(`Filtrage: ${filteredRecords.length} enregistrements retenus`);
     
+    // Debug spécial pour la tâche 124
+    const task124 = this.currentRecords?.find(r => r.id === 124);
+    const task124Filtered = filteredRecords.find(r => r.id === 124);
+    if (task124) {
+      console.log(`🐛 Tâche 124 - Statut: ${task124.statut}, Filtrée: ${!!task124Filtered}`);
+    }
+    
     if (filteredRecords.length > 0) {
       this.logger.debug("Exemple d'enregistrement:", filteredRecords[0]);
     }
@@ -1618,9 +1625,9 @@ class KanbanManager {
         console.warn(`Erreur UserAction (non bloquante):`, userActionError);
       }
       
-      // Refresh seulement APRÈS confirmation Grist
-      console.log(`Refresh kanban après sauvegarde ${taskId}`);
-      this.refreshKanban();
+      // Re-fetch les données depuis Grist pour être sûr
+      console.log(`Re-fetch données après sauvegarde ${taskId}`);
+      await this.loadDataFromGrist();
       console.log(`Succès mise à jour statut ${taskId}.`);
 
     } catch (error) {
