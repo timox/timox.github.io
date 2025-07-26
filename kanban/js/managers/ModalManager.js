@@ -1278,7 +1278,7 @@ export class ModalManager {
       gristData.qui = ['L'];
     }
     
-    // Pour strategie_id (ReferenceList), convertir en format [["L", id]] AVEC VALIDATION
+    // Pour strategie_id (ReferenceList), convertir au bon format ['L', id] AVEC VALIDATION
     if (gristData.strategie_id) {
       let strategyId = null;
       
@@ -1289,14 +1289,17 @@ export class ModalManager {
         strategyId = parseInt(gristData.strategie_id);
       } else if (typeof gristData.strategie_id === 'string' && gristData.strategie_id.startsWith('L,')) {
         strategyId = parseInt(gristData.strategie_id.substring(2), 10);
+      } else if (Array.isArray(gristData.strategie_id) && gristData.strategie_id.length === 2 && gristData.strategie_id[0] === 'L') {
+        // Déjà au bon format ['L', id]
+        strategyId = gristData.strategie_id[1];
       }
       
       // VALIDATION: Vérifier que l'ID existe dans les stratégies
       if (strategyId && !isNaN(strategyId)) {
         const strategyExists = this.kanban.strategiesData?.find(s => s.id === strategyId);
         if (strategyExists) {
-          gristData.strategie_id = [["L", strategyId]];
-          console.log(`✅ Stratégie ${strategyId} validée et convertie`);
+          gristData.strategie_id = ['L', strategyId];  // Format correct pour ReferenceList
+          console.log(`✅ Stratégie ${strategyId} validée et convertie au format ['L', ${strategyId}]`);
         } else {
           console.warn(`⚠️ Stratégie ${strategyId} n'existe pas, suppression de la référence`);
           gristData.strategie_id = null;

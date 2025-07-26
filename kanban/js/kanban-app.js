@@ -787,11 +787,20 @@ class KanbanManager {
     let idsArray = [];
     
     if (Array.isArray(strategieIds)) {
-      // Format ReferenceList: [["L", 8]] ou [["L", 8], ["L", 22]]
-      idsArray = strategieIds
-        .map(item => Array.isArray(item) && item[0] === "L" ? item[1] : item)
-        .filter(id => id !== "L" && id !== null && id !== undefined);
-      console.log(`🔄 Format ReferenceList:`, strategieIds, `→`, idsArray);
+      // Format Grist ReferenceList:
+      // - Un seul élément: ['L', 6] 
+      // - Plusieurs éléments: [['L', 6], ['L', 8]]
+      if (strategieIds.length === 2 && strategieIds[0] === 'L' && typeof strategieIds[1] === 'number') {
+        // Un seul élément: ['L', 6]
+        idsArray = [strategieIds[1]];
+        console.log(`🔄 Format ReferenceList (single):`, strategieIds, `→`, idsArray);
+      } else {
+        // Plusieurs éléments: [['L', 6], ['L', 8]]
+        idsArray = strategieIds
+          .map(item => Array.isArray(item) && item[0] === "L" ? item[1] : item)
+          .filter(id => id !== "L" && id !== null && id !== undefined);
+        console.log(`🔄 Format ReferenceList (multiple):`, strategieIds, `→`, idsArray);
+      }
     } else if (typeof strategieIds === 'string' && strategieIds.startsWith('L,')) {
       // Format string "L,8" → extraire l'ID numérique
       const idNumber = parseInt(strategieIds.substring(2), 10);
@@ -1642,18 +1651,7 @@ class KanbanManager {
       // Préparer les données de mise à jour en gardant le format existant de strategie_id
       const updateData = { statut: newStatus };
       
-      // Si la tâche a une strategie_id mal formatée, la corriger lors de la mise à jour
-      if (record.strategie_id && typeof record.strategie_id === 'string' && record.strategie_id.startsWith('L,')) {
-        try {
-          const idNum = parseInt(record.strategie_id.substring(2), 10);
-          if (!isNaN(idNum)) {
-            updateData.strategie_id = [["L", idNum]];
-            console.log(`🔧 Correction format strategie_id: "${record.strategie_id}" → ${JSON.stringify(updateData.strategie_id)}`);
-          }
-        } catch (e) {
-          console.warn('Erreur conversion strategie_id:', e);
-        }
-      }
+      // Les strategie_id sont maintenant au bon format ['L', id] - pas besoin de les corriger
       
       await grist.docApi.applyUserActions([
         ['UpdateRecord', TABLE_ID, taskId, updateData]
