@@ -1247,13 +1247,27 @@ export class ModalManager {
       gristData.statut = 'Backlog';
     }
     
-    // Assurer que les listes sont dans le bon format (based on old example mapGristRecords)
-    if (!Array.isArray(gristData.bureau) || gristData.bureau[0] !== 'L') {
+    // Assurer que les listes sont dans le bon format - SEULEMENT si elles sont vides ou invalides
+    if (!Array.isArray(gristData.bureau)) {
       gristData.bureau = ['L'];
+    } else if (gristData.bureau.length === 0 || gristData.bureau[0] !== 'L') {
+      // Si la liste est vide ou ne commence pas par 'L', la corriger
+      if (gristData.bureau.length === 0) {
+        gristData.bureau = ['L'];
+      } else {
+        gristData.bureau = ['L', ...gristData.bureau];
+      }
     }
     
-    if (!Array.isArray(gristData.qui) || gristData.qui[0] !== 'L') {
+    if (!Array.isArray(gristData.qui)) {
       gristData.qui = ['L'];
+    } else if (gristData.qui.length === 0 || gristData.qui[0] !== 'L') {
+      // Si la liste est vide ou ne commence pas par 'L', la corriger
+      if (gristData.qui.length === 0) {
+        gristData.qui = ['L'];
+      } else {
+        gristData.qui = ['L', ...gristData.qui];
+      }
     }
     
     // Ensure empty lists are properly formatted as ['L'] not ['L', ''] 
@@ -1264,21 +1278,33 @@ export class ModalManager {
       gristData.qui = ['L'];
     }
     
-    // Pour strategie_id (ReferenceList), convertir en format [["L", id]]
+    // Pour strategie_id (ReferenceList), convertir en format [["L", id]] AVEC VALIDATION
     if (gristData.strategie_id) {
-      // Si c'est juste un ID numérique, le convertir en ReferenceList
-      if (typeof gristData.strategie_id === 'number' || 
-          (typeof gristData.strategie_id === 'string' && !isNaN(parseInt(gristData.strategie_id)))) {
-        gristData.strategie_id = [["L", parseInt(gristData.strategie_id)]];
+      let strategyId = null;
+      
+      // Extraire l'ID selon le format
+      if (typeof gristData.strategie_id === 'number') {
+        strategyId = gristData.strategie_id;
+      } else if (typeof gristData.strategie_id === 'string' && !isNaN(parseInt(gristData.strategie_id))) {
+        strategyId = parseInt(gristData.strategie_id);
+      } else if (typeof gristData.strategie_id === 'string' && gristData.strategie_id.startsWith('L,')) {
+        strategyId = parseInt(gristData.strategie_id.substring(2), 10);
       }
-      // Si c'est au format string "L,8", le convertir en ReferenceList
-      else if (typeof gristData.strategie_id === 'string' && gristData.strategie_id.startsWith('L,')) {
-        const idNumber = parseInt(gristData.strategie_id.substring(2), 10);
-        if (!isNaN(idNumber)) {
-          gristData.strategie_id = [["L", idNumber]];
+      
+      // VALIDATION: Vérifier que l'ID existe dans les stratégies
+      if (strategyId && !isNaN(strategyId)) {
+        const strategyExists = this.kanban.strategiesData?.find(s => s.id === strategyId);
+        if (strategyExists) {
+          gristData.strategie_id = [["L", strategyId]];
+          console.log(`✅ Stratégie ${strategyId} validée et convertie`);
+        } else {
+          console.warn(`⚠️ Stratégie ${strategyId} n'existe pas, suppression de la référence`);
+          gristData.strategie_id = null;
         }
+      } else {
+        console.warn(`⚠️ ID stratégie invalide:`, gristData.strategie_id);
+        gristData.strategie_id = null;
       }
-      // Si c'est déjà au bon format [["L", 8]], ne rien faire
     } else {
       gristData.strategie_id = null;
     }
