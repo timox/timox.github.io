@@ -1633,8 +1633,9 @@ class KanbanManager {
         this.currentRecords[recordIndex].statut = newStatus;
       }
       
-      // NE PAS refresh immédiatement - laisser la carte où elle est visuellement
-      this.signalLocalUpdate();
+      // NE PAS signaler de mise à jour locale pour le drag&drop
+      // On veut recevoir les notifications de changement de Grist
+      // this.signalLocalUpdate();
       
       // Envoyer la mise à jour à Grist
       console.log(`Début sauvegarde statut ${taskId}: ${record.statut} -> ${newStatus}`);
