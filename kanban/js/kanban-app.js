@@ -774,15 +774,24 @@ class KanbanManager {
       return [];
     }
     
-    // Support ancien format (single ID) et nouveau format (array)
-    const idsArray = Array.isArray(strategieIds) ? strategieIds : [strategieIds];
-    console.log(`🔄 IDs à traiter:`, idsArray);
+    // Format Grist toujours en liste de références multiples: [["L", id1], ["L", id2], ...]
+    let idsArray = [];
     
-    // Filtrer les marqueurs Grist "L" et garder seulement les vrais IDs
-    const cleanIds = idsArray.filter(id => id !== "L" && id !== null && id !== undefined);
-    console.log(`🧹 IDs nettoyés (sans 'L'):`, cleanIds);
+    if (Array.isArray(strategieIds)) {
+      // Extraire les IDs depuis le format liste: [["L", id1], ["L", id2], ...]
+      idsArray = strategieIds
+        .map(item => Array.isArray(item) && item[0] === "L" ? item[1] : item)
+        .filter(id => id !== "L" && id !== null && id !== undefined);
+      console.log(`🔄 Format liste de références:`, strategieIds, `→`, idsArray);
+    } else if (strategieIds !== null && strategieIds !== undefined) {
+      // Format legacy (single ID) - fallback
+      idsArray = [strategieIds];
+      console.log(`🔄 Format legacy (fallback):`, strategieIds, `→ [${strategieIds}]`);
+    }
     
-    const result = cleanIds
+    console.log(`🧹 IDs finaux à chercher:`, idsArray);
+    
+    const result = idsArray
       .map(id => {
         const found = this.strategiesData.find(strategy => strategy.id === id);
         console.log(`🔎 Recherche ID ${id}:`, found ? `Trouvé: ${found.objectif}` : 'Non trouvé');

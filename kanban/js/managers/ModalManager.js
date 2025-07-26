@@ -430,12 +430,19 @@ export class ModalManager {
   updateStrategyIds() {
     const strategyIds = this.selectedStrategies.map(s => s.id);
     
-    // Utiliser strategie_id (références multiples dans Grist) au lieu de strategie_ids
-    // Format pour références multiples Grist: [["L", id1], ["L", id2], ...]
-    const gristReferences = strategyIds.map(id => ["L", id]);
-    setFieldValue('popup-strategie-id', JSON.stringify(gristReferences));
+    // Format TOUJOURS en liste de références multiples (changement Grist)
+    // Même pour 1 seule stratégie: [["L", id]]
+    let gristFormat;
+    if (strategyIds.length === 0) {
+      gristFormat = [];
+    } else {
+      // Toujours format liste: [["L", id1], ["L", id2], ...]
+      gristFormat = strategyIds.map(id => ["L", id]);
+    }
     
-    this.logger.debug(`Strategies updated: ${strategyIds.length} selected`);
+    setFieldValue('popup-strategie-id', JSON.stringify(gristFormat));
+    
+    this.logger.debug(`Strategies updated: ${strategyIds.length} selected, format liste:`, gristFormat);
   }
   
   /**
