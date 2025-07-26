@@ -1639,8 +1639,24 @@ class KanbanManager {
       
       // Envoyer la mise à jour à Grist
       console.log(`Début sauvegarde statut ${taskId}: ${record.statut} -> ${newStatus}`);
+      // Préparer les données de mise à jour en gardant le format existant de strategie_id
+      const updateData = { statut: newStatus };
+      
+      // Si la tâche a une strategie_id mal formatée, la corriger lors de la mise à jour
+      if (record.strategie_id && typeof record.strategie_id === 'string' && record.strategie_id.startsWith('L,')) {
+        try {
+          const idNum = parseInt(record.strategie_id.substring(2), 10);
+          if (!isNaN(idNum)) {
+            updateData.strategie_id = [["L", idNum]];
+            console.log(`🔧 Correction format strategie_id: "${record.strategie_id}" → ${JSON.stringify(updateData.strategie_id)}`);
+          }
+        } catch (e) {
+          console.warn('Erreur conversion strategie_id:', e);
+        }
+      }
+      
       await grist.docApi.applyUserActions([
-        ['UpdateRecord', TABLE_ID, taskId, { statut: newStatus }]
+        ['UpdateRecord', TABLE_ID, taskId, updateData]
       ]);
       console.log(`Grist sauvegardé pour ${taskId}`);
       
@@ -1670,6 +1686,13 @@ class KanbanManager {
 
   // === GESTION DES MISES À JOUR GRIST ===
   handleGristUpdate(gristRecords, mappings = null) {
+    console.log("🔔 onRecords reçu", {
+      recordCount: gristRecords?.id?.length || 0,
+      isUpdating: this.isUpdating,
+      ignoreNext: this.ignoreNextOnRecords,
+      timestamp: new Date().toISOString()
+    });
+    
     if (this.isUpdating) {
       this.logger.debug("onRecords ignoré (verrou de mise à jour)");
       return;
