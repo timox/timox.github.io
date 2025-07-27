@@ -340,6 +340,14 @@ export class HistoryManager {
   forceShowModal(modalEl) {
     this.logger.info('Forçage de l\'affichage de la modale');
     
+    // GUARD: Vérifier que l'élément existe
+    if (!modalEl) {
+      this.logger.error('forceShowModal: modalEl est null/undefined !');
+      return;
+    }
+    
+    this.logger.debug('forceShowModal: élément valide:', modalEl.id, modalEl.tagName);
+    
     // Ajouter les classes Bootstrap manuellement
     modalEl.classList.add('show');
     modalEl.style.display = 'block';

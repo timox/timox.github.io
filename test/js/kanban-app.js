@@ -86,6 +86,7 @@ class KanbanManager {
     this.currentTaskId = null;
     this.isUpdating = false;
     this.isRefreshing = false;
+    this.isInitialized = false; // CORRECTIF: Propriété attendue par app-initializer
     this.canEdit = true;
     this.gristOptions = {};
     this.strategiesData = [];
@@ -139,6 +140,10 @@ class KanbanManager {
       this.initializeManagers();
       
       this.refreshKanban();
+      
+      // CORRECTIF: Marquer comme initialisé pour app-initializer
+      this.isInitialized = true;
+      console.log('✅ KanbanManager.isInitialized = true');
       
       displaySuccess('Kanban initialisé avec succès');
       
