@@ -514,6 +514,25 @@
   
   <!-- Script de debug (développement seulement) -->
   <script>
+    // DIAGNOSTIC MODAL HISTORY IMMÉDIAT
+    console.log('=== DIAGNOSTIC MODAL HISTORY ===');
+    console.log('DOM ready state:', document.readyState);
+    console.log('history-modal au chargement:', !!document.getElementById('history-modal'));
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('DOMContentLoaded: history-modal existe:', !!document.getElementById('history-modal'));
+    });
+    
+    window.addEventListener('load', () => {
+      console.log('Window load: history-modal existe:', !!document.getElementById('history-modal'));
+    });
+    
+    // Vérifier toutes les 2 secondes si l'élément existe
+    setInterval(() => {
+      const exists = !!document.getElementById('history-modal');
+      console.log('Vérification périodique history-modal:', exists);
+    }, 2000);
+    
     // Mise à jour du panneau de debug
     // Debug info function (commenté avec le panel debug)
     /*
