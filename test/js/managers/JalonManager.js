@@ -380,6 +380,20 @@ export class JalonManager {
     
     const index = this.jalons.findIndex(j => j.id === id);
     
+    if (index === -1) {
+      // Essayer avec conversion de type
+      const altIndex = this.jalons.findIndex(j => String(j.id) === String(id));
+      if (altIndex !== -1) {
+        console.log(`🗑️ Jalon trouvé avec conversion de type: ${id}`);
+        this.jalons.splice(altIndex, 1);
+        this.updateJalonsDisplay();
+        this.saveJalonsToForm();
+        return;
+      }
+      console.log(`❌ Jalon ${id} non trouvé pour suppression`);
+      return;
+    }
+    
     if (index !== -1) {
       const jalonData = this.jalons[index];
       const taskId = this.getCurrentTaskId();

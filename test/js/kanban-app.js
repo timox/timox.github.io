@@ -618,13 +618,7 @@ class KanbanManager {
     
     // Stratégies multiples avec tooltip
     const strategiesInfo = this.getMultipleStrategiesInfo(record.strategie_id);
-    console.log(`🎯 Debug stratégie pour tâche ${record.id}:`, {
-      strategie_id: record.strategie_id,
-      strategiesData_available: !!this.strategiesData,
-      strategiesData_length: this.strategiesData?.length || 0,
-      strategiesInfo_length: strategiesInfo.length,
-      strategiesInfo: strategiesInfo
-    });
+    // Debug stratégies désactivé
     
     const strategiesText = strategiesInfo.length > 0 
       ? strategiesInfo.map(s => `${s.objectif} → ${s.action}`).join(' | ')
@@ -634,10 +628,7 @@ class KanbanManager {
     const strategyIcon = strategiesInfo.length > 0 ? 
       `<i class="fas fa-bullseye strategie-icon" ${strategyTooltip}></i>` : '';
     
-    console.log(`🎯 Icône stratégie générée pour tâche ${record.id}:`, {
-      strategyIcon_empty: strategyIcon === '',
-      strategyIcon_content: strategyIcon
-    });
+    // Debug icône stratégie désactivé
 
     // Projet
     const projectBadge = record.projet ? 
