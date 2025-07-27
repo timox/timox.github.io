@@ -1,2 +1,15 @@
 debug
 debug/*
+
+# Répertoire de test avec identifiants sensibles
+test/
+test/*
+
+# Fichiers contenant des clés API et identifiants
+**/test-*.js
+**/api-test*.js
+**/test-constants.js
+**/GristRestApi.js
+**/*test*.js
+*api-key*
+*api_key*
