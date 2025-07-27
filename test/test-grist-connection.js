@@ -7,9 +7,13 @@
 
 const TEST_GRIST_CONFIG = {
   DOC_ID: "DOC_ID_SUPPRIME",
+  DOC_SHORT_ID: "e4navPUHoV29",
+  API_KEY: "IDENTIFIANT_SUPPRIME",
   SERVER: "https://grist.numerique.gouv.fr",
   WORKSPACE_ID: "13708",
-  ORG_ID: "docs"
+  ORG_ID: "docs",
+  KANBAN_URL: "https://grist.numerique.gouv.fr/o/docs/e4navPUHoV29/kanban",
+  API_CONSOLE: "https://grist.numerique.gouv.fr/apiconsole?docId=DOC_ID_SUPPRIME&workspaceId=13708&orgId=docs"
 };
 
 async function testGristConnection() {
