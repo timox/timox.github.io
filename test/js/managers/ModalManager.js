@@ -1338,34 +1338,41 @@ export class ModalManager {
       gristData.qui = ['L'];
     }
     
-    // Pour strategie_id (ReferenceList), convertir au bon format ['L', id] AVEC VALIDATION
+    // Pour strategie_id (ReferenceList multiples), valider le format ['L', id1, id2, ...]
     if (gristData.strategie_id) {
-      let strategyId = null;
-      
-      // Extraire l'ID selon le format
-      if (typeof gristData.strategie_id === 'number') {
-        strategyId = gristData.strategie_id;
-      } else if (typeof gristData.strategie_id === 'string' && !isNaN(parseInt(gristData.strategie_id))) {
-        strategyId = parseInt(gristData.strategie_id);
-      } else if (typeof gristData.strategie_id === 'string' && gristData.strategie_id.startsWith('L,')) {
-        strategyId = parseInt(gristData.strategie_id.substring(2), 10);
-      } else if (Array.isArray(gristData.strategie_id) && gristData.strategie_id.length === 2 && gristData.strategie_id[0] === 'L') {
-        // Déjà au bon format ['L', id]
-        strategyId = gristData.strategie_id[1];
-      }
-      
-      // VALIDATION: Vérifier que l'ID existe dans les stratégies
-      if (strategyId && !isNaN(strategyId)) {
-        const strategyExists = this.kanban.strategiesData?.find(s => s.id === strategyId);
-        if (strategyExists) {
-          gristData.strategie_id = ['L', strategyId];  // Format correct pour ReferenceList
-          console.log(`✅ Stratégie ${strategyId} validée et convertie au format ['L', ${strategyId}]`);
+      if (Array.isArray(gristData.strategie_id) && gristData.strategie_id.length >= 1 && gristData.strategie_id[0] === 'L') {
+        // Format ReferenceList correct: ['L', id1, id2, id3, ...]
+        const strategyIds = gristData.strategie_id.slice(1); // Tout sauf le 'L'
+        
+        // VALIDATION: Vérifier que tous les IDs existent dans les stratégies
+        const validIds = [];
+        const invalidIds = [];
+        
+        strategyIds.forEach(id => {
+          if (id && !isNaN(id)) {
+            const strategyExists = this.kanban.strategiesData?.find(s => s.id == id);
+            if (strategyExists) {
+              validIds.push(parseInt(id));
+            } else {
+              invalidIds.push(id);
+            }
+          } else {
+            invalidIds.push(id);
+          }
+        });
+        
+        if (validIds.length > 0) {
+          gristData.strategie_id = ['L', ...validIds];  // Format correct pour ReferenceList multiple
+          console.log(`✅ ${validIds.length} stratégies validées:`, validIds);
+          if (invalidIds.length > 0) {
+            console.warn(`⚠️ ${invalidIds.length} stratégies invalides ignorées:`, invalidIds);
+          }
         } else {
-          console.warn(`⚠️ Stratégie ${strategyId} n'existe pas, suppression de la référence`);
+          console.warn(`⚠️ Aucune stratégie valide trouvée, suppression de la référence`);
           gristData.strategie_id = null;
         }
       } else {
-        console.warn(`⚠️ ID stratégie invalide:`, gristData.strategie_id);
+        console.warn(`⚠️ Format strategie_id invalide (attendu: ['L', id1, id2, ...]):`, gristData.strategie_id);
         gristData.strategie_id = null;
       }
     } else {
