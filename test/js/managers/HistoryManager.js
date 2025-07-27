@@ -355,8 +355,10 @@ export class HistoryManager {
     modalEl.setAttribute('role', 'dialog');
     modalEl.removeAttribute('aria-hidden');
     
-    // CORRECTIF: Forcer la visibilité avec des styles prioritaires
-    modalEl.style.setProperty('z-index', '2000', 'important');
+    // CORRECTIF: Forcer la visibilité avec des styles prioritaires ET ajouter classe show
+    modalEl.classList.add('show');
+    modalEl.style.setProperty('display', 'block', 'important');
+    modalEl.style.setProperty('z-index', '6000', 'important');
     modalEl.style.setProperty('visibility', 'visible', 'important');
     modalEl.style.setProperty('opacity', '1', 'important');
     modalEl.style.setProperty('position', 'fixed', 'important');
