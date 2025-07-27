@@ -620,8 +620,12 @@ export class ModalManager {
       this.updateStrategyPreview();
       this.updateStrategyIds();
       
+      console.log(`✅ Final selectedStrategies:`, this.selectedStrategies);
+      console.log(`   selectedStrategies.length:`, this.selectedStrategies.length);
+      
       this.logger.debug(`Pre-selected strategies: ${this.selectedStrategies.length} items`);
     } else {
+      console.log(`❌ Strategy data not available - strategiesData:`, this.kanban.strategiesData?.length || 0);
       this.logger.warn('Strategy data not available for populating fields');
     }
   }
@@ -631,6 +635,11 @@ export class ModalManager {
    * @param {string|array} gristReferences - Références Grist [["L", id1], ["L", id2], ...]
    */
   populateStrategyFieldsFromGristReferences(gristReferences) {
+    console.log(`🔍 DEBUG populateStrategyFieldsFromGristReferences:`);
+    console.log(`   gristReferences:`, gristReferences);
+    console.log(`   type:`, typeof gristReferences);
+    console.log(`   length:`, gristReferences?.length);
+    
     this.logger.debug(`Loading strategies from Grist: ${gristReferences?.length || 0} references`);
     
     // Reset complet des stratégies à chaque tâche (approche stateless)
@@ -666,17 +675,23 @@ export class ModalManager {
       return;
     }
     
+    console.log(`   Extracted strategy IDs:`, strategyIds);
+    console.log(`   strategyIds.length:`, strategyIds.length);
+    
     this.logger.debug(`Extracted strategy IDs: ${strategyIds.length} items`);
     
     if (!Array.isArray(strategyIds) || strategyIds.length === 0) {
+      console.log(`❌ No valid strategy IDs - returning`);
       return;
     }
     
     // Charger les stratégies correspondantes
+    console.log(`   Available strategies data:`, this.kanban.strategiesData?.length || 0);
     if (this.kanban.strategiesData && this.kanban.strategiesData.length > 0) {
       let strategiesFromDB = [];
       
       strategyIds.forEach(strategyId => {
+        console.log(`   Processing strategy ID:`, strategyId, typeof strategyId);
         // Ignorer les IDs invalides ou vides (même logique que dans populateStrategyFieldsFromGristReferences)
         if (!strategyId || strategyId === 'L' || (Array.isArray(strategyId) && strategyId.length === 0)) {
           this.logger.debug('Skipping invalid strategy ID in loadStrategiesFromIds:', strategyId);
@@ -684,11 +699,14 @@ export class ModalManager {
         }
         
         const strategy = this.kanban.strategiesData.find(s => s.id == strategyId);
+        console.log(`   Found strategy:`, strategy ? `${strategy.id} - ${strategy.objectif}` : 'NOT FOUND');
         if (strategy) {
           strategiesFromDB.push(strategy);
           this.addStrategyToSelection(strategy);
           this.preSelectStrategyInAccordion(strategy);
         } else {
+          console.log(`❌ Strategy not found for ID ${strategyId}`);
+          console.log(`   Available IDs:`, this.kanban.strategiesData.map(s => s.id).slice(0, 10));
           this.logger.warn(`Strategy not found for ID:`, {
             original: strategyId,
             searchId: strategyId,
