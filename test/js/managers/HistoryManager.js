@@ -350,7 +350,7 @@ export class HistoryManager {
     
     // Ajouter les classes Bootstrap manuellement
     modalEl.classList.add('show');
-    modalEl.style.display = 'block';
+    modalEl.style.setProperty('display', 'block', 'important');
     modalEl.setAttribute('aria-modal', 'true');
     modalEl.setAttribute('role', 'dialog');
     modalEl.removeAttribute('aria-hidden');
