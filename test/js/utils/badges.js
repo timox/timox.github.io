@@ -182,8 +182,8 @@ export function generateResponsablesBadges(responsablesList) {
 export function generateHistoryBadge(historyCount, taskId) {
   if (!historyCount || historyCount <= 1) return '';
   
-  return `<button class="btn-history btn-timeline" title="Voir l'historique (${historyCount} étapes)" data-task-id="${taskId}">
-    <i class="bi bi-clock-history"></i> ${historyCount}
+  return `<button class="btn-history btn-timeline" title="Voir l'historique de la tâche" data-task-id="${taskId}">
+    <i class="bi bi-clock-history"></i>
   </button>`;
 }
 

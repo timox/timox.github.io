@@ -180,89 +180,92 @@ export class HistoryManager {
     
     this.currentTaskHistory = task;
     
-    // Vérifier si la tâche est déjà ouverte dans la modale de détail
+    // Vérifier si la modale d'édition est ouverte
     const taskModal = document.getElementById('popup-tache');
     const isTaskModalOpen = taskModal && taskModal.classList.contains('show');
     const currentTaskIdInModal = this.kanban.modalManager?.currentTaskId;
     
-    if (isTaskModalOpen && currentTaskIdInModal === taskId) {
-      // Utiliser l'accordéon dans la modale de détail
-      this.logger.info('Utilisation accordéon dans modale de détail');
-      if (this.kanban.modalManager) {
-        this.kanban.modalManager.loadCommentHistoryInAccordion();
-        
-        // Ouvrir l'accordéon automatiquement
-        const accordion = document.getElementById('comment-history-accordion');
-        if (accordion && !accordion.classList.contains('show')) {
-          const bsCollapse = new bootstrap.Collapse(accordion, { show: true });
-        }
-      }
-    } else {
-      // Utiliser la modale historique séparée (comportement original)
-      this.logger.info('Utilisation modale historique séparée');
-      
-      // CORRECTION: Éviter la boucle infinie - appeler directement renderTaskHistory
-      // au lieu de passer par modalManager qui va nous rappeler
-      
-      // Mettre à jour le titre de la modale
-      const modalTitle = document.getElementById('history-modal-label');
-      // Mise à jour du titre
-      this.logger.debug(`Mise à jour titre historique: ${task?.titre}`);
-      
-      if (modalTitle) {
-        modalTitle.innerHTML = `
-          <i class="bi bi-clock-history me-2"></i>
-          Historique de la tâche #${taskId} - ${task.titre}
-        `;
-      } else {
-        this.logger.error('Élément history-modal-label introuvable dans le DOM');
-      }
-      
-      // Rendre l'historique
-      this.renderTaskHistory(task);
-      
-      // Ouvrir la modale historique après le rendu
-      if (this.kanban.modalManager && this.kanban.modalManager.historyModal) {
-        this.logger.info('Tentative ouverture historyModal...');
-        
-        // Diagnostic simplifié de l'état de la modale
-        const historyModalEl = document.getElementById('history-modal');
-        if (historyModalEl) {
-          const rect = historyModalEl.getBoundingClientRect();
-          const isVisible = rect.width > 0 && rect.height > 0;
-          this.logger.debug('Modal state before opening:', { exists: true, visible: isVisible });
-        }
-        
-        this.kanban.modalManager.historyModal.show();
-        
-        // Vérification après ouverture
-        setTimeout(() => {
-          if (historyModalEl) {
-            const rectAfter = historyModalEl.getBoundingClientRect();
-            const isVisible = rectAfter.width > 0 && rectAfter.height > 0;
-            
-            this.logger.debug('Modal state after opening:', {
-              visible: isVisible,
-              hasShowClass: historyModalEl.classList.contains('show'),
-              backdrop: !!document.querySelector('.modal-backdrop')
-            });
-            
-            // Forcer l'affichage si pas visible
-            if (!isVisible) {
-              this.logger.warn('Modal not visible - applying force styles');
-              historyModalEl.style.setProperty('display', 'block', 'important');
-              historyModalEl.style.setProperty('visibility', 'visible', 'important');
-              historyModalEl.style.setProperty('opacity', '1', 'important');
-              historyModalEl.style.setProperty('z-index', '2000', 'important');
-            }
+    if (isTaskModalOpen) {
+      if (currentTaskIdInModal === taskId) {
+        // Même tâche ouverte : utiliser l'accordéon dans la modale de détail
+        this.logger.info('Même tâche ouverte - utilisation accordéon dans modale de détail');
+        if (this.kanban.modalManager) {
+          this.kanban.modalManager.loadCommentHistoryInAccordion();
+          
+          // Ouvrir l'accordéon automatiquement
+          const accordion = document.getElementById('comment-history-accordion');
+          if (accordion && !accordion.classList.contains('show')) {
+            const bsCollapse = new bootstrap.Collapse(accordion, { show: true });
           }
-        }, 100);
+        }
+        return; // Ne pas ouvrir la modale séparée
       } else {
-        this.logger.error('HistoryModal ou ModalManager indisponible:', {
-          modalManager: !!this.kanban.modalManager,
-          historyModal: !!(this.kanban.modalManager && this.kanban.modalManager.historyModal)
-        });
+        // Tâche différente : fermer la modale d'édition d'abord
+        this.logger.info('Tâche différente ouverte - fermeture modale d\'édition');
+        if (this.kanban.modalManager?.taskModal) {
+          this.kanban.modalManager.taskModal.hide();
+          
+          // Attendre que la modale soit fermée avant d'ouvrir l'historique
+          setTimeout(() => {
+            this.openHistoryModalSeparately(task, taskId);
+          }, 300);
+          return;
+        }
       }
+    }
+    
+    // Cas par défaut : ouvrir la modale historique séparée
+    this.openHistoryModalSeparately(task, taskId);
+  }
+  
+  /**
+   * Ouvre la modale d'historique séparée
+   * @param {object} task - Données de la tâche
+   * @param {number} taskId - ID de la tâche
+   */
+  openHistoryModalSeparately(task, taskId) {
+    this.logger.info('Ouverture modale historique séparée');
+    
+    // Mettre à jour le titre de la modale
+    const modalTitle = document.getElementById('history-modal-label');
+    if (modalTitle) {
+      modalTitle.innerHTML = `
+        <i class="bi bi-clock-history me-2"></i>
+        Historique de la tâche #${taskId} - ${task.titre}
+      `;
+    }
+    
+    // Rendre l'historique
+    this.renderTaskHistory(task);
+    
+    // Ouvrir la modale
+    const historyModalEl = document.getElementById('history-modal');
+    if (!historyModalEl) {
+      this.logger.error('Élément history-modal introuvable dans le DOM');
+      return;
+    }
+    
+    // Essayer d'utiliser l'instance du ModalManager d'abord
+    if (this.kanban.modalManager?.historyModal) {
+      try {
+        this.kanban.modalManager.historyModal.show();
+        this.logger.info('Modale ouverte via ModalManager');
+        return;
+      } catch (error) {
+        this.logger.warn('Erreur ModalManager, fallback manuel:', error);
+      }
+    }
+    
+    // Fallback : créer et ouvrir manuellement
+    try {
+      const modalInstance = new bootstrap.Modal(historyModalEl, {
+        backdrop: true,
+        keyboard: true
+      });
+      modalInstance.show();
+      this.logger.info('Modale ouverte manuellement');
+    } catch (error) {
+      this.logger.error('Erreur ouverture manuelle:', error);
     }
   }
   

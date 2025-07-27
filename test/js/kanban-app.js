@@ -733,11 +733,9 @@ class KanbanManager {
     }
     
     const totalEvents = notesEventCount + commentCount + statusChangeCount;
-    if (totalEvents === 0) return '';
     
-    return `<button class="btn-timeline" title="Voir la timeline (${totalEvents} événement${totalEvents > 1 ? 's' : ''})" data-task-id="${record.id}">
-      <i class="bi bi-clock-history"></i> ${totalEvents}
-    </button>`;
+    // Utiliser la fonction centralisée pour générer le bouton
+    return generateHistoryBadge(totalEvents, record.id);
   }
 
   // Récupération des infos stratégie
