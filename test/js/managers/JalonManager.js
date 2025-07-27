@@ -764,11 +764,19 @@ export class JalonManager {
    * Sauvegarde les jalons dans le champ caché du formulaire
    */
   saveJalonsToForm() {
+    console.log(`🔄 saveJalonsToForm: ${this.jalons.length} jalons à sauvegarder`);
+    console.log(`   Jalons actuels:`, this.jalons.map(j => ({ id: j.id, titre: j.titre })));
+    
     // Ne sauvegarder que si on a des jalons ou si c'est explicite
     if (this.jalons.length === 0) {
-      // Éviter de sauvegarder un JSON vide inutile
-      setFieldValue('popup-jalons', '');
-      this.logger.debug('Aucun jalon à sauvegarder - champ vidé');
+      // IMPORTANT: Sauvegarder la structure vide pour bien effacer en base
+      const emptyData = {
+        jalons: [],
+        lastModified: new Date().toISOString()
+      };
+      const emptyJsonString = JSON.stringify(emptyData);
+      setFieldValue('popup-jalons', emptyJsonString);
+      console.log(`🗑️ Aucun jalon - sauvegarde structure vide:`, emptyJsonString);
       return;
     }
     
@@ -778,7 +786,7 @@ export class JalonManager {
     };
     const jsonString = JSON.stringify(jalonsData);
     
-    this.logger.debug(`Sauvegarde de ${this.jalons.length} jalons dans le formulaire`);
+    console.log(`💾 Sauvegarde de ${this.jalons.length} jalons:`, jsonString.substring(0, 100) + '...');
     
     setFieldValue('popup-jalons', jsonString);
     
@@ -788,22 +796,20 @@ export class JalonManager {
    * Récupère les jalons depuis le formulaire pour sauvegarde
    */
   getJalonsForSave() {
-    // Si pas de jalons, retourner null pour éviter de polluer la DB
-    if (!this.jalons || this.jalons.length === 0) {
-      this.logger.debug('JalonManager.getJalonsForSave() - Aucun jalon à sauvegarder');
-      return null;
-    }
+    console.log(`🔍 getJalonsForSave: ${this.jalons?.length || 0} jalons en mémoire`);
+    console.log(`   Jalons:`, this.jalons?.map(j => ({ id: j.id, titre: j.titre })) || []);
     
-    // Utiliser directement les jalons en mémoire qui sont à jour
+    // IMPORTANT: Même si pas de jalons, retourner la structure vide pour bien nettoyer la DB
     const jalonsData = {
-      jalons: this.jalons,
-      lastModified: new Date().toISOString() // Format ISO plus lisible
+      jalons: this.jalons || [],
+      lastModified: new Date().toISOString()
     };
     
-    this.logger.debug('JalonManager.getJalonsForSave() - Jalons actuels:', this.jalons.length);
+    const jsonString = JSON.stringify(jalonsData);
+    console.log(`💾 getJalonsForSave - Retour:`, jsonString.substring(0, 100) + '...');
     
     // Retourner la string JSON directement pour Grist
-    return JSON.stringify(jalonsData);
+    return jsonString;
   }
 
   // === UTILITAIRES ===
