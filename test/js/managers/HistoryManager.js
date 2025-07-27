@@ -155,10 +155,10 @@ export class HistoryManager {
       return;
     }
     
-    // Protection: Éviter les appels multiples sur openTaskHistory
+    // Protection: Éviter les appels multiples sur openTaskHistory (réduite)
     const now = Date.now();
-    if (this._taskHistoryOpening === taskId || (this._lastHistoryOpen && now - this._lastHistoryOpen < 300)) {
-      this.logger.debug(`openTaskHistory déjà en cours ou trop récent pour tâche ${taskId}`);
+    if (this._taskHistoryOpening === taskId && (this._lastHistoryOpen && now - this._lastHistoryOpen < 1000)) {
+      this.logger.debug(`openTaskHistory déjà en cours pour tâche ${taskId}`);
       return;
     }
     
@@ -245,11 +245,35 @@ export class HistoryManager {
       return;
     }
     
+    // Vérifier l'état de la modale avant ouverture
+    this.logger.debug('État modale avant ouverture:', {
+      hasShow: historyModalEl.classList.contains('show'),
+      display: historyModalEl.style.display,
+      visibility: historyModalEl.style.visibility,
+      modalManager: !!this.kanban.modalManager?.historyModal
+    });
+
     // Essayer d'utiliser l'instance du ModalManager d'abord
     if (this.kanban.modalManager?.historyModal) {
       try {
         this.kanban.modalManager.historyModal.show();
         this.logger.info('Modale ouverte via ModalManager');
+        
+        // Vérifier l'état après ouverture
+        setTimeout(() => {
+          const isVisible = historyModalEl.classList.contains('show');
+          this.logger.debug('État après show():', {
+            hasShow: isVisible,
+            display: historyModalEl.style.display,
+            visibility: historyModalEl.style.visibility
+          });
+          
+          if (!isVisible) {
+            this.logger.warn('Modale pas visible après show() - tentative force');
+            this.forceShowModal(historyModalEl);
+          }
+        }, 100);
+        
         return;
       } catch (error) {
         this.logger.warn('Erreur ModalManager, fallback manuel:', error);
@@ -267,6 +291,33 @@ export class HistoryManager {
     } catch (error) {
       this.logger.error('Erreur ouverture manuelle:', error);
     }
+  }
+  
+  /**
+   * Force l'affichage de la modale d'historique
+   * @param {HTMLElement} modalEl - Élément de la modale
+   */
+  forceShowModal(modalEl) {
+    this.logger.info('Forçage de l\'affichage de la modale');
+    
+    // Ajouter les classes Bootstrap manuellement
+    modalEl.classList.add('show');
+    modalEl.style.display = 'block';
+    modalEl.setAttribute('aria-modal', 'true');
+    modalEl.setAttribute('role', 'dialog');
+    modalEl.removeAttribute('aria-hidden');
+    
+    // Ajouter le backdrop si nécessaire
+    if (!document.querySelector('.modal-backdrop')) {
+      const backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop fade show';
+      document.body.appendChild(backdrop);
+    }
+    
+    // S'assurer que le body a la classe modal-open
+    document.body.classList.add('modal-open');
+    
+    this.logger.info('Modale forcée à s\'afficher');
   }
   
   /**
