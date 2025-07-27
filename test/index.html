@@ -527,31 +527,7 @@
       console.log('Window load: history-modal existe:', !!document.getElementById('history-modal'));
     });
     
-    // Vérifier toutes les 2 secondes si l'élément existe
-    setInterval(() => {
-      const modal = document.getElementById('history-modal');
-      const exists = !!modal;
-      console.log('Vérification périodique history-modal:', exists);
-      if (exists) {
-        console.log('  → Classes:', modal.className);
-        console.log('  → Display:', modal.style.display);
-        console.log('  → Visibility:', modal.style.visibility);
-        console.log('  → Z-index:', modal.style.zIndex);
-        console.log('  → Position:', modal.style.position);
-        console.log('  → Top:', modal.style.top);
-        console.log('  → Left:', modal.style.left);
-        console.log('  → Width:', modal.style.width);
-        console.log('  → Height:', modal.style.height);
-        console.log('  → Content length:', modal.innerHTML.length, 'chars');
-        
-        // CSS computé pour vérifier les règles cachées
-        const computed = window.getComputedStyle(modal);
-        console.log('  → Computed display:', computed.display);
-        console.log('  → Computed visibility:', computed.visibility);
-        console.log('  → Computed position:', computed.position);
-        console.log('  → Computed z-index:', computed.zIndex);
-      }
-    }, 2000);
+    // Script de diagnostic supprimé - modal techniquement OK mais invisible
     
     // Mise à jour du panneau de debug
     // Debug info function (commenté avec le panel debug)
