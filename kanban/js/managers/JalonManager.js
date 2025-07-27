@@ -82,8 +82,9 @@ export class JalonManager {
       this.resetJalonForm();
     });
 
-    // Délégation d'événements pour les boutons de suppression (éléments dynamiques)
+    // Délégation d'événements pour les boutons de suppression et d'édition (éléments dynamiques)
     document.addEventListener('click', (e) => {
+      // Gestion des boutons de suppression
       if (e.target.closest('.btn-delete-jalon')) {
         e.preventDefault();
         e.stopPropagation();
@@ -104,6 +105,47 @@ export class JalonManager {
           } catch (error) {
             this.logger.error('Erreur lors de la suppression du jalon:', error);
           }
+        }
+      }
+      
+      // Gestion des boutons d'édition
+      if (e.target.closest('.btn-edit-jalon')) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const btn = e.target.closest('.btn-edit-jalon');
+        
+        try {
+          // Rechercher l'ID de jalon de manière plus robuste
+          let jalonId;
+          
+          // Méthode 1: depuis le bouton lui-même
+          if (btn.dataset.jalonId) {
+            jalonId = btn.dataset.jalonId;
+          }
+          // Méthode 2: depuis le parent avec data-jalon-id
+          else {
+            const jalonElement = btn.closest('[data-jalon-id]');
+            if (jalonElement) {
+              jalonId = jalonElement.dataset.jalonId;
+            }
+          }
+          
+          if (!jalonId) {
+            this.logger.error('Impossible de trouver l\'ID du jalon à éditer');
+            return;
+          }
+          
+          this.logger.debug('Édition du jalon ID:', jalonId);
+          
+          const jalon = this.jalons.find(j => j.id === jalonId);
+          if (jalon) {
+            this.openJalonModal(jalon);
+          } else {
+            this.logger.error('Jalon non trouvé pour édition. ID:', jalonId);
+          }
+        } catch (error) {
+          this.logger.error('Erreur lors de l\'édition du jalon:', error);
         }
       }
     });
@@ -562,48 +604,7 @@ export class JalonManager {
       });
     });
 
-    // Boutons d'édition
-    document.querySelectorAll('.btn-edit-jalon').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        try {
-          // Rechercher l'ID de jalon de manière plus robuste
-          let jalonId;
-          
-          // Méthode 1: depuis le bouton lui-même
-          if (btn.dataset.jalonId) {
-            jalonId = btn.dataset.jalonId;
-          }
-          // Méthode 2: depuis le parent avec data-jalon-id
-          else {
-            const jalonElement = btn.closest('[data-jalon-id]');
-            if (jalonElement) {
-              jalonId = jalonElement.dataset.jalonId;
-            }
-          }
-          
-          if (!jalonId) {
-            this.logger.error('Impossible de trouver l\'ID du jalon à éditer');
-            return;
-          }
-          
-          this.logger.debug('Édition du jalon ID:', jalonId);
-          
-          const jalon = this.jalons.find(j => j.id === jalonId);
-          if (jalon) {
-            this.openJalonModal(jalon);
-          } else {
-            this.logger.error('Jalon non trouvé pour édition. ID:', jalonId);
-          }
-        } catch (error) {
-          this.logger.error('Erreur lors de l\'édition du jalon:', error);
-        }
-      });
-    });
-
-    // Event listeners pour suppression gérés par délégation dans setupEventListeners()
+    // Les boutons d'édition et de suppression sont gérés par délégation dans setupEventListeners()
   }
 
   /**
