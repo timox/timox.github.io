@@ -644,14 +644,19 @@ export class ModalManager {
     // Convertir les références Grist en array d'IDs
     let strategyIds = [];
     try {
-      if (typeof gristReferences === 'string') {
-        const parsed = JSON.parse(gristReferences);
-        if (Array.isArray(parsed)) {
-          // Format Grist: [["L", id1], ["L", id2], ...]
-          strategyIds = parsed.map(ref => Array.isArray(ref) && ref[0] === 'L' ? ref[1] : ref).filter(id => id);
+      if (Array.isArray(gristReferences)) {
+        // Format Grist ReferenceList: ['L', id1, id2, id3, ...]
+        if (gristReferences.length > 0 && gristReferences[0] === 'L') {
+          strategyIds = gristReferences.slice(1); // Prendre tout sauf le 'L'
+        } else {
+          // Fallback pour ancien format
+          strategyIds = gristReferences.filter(id => id !== 'L');
         }
-      } else if (Array.isArray(gristReferences)) {
-        strategyIds = gristReferences.map(ref => Array.isArray(ref) && ref[0] === 'L' ? ref[1] : ref).filter(id => id);
+      } else if (typeof gristReferences === 'string') {
+        const parsed = JSON.parse(gristReferences);
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0] === 'L') {
+          strategyIds = parsed.slice(1);
+        }
       } else {
         // Fallback: ID simple
         strategyIds = [gristReferences];
@@ -1215,14 +1220,24 @@ export class ModalManager {
    * @returns {Array|null} Format Grist pour strategie_id
    */
   collectStrategyData() {
+    console.log(`🔍 DEBUG collectStrategyData:`);
+    console.log(`   selectedStrategies:`, this.selectedStrategies);
+    console.log(`   length:`, this.selectedStrategies?.length);
+    console.log(`   type:`, typeof this.selectedStrategies);
+    
     if (!this.selectedStrategies || this.selectedStrategies.length === 0) {
+      console.log(`❌ No strategies to collect - returning null`);
       return null;
     }
 
-    // Convertir au format Grist [['L', id1], ['L', id2], ...]  
-    const strategyReferences = this.selectedStrategies.map(s => ['L', s.id]);
-    console.log(`🎯 Strategies saved: ${strategyReferences.length} items`);
-    return strategyReferences;
+    // Format Grist ReferenceList: ['L', id1, id2, id3, ...] comme bureau et qui  
+    const strategyIds = this.selectedStrategies.map(s => {
+      console.log(`   mapping strategy:`, s);
+      return s.id;
+    });
+    const gristFormat = ['L', ...strategyIds];
+    console.log(`🎯 Strategies saved: ${strategyIds.length} items`, gristFormat);
+    return gristFormat;
   }
 
   collectFormData() {
