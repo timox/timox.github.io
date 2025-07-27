@@ -1110,6 +1110,18 @@ export class ModalManager {
             );
           }
           
+          // ✅ VÉRIFIER CHANGEMENT DE STATUT SPÉCIFIQUEMENT
+          if (this.currentTask && this.currentTask.statut !== gristData.statut) {
+            console.log(`📝 Modal: Changement statut ${this.currentTask.statut} → ${gristData.statut}`);
+            historyPromises.push(
+              userActionManager.statusChangeAction(
+                this.currentTaskId, 
+                this.currentTask.statut, 
+                gristData.statut
+              )
+            );
+          }
+          
           // Ajouter les changements spéciaux aux promesses
           if (jalonsChanged) {
             const jalonsDetails = this.getJalonsChangeDetails(oldJalons, newJalons);

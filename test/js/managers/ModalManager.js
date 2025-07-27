@@ -430,12 +430,17 @@ export class ModalManager {
   updateStrategyIds() {
     const strategyIds = this.selectedStrategies.map(s => s.id);
     
-    // Utiliser strategie_id (références multiples dans Grist) au lieu de strategie_ids
-    // Format pour références multiples Grist: [["L", id1], ["L", id2], ...]
-    const gristReferences = strategyIds.map(id => ["L", id]);
-    setFieldValue('popup-strategie-id', JSON.stringify(gristReferences));
+    // Format liste de références Grist: [["L", id1], ["L", id2], ...]
+    let gristFormat;
+    if (strategyIds.length === 0) {
+      gristFormat = [];
+    } else {
+      gristFormat = strategyIds.map(id => ["L", id]);
+    }
     
-    this.logger.debug(`Strategies updated: ${strategyIds.length} selected`);
+    setFieldValue('popup-strategie-id', gristFormat);
+    
+    this.logger.debug(`Strategies updated: ${strategyIds.length} selected, format:`, gristFormat);
   }
   
   /**
@@ -1105,6 +1110,18 @@ export class ModalManager {
             );
           }
           
+          // ✅ VÉRIFIER CHANGEMENT DE STATUT SPÉCIFIQUEMENT
+          if (this.currentTask && this.currentTask.statut !== gristData.statut) {
+            console.log(`📝 Modal: Changement statut ${this.currentTask.statut} → ${gristData.statut}`);
+            historyPromises.push(
+              userActionManager.statusChangeAction(
+                this.currentTaskId, 
+                this.currentTask.statut, 
+                gristData.statut
+              )
+            );
+          }
+          
           // Ajouter les changements spéciaux aux promesses
           if (jalonsChanged) {
             const jalonsDetails = this.getJalonsChangeDetails(oldJalons, newJalons);
@@ -1242,13 +1259,27 @@ export class ModalManager {
       gristData.statut = 'Backlog';
     }
     
-    // Assurer que les listes sont dans le bon format (based on old example mapGristRecords)
-    if (!Array.isArray(gristData.bureau) || gristData.bureau[0] !== 'L') {
+    // Assurer que les listes sont dans le bon format - SEULEMENT si elles sont vides ou invalides
+    if (!Array.isArray(gristData.bureau)) {
       gristData.bureau = ['L'];
+    } else if (gristData.bureau.length === 0 || gristData.bureau[0] !== 'L') {
+      // Si la liste est vide ou ne commence pas par 'L', la corriger
+      if (gristData.bureau.length === 0) {
+        gristData.bureau = ['L'];
+      } else {
+        gristData.bureau = ['L', ...gristData.bureau];
+      }
     }
     
-    if (!Array.isArray(gristData.qui) || gristData.qui[0] !== 'L') {
+    if (!Array.isArray(gristData.qui)) {
       gristData.qui = ['L'];
+    } else if (gristData.qui.length === 0 || gristData.qui[0] !== 'L') {
+      // Si la liste est vide ou ne commence pas par 'L', la corriger
+      if (gristData.qui.length === 0) {
+        gristData.qui = ['L'];
+      } else {
+        gristData.qui = ['L', ...gristData.qui];
+      }
     }
     
     // Ensure empty lists are properly formatted as ['L'] not ['L', ''] 
@@ -1259,7 +1290,39 @@ export class ModalManager {
       gristData.qui = ['L'];
     }
     
-    // Strategie_id doit rester au format références multiples (pas de conversion en nombre)
+    // Pour strategie_id (ReferenceList), convertir au bon format ['L', id] AVEC VALIDATION
+    if (gristData.strategie_id) {
+      let strategyId = null;
+      
+      // Extraire l'ID selon le format
+      if (typeof gristData.strategie_id === 'number') {
+        strategyId = gristData.strategie_id;
+      } else if (typeof gristData.strategie_id === 'string' && !isNaN(parseInt(gristData.strategie_id))) {
+        strategyId = parseInt(gristData.strategie_id);
+      } else if (typeof gristData.strategie_id === 'string' && gristData.strategie_id.startsWith('L,')) {
+        strategyId = parseInt(gristData.strategie_id.substring(2), 10);
+      } else if (Array.isArray(gristData.strategie_id) && gristData.strategie_id.length === 2 && gristData.strategie_id[0] === 'L') {
+        // Déjà au bon format ['L', id]
+        strategyId = gristData.strategie_id[1];
+      }
+      
+      // VALIDATION: Vérifier que l'ID existe dans les stratégies
+      if (strategyId && !isNaN(strategyId)) {
+        const strategyExists = this.kanban.strategiesData?.find(s => s.id === strategyId);
+        if (strategyExists) {
+          gristData.strategie_id = ['L', strategyId];  // Format correct pour ReferenceList
+          console.log(`✅ Stratégie ${strategyId} validée et convertie au format ['L', ${strategyId}]`);
+        } else {
+          console.warn(`⚠️ Stratégie ${strategyId} n'existe pas, suppression de la référence`);
+          gristData.strategie_id = null;
+        }
+      } else {
+        console.warn(`⚠️ ID stratégie invalide:`, gristData.strategie_id);
+        gristData.strategie_id = null;
+      }
+    } else {
+      gristData.strategie_id = null;
+    }
     
     // Remove historique_statuts - it's a Date field, not JSON
     delete gristData.historique_statuts;
@@ -2402,10 +2465,42 @@ export class ModalManager {
    * @returns {boolean} True si les jalons ont changé
    */
   hasJalonsChanged(oldJalons, newJalons) {
-    // Normaliser en strings pour comparaison
-    const oldStr = typeof oldJalons === 'string' ? oldJalons : JSON.stringify(oldJalons || []);
-    const newStr = typeof newJalons === 'string' ? newJalons : JSON.stringify(newJalons || []);
-    return oldStr !== newStr;
+    // Normaliser en objects pour comparaison sémantique
+    try {
+      const oldObj = oldJalons ? (typeof oldJalons === 'string' ? JSON.parse(oldJalons) : oldJalons) : { jalons: [] };
+      const newObj = newJalons ? (typeof newJalons === 'string' ? JSON.parse(newJalons) : newJalons) : { jalons: [] };
+      
+      // Normaliser les structures (s'assurer qu'elles ont la même forme)
+      const normalizeJalons = (obj) => ({
+        jalons: obj.jalons || [],
+        lastModified: obj.lastModified || 0
+      });
+      
+      const normalizedOld = normalizeJalons(oldObj);
+      const normalizedNew = normalizeJalons(newObj);
+      
+      // Comparaison des jalons en tant que telle (ignorer lastModified sauf si les jalons changent)
+      const oldJalonsArray = normalizedOld.jalons;
+      const newJalonsArray = normalizedNew.jalons;
+      
+      const changed = JSON.stringify(oldJalonsArray) !== JSON.stringify(newJalonsArray);
+      
+      if (changed) {
+        console.log('🔍 Jalons changed detected:', {
+          old: oldJalonsArray,
+          new: newJalonsArray
+        });
+      }
+      
+      return changed;
+      
+    } catch (error) {
+      console.warn('Error parsing jalons in hasJalonsChanged:', error);
+      // Fallback sur comparaison string
+      const oldStr = typeof oldJalons === 'string' ? oldJalons : JSON.stringify(oldJalons || []);
+      const newStr = typeof newJalons === 'string' ? newJalons : JSON.stringify(newJalons || []);
+      return oldStr !== newStr;
+    }
   }
 
   /**

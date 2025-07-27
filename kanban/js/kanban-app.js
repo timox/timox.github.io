@@ -1628,6 +1628,9 @@ class KanbanManager {
     try {
       this.isUpdating = true;
       
+      // ✅ CAPTURER L'ANCIEN STATUT AVANT TOUTE MODIFICATION
+      const oldStatus = record.statut;
+      
       // Mettre à jour les données locales
       const recordIndex = this.currentRecords.findIndex(r => r.id === taskId);
       if (recordIndex !== -1) {
@@ -1639,7 +1642,7 @@ class KanbanManager {
       // this.signalLocalUpdate();
       
       // Envoyer la mise à jour à Grist
-      console.log(`Début sauvegarde statut ${taskId}: ${record.statut} -> ${newStatus}`);
+      console.log(`📊 Drag&Drop: ${taskId} ${oldStatus} → ${newStatus}`);
       // Préparer les données de mise à jour en gardant le format existant de strategie_id
       const updateData = { statut: newStatus };
       
@@ -1650,11 +1653,11 @@ class KanbanManager {
       ]);
       console.log(`Grist sauvegardé pour ${taskId}`);
       
-      // Enregistrer l'action utilisateur pour le changement de statut
+      // ✅ ENREGISTRER L'HISTORIQUE AVEC LES BONNES VALEURS
       try {
         const userActionManager = getUserActionManager();
         if (userActionManager) {
-          await userActionManager.statusChangeAction(taskId, record.statut, newStatus);
+          await userActionManager.statusChangeAction(taskId, oldStatus, newStatus);
         }
         console.log(`UserAction enregistrée pour ${taskId}`);
       } catch (userActionError) {

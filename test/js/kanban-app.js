@@ -28,8 +28,6 @@ import { initUserActionManager, getUserActionManager } from './utils/UserActionM
 import { initNotesJsonMigrator, getNotesJsonMigrator } from './utils/NotesJsonMigrator.js';
 import { initLogger, createModuleLogger } from './utils/LoggerManager.js';
 
-// Modal system simplified - using existing modal managers only
-
 import {
   generateBureauBadges,
   generatePriorityBadge,
@@ -51,9 +49,7 @@ import {
   confirmAction,
   validateForm,
   addEventListenerSafe,
-  toggleVisibility,
-  initializeTooltips,
-  hideAllTooltips
+  toggleVisibility
 } from './utils/dom.js';
 
 // NOUVEAU: Import des managers
@@ -82,12 +78,11 @@ class KanbanManager {
       window.logger = logger;
     }
     
-    // Propriétés principales (container défini après waitForDOM)
-    this.kanbanContainer = null;
+    // Propriétés principales
+    this.kanbanContainer = document.getElementById('kanban-container');
     this.currentRecords = [];
     this.modalElement = null;
-    this.historyModalElement = null;
-    
+    this.historyModalElement =null;
     this.currentTaskId = null;
     this.isUpdating = false;
     this.isRefreshing = false;
@@ -115,9 +110,6 @@ class KanbanManager {
     this.modal = null;
     this.historyModal = null;
     
-    // État d'initialisation
-    this.isInitialized = false;
-    
     // NOUVEAU: Managers
     this.filterManager = null;
     this.viewModeManager = null;
@@ -140,34 +132,13 @@ class KanbanManager {
       
       // IMPORTANT: Attendre que le DOM soit complètement prêt
       await this.waitForDOM();
-      
-      // Récupérer le container maintenant que le DOM est prêt
-      this.kanbanContainer = document.getElementById('kanban-container');
-      
-      // Créer le conteneur s'il n'existe pas (pour les widgets Grist)
-      if (!this.kanbanContainer) {
-        console.log('🔧 Création du conteneur Kanban pour widget Grist...');
-        this.createKanbanContainer();
-      }
-      if (!this.kanbanContainer) {
-        throw new Error('Container kanban-container non trouvé dans le DOM');
-      }
-      console.log('✅ Container kanban-container récupéré:', this.kanbanContainer);
-      
       this.initModals();
-      // ✅ Event listeners centralisés avec délégation jQuery
-      console.log('Event listeners délégués avec jQuery');
+      this.initEventListeners();
       
       // Initialiser les managers après le chargement des données
       this.initializeManagers();
       
-      // Initialiser les événements avec délégation jQuery
-      this.initEventDelegation();
-      
       this.refreshKanban();
-      
-      // Marquer comme initialisé APRÈS tout le processus
-      this.isInitialized = true;
       
       displaySuccess('Kanban initialisé avec succès');
       
@@ -226,12 +197,6 @@ class KanbanManager {
     
     // Manager des jalons
     this.jalonManager = new JalonManager(this);
-    
-    // 🔧 CORRECTION: Nettoyage automatique des backdrops Bootstrap orphelins
-    this.cleanOrphanBackdrops();
-    
-    // Vérification périodique des backdrops orphelins (toutes les 5 secondes)
-    setInterval(() => this.updateCleanButton(), 5000);
     
     console.log('✅ Managers initialisés');
   }
@@ -404,9 +369,7 @@ class KanbanManager {
   // Chargement des stratégies depuis les données intégrées
   async loadStrategiesFromGrist() {
     try {
-      console.log('🎯 Chargement des stratégies depuis les données intégrées...');
-      console.log('🔍 STRATEGY_DATA disponible:', !!STRATEGY_DATA);
-      console.log('🔍 STRATEGY_DATA length:', STRATEGY_DATA?.length);
+      console.log('Chargement des stratégies depuis les données intégrées...');
       
       if (STRATEGY_DATA && STRATEGY_DATA.length > 0) {
         // Utiliser les données intégrées depuis constants.js
@@ -421,15 +384,14 @@ class KanbanManager {
           portee: strategy.portee
         })).sort((a, b) => a.id - b.id);
         
-        console.log(`✅ Stratégies chargées depuis données intégrées: ${this.strategiesData.length} stratégies`);
-        console.log('📋 Aperçu des stratégies:', this.strategiesData.slice(0, 3));
-        console.log('🔢 IDs des stratégies:', this.strategiesData.map(s => s.id).slice(0, 10));
+        console.log(`✅ ${this.strategiesData.length} stratégies chargées depuis données intégrées`);
+        console.log('Aperçu des stratégies:', this.strategiesData.slice(0, 3));
       } else {
-        console.warn('⚠️ STRATEGY_DATA non disponible ou vide');
+        console.warn('STRATEGY_DATA non disponible ou vide');
         this.strategiesData = [];
       }
     } catch (stratError) {
-      console.error('❌ Erreur chargement stratégies intégrées:', stratError);
+      console.error('Erreur chargement stratégies intégrées:', stratError);
       this.strategiesData = [];
     }
   }
@@ -458,6 +420,8 @@ class KanbanManager {
           } else {
             rec[key] = v;
           }
+          
+          // Debug strategie_id supprimé pour performance
         } else if (key === 'id') { 
           ok = false; 
           break; 
@@ -476,7 +440,16 @@ class KanbanManager {
       }
       
       if (ok) { 
-        rec.id = parseInt(rec.id, 10); 
+        rec.id = parseInt(rec.id, 10);
+        
+        // Debug spécifique pour la tâche 122
+        if (rec.id === 122) {
+          console.log(`🔍 Tâche 122 - strategie_id brut:`, rec.strategie_id);
+          console.log(`🔍 Type:`, typeof rec.strategie_id);
+          console.log(`🔍 Array:`, Array.isArray(rec.strategie_id));
+          console.log(`🔍 JSON:`, JSON.stringify(rec.strategie_id));
+        }
+        
         if (!isNaN(rec.id)) records.push(rec); 
       }
     }
@@ -638,51 +611,38 @@ class KanbanManager {
       return '';
     }
     
-    // LOG DÉTAILLÉ pour debug
-    if (record.id === 76 || Math.random() < 0.1) { // Tâche 76 + 10% des autres tâches
-      console.log(`🎨 Création HTML pour tâche ${record.id}: ${record.titre}`, {
-        strategie_id: record.strategie_id,
-        strategie_id_type: typeof record.strategie_id,
-        has_strategies_data: !!this.strategiesData,
-        strategies_count: this.strategiesData?.length,
-        all_fields: Object.keys(record),
-        strategy_related_fields: Object.keys(record).filter(k => k.includes('strateg'))
-      });
-    }
+    console.log(`Création HTML pour tâche ${record.id}: ${record.titre}`);
     
     const priority = this.calculerPriorite(record.urgence, record.impact);
     const priorityBadge = generatePriorityBadge(priority);
     
-    // Stratégies multiples
+    // Stratégies multiples avec tooltip
     const strategiesInfo = this.getMultipleStrategiesInfo(record.strategie_id);
+    console.log(`🎯 Debug stratégie pour tâche ${record.id}:`, {
+      strategie_id: record.strategie_id,
+      strategiesData_available: !!this.strategiesData,
+      strategiesData_length: this.strategiesData?.length || 0,
+      strategiesInfo_length: strategiesInfo.length,
+      strategiesInfo: strategiesInfo
+    });
     
-    // DEBUG pour stratégies
-    if (record.id === 76 || Math.random() < 0.1) { // Tâche 76 + 10% des autres tâches
-      console.log(`🎯 Debug stratégies tâche ${record.id}:`, {
-        strategie_id: record.strategie_id,
-        strategie_id_type: typeof record.strategie_id,
-        strategiesInfo: strategiesInfo,
-        strategiesInfo_length: strategiesInfo.length,
-        strategiesData_available: !!this.strategiesData,
-        strategiesData_length: this.strategiesData?.length,
-        icon_will_show: strategiesInfo.length > 0 || record.id === 76
-      });
-    }
+    const strategiesText = strategiesInfo.length > 0 
+      ? strategiesInfo.map(s => `${s.objectif} → ${s.action}`).join(' | ')
+      : '';
+    const strategyTooltip = strategiesText ? 
+      `data-toggle="tooltip" data-placement="top" title="Stratégies: ${strategiesText}"` : '';
+    const strategyIcon = strategiesInfo.length > 0 ? 
+      `<i class="fas fa-bullseye strategie-icon" ${strategyTooltip}></i>` : '';
     
-    // Icône de stratégie avec mini-modale au clic
-    // TEST TEMPORAIRE: Forcer l'icône pour tâche 76
-    const strategyIcon = (strategiesInfo.length > 0 || record.id === 76) ? 
-      `<i class="bi bi-bullseye strategie-icon" 
-          data-task-id="${record.id}" 
-          title="Voir les stratégies (${strategiesInfo.length || 'TEST'})"
-          style="cursor: pointer; color: ${record.id === 76 ? 'red' : '#0d6efd'}; font-size: 16px; margin-left: 4px;"></i>` : '';
+    console.log(`🎯 Icône stratégie générée pour tâche ${record.id}:`, {
+      strategyIcon_empty: strategyIcon === '',
+      strategyIcon_content: strategyIcon
+    });
 
-    // Projet avec stratégies dans l'infobulle aussi (double affichage)
+    // Projet
     const projectBadge = record.projet ? 
       generateProjectBadge({
         projet: record.projet,
-        strategiesInfo: strategiesInfo,
-        // Fallback ancien format pour compatibilité
         strategie_objectif: strategiesInfo[0]?.objectif,
         strategie_sous_objectif: strategiesInfo[0]?.sous_objectif,
         strategie_action: strategiesInfo[0]?.action
@@ -714,7 +674,8 @@ class KanbanManager {
     // Badges responsables
     const responsablesBadges = generateResponsablesBadges(record.qui);
     
-    // Bouton timeline supprimé - historique disponible dans la modale d'édition
+    // Timeline button
+    const timelineButton = this.generateTimelineButton(record);
     
     const hasEcheanceClass = record.date_echeance ? 'has-echeance' : '';
     const hasDateDebutClass = record.date_debut ? 'has-debut' : '';
@@ -736,6 +697,7 @@ class KanbanManager {
         </div>
         <div class="item-badges">
           ${projectBadge}
+          ${timelineButton}
         </div>
       </div>
       
@@ -749,56 +711,93 @@ class KanbanManager {
     </div>`;
   }
 
-  // Bouton timeline supprimé - historique disponible dans la modale d'édition
-
+  // Génération du bouton timeline
+  generateTimelineButton(record) {
+    // Compter les événements depuis les notes JSON (nouveau système)
+    let notesEventCount = 0;
+    if (record.notes) {
+      try {
+        const migrator = getNotesJsonMigrator();
+        if (migrator) {
+          const history = migrator.getHistory(record);
+          notesEventCount = Array.isArray(history) ? history.length : 0;
+        }
+      } catch (e) {
+        notesEventCount = 0;
+      }
+    }
+    
+    // ANCIEN SYSTÈME SUPPRIMÉ: Plus de comptage des commentaires depuis description
+    const commentCount = 0; // Fixé à 0 car plus de comptage depuis description
+    
+    // Compter les changements de statut (ancien système)
+    let statusChangeCount = 0;
+    if (record.historique_statuts) {
+      try {
+        const history = JSON.parse(record.historique_statuts);
+        statusChangeCount = history.historique ? history.historique.length : 0;
+      } catch (e) {
+        statusChangeCount = 0;
+      }
+    }
+    
+    const totalEvents = notesEventCount + commentCount + statusChangeCount;
+    if (totalEvents === 0) return '';
+    
+    return `<button class="btn-timeline" title="Voir la timeline (${totalEvents} événement${totalEvents > 1 ? 's' : ''})" data-task-id="${record.id}">
+      <i class="bi bi-clock-history"></i> ${totalEvents}
+    </button>`;
+  }
 
   // Récupération des infos stratégie
   getStrategyInfo(strategieId) {
     if (!strategieId || !this.strategiesData) return null;
     
-    // 🔧 CORRECTION: Grist renvoie les IDs sous format ["L", number]
-    let cleanId = strategieId;
-    
-    // Si c'est un array Grist ["L", id], extraire l'ID
-    if (Array.isArray(strategieId) && strategieId.length === 2 && strategieId[0] === 'L') {
-      cleanId = strategieId[1];
-    }
-    
-    // 🔧 CORRECTION: Comparaison flexible pour gérer string/number depuis Grist
-    return this.strategiesData.find(strategy => strategy.id == cleanId) || null;
+    return this.strategiesData.find(strategy => strategy.id === strategieId) || null;
   }
 
   getMultipleStrategiesInfo(strategieIds) {
-    if (!this.strategiesData) {
-      console.log('🔍 getMultipleStrategiesInfo: pas de strategiesData');
+    // Debug supprimé pour performance
+    
+    if (!strategieIds || !this.strategiesData) {
+      console.log(`❌ Retour vide: strategieIds=${strategieIds}, strategiesData=${!!this.strategiesData}`);
       return [];
     }
     
-    if (!strategieIds || strategieIds === null || strategieIds === '') {
-      console.log('🔍 getMultipleStrategiesInfo: strategieIds vide/null', { strategieIds, hasStrategiesData: !!this.strategiesData });
-      return [];
+    // Format Grist: référence simple ["L", id] ou liste [["L", id1], ["L", id2]]
+    let idsArray = [];
+    
+    if (Array.isArray(strategieIds)) {
+      // Format Grist ReferenceList:
+      // - Un seul élément: ['L', 6] 
+      // - Plusieurs éléments: [['L', 6], ['L', 8]]
+      if (strategieIds.length === 2 && strategieIds[0] === 'L' && typeof strategieIds[1] === 'number') {
+        // Un seul élément: ['L', 6]
+        idsArray = [strategieIds[1]];
+        // Debug format supprimé
+      } else {
+        // Plusieurs éléments: [['L', 6], ['L', 8]]
+        idsArray = strategieIds
+          .map(item => Array.isArray(item) && item[0] === "L" ? item[1] : item)
+          .filter(id => id !== "L" && id !== null && id !== undefined);
+        // Debug format supprimé
+      }
+    } else if (typeof strategieIds === 'string' && strategieIds.startsWith('L,')) {
+      // Format string "L,8" → extraire l'ID numérique
+      const idNumber = parseInt(strategieIds.substring(2), 10);
+      if (!isNaN(idNumber)) {
+        idsArray = [idNumber];
+        // Debug format supprimé
+      }
+    } else if (strategieIds !== null && strategieIds !== undefined) {
+      idsArray = [strategieIds];
+      // Debug format supprimé
     }
     
-    // 🔧 CORRECTION: Grist renvoie les IDs sous format ["L", number]
-    let cleanIds = strategieIds;
-    
-    // Si c'est un array Grist ["L", id], extraire l'ID
-    if (Array.isArray(strategieIds) && strategieIds.length === 2 && strategieIds[0] === 'L') {
-      cleanIds = strategieIds[1];
-    }
-    
-    // Support ancien format (single ID) et nouveau format (array)
-    const idsArray = Array.isArray(cleanIds) ? cleanIds : [cleanIds];
-    console.log('🔍 getMultipleStrategiesInfo: idsArray=', idsArray);
-    
+    // Recherche des stratégies (debug supprimé pour performance)
     const result = idsArray
-      .map(id => {
-        // 🔧 CORRECTION: Comparaison flexible pour gérer string/number depuis Grist
-        return this.strategiesData.find(strategy => strategy.id == id); // == au lieu de ===
-      })
+      .map(id => this.strategiesData.find(strategy => strategy.id === id))
       .filter(strategy => strategy !== undefined);
-    
-    console.log('🔍 getMultipleStrategiesInfo: result=', result);
     return result;
   }
 
@@ -876,14 +875,8 @@ class KanbanManager {
     // Peupler les selects de base
     populateSelect('popup-urgence', urgence || [], true);
     populateSelect('popup-impact', impact || [], true);
-    // Utiliser le ModalManager pour peupler les cases à cocher
-    if (this.modalManager) {
-      this.modalManager.populateSelectOptions();
-    } else {
-      // Fallback pour les selects classiques
-      populateSelect('popup-bureau', bureau || [], false);
-      populateSelect('popup-qui', responsables || [], false);
-    }
+    populateSelect('popup-bureau', bureau || [], false);
+    populateSelect('popup-qui', responsables || [], false);
     populateSelect('popup-projet', projet || [], true);
     
     // CORRIGÉ: Laisser le FilterManager gérer les filtres
@@ -942,22 +935,10 @@ class KanbanManager {
     }
     this.isRefreshing = true;
     
-    // Nettoyer les tooltips qui pourraient être restés ouverts
-    try {
-      hideAllTooltips();
-    } catch (error) {
-      this.logger.debug("Erreur nettoyage tooltips:", error);
-    }
-    
     if (!this.kanbanContainer) {
-      console.log("🔧 Conteneur manquant, création automatique pour Grist...");
-      this.createKanbanContainer();
-      
-      if (!this.kanbanContainer) {
-        console.error("❌ Impossible de créer le conteneur Kanban !");
-        this.isRefreshing = false;
-        return;
-      }
+      console.error("Conteneur Kanban principal manquant !");
+      this.isRefreshing = false;
+      return;
     }
     
     this.logger.debug("Rafraîchissement Kanban en cours...");
@@ -966,6 +947,13 @@ class KanbanManager {
     // Filtrer les enregistrements
     const filteredRecords = this.filterRecords(this.currentRecords || []);
     this.logger.debug(`Filtrage: ${filteredRecords.length} enregistrements retenus`);
+    
+    // Debug spécial pour la tâche 124
+    const task124 = this.currentRecords?.find(r => r.id === 124);
+    const task124Filtered = filteredRecords.find(r => r.id === 124);
+    if (task124) {
+      console.log(`🐛 Tâche 124 - Statut: ${task124.statut}, Filtrée: ${!!task124Filtered}`);
+    }
     
     if (filteredRecords.length > 0) {
       this.logger.debug("Exemple d'enregistrement:", filteredRecords[0]);
@@ -1096,22 +1084,26 @@ class KanbanManager {
     // Attacher les événements pour les badges cliquables
     this.attachCardEventListeners();
     
+    // TEMPORAIRE: Attacher les listeners des cartes directement ici
+    this.kanbanContainer.querySelectorAll('.editable-zone').forEach(zone => {
+      zone.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        
+        const card = zone.closest('.kanban-item');
+        const taskId = parseInt(card.dataset.id, 10);
+        
+        if (!isNaN(taskId) && this.modalManager) {
+          const task = this.currentRecords?.find(r => r.id === taskId);
+          if (task) {
+            this.modalManager.openTaskModal(task);
+          }
+        }
+      });
+    });
+    
     this.attachBadgeEventListeners();
     this.initScrollArrows();
-    
-    // Réinitialiser les tooltips après refresh pour inclure les nouveaux éléments
-    try {
-      // D'abord fermer tous les tooltips ouverts
-      hideAllTooltips();
-      // Puis réinitialiser
-      initializeTooltips('[data-bs-toggle="tooltip"], [title]');
-      this.logger.debug("Tooltips nettoyés et réinitialisés après refresh");
-    } catch (error) {
-      this.logger.debug("Erreur initialisation tooltips:", error);
-    }
-    
-    // Marquer la fin du refresh
-    this.isRefreshing = false;
   }
 
   // === MÉTHODES UTILITAIRES POUR LE RENDU ===
@@ -1192,11 +1184,11 @@ class KanbanManager {
 
     // Gérer les clics sur les flèches
     leftArrow.addEventListener('click', () => {
-      this.scrollContainer(-500); // Augmenté pour voir plus de colonnes
+      this.scrollContainer(-300);
     });
 
     rightArrow.addEventListener('click', () => {
-      this.scrollContainer(500); // Augmenté pour voir plus de colonnes
+      this.scrollContainer(300);
     });
 
     // Gérer la visibilité des flèches au scroll
@@ -1253,287 +1245,29 @@ class KanbanManager {
     });
   }
 
-  // EVENT LISTENERS - VERSION SIMPLE
+  // EVENT LISTENERS
   attachCardEventListeners() {
-    // Ne plus rien faire ici - la délégation jQuery s'occupe de tout
-    console.log('📝 Event listeners délégués avec jQuery');
-  }
-
-  // === MÉTHODE DIRECTE POUR OUVRIR MODALE TÂCHE ===
-  openTaskModalDirect(taskId) {
-    console.log('🔧 Ouverture directe modale tâche:', taskId);
-    
-    // Nettoyer d'abord les backdrops orphelins
-    this.cleanOrphanBackdrops();
-    
-    try {
-      // Trouver la tâche
-      const task = this.currentRecords.find(t => t.id === taskId);
-      if (!task) {
-        console.error('❌ Tâche non trouvée:', taskId);
-        return;
-      }
-      
-      // Récupérer la modale
-      const modalElement = document.getElementById('popup-tache');
-      if (!modalElement) {
-        console.error('❌ Modale popup-tache non trouvée');
-        return;
-      }
-      
-      // Peupler les champs de base
-      const titleField = document.getElementById('popup-titre');
-      const descField = document.getElementById('popup-description');
-      const statusField = document.getElementById('popup-statut-text');
-      
-      if (titleField) titleField.value = task.titre || '';
-      if (descField) descField.value = task.description || '';
-      if (statusField) statusField.value = task.statut || '';
-      
-      // Stocker l'ID pour sauvegarde
-      this.currentTaskId = taskId;
-      
-      // Charger l'historique dans la modale si le manager existe
-      if (this.historyManager) {
-        console.log('📖 Chargement historique dans modale...');
-        // Utiliser un timeout pour laisser la modale s'ouvrir d'abord
-        setTimeout(() => {
-          this.historyManager.loadTaskHistoryInModal(taskId);
-        }, 100);
-      }
-      
-      // Ouvrir la modale avec Bootstrap
-      const modal = new bootstrap.Modal(modalElement);
-      modal.show();
-      
-      console.log('✅ Modale ouverte directement pour tâche:', taskId);
-      
-    } catch (error) {
-      console.error('❌ Erreur ouverture modale directe:', error);
-      alert(`Erreur ouverture modale: ${error.message}`);
-    }
+    // Seuls les boutons timeline - les autres événements sont gérés par CardRenderer
+    // Le nettoyage se fait automatiquement via innerHTML dans refreshKanban
+    this.kanbanContainer.querySelectorAll('.btn-timeline').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        
+        const taskId = parseInt(btn.dataset.taskId, 10);
+        this.openTimelineModal(taskId);
+      });
+    });
   }
 
   // === GESTION DE LA MODAL TIMELINE ===
   openTimelineModal(taskId) {
-    this.logger.debug(`openTimelineModal appelée avec taskId: ${taskId}`);
-    this.logger.debug(`historyManager disponible: ${!!this.historyManager}`);
-    
     // REDIRECTION: Utiliser le HistoryManager qui a le système complet avec boutons d'édition
     if (this.historyManager) {
-      this.logger.debug(`Appel historyManager.openTaskHistory(${taskId})`);
       this.historyManager.openTaskHistory(taskId);
     } else {
-      this.logger.error('Gestionnaire d\'historique non disponible');
       displayError('Gestionnaire d\'historique non disponible');
     }
-  }
-  
-  // === NETTOYAGE DES BACKDROPS BOOTSTRAP ORPHELINS ===
-  cleanOrphanBackdrops() {
-    // Supprimer tous les backdrops Bootstrap orphelins
-    const backdrops = document.querySelectorAll('.modal-backdrop');
-    console.log(`🧹 Nettoyage des backdrops orphelins: ${backdrops.length} trouvés`);
-    
-    backdrops.forEach((backdrop, index) => {
-      console.log(`🗑️ Suppression backdrop orphelin ${index + 1}`);
-      backdrop.remove();
-    });
-    
-    // Réinitialiser le body si nécessaire
-    const body = document.body;
-    if (body.classList.contains('modal-open')) {
-      console.log('🔄 Réinitialisation du body (modal-open)');
-      body.classList.remove('modal-open');
-      body.style.overflow = '';
-      body.style.paddingRight = '';
-      body.removeAttribute('data-bs-overflow');
-      body.removeAttribute('data-bs-padding-right');
-    }
-    
-    // Afficher/masquer le bouton de nettoyage d'urgence
-    this.updateCleanButton();
-    
-    console.log('✅ Nettoyage des backdrops terminé');
-  }
-  
-  // === CRÉATION DU CONTENEUR POUR WIDGETS GRIST ===
-  createKanbanContainer() {
-    // Vérifier qu'il n'existe pas déjà un container
-    const existing = document.getElementById('kanban-container');
-    if (existing) {
-      console.log('✅ Container Kanban existant réutilisé');
-      this.kanbanContainer = existing;
-      return;
-    }
-    
-    // Créer la structure HTML minimale nécessaire
-    const container = document.createElement('div');
-    container.id = 'kanban-container';
-    container.className = 'kanban-container';
-    
-    // Style inline minimal pour Grist
-    container.style.cssText = `
-      display: flex;
-      overflow-x: auto;
-      gap: 1rem;
-      padding: 1rem;
-      min-height: 400px;
-      width: 100%;
-      box-sizing: border-box;
-    `;
-    
-    // Ajouter au body
-    document.body.appendChild(container);
-    
-    // Créer aussi les modales nécessaires
-    this.createRequiredModals();
-    
-    // Récupérer le conteneur créé
-    this.kanbanContainer = container;
-    
-    console.log('✅ Conteneur Kanban créé pour widget Grist');
-  }
-  
-  createRequiredModals() {
-    // Créer la modal d'historique
-    const historyModal = document.createElement('div');
-    historyModal.className = 'modal fade history-modal';
-    historyModal.id = 'history-modal';
-    historyModal.setAttribute('tabindex', '-1');
-    historyModal.setAttribute('aria-hidden', 'true');
-    historyModal.innerHTML = `
-      <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="history-modal-label">
-              <i class="bi bi-clock-history me-2"></i>Historique de la tâche
-            </h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <div id="history-stats"></div>
-            <div id="history-timeline"></div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-success" id="btn-export-task-history">
-              <i class="bi bi-download me-1"></i>Exporter
-            </button>
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
-          </div>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(historyModal);
-    
-    // Créer la modal d'édition de tâche
-    const taskModal = document.createElement('div');
-    taskModal.className = 'modal fade';
-    taskModal.id = 'popup-tache';
-    taskModal.setAttribute('tabindex', '-1');
-    taskModal.setAttribute('aria-hidden', 'true');
-    taskModal.innerHTML = `
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="popup-tache-label">Éditer la tâche</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body" id="popup-tache-body">
-            <!-- Contenu généré dynamiquement -->
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-            <button type="button" class="btn btn-primary" id="btn-save-task">Sauvegarder</button>
-          </div>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(taskModal);
-    
-    console.log('✅ Modales créées pour widget Grist');
-  }
-
-  // Mise à jour du bouton de nettoyage d'urgence
-  updateCleanButton() {
-    const backdrops = document.querySelectorAll('.modal-backdrop');
-    const cleanBtn = document.getElementById('btn-clean-backdrops');
-    
-    if (cleanBtn) {
-      if (backdrops.length > 0) {
-        cleanBtn.style.display = 'block';
-        cleanBtn.onclick = () => this.cleanOrphanBackdrops();
-      } else {
-        cleanBtn.style.display = 'none';
-      }
-    }
-    
-    // 🧪 BOUTON TEST NOUVEAU SYSTÈME MODAL
-    const testBtn = document.getElementById('btn-test-new-modal');
-    if (testBtn && !testBtn.hasAttribute('data-initialized')) {
-      testBtn.setAttribute('data-initialized', 'true');
-      // testBtn.onclick = () => this.testNewModalSystem(); // SUPPRIMÉ
-    }
-  }
-  
-  // testNewModalSystem() supprimée - plus nécessaire
-  
-  // === GESTION DE LA MINI-MODALE STRATÉGIES ===
-  openStrategyMiniModal(taskId) {
-    // 🛡️ PROTECTION ANTI-SPAM: Éviter appels multiples rapides
-    if (this._strategyModalOpening) {
-      console.log('🚫 openStrategyMiniModal: déjà en cours d\'ouverture');
-      return;
-    }
-    this._strategyModalOpening = true;
-    setTimeout(() => { this._strategyModalOpening = false; }, 1000); // Reset après 1s
-    
-    console.log(`🔍 openStrategyMiniModal appelée avec taskId: ${taskId}`);
-    
-    const task = this.currentRecords?.find(r => r.id === taskId);
-    if (!task) {
-      displayError('Tâche non trouvée');
-      this._strategyModalOpening = false;
-      return;
-    }
-    
-    console.log(`🔍 Task trouvée:`, { id: task.id, titre: task.titre, strategie_id: task.strategie_id });
-    
-    const strategiesInfo = this.getMultipleStrategiesInfo(task.strategie_id);
-    const content = document.getElementById('strategy-mini-content');
-    
-    if (!content) {
-      displayError('Container de stratégies non trouvé');
-      this._strategyModalOpening = false;
-      return;
-    }
-    
-    if (strategiesInfo.length === 0) {
-      content.innerHTML = '<div class="strategy-mini-empty">Aucune stratégie associée</div>';
-    } else {
-      content.innerHTML = strategiesInfo.map(strategy => `
-        <div class="strategy-mini-item">
-          <div class="strategy-mini-objectif">${strategy.objectif}</div>
-          <div class="strategy-mini-action">${strategy.action}</div>
-        </div>
-      `).join('');
-    }
-    
-    // Ouvrir la modale
-    const modalElement = document.getElementById('strategy-mini-modal');
-    if (!modalElement) {
-      console.error('❌ Élément strategy-mini-modal introuvable !');
-      displayError('Modal stratégie non trouvée');
-      this._strategyModalOpening = false;
-      return;
-    }
-    
-    console.log('🎉 Ouverture modal stratégie...');
-    const modal = new bootstrap.Modal(modalElement);
-    modal.show();
-    
-    // Reset protection après ouverture réussie
-    setTimeout(() => { this._strategyModalOpening = false; }, 500);
   }
 
   renderTimelineContent(task) {
@@ -1727,16 +1461,18 @@ class KanbanManager {
   initEventListeners() {
     console.log('🔧 Initialisation des event listeners...');
     
-    // Nettoyer tous les event listeners précédents pour éviter doublons
-    $(document).off('.kanban-events');
-    
-    // Bouton nouvelle tâche - délégation jQuery propre
-    $(document).on('click.kanban-events', '#btn-nouvelle-tache', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      console.log('🆕 Clic bouton nouvelle tâche');
-      this.openPopup();
-    });
+    // Bouton nouvelle tâche
+    const btnNewTask = document.getElementById('btn-nouvelle-tache');
+    if (btnNewTask) {
+      btnNewTask.addEventListener('click', (e) => {
+        console.log('🆕 Clic bouton nouvelle tâche');
+        e.preventDefault();
+        this.openPopup();
+      });
+      console.log('✅ Event listener bouton nouvelle tâche attaché');
+    } else {
+      console.error('❌ Bouton nouvelle tâche non trouvé !');
+    }
 
     // Bouton sauvegarder - GÉRÉ PAR ModalManager.js (éviter duplication)
 
@@ -1754,32 +1490,13 @@ class KanbanManager {
 
    
 
-    // Raccourcis clavier - délégation jQuery propre
-    $(document).on('keydown.kanban-events', (e) => {
-      // Ignorer si dans un champ de saisie
-      if ($(e.target).is('input, textarea, select')) return;
-      
-      switch (e.key.toLowerCase()) {
-        case 'n':
+    // Raccourcis clavier - RACCOURCI 'N' GÉRÉ PAR ModalManager.js (éviter duplication)
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'r' || e.key === 'R') {
+        if (!e.target.matches('input, textarea')) {
           e.preventDefault();
-          this.openPopup();
-          break;
-          
-        case 'r':
-          if (!e.ctrlKey && !e.metaKey) { 
-            e.preventDefault();
-            this.refreshKanban();
-          }
-          break;
-          
-        case 'f':
-          e.preventDefault();
-          $('#search-input').focus();
-          break;
-          
-        case 'escape':
-          this.closeAllModals();
-          break;
+          this.refreshKanban();
+        }
       }
     });
 
@@ -1884,174 +1601,91 @@ class KanbanManager {
     const itemEl = evt.item;
     const targetContainer = evt.to;
     const taskId = parseInt(itemEl.dataset.id, 10);
-    
-    // Chercher le conteneur avec data-status-id ou data-status en remontant l'arbre DOM
-    let statusContainer = targetContainer;
-    let newStatus = null;
-    
-    while (statusContainer && !newStatus) {
-      // Essayer d'abord data-status-id (pour mode focus)
-      if (statusContainer.dataset.statusId) {
-        newStatus = statusContainer.dataset.statusId;
-        break;
-      }
-      // Puis data-status (pour mode normal)
-      if (statusContainer.dataset.status) {
-        newStatus = statusContainer.dataset.status;
-        break;
-      }
-      statusContainer = statusContainer.parentElement;
-    }
-    
-    console.log('🔄 handleDragEnd appelé:', {
+    const newStatus = targetContainer.dataset.status;
+
+    console.log(`🐛 Debug drag&drop:`, {
       taskId,
       newStatus,
-      targetContainer: targetContainer ? targetContainer.id : 'null',
-      statusContainer: statusContainer ? statusContainer.id : 'null',
-      targetStatusId: targetContainer ? targetContainer.dataset.statusId : 'N/A',
-      targetStatus: targetContainer ? targetContainer.dataset.status : 'N/A',
-      foundStatusId: statusContainer ? statusContainer.dataset.statusId : 'N/A',
-      foundStatus: statusContainer ? statusContainer.dataset.status : 'N/A'
+      currentRecordsCount: this.currentRecords?.length || 0,
+      datasetId: itemEl.dataset.id,
+      datasetStatus: targetContainer.dataset.status
     });
 
-    // Vérifier que newStatus est défini
-    if (!newStatus) {
-      console.error('handleDragEnd: newStatus est undefined, arrêt du traitement');
-      console.error('Conteneurs vérifiés:', {
-        targetContainer: targetContainer,
-        statusContainer: statusContainer,
-        targetClasses: targetContainer ? targetContainer.className : 'N/A',
-        statusClasses: statusContainer ? statusContainer.className : 'N/A'
-      });
+    const record = this.currentRecords.find(r => r.id === taskId);
+    
+    console.log(`🐛 Record trouvé:`, {
+      found: !!record,
+      recordId: record?.id,
+      recordStatut: record?.statut,
+      newStatusMatch: record?.statut === newStatus
+    });
+
+    if (!record || record.statut === newStatus) {
+      console.log(`🛑 Drag&drop annulé:`, !record ? 'Record non trouvé' : 'Même statut');
       return;
     }
-
-    const record = this.currentRecords.find(r => r.id === taskId);
-    if (!record || record.statut === newStatus) return;
 
     try {
       this.isUpdating = true;
       
-      // Synchroniser avec KanbanManager si disponible
-      if (window.kanbanManager) {
-        window.kanbanManager.isUpdating = true;
-      }
+      // ✅ CAPTURER L'ANCIEN STATUT AVANT TOUTE MODIFICATION
+      const oldStatus = record.statut;
       
       // Mettre à jour les données locales
       const recordIndex = this.currentRecords.findIndex(r => r.id === taskId);
       if (recordIndex !== -1) {
-        const oldStatus = this.currentRecords[recordIndex].statut;
         this.currentRecords[recordIndex].statut = newStatus;
-        console.log(`📊 Données locales mises à jour: ${taskId} ${oldStatus} → ${newStatus}`);
-      } else {
-        console.error(`❌ Record ${taskId} non trouvé dans currentRecords`);
       }
       
-      // Mettre à jour visuellement le statut sur la carte
-      this.updateCardStatus(itemEl, newStatus);
-      
-      // Signaler la mise à jour
-      this.signalLocalUpdate();
+      // NE PAS signaler de mise à jour locale pour le drag&drop
+      // On veut recevoir les notifications de changement de Grist
+      // this.signalLocalUpdate();
       
       // Envoyer la mise à jour à Grist
-      await grist.docApi.applyUserActions([
-        ['UpdateRecord', TABLE_ID, taskId, { statut: newStatus }]
-      ]);
+      console.log(`📊 Drag&Drop: ${taskId} ${oldStatus} → ${newStatus}`);
+      // Préparer les données de mise à jour en gardant le format existant de strategie_id
+      const updateData = { statut: newStatus };
       
-      // Enregistrer l'action utilisateur pour le changement de statut
-      const userActionManager = getUserActionManager();
-      if (userActionManager) {
-        await userActionManager.statusChangeAction(taskId, record.statut, newStatus);
+      // Les strategie_id sont maintenant au bon format ['L', id] - pas besoin de les corriger
+      
+      await grist.docApi.applyUserActions([
+        ['UpdateRecord', TABLE_ID, taskId, updateData]
+      ]);
+      console.log(`Grist sauvegardé pour ${taskId}`);
+      
+      // ✅ ENREGISTRER L'HISTORIQUE AVEC LES BONNES VALEURS
+      try {
+        const userActionManager = getUserActionManager();
+        if (userActionManager) {
+          await userActionManager.statusChangeAction(taskId, oldStatus, newStatus);
+        }
+        console.log(`UserAction enregistrée pour ${taskId}`);
+      } catch (userActionError) {
+        console.warn(`Erreur UserAction (non bloquante):`, userActionError);
       }
       
+      // Refresh direct depuis Grist après sauvegarde
+      this.refreshKanban();
       console.log(`Succès mise à jour statut ${taskId}.`);
-      
-      // Attendre un peu avant de libérer le flag pour éviter les refresh prématurés
-      await new Promise(resolve => setTimeout(resolve, 100));
 
     } catch (error) {
       console.error('Erreur déplacement:', error);
       displayError(`Erreur: ${error.message}`);
-      // En cas d'erreur, remettre la carte à sa position d'origine
-      const recordIndex = this.currentRecords.findIndex(r => r.id === taskId);
-      if (recordIndex !== -1) {
-        this.currentRecords[recordIndex].statut = record.statut; // Remettre l'ancien statut
-      }
       this.refreshKanban();
     } finally {
       this.isUpdating = false;
-      
-      // Synchroniser avec KanbanManager si disponible
-      if (window.kanbanManager) {
-        window.kanbanManager.isUpdating = false;
-      }
     }
-  }
-  
-  /**
-   * Met à jour visuellement le statut d'une carte
-   */
-  updateCardStatus(cardElement, newStatus) {
-    if (!cardElement) return;
-    
-    if (!newStatus) {
-      console.error('updateCardStatus: newStatus est undefined/null');
-      return;
-    }
-    
-    console.log(`Mise à jour visuelle carte ${cardElement.dataset.id} vers statut: ${newStatus}`);
-    
-    // Mettre à jour l'attribut data-status
-    cardElement.dataset.status = newStatus;
-    
-    // Si la carte a une classe de statut, la mettre à jour
-    const statusClasses = ['status-a-faire', 'status-en-cours', 'status-termine', 'status-backlog'];
-    statusClasses.forEach(cls => cardElement.classList.remove(cls));
-    
-    const statusClass = 'status-' + newStatus.toLowerCase().replace(/[àâäçéèêëïîôöùûüÿ\s]/g, match => {
-      const replacements = {
-        'à': 'a', 'â': 'a', 'ä': 'a', 'ç': 'c', 'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',
-        'ï': 'i', 'î': 'i', 'ô': 'o', 'ö': 'o', 'ù': 'u', 'û': 'u', 'ü': 'u', 'ÿ': 'y',
-        ' ': '-'
-      };
-      return replacements[match] || match;
-    });
-    
-    cardElement.classList.add(statusClass);
-    
-    // Mettre à jour tout badge de statut visible
-    const statusBadges = cardElement.querySelectorAll('.status-badge, .badge[data-field="statut"]');
-    statusBadges.forEach(badge => {
-      badge.textContent = newStatus;
-      
-      // Appliquer les couleurs selon le statut
-      badge.className = badge.className.replace(/bg-\w+/, '');
-      switch (newStatus) {
-        case 'À faire':
-          badge.classList.add('bg-primary');
-          break;
-        case 'En cours':
-          badge.classList.add('bg-warning', 'text-dark');
-          break;
-        case 'Terminé':
-          badge.classList.add('bg-success');
-          break;
-        default:
-          badge.classList.add('bg-secondary');
-      }
-    });
-    
-    // Mettre à jour tous les éléments texte du statut
-    const statusTexts = cardElement.querySelectorAll('.task-status, [data-field="statut"]');
-    statusTexts.forEach(text => {
-      text.textContent = newStatus;
-    });
-    
-    console.log(`✅ Carte ${cardElement.dataset.id} mise à jour visuellement`);
   }
 
   // === GESTION DES MISES À JOUR GRIST ===
   handleGristUpdate(gristRecords, mappings = null) {
+    console.log("🔔 onRecords reçu", {
+      recordCount: gristRecords?.id?.length || 0,
+      isUpdating: this.isUpdating,
+      ignoreNext: this.ignoreNextOnRecords,
+      timestamp: new Date().toISOString()
+    });
+    
     if (this.isUpdating) {
       this.logger.debug("onRecords ignoré (verrou de mise à jour)");
       return;
@@ -2263,18 +1897,10 @@ class KanbanManager {
 
   // NOUVEAU: Callbacks pour les managers
   onDataReloaded(records, options) {
-    console.log('📥 onDataReloaded appelé, isUpdating:', this.isUpdating);
-    
     this.currentRecords = records;
     this.gristOptions = { ...this.gristOptions, ...options };
-    
-    // Ne pas refresh si une mise à jour est en cours
-    if (!this.isUpdating) {
-      this.refreshKanban();
-      this.populateSelectOptions();
-    } else {
-      console.log('🔄 Refresh ignoré car mise à jour en cours');
-    }
+    this.refreshKanban();
+    this.populateSelectOptions();
   }
 
   // NOUVEAU: Méthodes de recherche pour FilterManager
@@ -2320,81 +1946,15 @@ class KanbanManager {
 
     return stats;
   }
-
-  /**
-   * Initialise la délégation d'événements (bonne pratique jQuery)
-   * PRINCIPE : Utiliser UNIQUEMENT jQuery pour la cohérence et stabilité
-   */
-  initEventDelegation() {
-    console.log('🎯 Initialisation délégation d\'événements jQuery...');
-    
-    // VÉRIFIER que jQuery est disponible - obligatoire pour la stabilité
-    if (typeof $ === 'undefined') {
-      console.error('❌ jQuery requis pour la délégation d\'événements');
-      displayError('jQuery requis pour le fonctionnement des événements');
-      return;
-    }
-    
-    this.initJQueryDelegation();
-    console.log('✅ Délégation d\'événements jQuery initialisée');
-  }
-  
-  /**
-   * Délégation avec jQuery (seule méthode stable et pérenne)
-   * PRINCIPE : Utiliser .on() avec délégation et bind() pour conserver le contexte
-   */
-  initJQueryDelegation() {
-    const $container = $('#kanban-container');
-    
-    if ($container.length === 0) {
-      console.error('❌ Container #kanban-container non trouvé');
-      return;
-    }
-    
-    // Nettoyer les anciens event listeners sur le container
-    $container.off('.kanban-events');
-    
-    // BOUTONS HISTORIQUE - Supprimé: gestion centralisée dans HistoryManager.js
-    // Les boutons .btn-timeline sont maintenant gérés par HistoryManager avec listener global
-    console.log('🎯 Boutons timeline délégués à HistoryManager');
-    
-    // TITRES DE TÂCHES - délégation pour édition
-    $container.on('click.kanban-events', '.item-title', $.proxy(function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      const $card = $(e.target).closest('.kanban-item');
-      const taskId = parseInt($card.data('id'), 10);
-      console.log('🎯 Édition tâche jQuery délégation, taskId:', taskId);
-      
-      if (taskId && this.modalManager && typeof this.modalManager.openTaskModal === 'function') {
-        const task = this.currentRecords?.find(t => t.id === taskId);
-        if (task) {
-          this.modalManager.openTaskModal(task);
-        }
-      }
-    }, this)); // $.proxy() préserve le contexte 'this'
-    
-    console.log('✅ Délégation jQuery configurée avec $.proxy()');
-  }
-  
-  // initNativeDelegation() supprimée - utilisation exclusive de jQuery pour la stabilité
-
-  // initializeModalSystem() supprimée - système simplifié avec délégation jQuery
 }
 
 // === INITIALISATION ===
-// Créer l'instance globale pour app-initializer.js
 document.addEventListener('DOMContentLoaded', () => {
-  if (!window.kanbanManager) {
-    console.log('🚀 Initialisation KanbanManager...');
-    window.kanbanManager = new KanbanManager();
-  }
+  console.log('🚀 Initialisation Kanban avec gestionnaires...');
+  window.kanbanManager = new KanbanManager();
 });
 
 // === EXPORT POUR UTILISATION EXTERNE ===
-export { KanbanManager };
-
 window.KanbanApp = {
   KanbanManager,
   displayError,
