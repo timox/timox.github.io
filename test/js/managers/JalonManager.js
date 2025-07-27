@@ -373,6 +373,10 @@ export class JalonManager {
       return;
     }
     
+    console.log('🗑️ Debug: Suppression jalon ID:', id, typeof id);
+    console.log('🗑️ Debug: Jalons actuels:', this.jalons.map(j => ({ id: j.id, titre: j.titre, idType: typeof j.id })));
+    console.log('🗑️ Debug: CurrentTaskId:', this.currentTaskId);
+    
     this.logger.debug('Tentative suppression jalon ID:', id);
     this.logger.debug('Jalons actuels:', this.jalons.map(j => ({ id: j.id, titre: j.titre })));
     this.logger.debug('CurrentTaskId:', this.currentTaskId);

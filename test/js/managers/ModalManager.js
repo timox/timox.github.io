@@ -1210,6 +1210,20 @@ export class ModalManager {
    * Collecte les données du formulaire
    * @returns {object} Données collectées
    */
+  /**
+   * Collecte les données de stratégies sélectionnées
+   * @returns {Array|null} Format Grist pour strategie_id
+   */
+  collectStrategyData() {
+    if (!this.selectedStrategies || this.selectedStrategies.length === 0) {
+      return null;
+    }
+
+    // Convertir au format Grist ['L', id1, id2, ...]
+    const strategyIds = this.selectedStrategies.map(s => s.id);
+    return ['L', ...strategyIds];
+  }
+
   collectFormData() {
     const data = {
       titre: getFieldValue('popup-titre').trim(),
@@ -1219,7 +1233,7 @@ export class ModalManager {
       impact: getFieldValue('popup-impact') || null,
       bureau: getSelectedOptionsAsGristFormat('popup-bureau'),
       qui: getSelectedOptionsAsGristFormat('popup-qui'),
-      strategie_id: getFieldValue('popup-strategie-id') || null, // Références multiples Grist
+      strategie_id: this.collectStrategyData(), // Collecte spécialisée stratégies
       jalons: this.kanban.jalonManager ? this.kanban.jalonManager.getJalonsForSave() : null
     };
     
