@@ -367,6 +367,24 @@ export class HistoryManager {
     modalEl.style.setProperty('width', '100%', 'important');
     modalEl.style.setProperty('height', '100%', 'important');
     
+    // CORRECTIF: Empêcher Bootstrap de masquer à nouveau
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach(mutation => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+          const currentDisplay = modalEl.style.display;
+          if (currentDisplay === 'none' || currentDisplay === '') {
+            modalEl.style.setProperty('display', 'block', 'important');
+            this.logger.warn('Bootstrap a tenté de masquer la modal, display forcé à nouveau');
+          }
+        }
+      });
+    });
+    
+    observer.observe(modalEl, { attributes: true, attributeFilter: ['style'] });
+    
+    // Désactiver l'observer après 5 secondes
+    setTimeout(() => observer.disconnect(), 5000);
+    
     // Ne plus créer de backdrop manuel pour éviter les orphelins
     
     // S'assurer que le body a la classe modal-open
