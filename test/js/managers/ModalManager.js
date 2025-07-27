@@ -854,6 +854,9 @@ export class ModalManager {
       this.kanban.jalonManager.setCurrentTaskId(this.currentTaskId);
     }
     
+    // Peupler les options des selects d'abord
+    this.populateSelectOptions();
+    
     // Peupler les champs APRÈS avoir configuré les caches
     this.populateTaskForm(task);
     

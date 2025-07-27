@@ -424,9 +424,15 @@ export class JalonManager {
       console.log(`   this.jalons:`, this.jalons);
       console.log(`   Array.isArray(this.jalons):`, Array.isArray(this.jalons));
       
-      // Mettre à jour l'affichage
+      // Mettre à jour l'affichage avec nettoyage agressif
       this.updateJalonsDisplay();
       this.saveJalonsToForm();
+      
+      // CORRECTIF: Nettoyage agressif supplémentaire pour éviter les éléments fantômes
+      setTimeout(() => {
+        console.log(`🧹 Nettoyage supplémentaire après suppression`);
+        this.updateJalonsDisplay();
+      }, 50);
       
       console.log(`📊 Après suppression - Jalons restants: ${this.jalons.length}`);
       console.log(`   Jalons:`, this.jalons);
@@ -459,6 +465,8 @@ export class JalonManager {
    * Met à jour l'affichage des jalons dans la timeline
    */
   updateJalonsDisplay() {
+    console.log(`🔄 updateJalonsDisplay: ${this.jalons.length} jalons à afficher`);
+    
     const timeline = document.getElementById('jalons-timeline');
     const emptyState = document.getElementById('jalons-empty');
     const countBadge = document.getElementById('jalons-count');
@@ -471,28 +479,45 @@ export class JalonManager {
 
     // Mettre à jour le compteur
     countBadge.textContent = this.jalons.length;
+    console.log(`📊 Compteur mis à jour: ${this.jalons.length}`);
+
+    // NETTOYAGE AGRESSIF: Vider le timeline et tous les éléments jalons
+    timeline.innerHTML = '';
+    
+    // Nettoyage supplémentaire des éléments jalons orphelins
+    const orphanJalons = timeline.querySelectorAll('.jalon-item, [data-jalon-id]');
+    orphanJalons.forEach(el => el.remove());
+    
+    console.log(`🧹 Timeline vidée et éléments orphelins supprimés`);
 
     if (this.jalons.length === 0) {
       // Afficher l'état vide si l'élément existe
       if (emptyState) {
         emptyState.style.display = 'block';
+        console.log(`📭 État vide affiché`);
       }
+      console.log(`✅ Affichage vide terminé`);
       return;
     }
 
     // Masquer l'état vide si l'élément existe
     if (emptyState) {
       emptyState.style.display = 'none';
+      console.log(`📭 État vide masqué`);
     }
 
     // Trier les jalons par date
     const sortedJalons = [...this.jalons].sort((a, b) => new Date(a.date) - new Date(b.date));
+    console.log(`🔄 Jalons triés: ${sortedJalons.length}`);
 
     // Générer le HTML des jalons
-    timeline.innerHTML = sortedJalons.map(jalon => this.renderJalonItem(jalon)).join('');
+    const html = sortedJalons.map(jalon => this.renderJalonItem(jalon)).join('');
+    timeline.innerHTML = html;
+    console.log(`🎨 HTML généré et injecté: ${html.length} caractères`);
 
     // Ajouter les événements
     this.bindJalonEvents();
+    console.log(`✅ Affichage jalons terminé`);
   }
 
   /**
