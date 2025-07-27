@@ -72,6 +72,9 @@ export class HistoryManager {
       const button = e.target.closest('.btn-history, .btn-timeline');
       
       if (button) {
+        console.log('🔍 Click détecté sur bouton historique');
+        console.log('   Classes du bouton:', button.className);
+        console.log('   Task ID:', button.dataset.taskId);
         this.logger.debug('Click détecté sur bouton historique', button);
         
         // Arrêter la propagation

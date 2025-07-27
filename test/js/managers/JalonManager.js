@@ -414,11 +414,22 @@ export class JalonManager {
     
     try {
       // Supprimer du tableau
+      console.log(`🗑️ AVANT splice - this.jalons.length: ${this.jalons.length}`);
+      console.log(`   this.jalons:`, this.jalons);
+      console.log(`   Index à supprimer: ${index}`);
+      
       this.jalons.splice(index, 1);
+      
+      console.log(`🗑️ APRÈS splice - this.jalons.length: ${this.jalons.length}`);
+      console.log(`   this.jalons:`, this.jalons);
+      console.log(`   Array.isArray(this.jalons):`, Array.isArray(this.jalons));
       
       // Mettre à jour l'affichage
       this.updateJalonsDisplay();
       this.saveJalonsToForm();
+      
+      console.log(`📊 Après suppression - Jalons restants: ${this.jalons.length}`);
+      console.log(`   Jalons:`, this.jalons);
       
       // Ajouter à l'historique
       if (taskId && this.kanban.userActionManager) {
@@ -798,6 +809,8 @@ export class JalonManager {
   getJalonsForSave() {
     console.log(`🔍 getJalonsForSave: ${this.jalons?.length || 0} jalons en mémoire`);
     console.log(`   Jalons:`, this.jalons?.map(j => ({ id: j.id, titre: j.titre })) || []);
+    console.log(`   this.jalons complet:`, this.jalons);
+    console.log(`   Array.isArray(this.jalons):`, Array.isArray(this.jalons));
     
     // IMPORTANT: Même si pas de jalons, retourner la structure vide pour bien nettoyer la DB
     const jalonsData = {
@@ -806,7 +819,7 @@ export class JalonManager {
     };
     
     const jsonString = JSON.stringify(jalonsData);
-    console.log(`💾 getJalonsForSave - Retour:`, jsonString.substring(0, 100) + '...');
+    console.log(`💾 getJalonsForSave - Retour:`, jsonString);
     
     // Retourner la string JSON directement pour Grist
     return jsonString;
