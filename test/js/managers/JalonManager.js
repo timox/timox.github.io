@@ -221,6 +221,8 @@ export class JalonManager {
       // Ajouter à l'historique avec détails
       if (taskId && this.kanban.userActionManager) {
         const details = this.getJalonModificationDetails(oldJalon, jalonData);
+        
+        // 1. Action de modification
         await this.kanban.userActionManager.addHistoryEntry(
           taskId,
           'jalon_modifie',
@@ -229,6 +231,11 @@ export class JalonManager {
           JSON.stringify(jalonData), // newValue
           ''
         );
+        
+        // 2. Jalon lui-même dans la timeline (si date changée)
+        if (oldJalon.date !== jalonData.date) {
+          await this.addJalonToTimeline(taskId, jalonData);
+        }
       }
     } else {
       // Mode création
@@ -236,6 +243,7 @@ export class JalonManager {
       
       // Ajouter à l'historique
       if (taskId && this.kanban.userActionManager) {
+        // 1. Action d'ajout
         await this.kanban.userActionManager.addHistoryEntry(
           taskId,
           'jalon_ajoute',
@@ -244,6 +252,9 @@ export class JalonManager {
           JSON.stringify(jalonData), // newValue
           ''
         );
+        
+        // 2. Jalon lui-même dans la timeline
+        await this.addJalonToTimeline(taskId, jalonData);
       }
     }
 
@@ -378,86 +389,58 @@ export class JalonManager {
     this.logger.debug('Jalons actuels:', this.jalons.map(j => ({ id: j.id, titre: j.titre })));
     this.logger.debug('CurrentTaskId:', this.currentTaskId);
     
-    const index = this.jalons.findIndex(j => j.id === id);
+    let index = this.jalons.findIndex(j => j.id === id);
+    
+    // Si pas trouvé avec correspondance exacte, essayer avec conversion de type
+    if (index === -1) {
+      index = this.jalons.findIndex(j => String(j.id) === String(id));
+      if (index !== -1) {
+        console.log(`🗑️ Jalon trouvé avec conversion de type: ${id}`);
+      }
+    }
     
     if (index === -1) {
-      // Essayer avec conversion de type
-      const altIndex = this.jalons.findIndex(j => String(j.id) === String(id));
-      if (altIndex !== -1) {
-        console.log(`🗑️ Jalon trouvé avec conversion de type: ${id}`);
-        this.jalons.splice(altIndex, 1);
-        this.updateJalonsDisplay();
-        this.saveJalonsToForm();
-        return;
-      }
       console.log(`❌ Jalon ${id} non trouvé pour suppression`);
+      console.log(`   IDs disponibles:`, this.jalons.map(j => `${j.id} (${typeof j.id})`));
+      console.log(`   ID recherché: ${id} (${typeof id})`);
       return;
     }
     
-    if (index !== -1) {
-      const jalonData = this.jalons[index];
-      const taskId = this.getCurrentTaskId();
+    // Jalon trouvé - procéder à la suppression
+    const jalonData = this.jalons[index];
+    const taskId = this.getCurrentTaskId();
+    
+    console.log(`🗑️ Suppression du jalon: "${jalonData.titre}" (index: ${index})`);
+    
+    try {
+      // Supprimer du tableau
+      this.jalons.splice(index, 1);
       
-      this.logger.debug('Suppression du jalon:', jalonData.titre);
+      // Mettre à jour l'affichage
+      this.updateJalonsDisplay();
+      this.saveJalonsToForm();
       
-      try {
-        // Supprimer du tableau
-        this.jalons.splice(index, 1);
+      // Ajouter à l'historique
+      if (taskId && this.kanban.userActionManager) {
+        // 1. Action de suppression
+        await this.kanban.userActionManager.addHistoryEntry(
+          taskId,
+          'jalon_supprime',
+          `Jalon supprimé: ${jalonData.titre} (${jalonData.date}) - Type: ${this.getJalonTypeLabel(jalonData.type)}`,
+          JSON.stringify(jalonData), // oldValue
+          '', // newValue
+          ''
+        );
         
-        // ❌ CACHE SUPPRIMÉ - Approche stateless: pas de mise à jour de cache
-        
-        // Mettre à jour l'affichage
-        this.updateJalonsDisplay();
-        this.saveJalonsToForm();
-        
-        // Ajouter à l'historique
-        if (taskId && this.kanban.userActionManager) {
-          await this.kanban.userActionManager.addHistoryEntry(
-            taskId,
-            'jalon_supprime',
-            `Jalon supprimé: ${jalonData.titre} (${jalonData.date}) - Type: ${this.getJalonTypeLabel(jalonData.type)}`,
-            JSON.stringify(jalonData), // oldValue
-            '', // newValue
-            ''
-          );
-        }
-        
-        this.logger.debug('Jalon supprimé avec succès:', id);
-        
-      } catch (error) {
-        this.logger.error('Erreur lors de la suppression du jalon:', error);
-        throw error;
-      }
-    } else {
-      this.logger.warn('Jalon non trouvé pour suppression. ID:', id);
-      this.logger.debug('IDs disponibles:', this.jalons.map(j => j.id));
-      this.logger.debug('Types des IDs:', this.jalons.map(j => typeof j.id));
-      this.logger.debug('ID recherché type:', typeof id);
-      
-      // Essayer de trouver avec conversion de type
-      const altIndex = this.jalons.findIndex(j => String(j.id) === String(id));
-      if (altIndex !== -1) {
-        this.logger.warn('Jalon trouvé avec conversion de type, suppression...');
-        const jalonData = this.jalons[altIndex];
-        this.jalons.splice(altIndex, 1);
-        this.updateJalonsDisplay();
-        this.saveJalonsToForm();
-        this.logger.debug('✅ Jalon supprimé avec conversion de type');
-        return;
+        // 2. Supprimer de la timeline
+        await this.removeJalonFromTimeline(taskId, jalonData);
       }
       
-      // Debug exhaustif si toujours pas trouvé
-      this.logger.error('Échec suppression jalon, debug complet:');
-      this.logger.error('ID recherché:', id, typeof id);
-      this.logger.error('Jalons disponibles:');
-      this.jalons.forEach((j, index) => {
-        this.logger.error(`  [${index}] ID: "${j.id}" (${typeof j.id}) - Titre: "${j.titre}"`);
-        this.logger.error(`      String match: ${String(j.id) === String(id)}`);
-        this.logger.error(`      == match: ${j.id == id}`);
-        this.logger.error(`      === match: ${j.id === id}`);
-      });
-      this.logger.error('CurrentTaskId:', this.currentTaskId);
-      this.logger.error('Nombre total jalons:', this.jalons.length);
+      console.log(`✅ Jalon supprimé avec succès: ${id}`);
+      
+    } catch (error) {
+      console.error(`❌ Erreur lors de la suppression du jalon:`, error);
+      throw error;
     }
   }
 
@@ -881,6 +864,95 @@ export class JalonManager {
   showValidationError(message) {
     // Afficher une alerte ou un toast
     alert(message); // Temporaire, à remplacer par un système de toast
+  }
+
+  /**
+   * Ajoute un jalon dans la timeline historique (en tant qu'événement futur)
+   */
+  async addJalonToTimeline(taskId, jalonData) {
+    if (!this.kanban.userActionManager) {
+      console.warn('UserActionManager non disponible pour ajout jalon timeline');
+      return;
+    }
+
+    // Créer une entrée d'historique avec la date du jalon (pas maintenant)
+    const jalonDate = new Date(jalonData.date);
+    const typeIcon = this.getJalonTypeIcon(jalonData.type);
+    const typeLabel = this.getJalonTypeLabel(jalonData.type);
+    
+    let details = `${typeIcon} ${typeLabel}: ${jalonData.titre}`;
+    
+    // Ajouter des détails spécifiques selon le type
+    switch (jalonData.type) {
+      case 'reunion':
+        if (jalonData.participants && jalonData.participants.length > 0) {
+          details += ` (${jalonData.participants.join(', ')})`;
+        }
+        if (jalonData.lieu) {
+          details += ` - ${jalonData.lieu}`;
+        }
+        break;
+      case 'echeance':
+        if (jalonData.criticite && jalonData.criticite !== 'normale') {
+          details += ` - Criticité: ${jalonData.criticite}`;
+        }
+        break;
+      case 'validation':
+        if (jalonData.valideurs && jalonData.valideurs.length > 0) {
+          details += ` (Valideurs: ${jalonData.valideurs.join(', ')})`;
+        }
+        break;
+      case 'livrable':
+        if (jalonData.format) {
+          details += ` - Format: ${jalonData.format}`;
+        }
+        if (jalonData.destinataire) {
+          details += ` → ${jalonData.destinataire}`;
+        }
+        break;
+    }
+    
+    if (jalonData.commentaire) {
+      details += ` - ${jalonData.commentaire}`;
+    }
+
+    // Ajouter l'entrée avec timestamp du jalon
+    await this.kanban.userActionManager.addHistoryEntry(
+      taskId,
+      'jalon_timeline',
+      details,
+      '', // oldValue
+      JSON.stringify(jalonData), // newValue
+      '',
+      jalonDate.toISOString() // Utiliser la date du jalon comme timestamp
+    );
+    
+    console.log(`📅 Jalon ajouté à la timeline: ${jalonData.titre} (${jalonData.date})`);
+  }
+
+  /**
+   * Supprime un jalon de la timeline historique
+   */
+  async removeJalonFromTimeline(taskId, jalonData) {
+    if (!this.kanban.userActionManager) {
+      console.warn('UserActionManager non disponible pour suppression jalon timeline');
+      return;
+    }
+
+    // Marquer le jalon comme supprimé dans l'historique
+    const typeIcon = this.getJalonTypeIcon(jalonData.type);
+    const typeLabel = this.getJalonTypeLabel(jalonData.type);
+    
+    await this.kanban.userActionManager.addHistoryEntry(
+      taskId,
+      'jalon_timeline_removed',
+      `❌ ${typeIcon} ${typeLabel} supprimé: ${jalonData.titre}`,
+      JSON.stringify(jalonData), // oldValue
+      '', // newValue
+      ''
+    );
+    
+    console.log(`📅 Jalon supprimé de la timeline: ${jalonData.titre}`);
   }
 
   /**

@@ -103,9 +103,10 @@ export class UserActionManager {
    * @param {string} oldValue - Ancienne valeur
    * @param {string} newValue - Nouvelle valeur
    * @param {string} status - Statut actuel
+   * @param {string} customTimestamp - Timestamp personnalisé (optionnel)
    * @returns {Promise<void>}
    */
-  async addHistoryEntry(taskId, action, details, oldValue = '', newValue = '', status = '') {
+  async addHistoryEntry(taskId, action, details, oldValue = '', newValue = '', status = '', customTimestamp = null) {
     try {
       // Récupérer l'enregistrement actuel depuis les données Grist
       const gristData = await this.grist.docApi.fetchTable(TABLE_ID);
@@ -142,7 +143,8 @@ export class UserActionManager {
         details: details,
         oldValue: oldValue,
         newValue: newValue,
-        status: status || record.statut
+        status: status || record.statut,
+        timestamp: customTimestamp || new Date().toISOString() // Utiliser timestamp personnalisé si fourni
       };
 
       // Ajouter l'entrée via le migrator
