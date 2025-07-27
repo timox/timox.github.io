@@ -13,3 +13,7 @@ test/*
 **/*test*.js
 *api-key*
 *api_key*
+
+# Dossiers de backup
+kanban_backup_*/
+*_backup_*/
