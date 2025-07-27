@@ -504,13 +504,13 @@
   <!-- Gestionnaire de clics simple -->
   
   <!-- Application Kanban modulaire -->
-  <script type="module" src="js/kanban-app.js?v=20250727-FINAL"></script>
+  <script type="module" src="js/kanban-app.js?v=20250727-BRUTAL-FORCE-999"></script>
   
   <!-- Initialisateur principal -->
-  <script type="module" src="js/app-initializer.js?v=20250727-FINAL"></script>
+  <script type="module" src="js/app-initializer.js?v=20250727-BRUTAL-FORCE-999"></script>
   
   <!-- Script d'export des données stratégiques (TEST uniquement) -->
-  <script src="js/utils/exportStrategyData.js?v=20250727-FINAL"></script>
+  <script src="js/utils/exportStrategyData.js?v=20250727-BRUTAL-FORCE-999"></script>
   
   <!-- Script de debug (développement seulement) -->
   <script>
@@ -529,8 +529,15 @@
     
     // Vérifier toutes les 2 secondes si l'élément existe
     setInterval(() => {
-      const exists = !!document.getElementById('history-modal');
+      const modal = document.getElementById('history-modal');
+      const exists = !!modal;
       console.log('Vérification périodique history-modal:', exists);
+      if (exists) {
+        console.log('  → Classes:', modal.className);
+        console.log('  → Display:', modal.style.display);
+        console.log('  → Visibility:', modal.style.visibility);
+        console.log('  → Z-index:', modal.style.zIndex);
+      }
     }, 2000);
     
     // Mise à jour du panneau de debug
