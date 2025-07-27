@@ -67,8 +67,6 @@ export class HistoryManager {
     this.setupCommentEditWidget();
     
     // Écouteurs pour les boutons d'historique sur les cartes (support des deux classes)
-    // Event listeners pour boutons historique supprimés - boutons retirés des cartes
-    /*
     document.addEventListener('click', (e) => {
       // Trouver le bouton parent si on a cliqué sur un enfant (icône, texte)
       const button = e.target.closest('.btn-history, .btn-timeline');
@@ -113,7 +111,6 @@ export class HistoryManager {
         return false;
       }
     }, { capture: true }); // Capture en phase descendante pour priorité
-    */
   }
   
   /**

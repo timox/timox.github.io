@@ -83,7 +83,7 @@ export class ModalManager {
     }
     
     // Event listeners pour les boutons de la modal avec délégation
-    $(document).off('click.modal-events', '#btn-save-task, #btn-delete-task')
+    $(document).off('click.modal-events', '#btn-save-task, #btn-delete-task, #btn-show-history')
       .on('click.modal-events', '#btn-save-task', (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -95,6 +95,12 @@ export class ModalManager {
         e.stopPropagation();
         this.logger.debug('Delete button clicked');
         this.deleteTask();
+      })
+      .on('click.modal-events', '#btn-show-history', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.logger.debug('Show history button clicked');
+        this.showTaskHistory();
       });
     
     // Bouton ajouter projet
@@ -1416,11 +1422,18 @@ export class ModalManager {
     */
     
     // Vérifier les jalons pour Grist (déjà au format JSON string)
+    console.log('🔍 DEBUG prepareTaskDataForGrist - jalons:', gristData.jalons);
+    console.log('   Type:', typeof gristData.jalons);
+    console.log('   Valeur brute:', gristData.jalons);
+    
     if (gristData.jalons !== null && gristData.jalons !== undefined) {
       if (typeof gristData.jalons !== 'string') {
+        console.log('⚠️ Jalons pas au format string, conversion...');
         gristData.jalons = JSON.stringify(gristData.jalons || []);
       }
+      console.log('✅ Jalons après traitement:', gristData.jalons);
     } else {
+      console.log('❌ Jalons null/undefined, valeur par défaut');
       gristData.jalons = '{"jalons":[],"lastModified":0}'; // Valeur par défaut
     }
     
