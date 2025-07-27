@@ -282,24 +282,34 @@ export class HistoryManager {
         this.kanban.modalManager.historyModal.show();
         this.logger.info('Modale ouverte via ModalManager');
         
-        // Vérifier si l'affichage a fonctionné après un délai
+        // Vérifier immédiatement l'état, puis avec délai
+        this.logger.debug('État immédiat après show():', {
+          hasShow: historyModalEl.classList.contains('show'),
+          display: historyModalEl.style.display,
+          visibility: historyModalEl.style.visibility
+        });
+        
+        // Vérifier si l'affichage a fonctionné après un délai réduit
         setTimeout(() => {
+          this.logger.debug('=== DÉBUT setTimeout diagnostic ===');
+          
           const isVisible = historyModalEl.classList.contains('show') && 
                           historyModalEl.style.display !== 'none';
           
-          this.logger.debug('État après show():', {
+          this.logger.debug('État après show() avec délai:', {
             hasShow: historyModalEl.classList.contains('show'),
             display: historyModalEl.style.display,
             visibility: historyModalEl.style.visibility,
-            isVisible: isVisible
+            isVisible: isVisible,
+            element: historyModalEl
           });
           
-          // Seulement forcer si vraiment invisible
-          if (!isVisible) {
-            this.logger.warn('Modale invisible malgré show(), forçage nécessaire');
-            this.forceShowModal(historyModalEl);
-          }
-        }, 100);
+          // FORÇAGE TEMPORAIRE POUR DEBUG: toujours forcer pour voir ce qui se passe
+          this.logger.warn('FORÇAGE SYSTÉMATIQUE TEMPORAIRE POUR DEBUG');
+          this.forceShowModal(historyModalEl);
+          
+          this.logger.debug('=== FIN setTimeout diagnostic ===');
+        }, 50);
         
         return;
       } catch (error) {
