@@ -245,6 +245,8 @@ export class HistoryManager {
    */
   openHistoryModalSeparately(task, taskId) {
     this.logger.info('Ouverture modale historique séparée');
+    this.logger.debug('DOM ready state:', document.readyState);
+    this.logger.debug('Task:', task?.id, task?.titre);
     
     // CORRECTIF: Nettoyer les backdrops orphelins avant d'ouvrir
     this.cleanupOrphanBackdrops();
@@ -262,11 +264,20 @@ export class HistoryManager {
     this.renderTaskHistory(task);
     
     // Ouvrir la modale
+    this.logger.debug('Recherche élément history-modal dans le DOM...');
     const historyModalEl = document.getElementById('history-modal');
+    
+    // Debug complet des modales présentes
+    const allModals = document.querySelectorAll('.modal');
+    this.logger.debug('Modales trouvées dans le DOM:', Array.from(allModals).map(m => m.id));
+    
     if (!historyModalEl) {
       this.logger.error('Élément history-modal introuvable dans le DOM');
+      this.logger.error('DOM actuel:', document.body.innerHTML.length, 'caractères');
       return;
     }
+    
+    this.logger.debug('Élément history-modal trouvé:', historyModalEl);
     
     // Vérifier l'état de la modale avant ouverture
     this.logger.debug('État modale avant ouverture:', {
