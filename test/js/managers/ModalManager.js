@@ -631,7 +631,6 @@ export class ModalManager {
    * @param {string|array} gristReferences - Références Grist [["L", id1], ["L", id2], ...]
    */
   populateStrategyFieldsFromGristReferences(gristReferences) {
-    console.log('🎯 Debug: Chargement stratégies depuis Grist:', gristReferences);
     this.logger.debug(`Loading strategies from Grist: ${gristReferences?.length || 0} references`);
     
     // Reset complet des stratégies à chaque tâche (approche stateless)
@@ -700,7 +699,6 @@ export class ModalManager {
       this.updateStrategyPreview();
       this.updateStrategyIds();
       
-      console.log('🎯 Debug: Stratégies chargées dans selectedStrategies:', this.selectedStrategies);
       this.logger.info(`Strategies loaded from Grist: ${strategiesFromDB.length} items`);
     }
   }
@@ -1223,7 +1221,7 @@ export class ModalManager {
 
     // Convertir au format Grist [['L', id1], ['L', id2], ...]  
     const strategyReferences = this.selectedStrategies.map(s => ['L', s.id]);
-    console.log('🎯 Debug: Stratégies collectées:', strategyReferences);
+    console.log(`🎯 Strategies saved: ${strategyReferences.length} items`);
     return strategyReferences;
   }
 

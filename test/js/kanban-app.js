@@ -1655,21 +1655,15 @@ class KanbanManager {
       
       // ✅ ENREGISTRER L'HISTORIQUE AVEC LES BONNES VALEURS
       try {
-        console.log(`🔍 Debug: Tentative enregistrement ${taskId} ${oldStatus} → ${newStatus}`);
         const userActionManager = getUserActionManager();
-        console.log(`🔍 Debug: UserActionManager disponible:`, !!userActionManager);
-        
         if (userActionManager) {
-          console.log(`🔍 Debug: Appel statusChangeAction...`);
           await userActionManager.statusChangeAction(taskId, oldStatus, newStatus);
-          console.log(`✅ UserAction statusChangeAction réussie pour ${taskId}`);
+          console.log(`✅ Status change tracked: ${taskId} ${oldStatus} → ${newStatus}`);
         } else {
-          console.error(`❌ UserActionManager non disponible pour ${taskId}`);
+          console.error(`❌ UserActionManager non disponible`);
         }
-        console.log(`UserAction enregistrée pour ${taskId}`);
       } catch (userActionError) {
         console.error(`❌ Erreur UserAction:`, userActionError);
-        console.warn(`Erreur UserAction (non bloquante):`, userActionError);
       }
       
       // Refresh direct depuis Grist après sauvegarde
