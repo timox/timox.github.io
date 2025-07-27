@@ -285,20 +285,31 @@ export class UserActionManager {
    * @returns {Promise<void>}
    */
   async statusChangeAction(taskId, oldStatus, newStatus) {
+    console.log(`🔍 UserActionManager.statusChangeAction: ${taskId} "${oldStatus}" → "${newStatus}"`);
+    
     // Ne pas enregistrer si le statut n'a pas vraiment changé
     if (oldStatus === newStatus) {
+      console.log(`⏭️ Pas de changement de statut pour tâche ${taskId}: ${oldStatus} -> ${newStatus}`);
       this.logger.debug(`Pas de changement de statut pour tâche ${taskId}: ${oldStatus} -> ${newStatus}`);
       return;
     }
     
-    await this.addHistoryEntry(
-      taskId,
-      'status_change',
-      `Status changed from ${oldStatus} to ${newStatus}`,
-      oldStatus,
-      newStatus,
-      newStatus
-    );
+    console.log(`✅ Enregistrement changement statut ${taskId}: ${oldStatus} → ${newStatus}`);
+    
+    try {
+      await this.addHistoryEntry(
+        taskId,
+        'status_change',
+        `Status changed from ${oldStatus} to ${newStatus}`,
+        oldStatus,
+        newStatus,
+        newStatus
+      );
+      console.log(`✅ addHistoryEntry réussie pour ${taskId}`);
+    } catch (error) {
+      console.error(`❌ Erreur addHistoryEntry pour ${taskId}:`, error);
+      throw error;
+    }
   }
 
   /**

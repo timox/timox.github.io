@@ -62,51 +62,58 @@ kanban/
 - ✅ Système de coloration des colonnes par statut
 - ✅ Architecture modulaire complète
 
-### 🔧 Améliorations Architecturales Récentes (2025-07-20)
+### 🔧 Améliorations Architecturales Récentes (2025-07-27)
 - ✅ **Gestion événements anti-duplication** - Protection contre les écouteurs multiples
 - ✅ **Protection anti-spam** - Mécanismes timeout pour interactions rapides
 - ✅ **Z-index coordination** - Gestion hiérarchie modales et overlays
 - ✅ **Format Grist unifié** - Support arrays `["L", number]` et types flexibles
 - ✅ **Widget overlay fixes** - Résolution conflits superposition interface
+- ✅ **Tracking historique statut** - Correction bugs drag&drop et modal (27/07/2025)
+- ✅ **Synchronisation environnements** - Code /kanban/ → /test/ pour développement
+- ✅ **Tests automatisés** - Suite de tests API Grist pour analyse données
 
 ---
 
-## 🧪 `/test/` - ENVIRONNEMENT DE DÉVELOPPEMENT
+## 🧪 `/test/` - ENVIRONNEMENT DE DÉVELOPPEMENT **[ACTUEL]**
 
 **URL d'accès :** `https://timox.github.io/test/`
 
 ### Description
-Environnement de développement et test pour valider les nouvelles fonctionnalités avant mise en production.
+🔥 **Environnement de développement principal** - Synchronisé avec production et contient les dernières corrections critiques.
 
 ### Structure
 ```
 test/
 ├── index.html              # Version de test
-├── css/                    # CSS synchronisé avec production
-├── js/                     # JS synchronisé avec production
-├── debug/                  # Outils de debug et migration
-│   ├── *.py               # Scripts Python d'analyse
-│   ├── *.csv              # Données de test/migration
-│   ├── *.json             # Extractions et sauvegardes
-│   └── extracted_json_*/  # Données extraites par tâche
+├── css/                    # CSS synchronisé avec production  
+├── js/                     # 🆕 JS avec corrections tracking statut (27/07/2025)
+│   ├── kanban-app.js       # ✅ Fix handleDragEnd() - capture oldStatus avant modification
+│   ├── managers/
+│   │   ├── ModalManager.js # ✅ Fix tracking statut via modal avec UserActionManager
+│   │   ├── JalonManager.js # ✅ Dernières corrections édition/suppression jalons
+│   │   └── ...             # Autres managers synchronisés
+│   └── utils/
+│       ├── UserActionManager.js    # ✅ Système tracking actions utilisateur
+│       ├── NotesJsonMigrator.js    # ✅ Migration notes vers JSON
+│       └── ...                     # Autres utilitaires
+├── 🔒 [IGNORÉ] Scripts avec identifiants # Scripts tests/API (exclus du git)
+├── fix-status-tracking.md  # 📋 Documentation corrections statut
 ├── ARCHITECTURE.md         # Documentation architecture complète
+├── CHANGELOG_2025-07-27.md # 🆕 Corrections tracking historique
 ├── CHANGELOG_2025-07-20.md # Corrections critiques récentes
-├── CHANGELOG_2025-07-14.md # Journal des modifications
-├── LOGGING_GUIDE.md        # Guide système de logs  
-├── VERIFICATION_ANTI_DUPLICATION.md # Guide anti-doublons événements
-├── STRATEGY_INTERFACE_DOCUMENTATION.md # Interface stratégies détaillée
 └── schema.md               # Schéma base de données Grist
 ```
 
-### Usage
-- **Développement** de nouvelles fonctionnalités
-- **Tests** avant mise en production
-- **Scripts de migration** et maintenance
-- **Documentation** technique détaillée
+### 🎯 Usage Actuel (Depuis 27/07/2025)
+- **🔥 Environnement principal** pour développement et corrections
+- **✅ Tests automatisés** via scripts API Grist (readonly-test-suite.js)
+- **🔧 Corrections critiques** tracking historique des changements de statut  
+- **📊 Analyse données** (67 tâches, 2 jalons, 0 changements statut trackés)
+- **🛡️ Sécurité** - Scripts avec identifiants exclus du repository git
 
 ### Synchronisation
-- Les modifications validées en `test/` sont copiées vers `kanban/`
-- Structure identique à la production pour faciliter les déploiements
+- **kanban/ → test/** (27/07/2025) : Synchronisation complète pour développement
+- **test/ → kanban/** : Déploiement après validation corrections
 
 ---
 
@@ -147,32 +154,44 @@ Documentation technique, guides utilisateur et spécifications.
 
 ## 🔄 Workflow de développement
 
-### 1. **Expérimentation** (`/kanbantest/`)
-```bash
-# Tests rapides d'interface
-# Prototypes d'ergonomie
-# Validation concepts
+### 🎯 **Workflow Actuel (2025-07-27)**
+
+```mermaid
+graph LR
+    A[🔧 Développement /test/] --> B[✅ Tests & Validation]
+    B --> C[📋 Documentation fixes]
+    C --> D[🚀 Déploiement /kanban/]
+    
+    E[🔥 Hotfix /kanban/] --> F[⬅️ Sync vers /test/]
+    F --> A
 ```
 
-### 2. **Développement** (`/test/`)
+### 1. **Développement Principal** (`/test/`) **[ACTUEL]**
 ```bash
-# Implémentation complète
-# Tests fonctionnels
-# Validation architecture
-# Documentation
+# ✅ Corrections critiques tracking historique
+# 🧪 Tests automatisés API Grist  
+# 📊 Analyse données (67 tâches, 2 jalons)
+# 🛡️ Scripts sécurisés (identifiants exclus git)
 ```
 
-### 3. **Production** (`/kanban/`)
+### 2. **Production** (`/kanban/`)
 ```bash
-# Copie des fichiers validés depuis /test/
-# Déploiement automatique via GitHub Pages
-# Utilisation quotidienne équipes SSIR
+# ✅ Corrections déployées (handleDragEnd + ModalManager)
+# 🚀 Utilisation quotidienne équipes SSIR  
+# 📈 Tracking statut fonctionnel après corrections
+```
+
+### 3. **Expérimentation** (`/kanbantest/`)
+```bash
+# 🔬 Prototypes rapides si nécessaire
+# 💡 Tests concepts avant implémentation
 ```
 
 ### 4. **Synchronisation**
 ```bash
-# test/ → kanban/ (pour déploiement)
-# kanban/ → test/ (pour alignement après hotfix)
+# ✅ FAIT: kanban/ → test/ (27/07/2025)
+# ✅ FAIT: corrections appliquées test/ → kanban/  
+# 🔄 CONTINU: développement principalement en test/
 ```
 
 ---
@@ -203,24 +222,26 @@ Documentation technique, guides utilisateur et spécifications.
 
 ## 📋 Bonnes pratiques
 
-### **Développement**
-1. 🧪 Développer dans `/test/`
-2. ✅ Valider et documenter
-3. 📋 Tester en conditions réelles
-4. 🚀 Copier vers `/kanban/`
+### **Développement** (Workflow actuel 2025-07-27)
+1. 🔧 **Développer dans `/test/`** (environnement principal)
+2. 🧪 **Tester avec scripts automatisés** (readonly-test-suite.js)
+3. ✅ **Valider corrections** (tracking historique, jalons...)
+4. 📋 **Documenter fixes** (fix-status-tracking.md)
+5. 🚀 **Déployer vers `/kanban/`** après validation
 
-### **Hotfix production**
+### **Hotfix production** 
 1. 🔥 Correction urgente dans `/kanban/`
-2. 📋 Commit avec tag `[HOTFIX]`
-3. ⬅️ Reporter dans `/test/` rapidement
+2. 📋 Commit avec tag `[HOTFIX]`  
+3. ⬅️ **Synchroniser vers `/test/`** immédiatement
 4. 📝 Documenter dans CHANGELOG
 
-### **Expérimentation**
-1. 🔬 Prototype dans `/kanbantest/`
-2. 💡 Validation concept rapide
-3. 🧪 Si validé → implémentation complète dans `/test/`
+### **Sécurité** (Nouveau 2025-07-27)
+1. 🛡️ **Scripts tests** avec identifiants dans `/test/` (exclus git)
+2. 🔒 **Gitignore** protège contre commits accidentels
+3. 🧹 **Historique git nettoyé** de tous identifiants sensibles
+4. 📊 **Tests API** en lecture seule pour analyse données
 
 ---
 
-*Dernière mise à jour : 2025-07-19*  
-*Structure documentée pour faciliter le développement et la maintenance*
+*Dernière mise à jour : 2025-07-27*  
+*Structure mise à jour - Workflow principal en `/test/` avec corrections tracking historique*
