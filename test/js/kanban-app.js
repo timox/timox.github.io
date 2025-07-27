@@ -1243,7 +1243,17 @@ class KanbanManager {
         e.stopPropagation();
         e.preventDefault();
         
-        const taskId = parseInt(btn.dataset.taskId, 10);
+        // CORRECTIF: Remonter au bouton parent si l'event target est l'icône
+        const button = e.target.closest('.btn-timeline') || btn;
+        const taskId = parseInt(button.dataset.taskId, 10);
+        
+        console.log('Debug bouton historique:', {
+          'e.target': e.target,
+          'button found': button,
+          'taskId': taskId,
+          'this.openTimelineModal(taskId)': taskId
+        });
+        
         this.openTimelineModal(taskId);
       });
     });
