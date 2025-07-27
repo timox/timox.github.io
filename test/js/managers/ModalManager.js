@@ -828,6 +828,11 @@ export class ModalManager {
       return;
     }
     
+    // CORRECTIF: Nettoyer les backdrops orphelins avant d'ouvrir
+    if (this.kanban.historyManager?.cleanupOrphanBackdrops) {
+      this.kanban.historyManager.cleanupOrphanBackdrops();
+    }
+    
     // ✅ RESET intelligent : seulement si nouvelle tâche ou changement de tâche
     const isChangingTask = !task || this.currentTaskId !== task?.id;
     if (isChangingTask) {

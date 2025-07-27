@@ -3,6 +3,39 @@
 ## 🎯 Objectif
 Cette documentation technique évite les erreurs de factorisation en documentant l'architecture critique, les dépendances et les pièges courants.
 
+## 🏗️ Stack Technique - Décision Architecturale
+
+### Mélange Bootstrap 5 + jQuery (Architecture Retenue)
+
+**Stack actuel :**
+```javascript
+✅ Bootstrap 5.3.0 (CSS + JS) : Composants UI, modales, tooltips
+✅ jQuery 3.6.0 : Manipulation DOM, événements, intégration Grist
+✅ Grist API : Base de données et synchronisation temps réel
+```
+
+**Justification technique :**
+- **Bootstrap 5** : Composants UI modernes et accessibles (`new bootstrap.Modal()`)
+- **jQuery** : Simplifie les manipulations DOM complexes et l'intégration Grist
+- **Coexistence stable** : Conflits d'événements résolus par une architecture claire
+
+**Responsabilités définies :**
+```javascript
+// Bootstrap 5 → Composants UI natifs
+const modal = new bootstrap.Modal(element, options);
+
+// jQuery → Manipulation DOM et business logic  
+$(element).addClass('active').data('taskId', id);
+```
+
+**Configuration noConflict :**
+```javascript
+window.kanbanJQuery = jQuery.noConflict(true);
+window.$ = window.kanbanJQuery;  // Évite conflit avec jQuery Grist
+```
+
+**⚠️ Règle :** Ne pas migrer vers du vanilla JS pour le moment - l'architecture actuelle est stable et performante.
+
 ---
 
 ## 📁 Structure des Modules

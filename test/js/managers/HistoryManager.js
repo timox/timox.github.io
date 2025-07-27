@@ -31,7 +31,27 @@ export class HistoryManager {
   init() {
     // Event listeners supprimés - gérés par SimpleClickHandler
     this.setupCommentEditWidget();
+    this.setupModalCleanupListeners();
     this.logger.info('History manager initialized (listeners centralisés)');
+  }
+  
+  /**
+   * Configure les listeners pour nettoyer automatiquement les backdrops
+   */
+  setupModalCleanupListeners() {
+    // Écouter les événements Bootstrap 5 de fermeture de modales
+    document.addEventListener('hidden.bs.modal', (event) => {
+      this.logger.debug('Modale fermée détectée:', event.target.id);
+      // Délai pour laisser Bootstrap 5 finir ses animations
+      setTimeout(() => {
+        this.cleanupOrphanBackdrops();
+      }, 200);
+    });
+    
+    // Nettoyage périodique des backdrops orphelins
+    setInterval(() => {
+      this.cleanupOrphanBackdrops();
+    }, 5000); // Vérifier toutes les 5 secondes
   }
   
   /**
@@ -226,6 +246,9 @@ export class HistoryManager {
   openHistoryModalSeparately(task, taskId) {
     this.logger.info('Ouverture modale historique séparée');
     
+    // CORRECTIF: Nettoyer les backdrops orphelins avant d'ouvrir
+    this.cleanupOrphanBackdrops();
+    
     // Mettre à jour le titre de la modale
     const modalTitle = document.getElementById('history-modal-label');
     if (modalTitle) {
@@ -259,20 +282,24 @@ export class HistoryManager {
         this.kanban.modalManager.historyModal.show();
         this.logger.info('Modale ouverte via ModalManager');
         
-        // CORRECTIF: Toujours forcer l'affichage car il y a un problème de visibilité
+        // Vérifier si l'affichage a fonctionné après un délai
         setTimeout(() => {
-          const isVisible = historyModalEl.classList.contains('show');
+          const isVisible = historyModalEl.classList.contains('show') && 
+                          historyModalEl.style.display !== 'none';
+          
           this.logger.debug('État après show():', {
-            hasShow: isVisible,
+            hasShow: historyModalEl.classList.contains('show'),
             display: historyModalEl.style.display,
             visibility: historyModalEl.style.visibility,
-            zIndex: historyModalEl.style.zIndex
+            isVisible: isVisible
           });
           
-          // Forcer systématiquement car problème de visibilité détecté
-          this.logger.warn('Forçage systématique pour corriger problème de visibilité');
-          this.forceShowModal(historyModalEl);
-        }, 50);
+          // Seulement forcer si vraiment invisible
+          if (!isVisible) {
+            this.logger.warn('Modale invisible malgré show(), forçage nécessaire');
+            this.forceShowModal(historyModalEl);
+          }
+        }, 100);
         
         return;
       } catch (error) {
@@ -280,17 +307,9 @@ export class HistoryManager {
       }
     }
     
-    // Fallback : créer et ouvrir manuellement
-    try {
-      const modalInstance = new bootstrap.Modal(historyModalEl, {
-        backdrop: true,
-        keyboard: true
-      });
-      modalInstance.show();
-      this.logger.info('Modale ouverte manuellement');
-    } catch (error) {
-      this.logger.error('Erreur ouverture manuelle:', error);
-    }
+    // Fallback désactivé pour éviter les instances multiples
+    this.logger.error('ModalManager.historyModal non disponible - abandon');
+    this.cleanupOrphanBackdrops();
   }
   
   /**
@@ -317,18 +336,37 @@ export class HistoryManager {
     modalEl.style.setProperty('width', '100%', 'important');
     modalEl.style.setProperty('height', '100%', 'important');
     
-    // Ajouter le backdrop si nécessaire
-    if (!document.querySelector('.modal-backdrop')) {
-      const backdrop = document.createElement('div');
-      backdrop.className = 'modal-backdrop fade show';
-      backdrop.style.setProperty('z-index', '1999', 'important');
-      document.body.appendChild(backdrop);
-    }
+    // Ne plus créer de backdrop manuel pour éviter les orphelins
     
     // S'assurer que le body a la classe modal-open
     document.body.classList.add('modal-open');
     
     this.logger.info('Modale forcée à s\'afficher avec styles prioritaires');
+  }
+  
+  /**
+   * Nettoie les backdrops orphelins
+   */
+  cleanupOrphanBackdrops() {
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    let cleaned = 0;
+    
+    backdrops.forEach(backdrop => {
+      // Vérifier s'il y a une modale visible correspondante
+      const visibleModals = document.querySelectorAll('.modal.show');
+      
+      if (visibleModals.length === 0) {
+        // Aucune modale visible, supprimer le backdrop
+        backdrop.remove();
+        cleaned++;
+        this.logger.debug('Backdrop orphelin supprimé');
+      }
+    });
+    
+    if (cleaned > 0) {
+      document.body.classList.remove('modal-open');
+      this.logger.info(`${cleaned} backdrop(s) orphelin(s) nettoyé(s)`);
+    }
   }
   
   /**
