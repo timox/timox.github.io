@@ -259,20 +259,20 @@ export class HistoryManager {
         this.kanban.modalManager.historyModal.show();
         this.logger.info('Modale ouverte via ModalManager');
         
-        // Vérifier l'état après ouverture
+        // CORRECTIF: Toujours forcer l'affichage car il y a un problème de visibilité
         setTimeout(() => {
           const isVisible = historyModalEl.classList.contains('show');
           this.logger.debug('État après show():', {
             hasShow: isVisible,
             display: historyModalEl.style.display,
-            visibility: historyModalEl.style.visibility
+            visibility: historyModalEl.style.visibility,
+            zIndex: historyModalEl.style.zIndex
           });
           
-          if (!isVisible) {
-            this.logger.warn('Modale pas visible après show() - tentative force');
-            this.forceShowModal(historyModalEl);
-          }
-        }, 100);
+          // Forcer systématiquement car problème de visibilité détecté
+          this.logger.warn('Forçage systématique pour corriger problème de visibilité');
+          this.forceShowModal(historyModalEl);
+        }, 50);
         
         return;
       } catch (error) {
@@ -307,17 +307,28 @@ export class HistoryManager {
     modalEl.setAttribute('role', 'dialog');
     modalEl.removeAttribute('aria-hidden');
     
+    // CORRECTIF: Forcer la visibilité avec des styles prioritaires
+    modalEl.style.setProperty('z-index', '2000', 'important');
+    modalEl.style.setProperty('visibility', 'visible', 'important');
+    modalEl.style.setProperty('opacity', '1', 'important');
+    modalEl.style.setProperty('position', 'fixed', 'important');
+    modalEl.style.setProperty('top', '0', 'important');
+    modalEl.style.setProperty('left', '0', 'important');
+    modalEl.style.setProperty('width', '100%', 'important');
+    modalEl.style.setProperty('height', '100%', 'important');
+    
     // Ajouter le backdrop si nécessaire
     if (!document.querySelector('.modal-backdrop')) {
       const backdrop = document.createElement('div');
       backdrop.className = 'modal-backdrop fade show';
+      backdrop.style.setProperty('z-index', '1999', 'important');
       document.body.appendChild(backdrop);
     }
     
     // S'assurer que le body a la classe modal-open
     document.body.classList.add('modal-open');
     
-    this.logger.info('Modale forcée à s\'afficher');
+    this.logger.info('Modale forcée à s\'afficher avec styles prioritaires');
   }
   
   /**
