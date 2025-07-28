@@ -342,107 +342,68 @@ export class HistoryManager {
    * @param {HTMLElement} modalEl - Élément de la modale
    */
   forceShowModal(modalEl) {
-    this.logger.info('Forçage de l\'affichage de la modale');
+    this.logger.info('Test: Création d\'une modal HTML simple');
     
-    // GUARD: Vérifier que l'élément existe
-    if (!modalEl) {
-      this.logger.error('forceShowModal: modalEl est null/undefined !');
-      return;
-    }
+    // Supprimer toute modal de test existante
+    const existingTest = document.getElementById('test-simple-modal');
+    if (existingTest) existingTest.remove();
     
-    this.logger.debug('forceShowModal: élément valide:', modalEl.id, modalEl.tagName);
-    
-    // Ne plus créer de backdrop manuel - Bootstrap le gère maintenant
-    
-    // Forcer les attributs ARIA
-    modalEl.setAttribute('aria-modal', 'true');
-    modalEl.setAttribute('role', 'dialog');
-    modalEl.removeAttribute('aria-hidden');
-    
-    // CORRECTIF: Forcer la visibilité avec des styles prioritaires ET ajouter classe show
-    modalEl.classList.add('show');
-    modalEl.style.cssText = `
-      display: flex !important;
-      visibility: visible !important;
-      opacity: 1 !important;
-      z-index: 1060 !important;
-      position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      width: 100% !important;
-      height: 100% !important;
-      overflow-x: hidden !important;
-      overflow-y: auto !important;
-      outline: 0 !important;
-      align-items: center !important;
-      justify-content: center !important;
-      padding: 1.75rem !important;
+    // Créer une modal simple sans Bootstrap
+    const testModal = document.createElement('div');
+    testModal.id = 'test-simple-modal';
+    testModal.innerHTML = `
+      <div style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9998;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      ">
+        <div style="
+          background: white;
+          padding: 30px;
+          border-radius: 8px;
+          max-width: 600px;
+          width: 90%;
+          max-height: 80vh;
+          overflow-y: auto;
+          box-shadow: 0 5px 15px rgba(0,0,0,.5);
+        ">
+          <h3>Modal de Test Simple</h3>
+          <p>Si vous voyez ceci, les modals HTML peuvent s'afficher !</p>
+          <hr>
+          <div id="test-modal-content">
+            ${modalEl.innerHTML}
+          </div>
+          <hr>
+          <button onclick="document.getElementById('test-simple-modal').remove()" style="
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+          ">
+            Fermer cette modal de test
+          </button>
+        </div>
+      </div>
     `;
     
-    // Forcer les styles sur modal-dialog
-    const dialog = modalEl.querySelector('.modal-dialog');
-    if (dialog) {
-      dialog.style.cssText = `
-        position: relative !important;
-        width: 90% !important;
-        max-width: 1000px !important;
-        margin: 0 !important;
-        pointer-events: auto !important;
-        display: block !important;
-        background: white !important;
-        border-radius: 0.3rem !important;
-        box-shadow: 0 5px 15px rgba(0,0,0,.5) !important;
-      `;
-    } else {
-      this.logger.error('modal-dialog introuvable dans la modal !');
-    }
+    document.body.appendChild(testModal);
+    this.logger.info('Modal de test créée. Visible ?');
     
-    // Forcer les styles sur modal-content
-    const content = modalEl.querySelector('.modal-content');
-    if (content) {
-      content.style.cssText = `
-        position: relative !important;
-        display: block !important;
-        width: 100% !important;
-        min-height: 500px !important;
-        pointer-events: auto !important;
-        background-color: #fff !important;
-        background-clip: padding-box !important;
-        border: 1px solid rgba(0,0,0,.2) !important;
-        border-radius: .3rem !important;
-        outline: 0 !important;
-      `;
-    } else {
-      this.logger.error('modal-content introuvable dans la modal !');
-    }
-    
-    // Forcer la visibilité du body
-    const body = modalEl.querySelector('.modal-body');
-    if (body) {
-      body.style.cssText = `
-        display: block !important;
-        padding: 1rem !important;
-        max-height: 70vh !important;
-        overflow-y: auto !important;
-      `;
-    }
-    
-    // Log de diagnostic
-    this.logger.info('Structure de la modal:', {
-      modal: !!modalEl,
-      dialog: !!dialog,
-      content: !!content,
-      modalClasses: modalEl.className,
-      modalDisplay: modalEl.style.display,
-      dialogDisplay: dialog ? dialog.style.display : 'N/A',
-      contentDisplay: content ? content.style.display : 'N/A'
+    // Log pour debug
+    this.logger.info('Comparaison:', {
+      modalBootstrap: modalEl.id,
+      modalBootstrapVisible: window.getComputedStyle(modalEl).display,
+      modalTestVisible: 'devrait être visible'
     });
-    
-    // S'assurer que le body a la classe modal-open
-    document.body.classList.add('modal-open');
-    document.body.style.overflow = 'hidden';
-    
-    this.logger.info('Modale forcée à s\'afficher avec styles prioritaires et backdrop');
   }
   
   /**
