@@ -287,39 +287,57 @@ export class HistoryManager {
       modalManager: !!this.kanban.modalManager?.historyModal
     });
 
-    // NOUVEAU: Affichage manuel sans Bootstrap JS
-    this.logger.info('Affichage manuel de la modal sans Bootstrap JS');
+    // SOLUTION SIMPLE: Utiliser la même approche que la modal de test
+    this.logger.info('Création modal simple avec contenu Bootstrap');
     
-    // Créer le backdrop
-    let backdrop = document.querySelector('.modal-backdrop');
-    if (!backdrop) {
-      backdrop = document.createElement('div');
-      backdrop.className = 'modal-backdrop fade';
-      document.body.appendChild(backdrop);
-      // Forcer le reflow pour l'animation
-      backdrop.offsetHeight;
-      backdrop.classList.add('show');
-    }
+    // Supprimer toute modal existante
+    const existingSimple = document.getElementById('simple-history-modal');
+    if (existingSimple) existingSimple.remove();
     
-    // Afficher la modal
-    historyModalEl.style.display = 'block';
-    historyModalEl.setAttribute('aria-modal', 'true');
-    historyModalEl.setAttribute('role', 'dialog');
-    historyModalEl.classList.add('show');
+    // Créer une modal simple mais avec le contenu Bootstrap
+    const simpleModal = document.createElement('div');
+    simpleModal.id = 'simple-history-modal';
+    simpleModal.innerHTML = `
+      <div style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1060;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      ">
+        <div style="
+          background: white;
+          border-radius: 8px;
+          max-width: 1000px;
+          width: 90%;
+          max-height: 80vh;
+          overflow: hidden;
+          box-shadow: 0 5px 15px rgba(0,0,0,.5);
+        ">
+          ${historyModalEl.innerHTML}
+          <div style="padding: 10px; text-align: right; border-top: 1px solid #ddd;">
+            <button onclick="document.getElementById('simple-history-modal').remove()" style="
+              padding: 8px 16px;
+              background: #6c757d;
+              color: white;
+              border: none;
+              border-radius: 4px;
+              cursor: pointer;
+            ">
+              Fermer
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
     
-    // Ajouter la classe au body
-    document.body.classList.add('modal-open');
-    
-    // Gérer la fermeture
-    const closeButtons = historyModalEl.querySelectorAll('[data-bs-dismiss="modal"]');
-    closeButtons.forEach(btn => {
-      btn.onclick = () => this.closeHistoryModal();
-    });
-    
-    // Fermer en cliquant sur le backdrop
-    backdrop.onclick = () => this.closeHistoryModal();
-    
-    this.logger.info('Modal affichée manuellement avec succès');
+    document.body.appendChild(simpleModal);
+    this.logger.info('Modal simple créée avec succès');
   }
   
   /**
