@@ -388,7 +388,12 @@ export class HistoryManager {
         margin: 1.75rem auto !important;
         pointer-events: auto !important;
         max-width: 1000px !important;
+        display: flex !important;
+        align-items: center !important;
+        min-height: calc(100% - 3.5rem) !important;
       `;
+    } else {
+      this.logger.error('modal-dialog introuvable dans la modal !');
     }
     
     // Forcer les styles sur modal-content
@@ -405,8 +410,22 @@ export class HistoryManager {
         border: 1px solid rgba(0,0,0,.2) !important;
         border-radius: .3rem !important;
         outline: 0 !important;
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.5) !important;
       `;
+    } else {
+      this.logger.error('modal-content introuvable dans la modal !');
     }
+    
+    // Log de diagnostic
+    this.logger.info('Structure de la modal:', {
+      modal: !!modalEl,
+      dialog: !!dialog,
+      content: !!content,
+      modalClasses: modalEl.className,
+      modalDisplay: modalEl.style.display,
+      dialogDisplay: dialog ? dialog.style.display : 'N/A',
+      contentDisplay: content ? content.style.display : 'N/A'
+    });
     
     // S'assurer que le body a la classe modal-open
     document.body.classList.add('modal-open');
