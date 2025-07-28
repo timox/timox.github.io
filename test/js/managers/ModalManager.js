@@ -64,8 +64,8 @@ export class ModalManager {
     const historyModalElement = document.getElementById('task-history-modal');
     if (historyModalElement) {
       this.historyModal = new bootstrap.Modal(historyModalElement, {
-        backdrop: 'static',
-        keyboard: true,
+        backdrop: false,
+        keyboard: false,
         focus: true
       });
     }
