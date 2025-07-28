@@ -348,49 +348,71 @@ export class HistoryManager {
     
     this.logger.debug('forceShowModal: élément valide:', modalEl.id, modalEl.tagName);
     
-    // Ajouter les classes Bootstrap manuellement
-    modalEl.classList.add('show');
-    modalEl.style.setProperty('display', 'block', 'important');
+    // CORRECTIF: Créer un backdrop manuel
+    let backdrop = document.querySelector('.modal-backdrop');
+    if (!backdrop) {
+      backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop fade show';
+      backdrop.style.cssText = 'position: fixed; top: 0; left: 0; z-index: 1040; width: 100vw; height: 100vh; background-color: rgba(0,0,0,0.5);';
+      document.body.appendChild(backdrop);
+    }
+    
+    // Forcer les attributs ARIA
     modalEl.setAttribute('aria-modal', 'true');
     modalEl.setAttribute('role', 'dialog');
     modalEl.removeAttribute('aria-hidden');
     
     // CORRECTIF: Forcer la visibilité avec des styles prioritaires ET ajouter classe show
     modalEl.classList.add('show');
-    modalEl.style.setProperty('display', 'block', 'important');
-    modalEl.style.setProperty('z-index', '6000', 'important');
-    modalEl.style.setProperty('visibility', 'visible', 'important');
-    modalEl.style.setProperty('opacity', '1', 'important');
-    modalEl.style.setProperty('position', 'fixed', 'important');
-    modalEl.style.setProperty('top', '0', 'important');
-    modalEl.style.setProperty('left', '0', 'important');
-    modalEl.style.setProperty('width', '100%', 'important');
-    modalEl.style.setProperty('height', '100%', 'important');
+    modalEl.style.cssText = `
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      z-index: 1060 !important;
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+      outline: 0 !important;
+    `;
     
-    // CORRECTIF: Empêcher Bootstrap de masquer à nouveau
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach(mutation => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-          const currentDisplay = modalEl.style.display;
-          if (currentDisplay === 'none' || currentDisplay === '') {
-            modalEl.style.setProperty('display', 'block', 'important');
-            this.logger.warn('Bootstrap a tenté de masquer la modal, display forcé à nouveau');
-          }
-        }
-      });
-    });
+    // Forcer les styles sur modal-dialog
+    const dialog = modalEl.querySelector('.modal-dialog');
+    if (dialog) {
+      dialog.style.cssText = `
+        position: relative !important;
+        width: auto !important;
+        margin: 1.75rem auto !important;
+        pointer-events: auto !important;
+        max-width: 1000px !important;
+      `;
+    }
     
-    observer.observe(modalEl, { attributes: true, attributeFilter: ['style'] });
-    
-    // Désactiver l'observer après 5 secondes
-    setTimeout(() => observer.disconnect(), 5000);
-    
-    // Ne plus créer de backdrop manuel pour éviter les orphelins
+    // Forcer les styles sur modal-content
+    const content = modalEl.querySelector('.modal-content');
+    if (content) {
+      content.style.cssText = `
+        position: relative !important;
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        pointer-events: auto !important;
+        background-color: #fff !important;
+        background-clip: padding-box !important;
+        border: 1px solid rgba(0,0,0,.2) !important;
+        border-radius: .3rem !important;
+        outline: 0 !important;
+      `;
+    }
     
     // S'assurer que le body a la classe modal-open
     document.body.classList.add('modal-open');
+    document.body.style.overflow = 'hidden';
     
-    this.logger.info('Modale forcée à s\'afficher avec styles prioritaires');
+    this.logger.info('Modale forcée à s\'afficher avec styles prioritaires et backdrop');
   }
   
   /**
