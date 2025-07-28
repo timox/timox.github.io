@@ -81,8 +81,7 @@ class KanbanManager {
     // Propriétés principales
     this.kanbanContainer = document.getElementById('kanban-container');
     this.currentRecords = [];
-    this.modalElement = null;
-    this.historyModalElement =null;
+    // MODALS: Gestion complètement déléguée à ModalManager
     this.currentTaskId = null;
     this.isUpdating = false;
     this.isRefreshing = false;
@@ -806,13 +805,8 @@ class KanbanManager {
       return;
     }
     
-    // Rechercher les éléments de modal
-    this.modalElement = document.getElementById('popup-tache');
-    this.historyModalElement = document.getElementById('task-history-modal');
-    
-    // Debug: Vérifier si les éléments existent
-    console.log('Modal element trouvé:', !!this.modalElement);
-    console.log('History modal element trouvé:', !!this.historyModalElement);
+    // MODALS: Plus de gestion directe - tout délégué à ModalManager
+    console.log('🎯 Gestion des modals déléguée à ModalManager');
     
     // Initialiser la modal tâche
     if (this.modalElement) {
