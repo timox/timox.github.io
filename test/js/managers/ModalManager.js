@@ -123,34 +123,6 @@ export class ModalManager {
       }
     });
 
-    // CORRECTIF: Écouteurs pour fermer la modal d'historique
-    document.addEventListener('click', (e) => {
-      // Bouton de fermeture dans le header de la modal d'historique
-      if (e.target.matches('#task-history-modal .btn-close, #task-history-modal .btn-close *')) {
-        this.logger.debug('History modal close button clicked');
-        if (this.historyModal) {
-          this.historyModal.hide();
-        }
-      }
-      
-      // Bouton "Fermer" dans le footer de la modal d'historique  
-      if (e.target.matches('#task-history-modal button[data-bs-dismiss="modal"], #task-history-modal button[data-bs-dismiss="modal"] *')) {
-        this.logger.debug('History modal dismiss button clicked');
-        if (this.historyModal) {
-          this.historyModal.hide();
-        }
-      }
-    });
-
-    // CORRECTIF: Fermeture au clic sur backdrop (si backdrop: true)
-    document.addEventListener('click', (e) => {
-      if (e.target.matches('#task-history-modal.modal.show')) {
-        this.logger.debug('History modal backdrop clicked');
-        if (this.historyModal) {
-          this.historyModal.hide();
-        }
-      }
-    });
     
     // Écouteur pour quand l'accordéon s'ouvre (événement Bootstrap)
     document.addEventListener('shown.bs.collapse', (e) => {
