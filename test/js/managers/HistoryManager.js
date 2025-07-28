@@ -887,7 +887,7 @@ export class HistoryManager {
       
       // NOUVEAU: Calculer la durée par statut
       stats.durationByStatus = this.calculateDurationByStatus(sortedHistory, task);
-      this.logger.debug('Durées par statut calculées:', stats.durationByStatus);
+      this.logger.info('🕐 Durées par statut calculées:', stats.durationByStatus);
     }
     
     // Inclure les commentaires dans la date de dernière modification
@@ -1015,9 +1015,9 @@ export class HistoryManager {
    * @returns {string} HTML
    */
   generateStatusDurationHtml(durationByStatus) {
-    this.logger.debug('generateStatusDurationHtml appelé avec:', durationByStatus);
+    this.logger.info('📊 generateStatusDurationHtml appelé avec:', durationByStatus);
     if (!durationByStatus || Object.keys(durationByStatus).length === 0) {
-      this.logger.debug('Pas de durées par statut à afficher');
+      this.logger.info('❌ Pas de durées par statut à afficher');
       return '';
     }
     
