@@ -847,8 +847,6 @@ export class HistoryManager {
       currentStatus: task.statut,
       creationDate: null,
       lastModified: null,
-      totalDuration: 0,
-      averageStepDuration: 0,
       durationByStatus: {} // NOUVEAU: durée par statut
     };
     
@@ -872,11 +870,6 @@ export class HistoryManager {
         stats.lastModified = new Date(lastEntry.timestamp);
       }
       
-      // Durée totale
-      if (stats.creationDate && stats.lastModified) {
-        stats.totalDuration = calculateDurationMinutes(stats.creationDate, stats.lastModified);
-        stats.averageStepDuration = Math.round(stats.totalDuration / history.length);
-      }
       
       // NOUVEAU: Calculer la durée par statut
       stats.durationByStatus = this.calculateDurationByStatus(sortedHistory, task);
@@ -903,9 +896,13 @@ export class HistoryManager {
     const durations = {};
     const now = new Date();
     
+    this.logger.debug('calculateDurationByStatus - Entrées:', sortedHistory.length);
+    
     for (let i = 0; i < sortedHistory.length; i++) {
       const currentEntry = sortedHistory[i];
       const nextEntry = sortedHistory[i + 1];
+      
+      this.logger.debug(`Entrée ${i}:`, currentEntry.note);
       
       // Extraire le statut "to" de la note (ex: "from À faire to En cours")
       let status = null;
@@ -913,6 +910,7 @@ export class HistoryManager {
         const match = currentEntry.note.match(/to (.+)$/);
         if (match) {
           status = match[1].trim();
+          this.logger.debug(`Statut extrait: "${status}"`);
         }
       }
       
@@ -921,6 +919,7 @@ export class HistoryManager {
         const endTime = nextEntry ? new Date(nextEntry.timestamp) : now;
         
         const durationMinutes = calculateDurationMinutes(startTime, endTime);
+        this.logger.debug(`Durée pour ${status}: ${durationMinutes} minutes`);
         
         if (!durations[status]) {
           durations[status] = 0;
@@ -929,6 +928,7 @@ export class HistoryManager {
       }
     }
     
+    this.logger.debug('Durées finales par statut:', durations);
     return durations;
   }
   
@@ -962,16 +962,10 @@ export class HistoryManager {
             <div class="stat-label">Commentaires</div>
           </div>
         </div>
-        <div class="col-md-3 text-center">
-          <div class="stat-item">
-            <div class="stat-value">${formatDuration(stats.totalDuration)}</div>
-            <div class="stat-label">Durée totale</div>
-          </div>
-        </div>
-        <div class="col-md-3 text-center">
+        <div class="col-md-6 text-center">
           <div class="stat-item">
             <div class="stat-value">${stats.lastModified ? formatDate(stats.lastModified) : 'N/A'}</div>
-            <div class="stat-label">Dernière MAJ</div>
+            <div class="stat-label">Dernière modification</div>
           </div>
         </div>
       </div>
