@@ -817,11 +817,12 @@ class KanbanManager {
     // Initialiser la modal tâche
     if (this.modalElement) {
       try {
-        this.modal = new bootstrap.Modal(this.modalElement, { 
-          backdrop: 'static', 
-          keyboard: false 
-        });
-        console.log('✅ Modal tâche initialisée');
+        // DÉSACTIVÉ: Conflit avec ModalManager  
+        // this.modal = new bootstrap.Modal(this.modalElement, { 
+        //   backdrop: 'static', 
+        //   keyboard: false 
+        // });
+        console.log('🚫 Modal tâche désactivée - gérée par ModalManager');
         
         // Ajouter des événements de debug
         this.modalElement.addEventListener('show.bs.modal', () => {
@@ -844,11 +845,12 @@ class KanbanManager {
     // Initialiser la modal historique
     if (this.historyModalElement) {
       try {
-        this.historyModal = new bootstrap.Modal(this.historyModalElement, { 
-          backdrop: true, 
-          keyboard: true 
-        });
-        console.log('✅ Modal historique initialisée');
+        // DÉSACTIVÉ: Conflit avec ModalManager
+        // this.historyModal = new bootstrap.Modal(this.historyModalElement, { 
+        //   backdrop: true, 
+        //   keyboard: true 
+        // });
+        console.log('🚫 Modal historique désactivée - gérée par ModalManager');
       } catch (e) {
         console.error('❌ Erreur init modal historique:', e);
       }

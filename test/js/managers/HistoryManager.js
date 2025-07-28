@@ -306,15 +306,22 @@ export class HistoryManager {
     cleanContent = cleanContent.replace(/aria-label="Close"/g, '');
     cleanContent = cleanContent.replace(/type="button"/g, '');
     
-    // Remplacer les boutons de fermeture par des boutons simples
+    // Remplacer les boutons de fermeture par des boutons simples ALIGNÉS À DROITE
     cleanContent = cleanContent.replace(/<button[^>]*class="[^"]*btn-close[^"]*"[^>]*>.*?<\/button>/g, 
-      '<button onclick="document.getElementById(\'simple-history-modal\').remove()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;float:right;">&times;</button>');
+      '<button onclick="document.getElementById(\'simple-history-modal\').remove()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;position:absolute;top:10px;right:15px;color:#666;">&times;</button>');
     
-    // Supprimer les classes Bootstrap problématiques des boutons
+    // Supprimer les trois boutons du bas (modal-footer)
+    cleanContent = cleanContent.replace(/<div[^>]*class="[^"]*modal-footer[^"]*"[^>]*>[\s\S]*?<\/div>/g, '');
+    
+    // Supprimer les classes Bootstrap problématiques des boutons restants
     cleanContent = cleanContent.replace(/class="([^"]*)btn[^"]*"/g, (match, otherClasses) => {
       const cleanClasses = otherClasses.replace(/\s*btn[^\s]*/g, '').trim();
       return cleanClasses ? `class="${cleanClasses}"` : '';
     });
+    
+    // Corriger les liens d'édition de tâche pour qu'ils ferment la modal et ouvrent l'édition
+    cleanContent = cleanContent.replace(/onclick="[^"]*openTaskModal[^"]*"/g, 
+      'onclick="document.getElementById(\'simple-history-modal\').remove(); window.kanbanManager.modalManager.openTaskModal(' + taskId + ');"');
     
     simpleModal.innerHTML = `
       <div style="
@@ -337,6 +344,7 @@ export class HistoryManager {
           max-height: 80vh;
           overflow: hidden;
           box-shadow: 0 5px 15px rgba(0,0,0,.5);
+          position: relative;
         ">
           ${cleanContent}
         </div>
