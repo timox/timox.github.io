@@ -15,6 +15,8 @@ class StatsManager {
     this.strategiesData = STRATEGY_DATA || [];
     this.charts = {};
     
+    console.log('📊 StatsManager créé avec', this.strategiesData.length, 'stratégies');
+    
     this.init();
   }
 
@@ -35,13 +37,27 @@ class StatsManager {
   }
 
   async waitForGristReady() {
-    return new Promise((resolve) => {
-      if (typeof grist !== 'undefined') {
-        grist.ready();
-        resolve();
-      } else {
-        setTimeout(resolve, 100);
-      }
+    return new Promise((resolve, reject) => {
+      let attempts = 0;
+      const maxAttempts = 50; // 5 secondes max
+      
+      const checkGrist = () => {
+        attempts++;
+        
+        if (typeof grist !== 'undefined') {
+          console.log('✅ API Grist détectée');
+          grist.ready();
+          resolve();
+        } else if (attempts >= maxAttempts) {
+          console.error('❌ API Grist non disponible après', maxAttempts, 'tentatives');
+          reject(new Error('API Grist non disponible'));
+        } else {
+          console.log('⏳ Attente API Grist... tentative', attempts);
+          setTimeout(checkGrist, 100);
+        }
+      };
+      
+      checkGrist();
     });
   }
 

@@ -38,6 +38,7 @@ Application web de gestion de tâches en mode Kanban intégrée avec Grist. Perm
 - **Historique automatique** des changements de statut
 - **Commentaires horodatés** avec nom d'utilisateur
 - **Timeline** des actions dans modal dédiée
+- **Liens cliquables** vers l'édition des tâches depuis l'historique
 - **Suivi** des modifications via table User_Actions2
 
 ## 🏗️ Architecture

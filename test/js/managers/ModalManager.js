@@ -853,6 +853,13 @@ export class ModalManager {
       return;
     }
     
+    // Validation du paramètre : si ce n'est pas null, ça doit être un objet avec un id
+    if (task !== null && (typeof task !== 'object' || typeof task === 'number')) {
+      this.logger.error('openTaskModal appelé avec un paramètre invalide:', task);
+      displayError('Erreur: paramètre invalide. Utilisez openTaskModalById() pour ouvrir par ID.');
+      return;
+    }
+    
     // CORRECTIF: Nettoyer les backdrops orphelins avant d'ouvrir
     if (this.kanban.historyManager?.cleanupOrphanBackdrops) {
       this.kanban.historyManager.cleanupOrphanBackdrops();
