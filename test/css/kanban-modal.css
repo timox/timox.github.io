@@ -3,48 +3,23 @@
 
 /* === Z-INDEX FIXES SIMPLIFIÉS === */
 /* Modale historique avec styles simples pour éviter les conflits */
-#history-modal {
+#task-history-modal {
   z-index: 1060 !important; /* Standard Bootstrap modal z-index */
 }
 
-#history-modal .modal-dialog {
+#task-history-modal .modal-dialog {
   width: 90%;
   max-width: 1000px;
   margin: 20px auto;
 }
 
-#history-modal .modal-content {
+#task-history-modal .modal-content {
   border: 1px solid #ccc;
   border-radius: 8px;
   background: white;
 }
 
-/* Styles pour les durées par statut */
-.status-duration {
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  padding: 8px;
-  background: #f8f9fa;
-  transition: background-color 0.2s;
-}
-
-.status-duration:hover {
-  background: #e9ecef;
-}
-
-.status-duration .stat-value {
-  font-weight: 600;
-  color: #0d6efd;
-  font-size: 0.9rem;
-}
-
-.status-duration .stat-label {
-  font-size: 0.75rem;
-  color: #6c757d;
-  margin-top: 2px;
-}
-
-#history-modal .modal-body {
+#task-history-modal .modal-body {
   padding: 20px;
   max-height: 500px;
   overflow-y: auto;

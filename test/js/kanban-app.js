@@ -81,7 +81,8 @@ class KanbanManager {
     // Propriétés principales
     this.kanbanContainer = document.getElementById('kanban-container');
     this.currentRecords = [];
-    // MODALS: Gestion complètement déléguée à ModalManager
+    this.modalElement = null;
+    this.historyModalElement =null;
     this.currentTaskId = null;
     this.isUpdating = false;
     this.isRefreshing = false;
@@ -805,8 +806,13 @@ class KanbanManager {
       return;
     }
     
-    // MODALS: Plus de gestion directe - tout délégué à ModalManager
-    console.log('🎯 Gestion des modals déléguée à ModalManager');
+    // Rechercher les éléments de modal
+    this.modalElement = document.getElementById('popup-tache');
+    this.historyModalElement = document.getElementById('task-history-modal');
+    
+    // Debug: Vérifier si les éléments existent
+    console.log('Modal element trouvé:', !!this.modalElement);
+    console.log('History modal element trouvé:', !!this.historyModalElement);
     
     // Initialiser la modal tâche
     if (this.modalElement) {
@@ -1235,10 +1241,29 @@ class KanbanManager {
     });
   }
 
-  // EVENT LISTENERS - Boutons historique gérés par HistoryManager
+  // EVENT LISTENERS
   attachCardEventListeners() {
-    // Plus de gestion des boutons timeline ici - tout délégué à HistoryManager
-    console.log('🎯 Boutons timeline gérés par HistoryManager uniquement');
+    // Seuls les boutons timeline - les autres événements sont gérés par CardRenderer
+    // Le nettoyage se fait automatiquement via innerHTML dans refreshKanban
+    this.kanbanContainer.querySelectorAll('.btn-timeline').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        
+        // CORRECTIF: Remonter au bouton parent si l'event target est l'icône
+        const button = e.target.closest('.btn-timeline') || btn;
+        const taskId = parseInt(button.dataset.taskId, 10);
+        
+        console.log('Debug bouton historique:', {
+          'e.target': e.target,
+          'button found': button,
+          'taskId': taskId,
+          'this.openTimelineModal(taskId)': taskId
+        });
+        
+        this.openTimelineModal(taskId);
+      });
+    });
   }
 
   // === GESTION DE LA MODAL TIMELINE ===
@@ -1484,7 +1509,7 @@ class KanbanManager {
     // Timeline modal buttons - GÉRÉS PAR HistoryManager.js (éviter duplication)
 
     // Force timeline modal close buttons to work
-    const timelineCloseButtons = document.querySelectorAll('#history-modal [data-bs-dismiss="modal"]');
+    const timelineCloseButtons = document.querySelectorAll('#task-history-modal [data-bs-dismiss="modal"]');
     timelineCloseButtons.forEach(button => {
       button.addEventListener('click', (e) => {
         e.preventDefault();

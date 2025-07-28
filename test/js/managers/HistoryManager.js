@@ -170,8 +170,8 @@ export class HistoryManager {
     this.logger.info(`openTaskHistory appelé pour tâche ${taskId}`);
     
     // Vérification des éléments DOM
-    if (!document.getElementById('history-modal-label')) {
-      this.logger.error('Élément history-modal-label manquant');
+    if (!document.getElementById('task-history-modal-label')) {
+      this.logger.error('Élément task-history-modal-label manquant');
       return;
     }
     
@@ -252,7 +252,7 @@ export class HistoryManager {
     this.cleanupOrphanBackdrops();
     
     // Mettre à jour le titre de la modale
-    const modalTitle = document.getElementById('history-modal-label');
+    const modalTitle = document.getElementById('task-history-modal-label');
     if (modalTitle) {
       modalTitle.innerHTML = `
         <i class="bi bi-clock-history me-2"></i>
@@ -264,20 +264,20 @@ export class HistoryManager {
     this.renderTaskHistory(task);
     
     // Ouvrir la modale
-    this.logger.debug('Recherche élément history-modal dans le DOM...');
-    const historyModalEl = document.getElementById('history-modal');
+    this.logger.debug('Recherche élément task-history-modal dans le DOM...');
+    const historyModalEl = document.getElementById('task-history-modal');
     
     // Debug complet des modales présentes
     const allModals = document.querySelectorAll('.modal');
     this.logger.debug('Modales trouvées dans le DOM:', Array.from(allModals).map(m => m.id));
     
     if (!historyModalEl) {
-      this.logger.error('Élément history-modal introuvable dans le DOM');
+      this.logger.error('Élément task-history-modal introuvable dans le DOM');
       this.logger.error('DOM actuel:', document.body.innerHTML.length, 'caractères');
       return;
     }
     
-    this.logger.debug('Élément history-modal trouvé:', historyModalEl);
+    this.logger.debug('Élément task-history-modal trouvé:', historyModalEl);
     
     // Vérifier l'état de la modale avant ouverture
     this.logger.debug('État modale avant ouverture:', {
@@ -369,7 +369,7 @@ export class HistoryManager {
    * Ferme la modal d'historique manuellement
    */
   closeHistoryModal() {
-    const historyModalEl = document.getElementById('history-modal');
+    const historyModalEl = document.getElementById('task-history-modal');
     if (historyModalEl) {
       historyModalEl.style.display = 'none';
       historyModalEl.classList.remove('show');
@@ -848,8 +848,7 @@ export class HistoryManager {
       creationDate: null,
       lastModified: null,
       totalDuration: 0,
-      averageStepDuration: 0,
-      durationByStatus: {} // NOUVEAU: durée par statut
+      averageStepDuration: 0
     };
     
     if (history.length > 0) {
@@ -877,9 +876,6 @@ export class HistoryManager {
         stats.totalDuration = calculateDurationMinutes(stats.creationDate, stats.lastModified);
         stats.averageStepDuration = Math.round(stats.totalDuration / history.length);
       }
-      
-      // NOUVEAU: Calculer la durée par statut
-      stats.durationByStatus = this.calculateDurationByStatus(sortedHistory, task);
     }
     
     // Inclure les commentaires dans la date de dernière modification
@@ -891,45 +887,6 @@ export class HistoryManager {
     }
     
     return stats;
-  }
-  
-  /**
-   * Calcule la durée passée dans chaque statut
-   * @param {Array} sortedHistory - Historique trié chronologiquement
-   * @param {object} task - Données de la tâche
-   * @returns {object} Durées par statut en minutes
-   */
-  calculateDurationByStatus(sortedHistory, task) {
-    const durations = {};
-    const now = new Date();
-    
-    for (let i = 0; i < sortedHistory.length; i++) {
-      const currentEntry = sortedHistory[i];
-      const nextEntry = sortedHistory[i + 1];
-      
-      // Extraire le statut "to" de la note (ex: "from À faire to En cours")
-      let status = null;
-      if (currentEntry.note) {
-        const match = currentEntry.note.match(/to (.+)$/);
-        if (match) {
-          status = match[1].trim();
-        }
-      }
-      
-      if (status) {
-        const startTime = new Date(currentEntry.timestamp);
-        const endTime = nextEntry ? new Date(nextEntry.timestamp) : now;
-        
-        const durationMinutes = calculateDurationMinutes(startTime, endTime);
-        
-        if (!durations[status]) {
-          durations[status] = 0;
-        }
-        durations[status] += durationMinutes;
-      }
-    }
-    
-    return durations;
   }
   
   /**
@@ -953,7 +910,7 @@ export class HistoryManager {
         <div class="col-md-2 text-center">
           <div class="stat-item">
             <div class="stat-value">${stats.totalSteps}</div>
-            <div class="stat-label">Changements</div>
+            <div class="stat-label">Étapes</div>
           </div>
         </div>
         <div class="col-md-2 text-center">
@@ -973,46 +930,6 @@ export class HistoryManager {
             <div class="stat-value">${stats.lastModified ? formatDate(stats.lastModified) : 'N/A'}</div>
             <div class="stat-label">Dernière MAJ</div>
           </div>
-        </div>
-      </div>
-      
-      <!-- NOUVEAU: Durées par statut -->
-      ${this.generateStatusDurationHtml(stats.durationByStatus)}
-    `;
-  }
-  
-  /**
-   * Génère l'HTML pour l'affichage des durées par statut
-   * @param {object} durationByStatus - Durées par statut
-   * @returns {string} HTML
-   */
-  generateStatusDurationHtml(durationByStatus) {
-    if (!durationByStatus || Object.keys(durationByStatus).length === 0) {
-      return '';
-    }
-    
-    const statusItems = Object.entries(durationByStatus)
-      .filter(([status, duration]) => duration > 0)
-      .sort(([,a], [,b]) => b - a) // Tri par durée décroissante
-      .map(([status, duration]) => `
-        <div class="col-md-3 col-sm-6 mb-2">
-          <div class="stat-item status-duration">
-            <div class="stat-value">${formatDuration(duration)}</div>
-            <div class="stat-label">${status}</div>
-          </div>
-        </div>
-      `).join('');
-    
-    if (!statusItems) return '';
-    
-    return `
-      <div class="mt-3">
-        <h6 class="text-muted mb-2">
-          <i class="bi bi-clock-history me-1"></i>
-          Temps passé par statut
-        </h6>
-        <div class="row g-2">
-          ${statusItems}
         </div>
       </div>
     `;

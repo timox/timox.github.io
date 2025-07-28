@@ -61,7 +61,7 @@ export class ModalManager {
       });
     }
     
-    const historyModalElement = document.getElementById('history-modal');
+    const historyModalElement = document.getElementById('task-history-modal');
     if (historyModalElement) {
       this.historyModal = new bootstrap.Modal(historyModalElement, {
         backdrop: 'static',
@@ -2054,7 +2054,7 @@ export class ModalManager {
     }
     
     // Mettre à jour le titre
-    const modalTitle = document.getElementById('history-modal-label');
+    const modalTitle = document.getElementById('task-history-modal-label');
     // Debug simplifié
     this.logger.debug(`Updating title for task ${taskId}`);
     
