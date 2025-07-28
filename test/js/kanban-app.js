@@ -1484,7 +1484,7 @@ class KanbanManager {
     // Timeline modal buttons - GÉRÉS PAR HistoryManager.js (éviter duplication)
 
     // Force timeline modal close buttons to work
-    const timelineCloseButtons = document.querySelectorAll('#task-history-modal [data-bs-dismiss="modal"]');
+    const timelineCloseButtons = document.querySelectorAll('#history-modal [data-bs-dismiss="modal"]');
     timelineCloseButtons.forEach(button => {
       button.addEventListener('click', (e) => {
         e.preventDefault();

@@ -1,241 +1,6 @@
 /* === CSS Modal Styles - Kanban App === */
 /* Styles spécifiques pour les modales de l'application Kanban */
 
-/* === Z-INDEX FIXES SIMPLIFIÉS === */
-/* Modale historique avec styles simples pour éviter les conflits */
-#task-history-modal {
-  z-index: 9999 !important; /* Maximum z-index pour être au-dessus de tout */
-}
-
-/* Backdrop aussi très haut */
-.modal-backdrop {
-  z-index: 9998 !important;
-}
-
-#task-history-modal .modal-dialog {
-  width: 90%;
-  max-width: 1000px;
-  margin: 20px auto;
-}
-
-#task-history-modal .modal-content {
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  background: white;
-}
-
-/* Styles pour les durées par statut */
-.status-duration {
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  padding: 8px;
-  background: #f8f9fa;
-  transition: background-color 0.2s;
-}
-
-.status-duration:hover {
-  background: #e9ecef;
-}
-
-.status-duration .stat-value {
-  font-weight: 600;
-  color: #0d6efd;
-  font-size: 0.9rem;
-}
-
-.status-duration .stat-label {
-  font-size: 0.75rem;
-  color: #6c757d;
-  margin-top: 2px;
-}
-
-#task-history-modal .modal-body {
-  padding: 20px;
-  max-height: 500px;
-  overflow-y: auto;
-  background: white;
-}
-
-/* Modale d'édition de tâche */
-#popup-tache .modal-dialog {
-  max-width: 1200px;
-  width: 95%;
-}
-
-#popup-tache .modal-body {
-  padding: 30px;
-  min-height: 600px;
-}
-
-/* Cases à cocher pour bureaux et responsables */
-.checkbox-group {
-  max-height: 150px;
-  overflow-y: auto;
-  border: 1px solid #dee2e6;
-  border-radius: 0.375rem;
-  padding: 0.5rem;
-  background: #f8f9fa;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.checkbox-group .form-check {
-  margin-bottom: 0.25rem;
-}
-
-.checkbox-group .form-check:last-child {
-  margin-bottom: 0;
-}
-
-.checkbox-group .form-check-input {
-  margin-top: 0.125rem;
-}
-
-.checkbox-group .form-check-label {
-  font-size: 0.9rem;
-  cursor: pointer;
-}
-
-/* Correction des tooltips dans les modales */
-.modal .tooltip {
-  z-index: 1070 !important; /* Au-dessus des modales (1060) mais sous les dropdowns */
-}
-
-.modal .checkbox-group .form-check-label {
-  position: relative;
-  z-index: 1;
-}
-
-/* === Interface Stratégie Accordéon === */
-.strategy-browser {
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-.strategy-objective {
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-}
-
-.strategy-objective-header {
-  background: #f8f9fa;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid #dee2e6;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.strategy-objective-header:hover {
-  background: #e9ecef;
-}
-
-.strategy-objective-header.expanded {
-  background: #e3f2fd;
-  border-bottom-color: #2196f3;
-}
-
-.strategy-objective-title {
-  font-weight: 600;
-  color: #495057;
-  margin: 0;
-}
-
-.strategy-toggle-icon {
-  transition: transform 0.2s;
-  color: #6c757d;
-}
-
-.strategy-toggle-icon.expanded {
-  transform: rotate(90deg);
-}
-
-.strategy-sub-objectives {
-  padding: 1rem;
-  background: #fff;
-}
-
-.strategy-sub-objective {
-  border-left: 3px solid #17a2b8;
-  padding-left: 1rem;
-  margin-bottom: 1rem;
-  background: #f8f9fa;
-  border-radius: 0 8px 8px 0;
-}
-
-.strategy-sub-objective-title {
-  font-weight: 500;
-  color: #17a2b8;
-  margin-bottom: 0.5rem;
-  font-size: 0.9rem;
-}
-
-.strategy-action {
-  background: white;
-  border: 1px solid #e9ecef;
-  border-radius: 6px;
-  padding: 0.75rem;
-  margin-bottom: 0.5rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  position: relative;
-}
-
-.strategy-action:hover {
-  border-color: #007bff;
-  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
-  transform: translateY(-1px);
-}
-
-.strategy-action.selected {
-  border-color: #007bff;
-  background: #e3f2fd;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
-}
-
-.strategy-action-title {
-  font-weight: 500;
-  color: #495057;
-  margin-bottom: 0.25rem;
-  font-size: 0.85rem;
-}
-
-.strategy-action-details {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  font-size: 0.75rem;
-  color: #6c757d;
-}
-
-.strategy-action-detail {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.strategy-action-detail i {
-  font-size: 0.7rem;
-}
-
-.strategy-selected-indicator {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  color: #007bff;
-  font-size: 1rem;
-}
-
-#selected-strategy-preview {
-  max-width: 300px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 /* === Popup Tâche === */
 .modal-xl {
   max-width: 1300px;
@@ -263,7 +28,7 @@
 .modal-body {
   padding: 2rem;
   overflow-y: auto;
-  max-height: 60vh;
+  max-height: 70vh;
 }
 
 .form-label {
@@ -280,12 +45,6 @@
 .form-text {
   font-size: 0.875rem;
   color: #6c757d;
-}
-
-/* === Correction Layout Bureau/Responsables === */
-.modal-body .row .col-md-6 {
-  display: flex;
-  flex-direction: column;
 }
 
 /* === Popup Responsive === */
@@ -397,86 +156,95 @@
   padding: 1.5rem;
 }
 
-/* === Timeline Styles Simplifiés === */
+/* === Timeline Styles === */
 .timeline-container {
-  padding: 5px 0;
+  position: relative;
+  padding: 1rem 0;
+}
+
+.timeline-line {
+  position: absolute;
+  left: 1.5rem;
+  top: 0;
+  bottom: 0;
+  width: 3px !important;
+  background: linear-gradient(180deg, #007bff, #6610f2) !important;
+  border-radius: 1.5px;
 }
 
 .timeline-entry {
-  margin-bottom: 3px;
-  padding: 4px 8px;
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 3px;
-  border-left: 3px solid #007bff;
-  font-size: 0.8rem;
-  line-height: 1.2;
+  position: relative;
+  padding-left: 4rem;
+  margin-bottom: 2rem;
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  padding-left: 4rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border-left: 4px solid #007bff;
+  transition: all 0.3s ease;
 }
 
 .timeline-entry:hover {
-  background: #e9ecef;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.timeline-entry::before {
+  content: '';
+  position: absolute;
+  left: -2.8rem;
+  top: 1.5rem;
+  width: 16px;
+  height: 16px;
+  background: #007bff;
+  border: 3px solid white;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px #007bff;
+  z-index: 2;
 }
 
 .timeline-entry-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 0.2rem;
+  margin-bottom: 1rem;
 }
 
 .timeline-entry-timestamp {
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   color: #6c757d;
-  font-weight: 400;
+  font-weight: 500;
 }
 
 .timeline-entry-user {
-  font-weight: 500;
+  font-weight: 600;
   color: #495057;
-  margin-bottom: 0.05rem;
-  font-size: 0.75rem;
-}
-
-/* Titre de tâche cliquable simple */
-.timeline-task-title {
-  color: #007bff;
-  text-decoration: none;
-  font-weight: 500;
-  cursor: pointer;
-  display: inline-block;
-  padding: 2px 4px;
-  border-radius: 3px;
-  transition: background-color 0.2s;
-}
-
-.timeline-task-title:hover {
-  background-color: #e3f2fd;
-  text-decoration: underline;
+  margin-bottom: 0.25rem;
 }
 
 .timeline-entry-action {
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   color: #007bff;
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.5px;
 }
 
 .timeline-entry-details {
   color: #495057;
-  line-height: 1.2;
-  margin-bottom: 0.1rem;
-  font-size: 0.75rem;
+  line-height: 1.6;
+  margin-bottom: 0.5rem;
 }
 
 .timeline-entry-status {
   display: inline-block;
-  padding: 0.15rem 0.5rem;
-  border-radius: 0.75rem;
-  font-size: 0.65rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.5px;
 }
 
 /* === Status Colors === */
@@ -533,9 +301,9 @@
 .comment-item {
   background: white !important;
   border: 1px solid #e9ecef !important;
-  border-radius: 6px !important;
-  padding: 0.8rem !important;
-  margin-bottom: 0.6rem !important;
+  border-radius: 8px !important;
+  padding: 1.2rem !important;
+  margin-bottom: 1rem !important;
   box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
 }
 
@@ -543,8 +311,8 @@
   display: flex !important;
   justify-content: space-between !important;
   align-items: center !important;
-  margin-bottom: 0.4rem !important;
-  padding-bottom: 0.4rem !important;
+  margin-bottom: 0.8rem !important;
+  padding-bottom: 0.8rem !important;
   border-bottom: 1px solid #f1f3f4 !important;
 }
 
@@ -592,7 +360,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 1055; /* Sous les modales Bootstrap (1055 < 1060) */
+  z-index: 1060; /* Au-dessus de la modal d'historique */
 }
 
 .comment-edit-overlay {
@@ -681,9 +449,8 @@
 .btn-edit-comment {
   font-size: 0.75rem;
   padding: 0.125rem 0.375rem;
-  margin-right: 0.5rem;
+  margin-left: 0.5rem;
   border-radius: 4px;
-  float: left;
 }
 
 /* Styles pour les commentaires modifiés */
@@ -700,281 +467,4 @@
 .btn:disabled {
   cursor: not-allowed;
   opacity: 0.7;
-}
-
-/* === AMÉLIORATION ERGONOMIE MODALE === */
-
-/* Groupes de champs avec couleurs distinctes */
-.form-group-basic {
-  background: linear-gradient(135deg, #f8fdff, #e3f2fd);
-  border-left: 4px solid #2196f3;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-}
-
-.form-group-planning {
-  background: linear-gradient(135deg, #fffbf0, #fff3e0);
-  border-left: 4px solid #ff9800;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-}
-
-.form-group-strategy {
-  background: linear-gradient(135deg, #faf5ff, #f3e5f5);
-  border-left: 4px solid #9c27b0;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-}
-
-.form-group-team {
-  background: linear-gradient(135deg, #f1f8e9, #e8f5e8);
-  border-left: 4px solid #4caf50;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-}
-
-/* Amélioration des labels par couleur */
-.form-group-basic .form-label {
-  color: #1565c0;
-  font-weight: 600;
-}
-
-.form-group-planning .form-label {
-  color: #e65100;
-  font-weight: 600;
-}
-
-.form-group-strategy .form-label {
-  color: #7b1fa2;
-  font-weight: 600;
-}
-
-.form-group-team .form-label {
-  color: #2e7d32;
-  font-weight: 600;
-}
-
-/* Icônes de section */
-.section-icon {
-  margin-right: 0.5rem;
-  font-size: 1.1rem;
-}
-
-/* === STYLES JALONS === */
-
-.jalons-timeline {
-  position: relative;
-  min-height: 60px;
-}
-
-.jalon-item {
-  position: relative;
-  padding: 0.75rem;
-  margin-bottom: 0.75rem;
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
-  background: white;
-  transition: all 0.2s ease;
-}
-
-.jalon-item:hover {
-  border-color: #007bff;
-  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
-  transform: translateY(-1px);
-}
-
-.jalon-item.jalon-completed {
-  border-color: #28a745;
-  background: #f8fff9;
-}
-
-.jalon-item.jalon-overdue {
-  border-color: #dc3545;
-  background: #fff5f5;
-}
-
-.jalon-header {
-  display: flex;
-  justify-content: between;
-  align-items: flex-start;
-  margin-bottom: 0.5rem;
-}
-
-.jalon-type-badge {
-  font-size: 0.75rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 12px;
-  margin-right: 0.5rem;
-}
-
-.jalon-type-reunion {
-  background: #e3f2fd;
-  color: #1976d2;
-}
-
-.jalon-type-echeance {
-  background: #fff3e0;
-  color: #f57c00;
-}
-
-.jalon-type-validation {
-  background: #e8f5e8;
-  color: #388e3c;
-}
-
-.jalon-type-livrable {
-  background: #f3e5f5;
-  color: #7b1fa2;
-}
-
-.jalon-title {
-  font-weight: 600;
-  color: #495057;
-  flex-grow: 1;
-}
-
-.jalon-date {
-  font-size: 0.875rem;
-  color: #6c757d;
-  white-space: nowrap;
-}
-
-.jalon-content {
-  margin-top: 0.5rem;
-}
-
-.jalon-comment {
-  font-size: 0.875rem;
-  color: #495057;
-  margin-bottom: 0.5rem;
-  line-height: 1.4;
-}
-
-.jalon-participants {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  margin-top: 0.5rem;
-}
-
-.participant-badge {
-  font-size: 0.7rem;
-  padding: 0.15rem 0.4rem;
-  background: #e9ecef;
-  color: #495057;
-  border-radius: 10px;
-}
-
-.jalon-actions {
-  display: flex;
-  gap: 0.25rem;
-  margin-top: 0.5rem;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.jalon-item:hover .jalon-actions {
-  opacity: 1;
-}
-
-.jalon-status-select {
-  font-size: 0.75rem;
-  padding: 0.15rem 0.3rem;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  background: white;
-  min-width: 90px;
-}
-
-/* Timeline connector line */
-.jalons-timeline::before {
-  content: '';
-  position: absolute;
-  left: 20px;
-  top: 20px;
-  bottom: 20px;
-  width: 2px;
-  background: linear-gradient(to bottom, #007bff 0%, #e9ecef 100%);
-  z-index: 0;
-}
-
-.jalon-item::before {
-  content: '';
-  position: absolute;
-  left: -20px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #007bff;
-  border: 3px solid white;
-  box-shadow: 0 0 0 2px #007bff;
-  z-index: 1;
-}
-
-.jalon-item.jalon-completed::before {
-  background: #28a745;
-  box-shadow: 0 0 0 2px #28a745;
-}
-
-.jalon-item.jalon-overdue::before {
-  background: #dc3545;
-  box-shadow: 0 0 0 2px #dc3545;
-}
-
-/* Modal pour ajouter/éditer un jalon */
-.jalon-modal .modal-body {
-  padding: 1.5rem;
-}
-
-.jalon-form-group {
-  margin-bottom: 1rem;
-}
-
-.jalon-type-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-
-.jalon-type-card {
-  padding: 0.75rem;
-  border: 2px solid #e9ecef;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-align: center;
-}
-
-.jalon-type-card:hover {
-  border-color: #007bff;
-  background: #f8f9fa;
-}
-
-.jalon-type-card.selected {
-  border-color: #007bff;
-  background: #e3f2fd;
-}
-
-.jalon-type-icon {
-  font-size: 1.5rem;
-  margin-bottom: 0.25rem;
-}
-
-.jalon-conditional-fields {
-  display: none;
-  margin-top: 1rem;
-  padding: 1rem;
-  background: #f8f9fa;
-  border-radius: 6px;
-}
-
-.jalon-conditional-fields.visible {
-  display: block;
 }
