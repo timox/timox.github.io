@@ -320,8 +320,13 @@ export class HistoryManager {
     });
     
     // Corriger les liens d'édition de tâche pour qu'ils ferment la modal et ouvrent l'édition  
-    cleanContent = cleanContent.replace(/onclick="[^"]*openTaskModal[^"]*"/g, 
-      'onclick="document.getElementById(\'simple-history-modal\').remove(); window.kanbanManager.modalManager.openTaskModal(' + taskId + ');"');
+    cleanContent = cleanContent.replace(/onclick="([^"]*)"/g, (match, onclickContent) => {
+      if (onclickContent.includes('openTaskModal')) {
+        // Extraire l'appel de fonction existant et ajouter la fermeture de modal avant
+        return 'onclick="document.getElementById(\'simple-history-modal\').remove(); ' + onclickContent + '"';
+      }
+      return match;
+    });
     
     simpleModal.innerHTML = `
       <div style="
