@@ -9,6 +9,8 @@ import {
   STRATEGY_DATA
 } from './config/constants.js';
 
+import { generateSingleBureauBadge } from './utils/badges.js';
+
 class StatsManager {
   constructor() {
     this.tasks = [];
@@ -189,8 +191,7 @@ class StatsManager {
 
     tbody.innerHTML = sortedPersons.map(stats => {
       const bureauxBadges = Array.from(stats.bureaux).map(bureau => {
-        const badgeClass = this.getBureauBadgeClass(bureau);
-        return `<span class="bureau-badge ${badgeClass}">${bureau}</span>`;
+        return generateSingleBureauBadge(bureau, true); // Mode compact pour les tableaux
       }).join(' ');
 
       return `
@@ -210,6 +211,32 @@ class StatsManager {
 
   generateStrategicObjectiveStats() {
     console.log('🎯 Génération stats objectifs stratégiques...');
+    
+    // Debug: Regarder les champs stratégie dans les tâches
+    if (this.tasks.length > 0) {
+      const firstTask = this.tasks[0];
+      const strategyFields = Object.keys(firstTask).filter(key => key.toLowerCase().includes('strat'));
+      console.log('🔍 Champs stratégie trouvés:', strategyFields);
+      
+      // Tester quelques tâches
+      const tasksWithStrategy = this.tasks.filter(task => 
+        task.strategie_ids || task.strategie_id || task.strategie_objectif || 
+        task.strategie || task.strategy || task.objectif || task.sous_objectif
+      );
+      console.log('📊 Tâches avec champs stratégie:', tasksWithStrategy.length, '/', this.tasks.length);
+      
+      if (tasksWithStrategy.length > 0) {
+        console.log('📋 Exemple tâche avec stratégie:', {
+          id: tasksWithStrategy[0].id,
+          titre: tasksWithStrategy[0].titre,
+          strategie_ids: tasksWithStrategy[0].strategie_ids,
+          strategie_id: tasksWithStrategy[0].strategie_id,
+          strategie_objectif: tasksWithStrategy[0].strategie_objectif,
+          objectif: tasksWithStrategy[0].objectif,
+          sous_objectif: tasksWithStrategy[0].sous_objectif
+        });
+      }
+    }
     
     // Définir les 5 objectifs principaux (raccourcis)
     const objectifs = [
@@ -460,6 +487,21 @@ class StatsManager {
   getTaskObjectives(task) {
     const objectifs = [];
     
+    // Debug: Logger cette tâche si elle a des champs stratégie
+    const hasStrategyField = task.strategie_ids || task.strategie_id || task.strategie_objectif || 
+                            task.strategie || task.strategy || task.objectif || task.sous_objectif;
+    
+    if (hasStrategyField) {
+      console.log('🎯 Analyse tâche avec stratégie:', {
+        id: task.id,
+        titre: task.titre?.substring(0, 50),
+        strategie_ids: task.strategie_ids,
+        strategie_id: task.strategie_id,
+        objectif: task.objectif,
+        sous_objectif: task.sous_objectif
+      });
+    }
+    
     // Méthode 1: Via strategie_ids
     if (task.strategie_ids) {
       try {
@@ -472,6 +514,7 @@ class StatsManager {
             const strategy = this.strategiesData.find(s => s.id == id);
             if (strategy && !objectifs.includes(strategy.objectif)) {
               objectifs.push(strategy.objectif);
+              console.log('✅ Objectif trouvé via strategie_ids:', strategy.objectif);
             }
           });
         }
@@ -485,12 +528,20 @@ class StatsManager {
       const strategy = this.strategiesData.find(s => s.id == task.strategie_id);
       if (strategy) {
         objectifs.push(strategy.objectif);
+        console.log('✅ Objectif trouvé via strategie_id:', strategy.objectif);
       }
     }
     
     // Méthode 3: Via champ objectif direct
+    if (objectifs.length === 0 && task.objectif) {
+      objectifs.push(task.objectif);
+      console.log('✅ Objectif trouvé via champ objectif:', task.objectif);
+    }
+    
+    // Méthode 4: Via champ strategie_objectif
     if (objectifs.length === 0 && task.strategie_objectif) {
       objectifs.push(task.strategie_objectif);
+      console.log('✅ Objectif trouvé via strategie_objectif:', task.strategie_objectif);
     }
     
     return objectifs;
@@ -507,18 +558,6 @@ class StatsManager {
     return mapping[objectif] || objectif;
   }
 
-  getBureauBadgeClass(bureau) {
-    const bureauColors = {
-      'CGSSI': 'bg-primary text-white',
-      'ISI': 'bg-info text-white', 
-      'Exploitation': 'bg-success text-white',
-      'RSSI': 'bg-warning text-dark',
-      'Projets': 'bg-danger text-white',
-      'Support': 'bg-secondary text-white'
-    };
-    
-    return bureauColors[bureau] || 'bg-secondary text-white';
-  }
 
   showError(message) {
     console.error('Stats Error:', message);
