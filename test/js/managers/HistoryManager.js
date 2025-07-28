@@ -287,54 +287,63 @@ export class HistoryManager {
       modalManager: !!this.kanban.modalManager?.historyModal
     });
 
-    // Essayer d'utiliser l'instance du ModalManager d'abord
-    if (this.kanban.modalManager?.historyModal) {
-      try {
-        this.kanban.modalManager.historyModal.show();
-        this.logger.info('Modale ouverte via ModalManager');
-        
-        // Vérifier immédiatement l'état, puis avec délai
-        this.logger.debug('État immédiat après show():', {
-          hasShow: historyModalEl.classList.contains('show'),
-          display: historyModalEl.style.display,
-          visibility: historyModalEl.style.visibility
-        });
-        
-        // Vérifier si l'affichage a fonctionné après un délai réduit
-        setTimeout(() => {
-          this.logger.debug('=== DÉBUT setTimeout diagnostic ===');
-          
-          const isVisible = historyModalEl.classList.contains('show') && 
-                          historyModalEl.style.display !== 'none';
-          
-          this.logger.debug('État après show() avec délai:', {
-            hasShow: historyModalEl.classList.contains('show'),
-            display: historyModalEl.style.display,
-            visibility: historyModalEl.style.visibility,
-            isVisible: isVisible,
-            element: historyModalEl
-          });
-          
-          // Ne forcer que si la modal n'est pas visible
-          if (!isVisible) {
-            this.logger.warn('Modal non visible après show(), forçage nécessaire');
-            this.forceShowModal(historyModalEl);
-          } else {
-            this.logger.info('Modal visible correctement via Bootstrap');
-          }
-          
-          this.logger.debug('=== FIN setTimeout diagnostic ===');
-        }, 50);
-        
-        return;
-      } catch (error) {
-        this.logger.warn('Erreur ModalManager, fallback manuel:', error);
-      }
+    // NOUVEAU: Affichage manuel sans Bootstrap JS
+    this.logger.info('Affichage manuel de la modal sans Bootstrap JS');
+    
+    // Créer le backdrop
+    let backdrop = document.querySelector('.modal-backdrop');
+    if (!backdrop) {
+      backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop fade';
+      document.body.appendChild(backdrop);
+      // Forcer le reflow pour l'animation
+      backdrop.offsetHeight;
+      backdrop.classList.add('show');
     }
     
-    // Fallback désactivé pour éviter les instances multiples
-    this.logger.error('ModalManager.historyModal non disponible - abandon');
-    this.cleanupOrphanBackdrops();
+    // Afficher la modal
+    historyModalEl.style.display = 'block';
+    historyModalEl.setAttribute('aria-modal', 'true');
+    historyModalEl.setAttribute('role', 'dialog');
+    historyModalEl.classList.add('show');
+    
+    // Ajouter la classe au body
+    document.body.classList.add('modal-open');
+    
+    // Gérer la fermeture
+    const closeButtons = historyModalEl.querySelectorAll('[data-bs-dismiss="modal"]');
+    closeButtons.forEach(btn => {
+      btn.onclick = () => this.closeHistoryModal();
+    });
+    
+    // Fermer en cliquant sur le backdrop
+    backdrop.onclick = () => this.closeHistoryModal();
+    
+    this.logger.info('Modal affichée manuellement avec succès');
+  }
+  
+  /**
+   * Ferme la modal d'historique manuellement
+   */
+  closeHistoryModal() {
+    const historyModalEl = document.getElementById('task-history-modal');
+    if (historyModalEl) {
+      historyModalEl.style.display = 'none';
+      historyModalEl.classList.remove('show');
+      historyModalEl.removeAttribute('aria-modal');
+      historyModalEl.setAttribute('aria-hidden', 'true');
+    }
+    
+    // Supprimer le backdrop
+    const backdrop = document.querySelector('.modal-backdrop');
+    if (backdrop) {
+      backdrop.remove();
+    }
+    
+    // Supprimer la classe du body
+    document.body.classList.remove('modal-open');
+    
+    this.logger.info('Modal d\'historique fermée manuellement');
   }
   
   /**
