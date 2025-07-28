@@ -72,6 +72,27 @@ class StatsManager {
       
       console.log(`✅ ${this.tasks.length} tâches chargées`);
       
+      // Debug complet: Afficher TOUS les champs de la première tâche
+      if (this.tasks.length > 0) {
+        const firstTask = this.tasks[0];
+        console.log('🔍 TOUS les champs de la première tâche:');
+        Object.keys(firstTask).sort().forEach(key => {
+          const value = firstTask[key];
+          if (value !== null && value !== undefined && value !== '') {
+            console.log(`  ${key}: ${typeof value === 'object' ? JSON.stringify(value) : value}`);
+          }
+        });
+        
+        // Chercher spécifiquement les champs qui pourraient contenir des stratégies
+        const potentialStrategyFields = Object.keys(firstTask).filter(key => 
+          key.toLowerCase().includes('strat') || 
+          key.toLowerCase().includes('object') || 
+          key.toLowerCase().includes('action') ||
+          key.toLowerCase().includes('sous')
+        );
+        console.log('🎯 Champs potentiels pour stratégies:', potentialStrategyFields);
+      }
+      
     } catch (error) {
       console.error('❌ Erreur chargement tâches:', error);
       throw error;
