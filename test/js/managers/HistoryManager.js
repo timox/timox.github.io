@@ -319,7 +319,7 @@ export class HistoryManager {
       return cleanClasses ? `class="${cleanClasses}"` : '';
     });
     
-    // Corriger les liens d'édition de tâche pour qu'ils ferment la modal et ouvrent l'édition
+    // Corriger les liens d'édition de tâche pour qu'ils ferment la modal et ouvrent l'édition  
     cleanContent = cleanContent.replace(/onclick="[^"]*openTaskModal[^"]*"/g, 
       'onclick="document.getElementById(\'simple-history-modal\').remove(); window.kanbanManager.modalManager.openTaskModal(' + taskId + ');"');
     
