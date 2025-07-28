@@ -297,6 +297,25 @@ export class HistoryManager {
     // Créer une modal simple mais avec le contenu Bootstrap
     const simpleModal = document.createElement('div');
     simpleModal.id = 'simple-history-modal';
+    
+    // Nettoyer COMPLÈTEMENT le contenu Bootstrap des attributs problématiques
+    let cleanContent = historyModalEl.innerHTML;
+    
+    // Supprimer TOUS les attributs Bootstrap
+    cleanContent = cleanContent.replace(/data-bs-[^=]*="[^"]*"/g, '');
+    cleanContent = cleanContent.replace(/aria-label="Close"/g, '');
+    cleanContent = cleanContent.replace(/type="button"/g, '');
+    
+    // Remplacer les boutons de fermeture par des boutons simples
+    cleanContent = cleanContent.replace(/<button[^>]*class="[^"]*btn-close[^"]*"[^>]*>.*?<\/button>/g, 
+      '<button onclick="document.getElementById(\'simple-history-modal\').remove()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;float:right;">&times;</button>');
+    
+    // Supprimer les classes Bootstrap problématiques des boutons
+    cleanContent = cleanContent.replace(/class="([^"]*)btn[^"]*"/g, (match, otherClasses) => {
+      const cleanClasses = otherClasses.replace(/\s*btn[^\s]*/g, '').trim();
+      return cleanClasses ? `class="${cleanClasses}"` : '';
+    });
+    
     simpleModal.innerHTML = `
       <div style="
         position: fixed;
@@ -309,7 +328,7 @@ export class HistoryManager {
         display: flex;
         align-items: center;
         justify-content: center;
-      ">
+      " onclick="if(event.target === this) document.getElementById('simple-history-modal').remove();">
         <div style="
           background: white;
           border-radius: 8px;
@@ -319,24 +338,22 @@ export class HistoryManager {
           overflow: hidden;
           box-shadow: 0 5px 15px rgba(0,0,0,.5);
         ">
-          ${historyModalEl.innerHTML}
-          <div style="padding: 10px; text-align: right; border-top: 1px solid #ddd;">
-            <button onclick="document.getElementById('simple-history-modal').remove()" style="
-              padding: 8px 16px;
-              background: #6c757d;
-              color: white;
-              border: none;
-              border-radius: 4px;
-              cursor: pointer;
-            ">
-              Fermer
-            </button>
-          </div>
+          ${cleanContent}
         </div>
       </div>
     `;
     
     document.body.appendChild(simpleModal);
+    
+    // Ajouter la gestion Escape
+    const escapeHandler = (e) => {
+      if (e.key === 'Escape') {
+        document.getElementById('simple-history-modal')?.remove();
+        document.removeEventListener('keydown', escapeHandler);
+      }
+    };
+    document.addEventListener('keydown', escapeHandler);
+    
     this.logger.info('Modal simple créée avec succès');
   }
   
