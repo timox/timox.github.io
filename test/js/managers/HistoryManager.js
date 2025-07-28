@@ -365,7 +365,7 @@ export class HistoryManager {
     // CORRECTIF: Forcer la visibilité avec des styles prioritaires ET ajouter classe show
     modalEl.classList.add('show');
     modalEl.style.cssText = `
-      display: block !important;
+      display: flex !important;
       visibility: visible !important;
       opacity: 1 !important;
       z-index: 1060 !important;
@@ -377,6 +377,9 @@ export class HistoryManager {
       overflow-x: hidden !important;
       overflow-y: auto !important;
       outline: 0 !important;
+      align-items: center !important;
+      justify-content: center !important;
+      padding: 1.75rem !important;
     `;
     
     // Forcer les styles sur modal-dialog
@@ -384,13 +387,14 @@ export class HistoryManager {
     if (dialog) {
       dialog.style.cssText = `
         position: relative !important;
-        width: auto !important;
-        margin: 1.75rem auto !important;
-        pointer-events: auto !important;
+        width: 90% !important;
         max-width: 1000px !important;
-        display: flex !important;
-        align-items: center !important;
-        min-height: calc(100% - 3.5rem) !important;
+        margin: 0 !important;
+        pointer-events: auto !important;
+        display: block !important;
+        background: white !important;
+        border-radius: 0.3rem !important;
+        box-shadow: 0 5px 15px rgba(0,0,0,.5) !important;
       `;
     } else {
       this.logger.error('modal-dialog introuvable dans la modal !');
@@ -401,19 +405,29 @@ export class HistoryManager {
     if (content) {
       content.style.cssText = `
         position: relative !important;
-        display: flex !important;
-        flex-direction: column !important;
+        display: block !important;
         width: 100% !important;
+        min-height: 500px !important;
         pointer-events: auto !important;
         background-color: #fff !important;
         background-clip: padding-box !important;
         border: 1px solid rgba(0,0,0,.2) !important;
         border-radius: .3rem !important;
         outline: 0 !important;
-        box-shadow: 0 .5rem 1rem rgba(0,0,0,.5) !important;
       `;
     } else {
       this.logger.error('modal-content introuvable dans la modal !');
+    }
+    
+    // Forcer la visibilité du body
+    const body = modalEl.querySelector('.modal-body');
+    if (body) {
+      body.style.cssText = `
+        display: block !important;
+        padding: 1rem !important;
+        max-height: 70vh !important;
+        overflow-y: auto !important;
+      `;
     }
     
     // Log de diagnostic
