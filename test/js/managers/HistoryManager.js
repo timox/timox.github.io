@@ -322,9 +322,15 @@ export class HistoryManager {
     // Corriger les liens d'édition de tâche pour qu'ils ferment la modal et ouvrent l'édition  
     cleanContent = cleanContent.replace(/onclick="([^"]*)"/g, (match, onclickContent) => {
       if (onclickContent.includes('openTaskModal')) {
-        // Remplacer openTaskModal par openTaskModalById et ajouter la fermeture de modal avant
-        const updatedContent = onclickContent.replace('openTaskModal', 'openTaskModalById');
-        return 'onclick="document.getElementById(\'simple-history-modal\').remove(); ' + updatedContent + '"';
+        // Si c'est déjà openTaskModalById, ne pas modifier, sinon remplacer
+        if (onclickContent.includes('openTaskModalById')) {
+          // Déjà le bon format, juste ajouter la fermeture de modal
+          return 'onclick="document.getElementById(\'simple-history-modal\').remove(); ' + onclickContent + '"';
+        } else {
+          // Remplacer openTaskModal par openTaskModalById
+          const updatedContent = onclickContent.replace('openTaskModal', 'openTaskModalById');
+          return 'onclick="document.getElementById(\'simple-history-modal\').remove(); ' + updatedContent + '"';
+        }
       }
       return match;
     });
