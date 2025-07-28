@@ -107,7 +107,7 @@ export class KanbanAppInitializer {
     const requiredElements = [
       'kanban-container',
       'popup-tache',
-      'history-modal',
+      'task-history-modal',
       'error-container'
     ];
     
