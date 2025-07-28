@@ -976,6 +976,25 @@ export class HistoryManager {
   }
   
   /**
+   * Formate une durée en minutes en texte lisible
+   * @param {number} minutes - Durée en minutes
+   * @returns {string} Durée formatée
+   */
+  formatDuration(minutes) {
+    if (minutes < 60) {
+      return `${Math.round(minutes)}min`;
+    } else if (minutes < 1440) { // moins de 24h
+      const hours = Math.floor(minutes / 60);
+      const mins = Math.round(minutes % 60);
+      return mins > 0 ? `${hours}h${mins}` : `${hours}h`;
+    } else {
+      const days = Math.floor(minutes / 1440);
+      const hours = Math.floor((minutes % 1440) / 60);
+      return hours > 0 ? `${days}j${hours}h` : `${days}j`;
+    }
+  }
+
+  /**
    * Génère l'HTML pour l'affichage des durées par statut
    * @param {object} durationByStatus - Durées par statut
    * @returns {string} HTML
@@ -991,7 +1010,7 @@ export class HistoryManager {
       .map(([status, duration]) => `
         <div class="col-md-3 col-sm-6 mb-2">
           <div class="stat-item status-duration">
-            <div class="stat-value">${formatDuration(duration)}</div>
+            <div class="stat-value">${this.formatDuration(duration)}</div>
             <div class="stat-label">${status}</div>
           </div>
         </div>
