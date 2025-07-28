@@ -287,8 +287,22 @@ export class HistoryManager {
       modalManager: !!this.kanban.modalManager?.historyModal
     });
 
-    // SOLUTION SIMPLE: Utiliser la même approche que la modal de test
-    this.logger.info('Création modal simple avec contenu Bootstrap');
+    // BOOTSTRAP MODAL NATIF: Les conflits sont maintenant résolus
+    this.logger.info('🔄 Ouverture avec Bootstrap Modal natif');
+    
+    if (this.kanban.modalManager?.historyModal) {
+      try {
+        this.kanban.modalManager.historyModal.show();
+        this.logger.info('✅ Modal Bootstrap ouverte avec statistiques complètes');
+        return;
+      } catch (error) {
+        this.logger.error('❌ Erreur Bootstrap Modal:', error);
+        // Fallback vers solution simple
+      }
+    }
+    
+    // FALLBACK: Solution simple si Bootstrap Modal échoue
+    this.logger.info('Fallback vers modal simple');
     
     // Supprimer toute modal existante
     const existingSimple = document.getElementById('simple-history-modal');
@@ -873,6 +887,7 @@ export class HistoryManager {
       
       // NOUVEAU: Calculer la durée par statut
       stats.durationByStatus = this.calculateDurationByStatus(sortedHistory, task);
+      this.logger.debug('Durées par statut calculées:', stats.durationByStatus);
     }
     
     // Inclure les commentaires dans la date de dernière modification
@@ -918,7 +933,7 @@ export class HistoryManager {
         const startTime = new Date(currentEntry.timestamp);
         const endTime = nextEntry ? new Date(nextEntry.timestamp) : now;
         
-        const durationMinutes = calculateDurationMinutes(startTime, endTime);
+        const durationMinutes = Math.round((endTime - startTime) / (1000 * 60)); // Différence en minutes
         this.logger.debug(`Durée pour ${status}: ${durationMinutes} minutes`);
         
         if (!durations[status]) {
@@ -1000,7 +1015,9 @@ export class HistoryManager {
    * @returns {string} HTML
    */
   generateStatusDurationHtml(durationByStatus) {
+    this.logger.debug('generateStatusDurationHtml appelé avec:', durationByStatus);
     if (!durationByStatus || Object.keys(durationByStatus).length === 0) {
+      this.logger.debug('Pas de durées par statut à afficher');
       return '';
     }
     
