@@ -29,7 +29,8 @@ export class HistoryManager {
    * Initialise le gestionnaire d'historique
    */
   init() {
-    // Event listeners supprimés - gérés par SimpleClickHandler
+    // RÉACTIVÉ: Event listeners pour boutons historique (kanban-app ne s'en occupe plus)
+    this.setupEventListeners();
     this.setupCommentEditWidget();
     this.setupModalCleanupListeners();
     this.logger.info('History manager initialized (listeners centralisés)');
@@ -55,10 +56,10 @@ export class HistoryManager {
   }
   
   /**
-   * SUPPRIMÉ - Configure les écouteurs d'événements  
-   * Event listeners maintenant gérés par SimpleClickHandler
+   * Configure les écouteurs d'événements pour les boutons d'historique
+   * RÉACTIVÉ - kanban-app ne s'en occupe plus
    */
-  setupEventListeners_DISABLED() {
+  setupEventListeners() {
     // Bouton "Voir tous les commentaires"
     const btnShowComments = document.getElementById('btn-show-comments-only');
     if (btnShowComments) {
