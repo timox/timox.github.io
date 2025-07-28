@@ -315,9 +315,13 @@ export class HistoryManager {
             element: historyModalEl
           });
           
-          // FORÇAGE TEMPORAIRE POUR DEBUG: toujours forcer pour voir ce qui se passe
-          this.logger.warn('FORÇAGE SYSTÉMATIQUE TEMPORAIRE POUR DEBUG');
-          this.forceShowModal(historyModalEl);
+          // Ne forcer que si la modal n'est pas visible
+          if (!isVisible) {
+            this.logger.warn('Modal non visible après show(), forçage nécessaire');
+            this.forceShowModal(historyModalEl);
+          } else {
+            this.logger.info('Modal visible correctement via Bootstrap');
+          }
           
           this.logger.debug('=== FIN setTimeout diagnostic ===');
         }, 50);
@@ -348,14 +352,7 @@ export class HistoryManager {
     
     this.logger.debug('forceShowModal: élément valide:', modalEl.id, modalEl.tagName);
     
-    // CORRECTIF: Créer un backdrop manuel
-    let backdrop = document.querySelector('.modal-backdrop');
-    if (!backdrop) {
-      backdrop = document.createElement('div');
-      backdrop.className = 'modal-backdrop fade show';
-      backdrop.style.cssText = 'position: fixed; top: 0; left: 0; z-index: 1040; width: 100vw; height: 100vh; background-color: rgba(0,0,0,0.5);';
-      document.body.appendChild(backdrop);
-    }
+    // Ne plus créer de backdrop manuel - Bootstrap le gère maintenant
     
     // Forcer les attributs ARIA
     modalEl.setAttribute('aria-modal', 'true');
