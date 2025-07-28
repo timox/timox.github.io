@@ -4,7 +4,7 @@
 /* === Z-INDEX FIXES SIMPLIFIÉS === */
 /* Modale historique avec styles simples pour éviter les conflits */
 #task-history-modal {
-  z-index: 1060 !important; /* Standard Bootstrap modal z-index */
+  z-index: 5001 !important; /* Au-dessus de Grist (5000) pour être toujours visible */
 }
 
 #task-history-modal .modal-dialog {
