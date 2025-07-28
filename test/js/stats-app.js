@@ -188,9 +188,10 @@ class StatsManager {
       .sort((a, b) => b.total - a.total);
 
     tbody.innerHTML = sortedPersons.map(stats => {
-      const bureauxBadges = Array.from(stats.bureaux).map(bureau => 
-        `<span class="bureau-badge bg-secondary text-white">${bureau}</span>`
-      ).join(' ');
+      const bureauxBadges = Array.from(stats.bureaux).map(bureau => {
+        const badgeClass = this.getBureauBadgeClass(bureau);
+        return `<span class="bureau-badge ${badgeClass}">${bureau}</span>`;
+      }).join(' ');
 
       return `
         <tr>
@@ -438,22 +439,22 @@ class StatsManager {
     if (!value) return [];
     
     if (Array.isArray(value)) {
-      return value.filter(v => v && v.trim());
+      return value.filter(v => v && v.trim() && v.trim() !== 'L');
     }
     
     if (typeof value === 'string') {
       // Grist format : ['value1', 'value2'] ou "value1, value2"
       if (value.startsWith('[') && value.endsWith(']')) {
         try {
-          return JSON.parse(value).filter(v => v && v.trim());
+          return JSON.parse(value).filter(v => v && v.trim() && v.trim() !== 'L');
         } catch (e) {
-          return [value.replace(/[\[\]']/g, '').trim()].filter(v => v);
+          return [value.replace(/[\[\]']/g, '').trim()].filter(v => v && v !== 'L');
         }
       }
-      return value.split(',').map(v => v.trim()).filter(v => v);
+      return value.split(',').map(v => v.trim()).filter(v => v && v !== 'L');
     }
     
-    return [String(value)].filter(v => v && v.trim());
+    return [String(value)].filter(v => v && v.trim() && v.trim() !== 'L');
   }
 
   getTaskObjectives(task) {
@@ -504,6 +505,19 @@ class StatsManager {
     };
     
     return mapping[objectif] || objectif;
+  }
+
+  getBureauBadgeClass(bureau) {
+    const bureauColors = {
+      'CGSSI': 'bg-primary text-white',
+      'ISI': 'bg-info text-white', 
+      'Exploitation': 'bg-success text-white',
+      'RSSI': 'bg-warning text-dark',
+      'Projets': 'bg-danger text-white',
+      'Support': 'bg-secondary text-white'
+    };
+    
+    return bureauColors[bureau] || 'bg-secondary text-white';
   }
 
   showError(message) {
