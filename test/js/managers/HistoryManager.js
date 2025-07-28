@@ -170,8 +170,8 @@ export class HistoryManager {
     this.logger.info(`openTaskHistory appelé pour tâche ${taskId}`);
     
     // Vérification des éléments DOM
-    if (!document.getElementById('history-modal-label')) {
-      this.logger.error('Élément history-modal-label manquant');
+    if (!document.getElementById('task-history-modal-label')) {
+      this.logger.error('Élément task-history-modal-label manquant');
       return;
     }
     
@@ -252,7 +252,7 @@ export class HistoryManager {
     this.cleanupOrphanBackdrops();
     
     // Mettre à jour le titre de la modale
-    const modalTitle = document.getElementById('history-modal-label');
+    const modalTitle = document.getElementById('task-history-modal-label');
     if (modalTitle) {
       modalTitle.innerHTML = `
         <i class="bi bi-clock-history me-2"></i>
@@ -264,20 +264,20 @@ export class HistoryManager {
     this.renderTaskHistory(task);
     
     // Ouvrir la modale
-    this.logger.debug('Recherche élément history-modal dans le DOM...');
-    const historyModalEl = document.getElementById('history-modal');
+    this.logger.debug('Recherche élément task-history-modal dans le DOM...');
+    const historyModalEl = document.getElementById('task-history-modal');
     
     // Debug complet des modales présentes
     const allModals = document.querySelectorAll('.modal');
     this.logger.debug('Modales trouvées dans le DOM:', Array.from(allModals).map(m => m.id));
     
     if (!historyModalEl) {
-      this.logger.error('Élément history-modal introuvable dans le DOM');
+      this.logger.error('Élément task-history-modal introuvable dans le DOM');
       this.logger.error('DOM actuel:', document.body.innerHTML.length, 'caractères');
       return;
     }
     
-    this.logger.debug('Élément history-modal trouvé:', historyModalEl);
+    this.logger.debug('Élément task-history-modal trouvé:', historyModalEl);
     
     // Vérifier l'état de la modale avant ouverture
     this.logger.debug('État modale avant ouverture:', {

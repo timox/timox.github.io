@@ -808,7 +808,7 @@ class KanbanManager {
     
     // Rechercher les éléments de modal
     this.modalElement = document.getElementById('popup-tache');
-    this.historyModalElement = document.getElementById('history-modal');
+    this.historyModalElement = document.getElementById('task-history-modal');
     
     // Debug: Vérifier si les éléments existent
     console.log('Modal element trouvé:', !!this.modalElement);
@@ -1507,7 +1507,7 @@ class KanbanManager {
     // Timeline modal buttons - GÉRÉS PAR HistoryManager.js (éviter duplication)
 
     // Force timeline modal close buttons to work
-    const timelineCloseButtons = document.querySelectorAll('#history-modal [data-bs-dismiss="modal"]');
+    const timelineCloseButtons = document.querySelectorAll('#task-history-modal [data-bs-dismiss="modal"]');
     timelineCloseButtons.forEach(button => {
       button.addEventListener('click', (e) => {
         e.preventDefault();

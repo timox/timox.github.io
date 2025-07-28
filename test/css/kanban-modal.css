@@ -3,23 +3,23 @@
 
 /* === Z-INDEX FIXES SIMPLIFIÉS === */
 /* Modale historique avec styles simples pour éviter les conflits */
-#history-modal {
+#task-history-modal {
   z-index: 1060 !important; /* Standard Bootstrap modal z-index */
 }
 
-#history-modal .modal-dialog {
+#task-history-modal .modal-dialog {
   width: 90%;
   max-width: 1000px;
   margin: 20px auto;
 }
 
-#history-modal .modal-content {
+#task-history-modal .modal-content {
   border: 1px solid #ccc;
   border-radius: 8px;
   background: white;
 }
 
-#history-modal .modal-body {
+#task-history-modal .modal-body {
   padding: 20px;
   max-height: 500px;
   overflow-y: auto;
