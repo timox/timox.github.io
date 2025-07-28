@@ -820,6 +820,30 @@ export class ModalManager {
   }
   
   /**
+   * Ouvre la modal de tâche par ID
+   * @param {number} taskId - ID de la tâche à ouvrir
+   */
+  openTaskModalById(taskId) {
+    this.logger.debug('openTaskModalById appelé avec ID:', taskId);
+    
+    if (!taskId) {
+      this.openTaskModal(); // Nouvelle tâche
+      return;
+    }
+    
+    // Récupérer la tâche depuis les données actuelles
+    const task = this.kanban.currentRecords?.find(r => r.id === parseInt(taskId));
+    
+    if (!task) {
+      this.logger.error('Tâche non trouvée pour ID:', taskId);
+      displayError(`Tâche ${taskId} non trouvée`);
+      return;
+    }
+    
+    this.openTaskModal(task);
+  }
+  
+  /**
    * Ouvre la modal de tâche
    * @param {object} task - Données de la tâche (null pour nouvelle tâche)
    */

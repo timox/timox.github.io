@@ -322,8 +322,9 @@ export class HistoryManager {
     // Corriger les liens d'édition de tâche pour qu'ils ferment la modal et ouvrent l'édition  
     cleanContent = cleanContent.replace(/onclick="([^"]*)"/g, (match, onclickContent) => {
       if (onclickContent.includes('openTaskModal')) {
-        // Extraire l'appel de fonction existant et ajouter la fermeture de modal avant
-        return 'onclick="document.getElementById(\'simple-history-modal\').remove(); ' + onclickContent + '"';
+        // Remplacer openTaskModal par openTaskModalById et ajouter la fermeture de modal avant
+        const updatedContent = onclickContent.replace('openTaskModal', 'openTaskModalById');
+        return 'onclick="document.getElementById(\'simple-history-modal\').remove(); ' + updatedContent + '"';
       }
       return match;
     });
@@ -956,7 +957,7 @@ export class HistoryManager {
       headerHTML = `
         <div class="timeline-header" style="margin-bottom: 20px; padding: 15px; background: #e3f2fd; border-radius: 6px;">
           <h5 style="margin: 0; color: #1565c0;">
-            <span class="timeline-task-title" onclick="window.kanbanManager?.modalManager?.openTaskModal(${task.id})">
+            <span class="timeline-task-title" onclick="window.kanbanManager?.modalManager?.openTaskModalById(${task.id})">
               ${task.titre}
             </span>
           </h5>
