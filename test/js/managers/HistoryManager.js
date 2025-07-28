@@ -287,82 +287,27 @@ export class HistoryManager {
       modalManager: !!this.kanban.modalManager?.historyModal
     });
 
-    // SOLUTION SIMPLE: Utiliser la même approche que la modal de test
-    this.logger.info('Création modal simple avec contenu Bootstrap');
+    // UTILISATION BOOTSTRAP MODAL: Conflits résolus, utilisation native
+    this.logger.info('🔄 Ouverture avec Bootstrap Modal natif');
     
-    // Supprimer toute modal existante
-    const existingSimple = document.getElementById('simple-history-modal');
-    if (existingSimple) existingSimple.remove();
-    
-    // Créer une modal simple mais avec le contenu Bootstrap
-    const simpleModal = document.createElement('div');
-    simpleModal.id = 'simple-history-modal';
-    
-    // Nettoyer COMPLÈTEMENT le contenu Bootstrap des attributs problématiques
-    let cleanContent = historyModalEl.innerHTML;
-    
-    // Supprimer TOUS les attributs Bootstrap
-    cleanContent = cleanContent.replace(/data-bs-[^=]*="[^"]*"/g, '');
-    cleanContent = cleanContent.replace(/aria-label="Close"/g, '');
-    cleanContent = cleanContent.replace(/type="button"/g, '');
-    
-    // Remplacer les boutons de fermeture par des boutons simples ALIGNÉS À DROITE
-    cleanContent = cleanContent.replace(/<button[^>]*class="[^"]*btn-close[^"]*"[^>]*>.*?<\/button>/g, 
-      '<button onclick="document.getElementById(\'simple-history-modal\').remove()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;position:absolute;top:10px;right:15px;color:#666;">&times;</button>');
-    
-    // Supprimer les trois boutons du bas (modal-footer)
-    cleanContent = cleanContent.replace(/<div[^>]*class="[^"]*modal-footer[^"]*"[^>]*>[\s\S]*?<\/div>/g, '');
-    
-    // Supprimer les classes Bootstrap problématiques des boutons restants
-    cleanContent = cleanContent.replace(/class="([^"]*)btn[^"]*"/g, (match, otherClasses) => {
-      const cleanClasses = otherClasses.replace(/\s*btn[^\s]*/g, '').trim();
-      return cleanClasses ? `class="${cleanClasses}"` : '';
-    });
-    
-    // Corriger les liens d'édition de tâche pour qu'ils ferment la modal et ouvrent l'édition
-    cleanContent = cleanContent.replace(/onclick="[^"]*openTaskModal[^"]*"/g, 
-      'onclick="document.getElementById(\'simple-history-modal\').remove(); window.kanbanManager.modalManager.openTaskModal(' + taskId + ');"');
-    
-    simpleModal.innerHTML = `
-      <div style="
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 1060;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      " onclick="if(event.target === this) document.getElementById('simple-history-modal').remove();">
-        <div style="
-          background: white;
-          border-radius: 8px;
-          max-width: 1000px;
-          width: 90%;
-          max-height: 80vh;
-          overflow: hidden;
-          box-shadow: 0 5px 15px rgba(0,0,0,.5);
-          position: relative;
-        ">
-          ${cleanContent}
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(simpleModal);
-    
-    // Ajouter la gestion Escape
-    const escapeHandler = (e) => {
-      if (e.key === 'Escape') {
-        document.getElementById('simple-history-modal')?.remove();
-        document.removeEventListener('keydown', escapeHandler);
+    if (this.kanban.modalManager?.historyModal) {
+      try {
+        this.kanban.modalManager.historyModal.show();
+        this.logger.info('✅ Modal Bootstrap ouverte avec statistiques complètes');
+      } catch (error) {
+        this.logger.error('❌ Erreur Bootstrap Modal:', error);
+        // Pas de fallback - on debug l'erreur Bootstrap
+        throw error;
       }
-    };
-    document.addEventListener('keydown', escapeHandler);
-    
-    this.logger.info('Modal simple créée avec succès');
+    } else {
+      this.logger.error('❌ HistoryModal non disponible dans ModalManager');
+      this.logger.error('Debug ModalManager:', {
+        modalManagerExists: !!this.kanban.modalManager,
+        historyModalExists: !!this.kanban.modalManager?.historyModal,
+        modalManagerKeys: this.kanban.modalManager ? Object.keys(this.kanban.modalManager) : 'N/A'
+      });
+      throw new Error('HistoryModal non initialisée');
+    }
   }
   
   /**
@@ -389,74 +334,6 @@ export class HistoryManager {
     this.logger.info('Modal d\'historique fermée manuellement');
   }
   
-  /**
-   * Force l'affichage de la modale d'historique
-   * @param {HTMLElement} modalEl - Élément de la modale
-   */
-  forceShowModal(modalEl) {
-    this.logger.info('Test: Création d\'une modal HTML simple');
-    
-    // Supprimer toute modal de test existante
-    const existingTest = document.getElementById('test-simple-modal');
-    if (existingTest) existingTest.remove();
-    
-    // Créer une modal simple sans Bootstrap
-    const testModal = document.createElement('div');
-    testModal.id = 'test-simple-modal';
-    testModal.innerHTML = `
-      <div style="
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 9998;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      ">
-        <div style="
-          background: white;
-          padding: 30px;
-          border-radius: 8px;
-          max-width: 600px;
-          width: 90%;
-          max-height: 80vh;
-          overflow-y: auto;
-          box-shadow: 0 5px 15px rgba(0,0,0,.5);
-        ">
-          <h3>Modal de Test Simple</h3>
-          <p>Si vous voyez ceci, les modals HTML peuvent s'afficher !</p>
-          <hr>
-          <div id="test-modal-content">
-            ${modalEl.innerHTML}
-          </div>
-          <hr>
-          <button onclick="document.getElementById('test-simple-modal').remove()" style="
-            padding: 10px 20px;
-            background: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-          ">
-            Fermer cette modal de test
-          </button>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(testModal);
-    this.logger.info('Modal de test créée. Visible ?');
-    
-    // Log pour debug
-    this.logger.info('Comparaison:', {
-      modalBootstrap: modalEl.id,
-      modalBootstrapVisible: window.getComputedStyle(modalEl).display,
-      modalTestVisible: 'devrait être visible'
-    });
-  }
   
   /**
    * Nettoie les backdrops orphelins
