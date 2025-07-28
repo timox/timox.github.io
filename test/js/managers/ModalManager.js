@@ -64,8 +64,8 @@ export class ModalManager {
     const historyModalElement = document.getElementById('history-modal');
     if (historyModalElement) {
       this.historyModal = new bootstrap.Modal(historyModalElement, {
-        backdrop: false,
-        keyboard: false,
+        backdrop: 'static',
+        keyboard: true,
         focus: true
       });
     }
@@ -122,7 +122,6 @@ export class ModalManager {
         }, 100); // Petit délai pour laisser Bootstrap ouvrir l'accordéon
       }
     });
-
     
     // Écouteur pour quand l'accordéon s'ouvre (événement Bootstrap)
     document.addEventListener('shown.bs.collapse', (e) => {

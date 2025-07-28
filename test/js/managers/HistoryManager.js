@@ -29,21 +29,42 @@ export class HistoryManager {
    * Initialise le gestionnaire d'historique
    */
   init() {
-    this.setupEventListeners();
+    // Event listeners supprimés - gérés par SimpleClickHandler
     this.setupCommentEditWidget();
-    this.logger.info('History manager initialized');
+    this.setupModalCleanupListeners();
+    this.logger.info('History manager initialized (listeners centralisés)');
   }
   
   /**
-   * Configure les écouteurs d'événements
+   * Configure les listeners pour nettoyer automatiquement les backdrops
    */
-  setupEventListeners() {
+  setupModalCleanupListeners() {
+    // Écouter les événements Bootstrap 5 de fermeture de modales
+    document.addEventListener('hidden.bs.modal', (event) => {
+      this.logger.debug('Modale fermée détectée:', event.target.id);
+      // Délai pour laisser Bootstrap 5 finir ses animations
+      setTimeout(() => {
+        this.cleanupOrphanBackdrops();
+      }, 200);
+    });
+    
+    // Nettoyage périodique des backdrops orphelins
+    setInterval(() => {
+      this.cleanupOrphanBackdrops();
+    }, 5000); // Vérifier toutes les 5 secondes
+  }
+  
+  /**
+   * SUPPRIMÉ - Configure les écouteurs d'événements  
+   * Event listeners maintenant gérés par SimpleClickHandler
+   */
+  setupEventListeners_DISABLED() {
     // Bouton "Voir tous les commentaires"
     const btnShowComments = document.getElementById('btn-show-comments-only');
     if (btnShowComments) {
       btnShowComments.addEventListener('click', () => {
         if (!this.currentTaskHistory) {
-          console.warn('HistoryManager: Aucune tâche sélectionnée pour afficher les commentaires');
+          this.logger.warn('Aucune tâche sélectionnée pour afficher les commentaires');
           return;
         }
         this.showAllComments();
@@ -55,7 +76,7 @@ export class HistoryManager {
     if (btnExportTask) {
       btnExportTask.addEventListener('click', () => {
         if (!this.currentTaskHistory) {
-          console.warn('HistoryManager: Aucune tâche sélectionnée pour exporter');
+          this.logger.warn('Aucune tâche sélectionnée pour exporter');
           return;
         }
         this.exportTaskHistory();
@@ -65,20 +86,80 @@ export class HistoryManager {
     // Widget d'édition de commentaire
     this.setupCommentEditWidget();
     
-    // Écouteurs pour les boutons d'historique sur les cartes
+    // Écouteurs pour les boutons d'historique sur les cartes (support des deux classes)
     document.addEventListener('click', (e) => {
-      if (e.target.matches('.btn-history, .btn-history *')) {
+      // Trouver le bouton parent si on a cliqué sur un enfant (icône, texte)
+      const button = e.target.closest('.btn-history, .btn-timeline');
+      
+      if (button) {
+        console.log('🔍 Click détecté sur bouton historique');
+        console.log('   Classes du bouton:', button.className);
+        console.log('   Task ID:', button.dataset.taskId);
+        this.logger.debug('Click détecté sur bouton historique', button);
+        
+        // Arrêter la propagation
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
         
-        const button = e.target.closest('.btn-history');
+        // Protection anti-spam: Éviter appels multiples rapides
+        if (this._historyOpening) {
+          this.logger.debug('ouverture déjà en cours - BLOQUÉ');
+          return;
+        }
+        
+        // Protection immédiate réduite
+        this._historyOpening = true;
+        setTimeout(() => { 
+          this._historyOpening = false; 
+          this.logger.debug('protection anti-spam levée');
+        }, 1000); // Reset après 1s
+        
+        // Récupérer l'ID de la tâche depuis les attributs data
         const taskId = parseInt(button.dataset.taskId, 10);
+        
+        this.logger.debug('Debug bouton:', {
+          buttonElement: button,
+          buttonClass: button.className,
+          taskIdRaw: button.dataset.taskId,
+          taskIdParsed: taskId,
+          isValidId: !isNaN(taskId)
+        });
         
         if (!isNaN(taskId)) {
           this.openTaskHistory(taskId);
         }
+        
+        // Retourner false pour empêcher toute autre action
+        return false;
       }
-    });
+    }, { capture: true }); // Capture en phase descendante pour priorité
+  }
+  
+  /**
+   * Rendre l'historique d'une tâche dans un élément donné
+   */
+  async renderTaskHistoryInElement(taskId, targetElement) {
+    try {
+      targetElement.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm"></div></div>';
+      
+      const gristData = await grist.docApi.fetchTable(TABLE_ID);
+      const mappedRecords = this.kanban.mapGristRecords(gristData);
+      const task = mappedRecords.find(r => r.id === taskId);
+      
+      if (!task) {
+        targetElement.innerHTML = '<p class="text-muted">Tâche introuvable.</p>';
+        return;
+      }
+      
+      // Réutiliser la logique existante
+      const timelineContent = this.generateTimelineContent(task);
+      targetElement.innerHTML = timelineContent;
+      
+    } catch (error) {
+      this.logger.error('Erreur rendu historique:', error);
+      targetElement.innerHTML = '<p class="text-danger">Erreur lors du chargement.</p>';
+    }
   }
   
   /**
@@ -86,18 +167,319 @@ export class HistoryManager {
    * @param {number} taskId - ID de la tâche
    */
   openTaskHistory(taskId) {
+    this.logger.info(`openTaskHistory appelé pour tâche ${taskId}`);
+    
+    // Vérification des éléments DOM
+    if (!document.getElementById('history-modal-label')) {
+      this.logger.error('Élément history-modal-label manquant');
+      return;
+    }
+    
+    // Protection: Éviter les appels multiples sur openTaskHistory (réduite)
+    const now = Date.now();
+    if (this._taskHistoryOpening === taskId && (this._lastHistoryOpen && now - this._lastHistoryOpen < 1000)) {
+      this.logger.debug(`openTaskHistory déjà en cours pour tâche ${taskId}`);
+      return;
+    }
+    
     const task = this.kanban.currentRecords?.find(r => r.id === taskId);
+    this.logger.debug('Tâche trouvée:', !!task, task ? task.titre : 'N/A');
     if (!task) {
+      this.logger.error('Tâche non trouvée pour ID:', taskId);
       displayError('Tâche non trouvée');
       return;
     }
     
+    // Marquer cette tâche comme en cours d'ouverture et horodater
+    this._taskHistoryOpening = taskId;
+    this._lastHistoryOpen = now;
+    setTimeout(() => { 
+      this._taskHistoryOpening = null; 
+      this.logger.debug(`protection openTaskHistory levée pour tâche ${taskId}`);
+    }, 500);
+    
     this.currentTaskHistory = task;
     
-    if (this.kanban.modalManager) {
-      this.kanban.modalManager.openHistoryModal(taskId);
-    } else {
-      this.renderTaskHistory(task);
+    // Vérifier si la modale d'édition est ouverte
+    const taskModal = document.getElementById('popup-tache');
+    const isTaskModalOpen = taskModal && taskModal.classList.contains('show');
+    const currentTaskIdInModal = this.kanban.modalManager?.currentTaskId;
+    
+    if (isTaskModalOpen) {
+      if (currentTaskIdInModal === taskId) {
+        // Même tâche ouverte : utiliser l'accordéon dans la modale de détail
+        this.logger.info('Même tâche ouverte - utilisation accordéon dans modale de détail');
+        if (this.kanban.modalManager) {
+          this.kanban.modalManager.loadCommentHistoryInAccordion();
+          
+          // Ouvrir l'accordéon automatiquement
+          const accordion = document.getElementById('comment-history-accordion');
+          if (accordion && !accordion.classList.contains('show')) {
+            const bsCollapse = new bootstrap.Collapse(accordion, { show: true });
+          }
+        }
+        return; // Ne pas ouvrir la modale séparée
+      } else {
+        // Tâche différente : fermer la modale d'édition d'abord
+        this.logger.info('Tâche différente ouverte - fermeture modale d\'édition');
+        if (this.kanban.modalManager?.taskModal) {
+          this.kanban.modalManager.taskModal.hide();
+          
+          // Attendre que la modale soit fermée avant d'ouvrir l'historique
+          setTimeout(() => {
+            this.openHistoryModalSeparately(task, taskId);
+          }, 300);
+          return;
+        }
+      }
+    }
+    
+    // Cas par défaut : ouvrir la modale historique séparée
+    this.openHistoryModalSeparately(task, taskId);
+  }
+  
+  /**
+   * Ouvre la modale d'historique séparée
+   * @param {object} task - Données de la tâche
+   * @param {number} taskId - ID de la tâche
+   */
+  openHistoryModalSeparately(task, taskId) {
+    this.logger.info('Ouverture modale historique séparée');
+    this.logger.debug('DOM ready state:', document.readyState);
+    this.logger.debug('Task:', task?.id, task?.titre);
+    
+    // CORRECTIF: Nettoyer les backdrops orphelins avant d'ouvrir
+    this.cleanupOrphanBackdrops();
+    
+    // Mettre à jour le titre de la modale
+    const modalTitle = document.getElementById('history-modal-label');
+    if (modalTitle) {
+      modalTitle.innerHTML = `
+        <i class="bi bi-clock-history me-2"></i>
+        Historique de la tâche #${taskId} - ${task.titre}
+      `;
+    }
+    
+    // Rendre l'historique
+    this.renderTaskHistory(task);
+    
+    // Ouvrir la modale
+    this.logger.debug('Recherche élément history-modal dans le DOM...');
+    const historyModalEl = document.getElementById('history-modal');
+    
+    // Debug complet des modales présentes
+    const allModals = document.querySelectorAll('.modal');
+    this.logger.debug('Modales trouvées dans le DOM:', Array.from(allModals).map(m => m.id));
+    
+    if (!historyModalEl) {
+      this.logger.error('Élément history-modal introuvable dans le DOM');
+      this.logger.error('DOM actuel:', document.body.innerHTML.length, 'caractères');
+      return;
+    }
+    
+    this.logger.debug('Élément history-modal trouvé:', historyModalEl);
+    
+    // Vérifier l'état de la modale avant ouverture
+    this.logger.debug('État modale avant ouverture:', {
+      hasShow: historyModalEl.classList.contains('show'),
+      display: historyModalEl.style.display,
+      visibility: historyModalEl.style.visibility,
+      modalManager: !!this.kanban.modalManager?.historyModal
+    });
+
+    // SOLUTION SIMPLE: Utiliser la même approche que la modal de test
+    this.logger.info('Création modal simple avec contenu Bootstrap');
+    
+    // Supprimer toute modal existante
+    const existingSimple = document.getElementById('simple-history-modal');
+    if (existingSimple) existingSimple.remove();
+    
+    // Créer une modal simple mais avec le contenu Bootstrap
+    const simpleModal = document.createElement('div');
+    simpleModal.id = 'simple-history-modal';
+    
+    // Nettoyer COMPLÈTEMENT le contenu Bootstrap des attributs problématiques
+    let cleanContent = historyModalEl.innerHTML;
+    
+    // Supprimer TOUS les attributs Bootstrap
+    cleanContent = cleanContent.replace(/data-bs-[^=]*="[^"]*"/g, '');
+    cleanContent = cleanContent.replace(/aria-label="Close"/g, '');
+    cleanContent = cleanContent.replace(/type="button"/g, '');
+    
+    // Remplacer les boutons de fermeture par des boutons simples ALIGNÉS À DROITE
+    cleanContent = cleanContent.replace(/<button[^>]*class="[^"]*btn-close[^"]*"[^>]*>.*?<\/button>/g, 
+      '<button onclick="document.getElementById(\'simple-history-modal\').remove()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;position:absolute;top:10px;right:15px;color:#666;">&times;</button>');
+    
+    // Supprimer les trois boutons du bas (modal-footer)
+    cleanContent = cleanContent.replace(/<div[^>]*class="[^"]*modal-footer[^"]*"[^>]*>[\s\S]*?<\/div>/g, '');
+    
+    // Supprimer les classes Bootstrap problématiques des boutons restants
+    cleanContent = cleanContent.replace(/class="([^"]*)btn[^"]*"/g, (match, otherClasses) => {
+      const cleanClasses = otherClasses.replace(/\s*btn[^\s]*/g, '').trim();
+      return cleanClasses ? `class="${cleanClasses}"` : '';
+    });
+    
+    // Corriger les liens d'édition de tâche pour qu'ils ferment la modal et ouvrent l'édition
+    cleanContent = cleanContent.replace(/onclick="[^"]*openTaskModal[^"]*"/g, 
+      'onclick="document.getElementById(\'simple-history-modal\').remove(); window.kanbanManager.modalManager.openTaskModal(' + taskId + ');"');
+    
+    simpleModal.innerHTML = `
+      <div style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1060;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      " onclick="if(event.target === this) document.getElementById('simple-history-modal').remove();">
+        <div style="
+          background: white;
+          border-radius: 8px;
+          max-width: 1000px;
+          width: 90%;
+          max-height: 80vh;
+          overflow: hidden;
+          box-shadow: 0 5px 15px rgba(0,0,0,.5);
+          position: relative;
+        ">
+          ${cleanContent}
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(simpleModal);
+    
+    // Ajouter la gestion Escape
+    const escapeHandler = (e) => {
+      if (e.key === 'Escape') {
+        document.getElementById('simple-history-modal')?.remove();
+        document.removeEventListener('keydown', escapeHandler);
+      }
+    };
+    document.addEventListener('keydown', escapeHandler);
+    
+    this.logger.info('Modal simple créée avec succès');
+  }
+  
+  /**
+   * Ferme la modal d'historique manuellement
+   */
+  closeHistoryModal() {
+    const historyModalEl = document.getElementById('history-modal');
+    if (historyModalEl) {
+      historyModalEl.style.display = 'none';
+      historyModalEl.classList.remove('show');
+      historyModalEl.removeAttribute('aria-modal');
+      historyModalEl.setAttribute('aria-hidden', 'true');
+    }
+    
+    // Supprimer le backdrop
+    const backdrop = document.querySelector('.modal-backdrop');
+    if (backdrop) {
+      backdrop.remove();
+    }
+    
+    // Supprimer la classe du body
+    document.body.classList.remove('modal-open');
+    
+    this.logger.info('Modal d\'historique fermée manuellement');
+  }
+  
+  /**
+   * Force l'affichage de la modale d'historique
+   * @param {HTMLElement} modalEl - Élément de la modale
+   */
+  forceShowModal(modalEl) {
+    this.logger.info('Test: Création d\'une modal HTML simple');
+    
+    // Supprimer toute modal de test existante
+    const existingTest = document.getElementById('test-simple-modal');
+    if (existingTest) existingTest.remove();
+    
+    // Créer une modal simple sans Bootstrap
+    const testModal = document.createElement('div');
+    testModal.id = 'test-simple-modal';
+    testModal.innerHTML = `
+      <div style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9998;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      ">
+        <div style="
+          background: white;
+          padding: 30px;
+          border-radius: 8px;
+          max-width: 600px;
+          width: 90%;
+          max-height: 80vh;
+          overflow-y: auto;
+          box-shadow: 0 5px 15px rgba(0,0,0,.5);
+        ">
+          <h3>Modal de Test Simple</h3>
+          <p>Si vous voyez ceci, les modals HTML peuvent s'afficher !</p>
+          <hr>
+          <div id="test-modal-content">
+            ${modalEl.innerHTML}
+          </div>
+          <hr>
+          <button onclick="document.getElementById('test-simple-modal').remove()" style="
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+          ">
+            Fermer cette modal de test
+          </button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(testModal);
+    this.logger.info('Modal de test créée. Visible ?');
+    
+    // Log pour debug
+    this.logger.info('Comparaison:', {
+      modalBootstrap: modalEl.id,
+      modalBootstrapVisible: window.getComputedStyle(modalEl).display,
+      modalTestVisible: 'devrait être visible'
+    });
+  }
+  
+  /**
+   * Nettoie les backdrops orphelins
+   */
+  cleanupOrphanBackdrops() {
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    let cleaned = 0;
+    
+    backdrops.forEach(backdrop => {
+      // Vérifier s'il y a une modale visible correspondante
+      const visibleModals = document.querySelectorAll('.modal.show');
+      
+      if (visibleModals.length === 0) {
+        // Aucune modale visible, supprimer le backdrop
+        backdrop.remove();
+        cleaned++;
+        this.logger.debug('Backdrop orphelin supprimé');
+      }
+    });
+    
+    if (cleaned > 0) {
+      document.body.classList.remove('modal-open');
+      this.logger.info(`${cleaned} backdrop(s) orphelin(s) nettoyé(s)`);
     }
   }
   
@@ -106,12 +488,12 @@ export class HistoryManager {
    * @param {object} task - Données de la tâche
    */
   renderTaskHistory(task) {
-    // CRITIQUE: Sauvegarder la tâche courante pour les boutons d'action
+    // Sauvegarder la tâche courante pour les boutons d'action
     this.currentTaskHistory = task;
-    console.log('HistoryManager: Tâche sélectionnée pour historique:', task?.id, task?.titre);
+    this.logger.info('Tâche sélectionnée pour historique:', task?.id, task?.titre);
     
     const historyData = this.parseTaskHistory(task);
-    console.log('HistoryManager: Historique parsé:', historyData.comments?.length, 'commentaires');
+    this.logger.debug('Historique parsé:', historyData.comments?.length, 'commentaires');
     
     this.renderHistoryStats(historyData);
     this.renderHistoryTimeline(historyData);
@@ -141,7 +523,7 @@ export class HistoryManager {
       }
     }
     
-    // ANCIEN SYSTÈME SUPPRIMÉ: Ne plus parser les commentaires depuis description
+    // Ne plus parser les commentaires depuis description (ancien système)
     // Tous les commentaires doivent maintenant être dans notes.history
     
     // Parser les entrées depuis les notes JSON (nouveau système)
@@ -157,17 +539,17 @@ export class HistoryManager {
               // Extraire le contenu du commentaire de façon sûre
               let commentContent = entry.newValue || entry.details || '';
               
-              // CAS SPÉCIFIQUE MIGRATION: Si c'est du JSON complet, extraire le content
+              // Si c'est du JSON complet, extraire le content
               if (commentContent.startsWith('{') && commentContent.includes('"content"')) {
                 try {
                   const jsonData = JSON.parse(commentContent);
                   if (jsonData.content) {
                     commentContent = jsonData.content;
-                    console.warn('Migration: JSON comment extracted', entry.timestamp);
+                    this.logger.debug('Migration: JSON comment extracted', entry.timestamp);
                   }
                 } catch (e) {
                   // Si parsing échoue, utiliser le contenu brut
-                  console.warn('Failed to parse comment JSON:', e);
+                  this.logger.warn('Failed to parse comment JSON:', e);
                 }
               }
               
@@ -176,7 +558,7 @@ export class HistoryManager {
               
               // Si après extraction il reste du JSON, c'est un cas problématique mais on garde l'info
               if (commentContent.startsWith('{') && commentContent.includes('"timestamp"')) {
-                console.warn('Problematic JSON comment preserved for user review:', entry.timestamp);
+                this.logger.warn('Problematic JSON comment preserved for user review:', entry.timestamp);
                 // On garde le commentaire mais on le marque comme problématique
                 commentContent = `[MIGRATION] Données à vérifier: ${commentContent.substring(0, 100)}...`;
               }
@@ -202,8 +584,28 @@ export class HistoryManager {
                   user: entry.user || 'Utilisateur'
                 });
               } else {
-                this.logger?.debug('Changement de statut invalide ignoré:', entry.details);
+                this.logger.debug('Changement de statut invalide ignoré:', entry.details);
               }
+            } else if (entry.action === 'jalons_update') {
+              // Changements de jalons
+              const normalizedTimestamp = this.normalizeTimestamp(entry.timestamp);
+              history.push({
+                timestamp: normalizedTimestamp,
+                statut: entry.status || task.statut,
+                date_entree: normalizedTimestamp,
+                note: `🎯 Jalons: ${entry.details}`,
+                user: entry.user || 'Utilisateur'
+              });
+            } else if (entry.action === 'strategies_update') {
+              // Changements de stratégies
+              const normalizedTimestamp = this.normalizeTimestamp(entry.timestamp);
+              history.push({
+                timestamp: normalizedTimestamp,
+                statut: entry.status || task.statut,
+                date_entree: normalizedTimestamp,
+                note: `🎯 Stratégies: ${entry.details}`,
+                user: entry.user || 'Utilisateur'
+              });
             } else if (entry.action === 'update' || entry.action === 'field_change') {
               // Filtrer les doublons de commentaires (éviter "Commentaire modifié:")
               const isCommentUpdate = entry.details && 
@@ -211,17 +613,21 @@ export class HistoryManager {
                  entry.details.includes('Commentaire ajouté:'));
               
               if (!isCommentUpdate) {
-                // Ajouter aux mises à jour générales (sauf commentaires)
-                const normalizedTimestamp = this.normalizeTimestamp(entry.timestamp);
-                history.push({
-                  timestamp: normalizedTimestamp,
-                  statut: entry.status || task.statut,
-                  date_entree: normalizedTimestamp,
-                  note: entry.action === 'field_change' ? entry.details : `Mise à jour: ${entry.details}`,
-                  user: entry.user || 'Utilisateur'
-                });
+                // Nettoyer et extraire l'information utile
+                const cleanNote = this.extractFieldChangeInfo(entry.details);
+                
+                if (cleanNote) {
+                  const normalizedTimestamp = this.normalizeTimestamp(entry.timestamp);
+                  history.push({
+                    timestamp: normalizedTimestamp,
+                    statut: entry.status || task.statut,
+                    date_entree: normalizedTimestamp,
+                    note: cleanNote,
+                    user: entry.user || 'Utilisateur'
+                  });
+                }
               } else {
-                this.logger?.debug('Doublon de commentaire ignoré dans update:', entry.details);
+                this.logger.debug('Doublon de commentaire ignoré dans update:', entry.details);
               }
             }
           });
@@ -248,9 +654,95 @@ export class HistoryManager {
     };
   }
   
-  // FONCTION SUPPRIMÉE: parseCommentsFromDescription()
+  // parseCommentsFromDescription() supprimée
   // Les commentaires sont maintenant exclusivement dans notes.history
   
+  /**
+   * Extrait l'information utile d'une modification de champ
+   * @param {string} details - Détails bruts de la modification
+   * @returns {string|null} Information nettoyée ou null si pas pertinente
+   */
+  extractFieldChangeInfo(details) {
+    if (!details) return null;
+    
+    // Extraire les modifications d'équipe/responsables
+    const teamMatch = details.match(/Équipe modifiée:\s*([^→]+)→\s*(.+)/);
+    if (teamMatch) {
+      const avant = teamMatch[1].trim();
+      const apres = teamMatch[2].trim();
+      return `Équipe modifiée: ${avant} → ${apres}`;
+    }
+    
+    // Extraire les modifications de responsables
+    const responsableMatch = details.match(/Responsables?\s+modifiée?s?:\s*([^→]+)→\s*(.+)/);
+    if (responsableMatch) {
+      const avant = responsableMatch[1].trim();
+      const apres = responsableMatch[2].trim();
+      return `Responsables modifiés: ${avant} → ${apres}`;
+    }
+    
+    // Extraire les modifications de bureau
+    const bureauMatch = details.match(/Bureau modifié:\s*([^→]+)→\s*(.+)/);
+    if (bureauMatch) {
+      const avant = bureauMatch[1].trim();
+      const apres = bureauMatch[2].trim();
+      return `Bureau modifié: ${avant} → ${apres}`;
+    }
+    
+    // Extraire les modifications de titre
+    const titreMatch = details.match(/Titre modifié:\s*([^→]+)→\s*(.+)/);
+    if (titreMatch) {
+      const avant = titreMatch[1].trim();
+      const apres = titreMatch[2].trim();
+      // Limiter la longueur pour la lisibilité
+      const avantCourt = avant.length > 30 ? avant.substring(0, 30) + '...' : avant;
+      const apresCourt = apres.length > 30 ? apres.substring(0, 30) + '...' : apres;
+      return `Titre modifié: ${avantCourt} → ${apresCourt}`;
+    }
+    
+    // Extraire les modifications de projet
+    const projetMatch = details.match(/Projet modifié:\s*([^→]+)→\s*(.+)/);
+    if (projetMatch) {
+      const avant = projetMatch[1].trim();
+      const apres = projetMatch[2].trim();
+      return `Projet modifié: ${avant} → ${apres}`;
+    }
+    
+    // Extraire les modifications de priorité/urgence/impact
+    const prioriteMatch = details.match(/(Urgence|Impact|Priorité)\s+modifiée?:\s*([^→]+)→\s*(.+)/);
+    if (prioriteMatch) {
+      const champ = prioriteMatch[1];
+      const avant = prioriteMatch[2].trim();
+      const apres = prioriteMatch[3].trim();
+      return `${champ} modifiée: ${avant} → ${apres}`;
+    }
+    
+    // Extraire les modifications de date
+    const dateMatch = details.match(/Date\s+[^:]*modifiée:\s*([^→]+)→\s*(.+)/);
+    if (dateMatch) {
+      const avant = dateMatch[1].trim();
+      const apres = dateMatch[2].trim();
+      return `Date d'échéance modifiée: ${avant} → ${apres}`;
+    }
+    
+    // Pour toutes les autres modifications, essayer d'extraire le pattern général "X modifié: avant → après"
+    const generalMatch = details.match(/([^:]+)\s+modifiée?s?:\s*([^→]+)→\s*(.+)/);
+    if (generalMatch) {
+      const champ = generalMatch[1].trim();
+      const avant = generalMatch[2].trim();
+      const apres = generalMatch[3].trim();
+      
+      // Limiter la longueur si c'est trop long
+      const avantCourt = avant.length > 50 ? avant.substring(0, 50) + '...' : avant;
+      const apresCourt = apres.length > 50 ? apres.substring(0, 50) + '...' : apres;
+      
+      return `${champ} modifié: ${avantCourt} → ${apresCourt}`;
+    }
+    
+    // Si pas de pattern reconnu, ignorer (probablement du contenu de tâche)
+    return null;
+  }
+
   /**
    * Convertit un timestamp en objet Date valide
    * @param {*} timestamp - Timestamp à convertir
@@ -356,7 +848,8 @@ export class HistoryManager {
       creationDate: null,
       lastModified: null,
       totalDuration: 0,
-      averageStepDuration: 0
+      averageStepDuration: 0,
+      durationByStatus: {} // NOUVEAU: durée par statut
     };
     
     if (history.length > 0) {
@@ -384,6 +877,9 @@ export class HistoryManager {
         stats.totalDuration = calculateDurationMinutes(stats.creationDate, stats.lastModified);
         stats.averageStepDuration = Math.round(stats.totalDuration / history.length);
       }
+      
+      // NOUVEAU: Calculer la durée par statut
+      stats.durationByStatus = this.calculateDurationByStatus(sortedHistory, task);
     }
     
     // Inclure les commentaires dans la date de dernière modification
@@ -395,6 +891,45 @@ export class HistoryManager {
     }
     
     return stats;
+  }
+  
+  /**
+   * Calcule la durée passée dans chaque statut
+   * @param {Array} sortedHistory - Historique trié chronologiquement
+   * @param {object} task - Données de la tâche
+   * @returns {object} Durées par statut en minutes
+   */
+  calculateDurationByStatus(sortedHistory, task) {
+    const durations = {};
+    const now = new Date();
+    
+    for (let i = 0; i < sortedHistory.length; i++) {
+      const currentEntry = sortedHistory[i];
+      const nextEntry = sortedHistory[i + 1];
+      
+      // Extraire le statut "to" de la note (ex: "from À faire to En cours")
+      let status = null;
+      if (currentEntry.note) {
+        const match = currentEntry.note.match(/to (.+)$/);
+        if (match) {
+          status = match[1].trim();
+        }
+      }
+      
+      if (status) {
+        const startTime = new Date(currentEntry.timestamp);
+        const endTime = nextEntry ? new Date(nextEntry.timestamp) : now;
+        
+        const durationMinutes = calculateDurationMinutes(startTime, endTime);
+        
+        if (!durations[status]) {
+          durations[status] = 0;
+        }
+        durations[status] += durationMinutes;
+      }
+    }
+    
+    return durations;
   }
   
   /**
@@ -418,7 +953,7 @@ export class HistoryManager {
         <div class="col-md-2 text-center">
           <div class="stat-item">
             <div class="stat-value">${stats.totalSteps}</div>
-            <div class="stat-label">Étapes</div>
+            <div class="stat-label">Changements</div>
           </div>
         </div>
         <div class="col-md-2 text-center">
@@ -440,6 +975,46 @@ export class HistoryManager {
           </div>
         </div>
       </div>
+      
+      <!-- NOUVEAU: Durées par statut -->
+      ${this.generateStatusDurationHtml(stats.durationByStatus)}
+    `;
+  }
+  
+  /**
+   * Génère l'HTML pour l'affichage des durées par statut
+   * @param {object} durationByStatus - Durées par statut
+   * @returns {string} HTML
+   */
+  generateStatusDurationHtml(durationByStatus) {
+    if (!durationByStatus || Object.keys(durationByStatus).length === 0) {
+      return '';
+    }
+    
+    const statusItems = Object.entries(durationByStatus)
+      .filter(([status, duration]) => duration > 0)
+      .sort(([,a], [,b]) => b - a) // Tri par durée décroissante
+      .map(([status, duration]) => `
+        <div class="col-md-3 col-sm-6 mb-2">
+          <div class="stat-item status-duration">
+            <div class="stat-value">${formatDuration(duration)}</div>
+            <div class="stat-label">${status}</div>
+          </div>
+        </div>
+      `).join('');
+    
+    if (!statusItems) return '';
+    
+    return `
+      <div class="mt-3">
+        <h6 class="text-muted mb-2">
+          <i class="bi bi-clock-history me-1"></i>
+          Temps passé par statut
+        </h6>
+        <div class="row g-2">
+          ${statusItems}
+        </div>
+      </div>
     `;
   }
   
@@ -453,8 +1028,23 @@ export class HistoryManager {
     
     const { timeline, task } = historyData;
     
+    // En-tête avec titre de tâche cliquable
+    let headerHTML = '';
+    if (task && task.titre) {
+      headerHTML = `
+        <div class="timeline-header" style="margin-bottom: 20px; padding: 15px; background: #e3f2fd; border-radius: 6px;">
+          <h5 style="margin: 0; color: #1565c0;">
+            <span class="timeline-task-title" onclick="window.kanbanManager?.modalManager?.openTaskModal(${task.id})">
+              ${task.titre}
+            </span>
+          </h5>
+          <small class="text-muted">Cliquez sur le titre pour éditer la tâche</small>
+        </div>
+      `;
+    }
+    
     if (timeline.length === 0) {
-      timelineContainer.innerHTML = `
+      timelineContainer.innerHTML = headerHTML + `
         <div class="text-center text-muted py-4">
           <i class="bi bi-clock-history fs-1"></i>
           <p class="mt-2">Aucun historique disponible</p>
@@ -463,7 +1053,7 @@ export class HistoryManager {
       return;
     }
     
-    let timelineHTML = '';
+    let timelineHTML = headerHTML + '<div class="timeline-container">';
     
     timeline.forEach((entry, index) => {
       if (entry.type === 'status_change') {
@@ -473,6 +1063,7 @@ export class HistoryManager {
       }
     });
     
+    timelineHTML += '</div>';
     timelineContainer.innerHTML = timelineHTML;
   }
   
@@ -526,18 +1117,15 @@ export class HistoryManager {
     }
     
     return `
-      <div class="timeline-entry ${currentClass}">
-        <div class="timeline-status">
-          ${statusIcon}
-          ${entry.statut}
-          ${isCurrent ? '<span class="badge bg-success ms-2">Actuel</span>' : ''}
+      <div class="timeline-entry">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <div>
+            <strong>${entry.statut}</strong>
+            ${isCurrent ? '<span class="badge bg-success ms-2">Actuel</span>' : ''}
+          </div>
+          <small class="text-muted">${formattedDate}</small>
         </div>
-        <div class="timeline-dates">
-          <i class="bi bi-calendar3"></i>
-          ${formattedDate}
-        </div>
-        ${durationHTML}
-        ${noteHTML}
+        ${entry.note ? `<div class="text-muted">${entry.note}</div>` : ''}
       </div>
     `;
   }
@@ -566,25 +1154,19 @@ export class HistoryManager {
       entry.timestamp.toISOString() : 
       String(entry.timestamp);
     const commentId = `comment-${timestampString.replace(/[^\d]/g, '')}`;
-    console.log('HistoryManager: Rendu commentaire avec bouton édition:', commentId);
+    this.logger.debug('Rendu commentaire avec bouton édition:', commentId);
     
     return `
-      <div class="timeline-entry timeline-entry-comment" data-comment-id="${commentId}">
-        <div class="timeline-status">
-          <i class="bi bi-chat-square-text text-info"></i>
-          Commentaire${latestBadge}
-          <button class="btn btn-sm btn-outline-secondary btn-edit-comment" 
-                  data-comment-id="${commentId}"
-                  title="Éditer ce commentaire">
-            ✏️
-          </button>
+      <div class="timeline-entry">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <div>
+            <strong>💬 Commentaire</strong>
+            ${latestBadge}
+          </div>
+          <small class="text-muted">${formattedDate}${userInfo}</small>
         </div>
-        <div class="timeline-dates">
-          <i class="bi bi-calendar3"></i>
-          ${formattedDate}${userInfo}
-        </div>
-        <div class="timeline-comment">
-          <div class="comment-content" data-original="${entry.content.replace(/"/g, '&quot;')}">${entry.content}</div>
+        <div style="margin-top: 8px; padding: 8px; background: white; border-radius: 4px;">
+          ${entry.content}
         </div>
       </div>
     `;
@@ -724,7 +1306,7 @@ export class HistoryManager {
       displaySuccess('Historique exporté avec succès');
       
     } catch (error) {
-      console.error('HistoryManager: Erreur export:', error);
+      this.logger.error('Erreur export:', error);
       displayError('Erreur lors de l\'export de l\'historique');
     }
   }
@@ -778,7 +1360,7 @@ export class HistoryManager {
       displaySuccess(`Historique de ${this.kanban.currentRecords.length} tâches exporté`);
       
     } catch (error) {
-      console.error('HistoryManager: Erreur export complet:', error);
+      this.logger.error('Erreur export complet:', error);
       displayError('Erreur lors de l\'export complet');
     }
   }
@@ -828,21 +1410,25 @@ export class HistoryManager {
     // Créer le widget d'édition s'il n'existe pas
     this.createCommentEditWidget();
     
-    // Écouteur pour les boutons d'édition
+    // Écouteur pour les boutons d'édition (plus précis, sans logging)
     document.addEventListener('click', (e) => {
+      // Ne traiter que les clics sur les boutons d'édition
       if (e.target.matches('.btn-edit-comment, .btn-edit-comment *')) {
         e.preventDefault();
         e.stopPropagation();
         
         const button = e.target.closest('.btn-edit-comment');
+        if (!button) {
+          return;
+        }
+        
         const commentId = button.dataset.commentId;
-        console.log('HistoryManager: Clic sur bouton édition commentaire:', commentId);
         this.openCommentEditWidget(commentId);
       }
     });
     
-    // Bouton fermer
-    const btnClose = document.getElementById('btn-close-comment-edit');
+    // Bouton fermer (IDs uniques pour accordéon)
+    const btnClose = document.getElementById('accordion-btn-close-comment-edit');
     if (btnClose) {
       btnClose.addEventListener('click', () => {
         this.closeCommentEditWidget();
@@ -850,7 +1436,7 @@ export class HistoryManager {
     }
     
     // Bouton annuler
-    const btnCancel = document.getElementById('btn-cancel-comment-edit');
+    const btnCancel = document.getElementById('accordion-btn-cancel-comment-edit');
     if (btnCancel) {
       btnCancel.addEventListener('click', () => {
         this.closeCommentEditWidget();
@@ -858,69 +1444,85 @@ export class HistoryManager {
     }
     
     // Bouton sauvegarder
-    const btnSave = document.getElementById('btn-save-comment-edit');
+    const btnSave = document.getElementById('accordion-btn-save-comment-edit');
     if (btnSave) {
       btnSave.addEventListener('click', () => {
+        this.logger.debug('Bouton sauvegarder cliqué', this);
         this.saveCommentEdit();
       });
+    } else {
+      this.logger.error('Bouton accordion-btn-save-comment-edit non trouvé');
     }
     
-    // Fermer avec l'overlay
-    const overlay = document.querySelector('.comment-edit-overlay');
-    if (overlay) {
-      overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) {
+    // Fermer avec l'overlay (seulement celui de l'accordéon)
+    setTimeout(() => {
+      const overlay = document.querySelector('#accordion-comment-edit-widget .comment-edit-overlay');
+      if (overlay) {
+        overlay.addEventListener('click', (e) => {
+          // Fermer si on clique directement sur l'overlay (pas sur le modal)
+          if (e.target === overlay) {
+            this.closeCommentEditWidget();
+          }
+        });
+      }
+    }, 100);
+    
+    // Fermer avec Escape (éviter les listeners multiples)
+    if (!this.escapeListenerAdded) {
+      this.escapeListenerAdded = true;
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && this.isCommentEditOpen()) {
           this.closeCommentEditWidget();
         }
       });
     }
-    
-    // Fermer avec Escape
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && this.isCommentEditOpen()) {
-        this.closeCommentEditWidget();
-      }
-    });
   }
   
   /**
    * Crée le widget d'édition de commentaire dans le DOM
    */
   createCommentEditWidget() {
-    // Vérifier si le widget existe déjà
-    if (document.getElementById('comment-edit-widget')) {
-      console.log('HistoryManager: Widget d\'édition existe déjà');
-      return;
+    // Supprimer le widget existant s'il y en a un
+    const existingWidget = document.getElementById('accordion-comment-edit-widget');
+    if (existingWidget) {
+      this.logger.debug('Suppression du widget existant');
+      existingWidget.remove();
     }
     
-    console.log('HistoryManager: Création du widget d\'édition de commentaires');
+    this.logger.debug('Création du widget d\'édition de commentaires pour accordéon');
     
-    // Créer le HTML du widget
+    // Créer le HTML du widget avec structure corrigée
     const widgetHTML = `
-      <div id="comment-edit-widget" class="comment-edit-overlay" style="display: none;">
-        <div class="comment-edit-modal">
-          <div class="comment-edit-header">
-            <h5><i class="bi bi-pencil me-2"></i>Édition de commentaire</h5>
-            <button type="button" id="btn-close-comment-edit" class="btn-close" aria-label="Fermer">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-          
-          <div class="comment-edit-body">
-            <div class="mb-2">
-              <small class="text-muted">Date: <span id="comment-edit-date"></span></small>
+      <div id="accordion-comment-edit-widget" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1070;">
+        <div class="comment-edit-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; pointer-events: none;">
+          <div class="comment-edit-modal-container" style="pointer-events: auto;">
+          <div class="comment-edit-modal" style="background: white; border-radius: 8px; max-width: 700px; width: 95%; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+            <div class="comment-edit-header" style="padding: 1rem; border-bottom: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: center;">
+              <h5 style="margin: 0; color: #333;"><i class="bi bi-pencil me-2"></i>Édition de commentaire</h5>
+              <button type="button" id="accordion-btn-close-comment-edit" class="btn-close" aria-label="Fermer" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6c757d;">
+                <span aria-hidden="true">&times;</span>
+              </button>
             </div>
-            <textarea id="comment-edit-text" class="form-control" rows="4" 
-                      placeholder="Modifiez votre commentaire..."></textarea>
+            
+            <div class="comment-edit-body" style="padding: 1rem;">
+              <div class="mb-2">
+                <small class="text-muted">Date: <span id="accordion-comment-edit-date"></span></small>
+              </div>
+              <textarea id="accordion-comment-edit-text" rows="6" 
+                        placeholder="Modifiez votre commentaire..." 
+                        style="width: 100%; min-height: 120px; padding: 10px; border: 2px solid #007bff; background: white; font-family: inherit; font-size: 14px; line-height: 1.4; resize: vertical; outline: none;"
+                        ></textarea>
+            </div>
+            
+            <div class="comment-edit-footer" style="padding: 1rem; border-top: 1px solid #dee2e6; display: flex; justify-content: flex-end; gap: 0.5rem;">
+              <button type="button" id="accordion-btn-cancel-comment-edit" class="btn btn-secondary">
+                <i class="bi bi-x-circle me-1"></i>Annuler
+              </button>
+              <button type="button" id="accordion-btn-save-comment-edit" class="btn btn-primary">
+                <i class="bi bi-check-circle me-1"></i>Sauvegarder
+              </button>
+            </div>
           </div>
-          
-          <div class="comment-edit-footer">
-            <button type="button" id="btn-cancel-comment-edit" class="btn btn-secondary">
-              <i class="bi bi-x-circle me-1"></i>Annuler
-            </button>
-            <button type="button" id="btn-save-comment-edit" class="btn btn-primary">
-              <i class="bi bi-check-circle me-1"></i>Sauvegarder
-            </button>
           </div>
         </div>
       </div>
@@ -929,8 +1531,50 @@ export class HistoryManager {
     // Ajouter au body
     document.body.insertAdjacentHTML('beforeend', widgetHTML);
     
-    // Ajouter les styles CSS
-    this.addCommentEditStyles();
+    // Attacher les event listeners après création
+    this.attachCommentEditListeners();
+  }
+  
+  /**
+   * Attache les event listeners au widget d'édition
+   */
+  attachCommentEditListeners() {
+    const textarea = document.getElementById('accordion-comment-edit-text');
+    const closeBtn = document.getElementById('accordion-btn-close-comment-edit');
+    const cancelBtn = document.getElementById('accordion-btn-cancel-comment-edit');
+    const saveBtn = document.getElementById('accordion-btn-save-comment-edit');
+    
+    this.logger.debug('Attachement des listeners:', {
+      textarea: !!textarea,
+      closeBtn: !!closeBtn,
+      cancelBtn: !!cancelBtn,
+      saveBtn: !!saveBtn
+    });
+    
+    // Event listeners pour les boutons
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => this.closeCommentEditWidget());
+    }
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', () => this.closeCommentEditWidget());
+    }
+    if (saveBtn) {
+      saveBtn.addEventListener('click', () => this.saveCommentEdit());
+    }
+    
+    // Textarea fonctionnel avec gestion des touches
+    if (textarea) {
+      textarea.tabIndex = 0;
+      
+      // Empêcher la propagation des touches pour éviter la fermeture de modales
+      textarea.addEventListener('keydown', (e) => {
+        e.stopPropagation(); // Empêche les listeners globaux
+      });
+      
+      textarea.addEventListener('keyup', (e) => {
+        e.stopPropagation(); // Empêche les listeners globaux
+      });
+    }
   }
   
   /**
@@ -951,7 +1595,7 @@ export class HistoryManager {
           width: 100%;
           height: 100%;
           background-color: rgba(0, 0, 0, 0.5);
-          z-index: 1050;
+          z-index: 1070;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -960,8 +1604,8 @@ export class HistoryManager {
         .comment-edit-modal {
           background: white;
           border-radius: 8px;
-          max-width: 500px;
-          width: 90%;
+          max-width: 700px;
+          width: 95%;
           max-height: 80vh;
           overflow-y: auto;
           box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
@@ -1016,6 +1660,16 @@ export class HistoryManager {
           align-items: center;
           justify-content: space-between;
         }
+        
+        .timeline-status-left {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        
+        .timeline-status-text {
+          margin-left: 0.25rem;
+        }
       </style>
     `;
     
@@ -1027,16 +1681,44 @@ export class HistoryManager {
    * @param {string} commentId - ID du commentaire
    */
   openCommentEditWidget(commentId) {
+    this.logger.debug('openCommentEditWidget appelé avec ID:', commentId);
     const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
+    this.logger.debug('Element commentaire trouvé:', commentElement);
+    
     if (!commentElement) {
-      console.error('Commentaire non trouvé:', commentId);
+      this.logger.error('Commentaire non trouvé pour ID:', commentId);
+      this.logger.debug('Éléments avec data-comment-id disponibles:', 
+        document.querySelectorAll('[data-comment-id]'));
       return;
     }
     
     const contentElement = commentElement.querySelector('.comment-content');
     const originalContent = contentElement.dataset.original || contentElement.textContent;
-    const dateElement = commentElement.querySelector('.timeline-dates');
-    const dateText = dateElement.textContent.trim();
+    
+    // Chercher l'élément de date (compatible modale historique ET accordéon)
+    const dateElement = commentElement.querySelector('.timeline-entry-timestamp') || 
+                       commentElement.querySelector('.comment-timestamp') ||
+                       commentElement.querySelector('.timeline-dates') || 
+                       commentElement.querySelector('.comment-meta') ||
+                       commentElement.querySelector('.timeline-meta') ||
+                       commentElement.querySelector('.text-muted') ||
+                       commentElement.querySelector('[class*="timestamp"]') ||
+                       commentElement.querySelector('[class*="date"]');
+    
+    let dateText = 'Date inconnue';
+    if (dateElement) {
+      dateText = dateElement.textContent.trim();
+      this.logger.debug('Date trouvée:', dateText, 'depuis élément:', dateElement.className);
+    } else {
+      this.logger.warn('Aucun élément de date trouvé dans:', commentElement.innerHTML);
+      // Essayer de trouver une date dans le texte
+      const dateRegex = /\d{1,2}\/\d{1,2}\/\d{4}|\d{4}-\d{2}-\d{2}/;
+      const match = commentElement.textContent.match(dateRegex);
+      if (match) {
+        dateText = match[0];
+        this.logger.debug('Date extraite du texte:', dateText);
+      }
+    }
     
     // Stocker les informations du commentaire en cours d'édition
     this.currentEditingComment = {
@@ -1045,32 +1727,70 @@ export class HistoryManager {
       originalContent: originalContent
     };
     
-    // Remplir le widget
-    document.getElementById('comment-edit-text').value = originalContent;
-    document.getElementById('comment-edit-date').textContent = dateText;
+    // Remplir le widget (IDs uniques pour accordéon)
+    const textArea = document.getElementById('accordion-comment-edit-text');
+    const dateSpan = document.getElementById('accordion-comment-edit-date');
+    
+    if (!textArea || !dateSpan) {
+      this.logger.error('Éléments du widget accordéon non trouvés');
+      return;
+    }
+    
+    textArea.value = originalContent;
+    dateSpan.textContent = dateText;
+    
+    // S'assurer que le textarea est activé
+    textArea.disabled = false;
+    textArea.readOnly = false;
     
     // Afficher le widget
-    const widget = document.getElementById('comment-edit-widget');
+    const widget = document.getElementById('accordion-comment-edit-widget');
+    if (!widget) {
+      this.logger.error('Widget accordéon non trouvé');
+      return;
+    }
+    
+    // Sauvegarder l'ID du commentaire dans le widget pour récupération (multiples sources)
+    widget.dataset.commentId = commentId;
+    textArea.dataset.commentId = commentId;
+    textArea.setAttribute('data-comment-id', commentId);
+    textArea.setAttribute('data-original', originalContent);
+    
     widget.style.display = 'block';
     
-    // Focus sur le textarea
+    // Focus avec debugging
+    this.logger.debug('Tentative de focus sur textarea:', {
+      textArea: !!textArea,
+      disabled: textArea.disabled,
+      readOnly: textArea.readOnly,
+      style: textArea.style.display,
+      visible: textArea.offsetParent !== null
+    });
+    
+    // Focus avec sélection automatique du texte
     setTimeout(() => {
-      document.getElementById('comment-edit-text').focus();
-    }, 100);
+      textArea.focus();
+      textArea.select(); // Sélectionne tout le texte
+    }, 150);
   }
   
   /**
    * Ferme le widget d'édition
    */
   closeCommentEditWidget() {
-    const widget = document.getElementById('comment-edit-widget');
-    widget.style.display = 'none';
+    const widget = document.getElementById('accordion-comment-edit-widget');
+    if (widget) {
+      widget.style.display = 'none';
+    }
     
     this.currentEditingComment = null;
     
-    // Nettoyer le formulaire
-    document.getElementById('comment-edit-text').value = '';
-    document.getElementById('comment-edit-date').textContent = '';
+    // Nettoyer le formulaire (IDs uniques pour accordéon)
+    const textArea = document.getElementById('accordion-comment-edit-text');
+    const dateSpan = document.getElementById('accordion-comment-edit-date');
+    
+    if (textArea) textArea.value = '';
+    if (dateSpan) dateSpan.textContent = '';
   }
   
   /**
@@ -1078,7 +1798,7 @@ export class HistoryManager {
    * @returns {boolean}
    */
   isCommentEditOpen() {
-    const widget = document.getElementById('comment-edit-widget');
+    const widget = document.getElementById('accordion-comment-edit-widget');
     return widget && widget.style.display === 'block';
   }
   
@@ -1086,12 +1806,74 @@ export class HistoryManager {
    * Sauvegarde les modifications du commentaire
    */
   async saveCommentEdit() {
+    this.logger.info('saveCommentEdit appelé');
+    this.logger.debug('currentEditingComment:', this.currentEditingComment);
+    
+    // Debug initial complet
+    this.logger.debug('État initial complet:', {
+      hasCurrentEditingComment: !!this.currentEditingComment,
+      widgetExists: !!document.getElementById('accordion-comment-edit-widget'),
+      textAreaExists: !!document.getElementById('accordion-comment-edit-text'),
+      dateSpanExists: !!document.getElementById('accordion-comment-edit-date')
+    });
+    
+    // Si pas de commentaire en cours, essayer de récupérer depuis le widget ouvert
     if (!this.currentEditingComment) {
-      console.error('Aucun commentaire en cours d\'édition');
-      return;
+      const widget = document.getElementById('accordion-comment-edit-widget');
+      const textArea = document.getElementById('accordion-comment-edit-text');
+      const dateSpan = document.getElementById('accordion-comment-edit-date');
+      
+      this.logger.debug('État détaillé du widget:', {
+        widget: !!widget,
+        widgetDisplay: widget?.style.display,
+        widgetDataset: widget?.dataset,
+        textArea: !!textArea,
+        textAreaValue: textArea?.value,
+        textAreaDataset: textArea?.dataset,
+        dateSpan: !!dateSpan,
+        dateText: dateSpan?.textContent
+      });
+      
+      if (widget && widget.style.display === 'block' && textArea) {
+        // Recréer l'objet depuis les données du widget
+        this.logger.warn('Tentative de récupération du commentaire depuis le widget');
+        
+        // Essayer de récupérer l'ID depuis les données du widget (plus de sources)
+        const commentId = widget.dataset.commentId || 
+                         textArea.dataset.commentId || 
+                         textArea.getAttribute('data-comment-id') ||
+                         dateSpan?.dataset.commentId;
+        
+        this.logger.debug('ID trouvé:', commentId);
+        
+        if (commentId) {
+          this.currentEditingComment = {
+            id: commentId,
+            originalContent: textArea.defaultValue || textArea.getAttribute('data-original') || textArea.placeholder,
+            element: null // On n'a plus la référence de l'élément
+          };
+          this.logger.info('Commentaire récupéré avec succès:', this.currentEditingComment);
+        } else {
+          this.logger.error('Impossible de récupérer l\'ID du commentaire');
+          this.logger.debug('Tous les attributs data du widget:', Object.keys(widget?.dataset || {}));
+          this.logger.debug('Tous les attributs data du textArea:', Object.keys(textArea?.dataset || {}));
+          displayError('Erreur: Session d\'édition expirée. Veuillez réessayer.');
+          return;
+        }
+      } else {
+        this.logger.error('Aucun commentaire en cours d\'édition');
+        this.logger.debug('Conditions de récupération échouées:', {
+          hasWidget: !!widget,
+          widgetVisible: widget?.style.display === 'block',
+          hasTextArea: !!textArea,
+          textAreaHasValue: !!textArea?.value
+        });
+        displayError('Erreur: Aucun commentaire sélectionné pour édition');
+        return;
+      }
     }
     
-    const newContent = document.getElementById('comment-edit-text').value.trim();
+    const newContent = document.getElementById('accordion-comment-edit-text').value.trim();
     
     if (!newContent) {
       displayError('Le commentaire ne peut pas être vide');
@@ -1099,20 +1881,52 @@ export class HistoryManager {
     }
     
     if (newContent === this.currentEditingComment.originalContent) {
-      console.log('Aucune modification détectée');
+      this.logger.debug('Aucune modification détectée');
       this.closeCommentEditWidget();
       return;
     }
     
     try {
-      // Extraire l'ID de la tâche du commentId
-      const taskId = this.currentTaskHistory?.id;
-      if (!taskId) {
-        throw new Error('ID de tâche non trouvé');
+      // Extraire l'ID de la tâche - essayer plusieurs sources
+      let taskId = this.currentTaskHistory?.id;
+      
+      // Méthode 1: Depuis ModalManager
+      if (!taskId && this.kanban?.modalManager?.currentTaskId) {
+        taskId = this.kanban.modalManager.currentTaskId;
+        this.logger.debug('ID de tâche récupéré depuis ModalManager:', taskId);
       }
       
+      // Méthode 2: Depuis currentTaskHistory avec autres propriétés
+      if (!taskId && this.currentTaskHistory) {
+        taskId = this.currentTaskHistory.id_task || this.currentTaskHistory.taskId;
+        if (taskId) {
+          this.logger.debug('ID de tâche récupéré depuis currentTaskHistory (id_task):', taskId);
+        }
+      }
+      
+      // Méthode 3: Depuis l'URL ou contexte actuel
+      if (!taskId) {
+        // Essayer de récupérer depuis le DOM ou d'autres sources
+        const modalElement = document.getElementById('popup-tache');
+        if (modalElement && modalElement.dataset.taskId) {
+          taskId = modalElement.dataset.taskId;
+          this.logger.debug('ID de tâche récupéré depuis DOM:', taskId);
+        }
+      }
+      
+      if (!taskId) {
+        this.logger.error('ID de tâche non trouvé. État debug:', {
+          currentTaskHistory: !!this.currentTaskHistory,
+          modalManagerTaskId: this.kanban?.modalManager?.currentTaskId,
+          modalManagerCurrent: !!this.kanban?.modalManager?.currentTask
+        });
+        throw new Error('ID de tâche non trouvé - impossible de sauvegarder le commentaire');
+      }
+      
+      this.logger.info('ID de tâche confirmé pour sauvegarde:', taskId);
+      
       // Désactiver le bouton de sauvegarde et afficher un loader
-      const saveBtn = document.getElementById('btn-save-comment-edit');
+      const saveBtn = document.getElementById('accordion-btn-save-comment-edit');
       const originalText = saveBtn.innerHTML;
       saveBtn.disabled = true;
       saveBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Sauvegarde...';
@@ -1121,22 +1935,26 @@ export class HistoryManager {
         // Sauvegarder dans Grist
         await this.updateCommentInGrist(taskId, this.currentEditingComment.id, newContent);
         
-        // Mise à jour dans l'interface
-        const contentElement = this.currentEditingComment.element.querySelector('.comment-content');
-        contentElement.textContent = newContent;
-        contentElement.dataset.original = newContent;
-        
-        // Ajouter une indication visuelle que le commentaire a été modifié
-        const timelineEntry = this.currentEditingComment.element;
-        timelineEntry.classList.add('comment-edited');
-        
-        // Ajouter un badge "Modifié" si pas déjà présent
-        const statusDiv = timelineEntry.querySelector('.timeline-status');
-        if (!statusDiv.querySelector('.badge-edited')) {
-          const editedBadge = document.createElement('span');
-          editedBadge.className = 'badge bg-warning ms-2 badge-edited';
-          editedBadge.textContent = 'Modifié';
-          statusDiv.appendChild(editedBadge);
+        // Mise à jour dans l'interface (si l'élément existe encore)
+        if (this.currentEditingComment && this.currentEditingComment.element) {
+          const contentElement = this.currentEditingComment.element.querySelector('.comment-content');
+          if (contentElement) {
+            contentElement.textContent = newContent;
+            contentElement.dataset.original = newContent;
+            
+            // Ajouter une indication visuelle que le commentaire a été modifié
+            const timelineEntry = this.currentEditingComment.element;
+            timelineEntry.classList.add('comment-edited');
+            
+            // Ajouter un badge "Modifié" si pas déjà présent
+            const statusDiv = timelineEntry.querySelector('.timeline-status');
+            if (statusDiv && !statusDiv.querySelector('.badge-edited')) {
+              const editedBadge = document.createElement('span');
+              editedBadge.className = 'badge bg-warning ms-2 badge-edited';
+              editedBadge.textContent = 'Modifié';
+              statusDiv.appendChild(editedBadge);
+            }
+          }
         }
         
         displaySuccess('Commentaire mis à jour avec succès');
@@ -1149,7 +1967,7 @@ export class HistoryManager {
       }
       
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde du commentaire:', error);
+      this.logger.error('Erreur lors de la sauvegarde du commentaire:', error);
       
       // Afficher un message d'erreur détaillé selon le type d'erreur
       let errorMessage = 'Erreur lors de la sauvegarde';
@@ -1190,7 +2008,7 @@ export class HistoryManager {
         try {
           notesData = JSON.parse(currentNotes);
         } catch (parseError) {
-          console.warn('Erreur parsing JSON, création nouvelle structure:', parseError);
+          this.logger.debug('Erreur parsing JSON, création nouvelle structure:', parseError);
           notesData = { content: currentNotes || "", history: [] };
         }
       } else {
@@ -1206,9 +2024,9 @@ export class HistoryManager {
       const commentTimestamp = commentId.replace('comment-', '');
       let entryFound = false;
       
-      console.log('updateCommentInGrist - Recherche du commentaire:', commentId);
-      console.log('updateCommentInGrist - Timestamp recherché:', commentTimestamp);
-      console.log('updateCommentInGrist - Entrées d\'historique disponibles:', notesData.history.length);
+      this.logger.debug('updateCommentInGrist - Recherche du commentaire:', commentId);
+      this.logger.debug('updateCommentInGrist - Timestamp recherché:', commentTimestamp);
+      this.logger.debug('updateCommentInGrist - Entrées d\'historique disponibles:', notesData.history.length);
       
       // CORRECTION: Gérer les commentaires anciens (dans content) ET nouveaux (dans history)
       
@@ -1217,13 +2035,13 @@ export class HistoryManager {
         const entry = notesData.history[i];
         const entryTimestamp = entry.timestamp.replace(/[^\d]/g, '');
         
-        console.log(`updateCommentInGrist - Entrée ${i}: action=${entry.action}, timestamp=${entryTimestamp.substring(0, 12)}`);
+        this.logger.debug(`updateCommentInGrist - Entrée ${i}: action=${entry.action}, timestamp=${entryTimestamp.substring(0, 12)}`);
         
         // Comparer les timestamps (on prend les premiers caractères pour éviter les problèmes de précision)
         if (entryTimestamp.substring(0, 12) === commentTimestamp.substring(0, 12)) {
           // Vérifier que c'est bien un commentaire
           if (entry.action === 'comment' || entry.action === 'create' || entry.action === 'update') {
-            console.log('Modification du commentaire trouvé dans history:', entry);
+            this.logger.debug('Modification du commentaire trouvé dans history:', entry);
             
             // Modifier le contenu selon le format
             if (entry.newValue) {
@@ -1250,13 +2068,13 @@ export class HistoryManager {
       
       // 2. Si pas trouvé dans history, chercher dans content (ancien système avec ---)
       if (!entryFound && notesData.content && notesData.content.includes('---')) {
-        console.log('Recherche dans content (ancien système avec ---)');
+        this.logger.debug('Recherche dans content (ancien système avec ---)');
         
         // Détecter si le commentaire à modifier est dans content (ancien format)
         const contentParts = notesData.content.split('\n---\n');
         if (contentParts.length > 1) {
           // Remplacer le premier commentaire (celui qui sera affiché)
-          console.log('Remplacement du commentaire principal dans content');
+          this.logger.debug('Remplacement du commentaire principal dans content');
           contentParts[0] = newContent;
           notesData.content = contentParts.join('\n---\n');
           entryFound = true;
@@ -1273,7 +2091,7 @@ export class HistoryManager {
       }
       
       if (!entryFound) {
-        console.warn('Entrée de commentaire non trouvée, ajout d\'une nouvelle entrée');
+        this.logger.debug('Entrée de commentaire non trouvée, ajout d\'une nouvelle entrée');
         
         // Ajouter une nouvelle entrée d'historique pour la modification
         notesData.history.push({
@@ -1292,7 +2110,7 @@ export class HistoryManager {
       
       // Sauvegarder dans Grist
       const updatedNotes = JSON.stringify(notesData);
-      console.log('Sauvegarde des notes mises à jour:', updatedNotes);
+      this.logger.debug('Sauvegarde des notes mises à jour:', updatedNotes.length > 100 ? 'Notes très longues...' : updatedNotes);
       
       await grist.docApi.applyUserActions([
         ['UpdateRecord', TABLE_ID, taskId, { 
@@ -1301,10 +2119,10 @@ export class HistoryManager {
         }]
       ]);
       
-      console.log('Commentaire mis à jour avec succès dans Grist');
+      this.logger.info('Commentaire mis à jour avec succès dans Grist');
       
     } catch (error) {
-      console.error('Erreur lors de la mise à jour du commentaire dans Grist:', error);
+      this.logger.error('Erreur lors de la mise à jour du commentaire dans Grist:', error);
       throw error;
     }
   }
@@ -1325,7 +2143,7 @@ export class HistoryManager {
       
       return 'User';
     } catch (error) {
-      console.warn('Impossible de récupérer l\'utilisateur actuel:', error);
+      this.logger.debug('Impossible de récupérer l\'utilisateur actuel:', error);
       return 'User';
     }
   }
@@ -1399,7 +2217,7 @@ export class HistoryManager {
       };
       
     } catch (error) {
-      console.error('HistoryManager: Erreur mise à jour historique:', error);
+      this.logger.error('Erreur mise à jour historique:', error);
       
       // Historique de secours
       const fallbackHistory = {
@@ -1443,7 +2261,7 @@ export class HistoryManager {
         </button>
       `;
     } catch (error) {
-      console.warn('HistoryManager: Erreur génération badge:', error);
+      this.logger.warn('Erreur génération badge:', error);
       return '';
     }
   }
@@ -1508,6 +2326,6 @@ export class HistoryManager {
     // Les écouteurs d'événements seront automatiquement supprimés 
     // quand les éléments DOM seront détruits
     
-    console.log('HistoryManager: Ressources nettoyées');
+    this.logger.info('Ressources nettoyées');
   }
 }
