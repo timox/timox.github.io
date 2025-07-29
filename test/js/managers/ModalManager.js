@@ -642,10 +642,6 @@ export class ModalManager {
    * @param {string|array} gristReferences - Références Grist [["L", id1], ["L", id2], ...]
    */
   populateStrategyFieldsFromGristReferences(gristReferences) {
-    console.log(`🔍 DEBUG populateStrategyFieldsFromGristReferences:`);
-    console.log(`   gristReferences:`, gristReferences);
-    console.log(`   type:`, typeof gristReferences);
-    console.log(`   length:`, gristReferences?.length);
     
     this.logger.debug(`Loading strategies from Grist: ${gristReferences?.length || 0} references`);
     
@@ -1284,10 +1280,6 @@ export class ModalManager {
    * @returns {Array|null} Format Grist pour strategie_id
    */
   collectStrategyData() {
-    console.log(`🔍 DEBUG collectStrategyData:`);
-    console.log(`   selectedStrategies:`, this.selectedStrategies);
-    console.log(`   length:`, this.selectedStrategies?.length);
-    console.log(`   type:`, typeof this.selectedStrategies);
     
     if (!this.selectedStrategies || this.selectedStrategies.length === 0) {
       console.log(`❌ No strategies to collect - returning null`);
@@ -1462,7 +1454,6 @@ export class ModalManager {
     */
     
     // Vérifier les jalons pour Grist (déjà au format JSON string)
-    console.log('🔍 DEBUG prepareTaskDataForGrist - jalons:', gristData.jalons);
     console.log('   Type:', typeof gristData.jalons);
     console.log('   Valeur brute:', gristData.jalons);
     

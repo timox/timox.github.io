@@ -60,7 +60,6 @@ export class KanbanManager {
    */
   async init() {
     try {
-      console.log('KanbanManager: Initialisation...');
       toggleLoadingSpinner(true);
       
       // V�rifier les pr�requis
@@ -79,7 +78,6 @@ export class KanbanManager {
       this.refreshKanban();
       
       this.isInitialized = true;
-      console.log('KanbanManager: Initialisation termin�e avec succ�s');
       displaySuccess('Kanban initialis� avec succ�s');
       
     } catch (error) {
@@ -124,7 +122,6 @@ export class KanbanManager {
    * Initialise tous les gestionnaires sp�cialis�s
    */
   async initializeManagers() {
-    console.log('KanbanManager: Initialisation des gestionnaires...');
     
     // 1. Gestionnaire Grist (donn�es)
     this.gristManager = new GristManager(this);
@@ -249,7 +246,6 @@ export class KanbanManager {
    * Initialise l'interface utilisateur
    */
   initializeInterface() {
-    console.log('KanbanManager: Initialisation de l\'interface...');
     
     // Initialiser les options des formulaires
     this.populateFormOptions();

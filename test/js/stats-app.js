@@ -17,20 +17,17 @@ class StatsManager {
     this.strategiesData = STRATEGY_DATA || [];
     this.charts = {};
     
-    console.log('📊 StatsManager créé avec', this.strategiesData.length, 'stratégies');
     
     this.init();
   }
 
   async init() {
     try {
-      console.log('🚀 Initialisation des statistiques...');
       
       await this.waitForGristReady();
       await this.loadTasks();
       this.generateStats();
       
-      console.log('✅ Statistiques générées');
       
     } catch (error) {
       console.error('❌ Erreur initialisation stats:', error);
@@ -47,14 +44,12 @@ class StatsManager {
         attempts++;
         
         if (typeof grist !== 'undefined') {
-          console.log('✅ API Grist détectée');
           grist.ready();
           resolve();
         } else if (attempts >= maxAttempts) {
           console.error('❌ API Grist non disponible après', maxAttempts, 'tentatives');
           reject(new Error('API Grist non disponible'));
         } else {
-          console.log('⏳ Attente API Grist... tentative', attempts);
           setTimeout(checkGrist, 100);
         }
       };
@@ -65,33 +60,10 @@ class StatsManager {
 
   async loadTasks() {
     try {
-      console.log('📥 Chargement des tâches...');
       
       const records = await grist.docApi.fetchTable(TABLE_ID);
       this.tasks = this.mapGristRecords(records);
       
-      console.log(`✅ ${this.tasks.length} tâches chargées`);
-      
-      // Debug complet: Afficher TOUS les champs de la première tâche
-      if (this.tasks.length > 0) {
-        const firstTask = this.tasks[0];
-        console.log('🔍 TOUS les champs de la première tâche:');
-        Object.keys(firstTask).sort().forEach(key => {
-          const value = firstTask[key];
-          if (value !== null && value !== undefined && value !== '') {
-            console.log(`  ${key}: ${typeof value === 'object' ? JSON.stringify(value) : value}`);
-          }
-        });
-        
-        // Chercher spécifiquement les champs qui pourraient contenir des stratégies
-        const potentialStrategyFields = Object.keys(firstTask).filter(key => 
-          key.toLowerCase().includes('strat') || 
-          key.toLowerCase().includes('object') || 
-          key.toLowerCase().includes('action') ||
-          key.toLowerCase().includes('sous')
-        );
-        console.log('🎯 Champs potentiels pour stratégies:', potentialStrategyFields);
-      }
       
     } catch (error) {
       console.error('❌ Erreur chargement tâches:', error);
@@ -120,7 +92,6 @@ class StatsManager {
   }
 
   generateStats() {
-    console.log('📊 Génération des statistiques...');
     
     this.generateGlobalMetrics();
     this.generatePersonBureauStats();
@@ -149,7 +120,6 @@ class StatsManager {
   }
 
   generatePersonBureauStats() {
-    console.log('👥 Génération stats personne/bureau...');
     
     const personStats = {};
     
@@ -231,7 +201,6 @@ class StatsManager {
   }
 
   generateActivityHeatmap() {
-    console.log('🔥 Génération heatmap des activités...');
     
     // Définir les objectifs principaux 
     const objectifs = [
@@ -368,7 +337,6 @@ class StatsManager {
   }
 
   generateBureauObjectiveMatrix() {
-    console.log('🏢 Génération matrice bureau × objectif...');
     
     const matrix = {};
     const bureaux = [...DEFAULT_BUREAUX];
@@ -428,7 +396,6 @@ class StatsManager {
   }
 
   generateCharts() {
-    console.log('📈 Génération des graphiques...');
     
     this.generateBureauChart();
     this.generateStrategyChart();
@@ -470,7 +437,6 @@ class StatsManager {
   }
 
   generateStrategyChart() {
-    console.log('📊 Génération répartition par sous-objectifs...');
     
     // Compter par sous-objectifs
     const sousObjectifCounts = {};
@@ -629,20 +595,6 @@ class StatsManager {
   getTaskObjectives(task) {
     const objectifs = [];
     
-    // Debug: Logger cette tâche si elle a des champs stratégie
-    const hasStrategyField = task.strategie_ids || task.strategie_id || task.strategie_objectif || 
-                            task.strategie || task.strategy || task.objectif || task.sous_objectif;
-    
-    if (hasStrategyField) {
-      console.log('🎯 Analyse tâche avec stratégie:', {
-        id: task.id,
-        titre: task.titre?.substring(0, 50),
-        strategie_ids: task.strategie_ids,
-        strategie_id: task.strategie_id,
-        objectif: task.objectif,
-        sous_objectif: task.sous_objectif
-      });
-    }
     
     // Méthode 1: Via strategie_ids
     if (task.strategie_ids) {
@@ -656,7 +608,6 @@ class StatsManager {
             const strategy = this.strategiesData.find(s => s.id == id);
             if (strategy && !objectifs.includes(strategy.objectif)) {
               objectifs.push(strategy.objectif);
-              console.log('✅ Objectif trouvé via strategie_ids:', strategy.objectif);
             }
           });
         }
@@ -668,15 +619,11 @@ class StatsManager {
     // Méthode 2: Via strategie_id (traiter comme un tableau Grist)
     if (objectifs.length === 0 && task.strategie_id) {
       const strategieIds = this.parseMultipleValues(task.strategie_id);
-      console.log('🔍 IDs stratégies parsés:', strategieIds);
       
       strategieIds.forEach(id => {
         const strategy = this.strategiesData.find(s => s.id == id);
         if (strategy && !objectifs.includes(strategy.objectif)) {
           objectifs.push(strategy.objectif);
-          console.log('✅ Objectif trouvé via strategie_id:', strategy.objectif);
-        } else if (!strategy) {
-          console.log('❌ Stratégie non trouvée pour ID:', id);
         }
       });
     }
@@ -684,13 +631,11 @@ class StatsManager {
     // Méthode 3: Via champ objectif direct
     if (objectifs.length === 0 && task.objectif) {
       objectifs.push(task.objectif);
-      console.log('✅ Objectif trouvé via champ objectif:', task.objectif);
     }
     
     // Méthode 4: Via champ strategie_objectif
     if (objectifs.length === 0 && task.strategie_objectif) {
       objectifs.push(task.strategie_objectif);
-      console.log('✅ Objectif trouvé via strategie_objectif:', task.strategie_objectif);
     }
     
     return objectifs;
@@ -709,7 +654,6 @@ class StatsManager {
 
 
   showError(message) {
-    console.error('Stats Error:', message);
     // ⚠️ CORRECTION: NE PAS détruire le DOM Kanban ! Utiliser seulement le container d'erreur
     const errorContainer = document.getElementById('error-container');
     if (errorContainer) {
@@ -722,7 +666,6 @@ class StatsManager {
       errorContainer.appendChild(errorDiv);
     } else {
       // Fallback - alerter sans détruire le DOM
-      console.warn('Container d\'erreur non trouvé, erreur ignorée:', message);
     }
   }
 }

@@ -132,29 +132,18 @@ export class KanbanAppInitializer {
    * Initialise les composants de base
    */
   async initializeBaseComponents() {
-    console.log('⚙️ Initialisation des composants de base...');
     
     try {
       // Réutiliser KanbanManager existant si disponible
       if (!window.kanbanManager) {
-        console.log('❌ KanbanManager non trouvé - vérifiez que kanban-app.js est chargé');
         throw new Error('KanbanManager non disponible');
       } else {
-        console.log('✅ KanbanManager existant utilisé');
         this.components.kanbanManager = window.kanbanManager;
       }
       
-      // Vérifier l'état du KanbanManager
-      console.log('📊 État KanbanManager:', {
-        exists: !!this.components.kanbanManager,
-        isInitialized: this.components.kanbanManager?.isInitialized,
-        hasGrist: !!window.grist,
-        hasData: !!this.components.kanbanManager?.currentRecords
-      });
       
       // Si déjà initialisé, passer directement
       if (this.components.kanbanManager.isInitialized) {
-        console.log('🚀 KanbanManager déjà initialisé');
       } else {
         // Attendre que le KanbanManager soit prêt
         await this.waitForComponent(
@@ -167,7 +156,6 @@ export class KanbanAppInitializer {
       console.error('❌ Erreur initialisation composants de base:', error);
       // Essayer de continuer même en cas d'erreur
       if (!this.components.kanbanManager) {
-        console.log('🔄 Création fallback KanbanManager...');
         const { KanbanManager } = await import('./kanban-app.js');
         this.components.kanbanManager = new KanbanManager();
         window.kanbanManager = this.components.kanbanManager;
@@ -822,15 +810,10 @@ export class KanbanAppInitializer {
 let appInitializer = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('🎯 DOMContentLoaded déclenché - Début initialisation app-initializer');
   try {
-    console.log('🏗️ Création KanbanAppInitializer...');
     appInitializer = new KanbanAppInitializer();
-    console.log('✅ KanbanAppInitializer créé');
     
-    console.log('🚀 Lancement appInitializer.init()...');
     await appInitializer.init();
-    console.log('✅ appInitializer.init() terminé avec succès');
   } catch (error) {
     console.error('❌ Échec de l\'initialisation de l\'application:', error);
     console.error('❌ Stack trace complète:', error.stack);

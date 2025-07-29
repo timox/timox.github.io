@@ -143,7 +143,6 @@ class KanbanManager {
       
       // CORRECTIF: Marquer comme initialisé pour app-initializer
       this.isInitialized = true;
-      console.log('✅ KanbanManager.isInitialized = true');
       
       displaySuccess('Kanban initialisé avec succès');
       
@@ -822,16 +821,7 @@ class KanbanManager {
         //   backdrop: 'static', 
         //   keyboard: false 
         // });
-        console.log('🚫 Modal tâche désactivée - gérée par ModalManager');
         
-        // Ajouter des événements de debug
-        this.modalElement.addEventListener('show.bs.modal', () => {
-          console.log('📖 Modal tâche en cours d\'ouverture');
-        });
-        
-        this.modalElement.addEventListener('shown.bs.modal', () => {
-          console.log('✅ Modal tâche ouverte');
-        });
         
       } catch (e) {
         console.error('❌ Erreur init modal tâche:', e);
@@ -850,7 +840,6 @@ class KanbanManager {
         //   backdrop: true, 
         //   keyboard: true 
         // });
-        console.log('🚫 Modal historique désactivée - gérée par ModalManager');
       } catch (e) {
         console.error('❌ Erreur init modal historique:', e);
       }
@@ -1243,27 +1232,35 @@ class KanbanManager {
 
   // EVENT LISTENERS
   attachCardEventListeners() {
-    // Seuls les boutons timeline - les autres événements sont gérés par CardRenderer
-    // Le nettoyage se fait automatiquement via innerHTML dans refreshKanban
-    this.kanbanContainer.querySelectorAll('.btn-timeline').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        
-        // CORRECTIF: Remonter au bouton parent si l'event target est l'icône
-        const button = e.target.closest('.btn-timeline') || btn;
-        const taskId = parseInt(button.dataset.taskId, 10);
-        
-        console.log('Debug bouton historique:', {
-          'e.target': e.target,
-          'button found': button,
-          'taskId': taskId,
-          'this.openTimelineModal(taskId)': taskId
-        });
-        
-        this.openTimelineModal(taskId);
+    // Utiliser la délégation d'événements pour éviter les doublons
+    // Un seul listener sur le container parent qui gère tous les boutons timeline
+    
+    // Retirer l'ancien listener s'il existe
+    if (this.timelineClickHandler) {
+      this.kanbanContainer.removeEventListener('click', this.timelineClickHandler);
+    }
+    
+    // Créer le handler de délégation
+    this.timelineClickHandler = (e) => {
+      const timelineBtn = e.target.closest('.btn-timeline');
+      if (!timelineBtn) return;
+      
+      e.stopPropagation();
+      e.preventDefault();
+      
+      const taskId = parseInt(timelineBtn.dataset.taskId, 10);
+      
+      console.log('Debug bouton historique (délégation):', {
+        'e.target': e.target,
+        'button found': timelineBtn,
+        'taskId': taskId
       });
-    });
+      
+      this.openTimelineModal(taskId);
+    };
+    
+    // Ajouter le listener unique au container
+    this.kanbanContainer.addEventListener('click', this.timelineClickHandler);
   }
 
   // === GESTION DE LA MODAL TIMELINE ===
@@ -1590,11 +1587,9 @@ class KanbanManager {
           }
         }, 300);
         
-        console.log('✅ Modal tâche ouverte via ModalManager');
       } else {
         // Fallback vers l'ancienne méthode
         this.modal.show();
-        console.log('✅ Modal tâche ouverte (fallback)');
       }
     } catch (error) {
       console.error('❌ Erreur ouverture modal:', error);
@@ -1957,10 +1952,11 @@ class KanbanManager {
 }
 
 // === INITIALISATION ===
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('🚀 Initialisation Kanban avec gestionnaires...');
-  window.kanbanManager = new KanbanManager();
-});
+// ⚠️ DÉSACTIVÉ : Gestion déléguée à app-initializer.js pour éviter les doublons
+// document.addEventListener('DOMContentLoaded', () => {
+//   console.log('🚀 Initialisation Kanban avec gestionnaires...');
+//   window.kanbanManager = new KanbanManager();
+// });
 
 // === EXPORT POUR UTILISATION EXTERNE ===
 window.KanbanApp = {
