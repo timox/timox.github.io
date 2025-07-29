@@ -31,7 +31,27 @@ export class HistoryManager {
   init() {
     // Event listeners supprimés - gérés par SimpleClickHandler
     this.setupCommentEditWidget();
+    this.setupModalCleanupListeners();
     this.logger.info('History manager initialized (listeners centralisés)');
+  }
+  
+  /**
+   * Configure les listeners pour nettoyer automatiquement les backdrops
+   */
+  setupModalCleanupListeners() {
+    // Écouter les événements Bootstrap 5 de fermeture de modales
+    document.addEventListener('hidden.bs.modal', (event) => {
+      this.logger.debug('Modale fermée détectée:', event.target.id);
+      // Délai pour laisser Bootstrap 5 finir ses animations
+      setTimeout(() => {
+        this.cleanupOrphanBackdrops();
+      }, 200);
+    });
+    
+    // Nettoyage périodique des backdrops orphelins
+    setInterval(() => {
+      this.cleanupOrphanBackdrops();
+    }, 5000); // Vérifier toutes les 5 secondes
   }
   
   /**
@@ -67,13 +87,14 @@ export class HistoryManager {
     this.setupCommentEditWidget();
     
     // Écouteurs pour les boutons d'historique sur les cartes (support des deux classes)
-    // Event listeners pour boutons historique supprimés - boutons retirés des cartes
-    /*
     document.addEventListener('click', (e) => {
       // Trouver le bouton parent si on a cliqué sur un enfant (icône, texte)
       const button = e.target.closest('.btn-history, .btn-timeline');
       
       if (button) {
+        console.log('🔍 Click détecté sur bouton historique');
+        console.log('   Classes du bouton:', button.className);
+        console.log('   Task ID:', button.dataset.taskId);
         this.logger.debug('Click détecté sur bouton historique', button);
         
         // Arrêter la propagation
@@ -113,7 +134,6 @@ export class HistoryManager {
         return false;
       }
     }, { capture: true }); // Capture en phase descendante pour priorité
-    */
   }
   
   /**
@@ -150,15 +170,15 @@ export class HistoryManager {
     this.logger.info(`openTaskHistory appelé pour tâche ${taskId}`);
     
     // Vérification des éléments DOM
-    if (!document.getElementById('history-modal-label')) {
-      this.logger.error('Élément history-modal-label manquant');
+    if (!document.getElementById('task-history-modal-label')) {
+      this.logger.error('Élément task-history-modal-label manquant');
       return;
     }
     
-    // Protection: Éviter les appels multiples sur openTaskHistory
+    // Protection: Éviter les appels multiples sur openTaskHistory (réduite)
     const now = Date.now();
-    if (this._taskHistoryOpening === taskId || (this._lastHistoryOpen && now - this._lastHistoryOpen < 300)) {
-      this.logger.debug(`openTaskHistory déjà en cours ou trop récent pour tâche ${taskId}`);
+    if (this._taskHistoryOpening === taskId && (this._lastHistoryOpen && now - this._lastHistoryOpen < 1000)) {
+      this.logger.debug(`openTaskHistory déjà en cours pour tâche ${taskId}`);
       return;
     }
     
@@ -180,89 +200,298 @@ export class HistoryManager {
     
     this.currentTaskHistory = task;
     
-    // Vérifier si la tâche est déjà ouverte dans la modale de détail
+    // Vérifier si la modale d'édition est ouverte
     const taskModal = document.getElementById('popup-tache');
     const isTaskModalOpen = taskModal && taskModal.classList.contains('show');
     const currentTaskIdInModal = this.kanban.modalManager?.currentTaskId;
     
-    if (isTaskModalOpen && currentTaskIdInModal === taskId) {
-      // Utiliser l'accordéon dans la modale de détail
-      this.logger.info('Utilisation accordéon dans modale de détail');
-      if (this.kanban.modalManager) {
-        this.kanban.modalManager.loadCommentHistoryInAccordion();
-        
-        // Ouvrir l'accordéon automatiquement
-        const accordion = document.getElementById('comment-history-accordion');
-        if (accordion && !accordion.classList.contains('show')) {
-          const bsCollapse = new bootstrap.Collapse(accordion, { show: true });
-        }
-      }
-    } else {
-      // Utiliser la modale historique séparée (comportement original)
-      this.logger.info('Utilisation modale historique séparée');
-      
-      // CORRECTION: Éviter la boucle infinie - appeler directement renderTaskHistory
-      // au lieu de passer par modalManager qui va nous rappeler
-      
-      // Mettre à jour le titre de la modale
-      const modalTitle = document.getElementById('history-modal-label');
-      // Mise à jour du titre
-      this.logger.debug(`Mise à jour titre historique: ${task?.titre}`);
-      
-      if (modalTitle) {
-        modalTitle.innerHTML = `
-          <i class="bi bi-clock-history me-2"></i>
-          Historique de la tâche #${taskId} - ${task.titre}
-        `;
-      } else {
-        this.logger.error('Élément history-modal-label introuvable dans le DOM');
-      }
-      
-      // Rendre l'historique
-      this.renderTaskHistory(task);
-      
-      // Ouvrir la modale historique après le rendu
-      if (this.kanban.modalManager && this.kanban.modalManager.historyModal) {
-        this.logger.info('Tentative ouverture historyModal...');
-        
-        // Diagnostic simplifié de l'état de la modale
-        const historyModalEl = document.getElementById('history-modal');
-        if (historyModalEl) {
-          const rect = historyModalEl.getBoundingClientRect();
-          const isVisible = rect.width > 0 && rect.height > 0;
-          this.logger.debug('Modal state before opening:', { exists: true, visible: isVisible });
-        }
-        
-        this.kanban.modalManager.historyModal.show();
-        
-        // Vérification après ouverture
-        setTimeout(() => {
-          if (historyModalEl) {
-            const rectAfter = historyModalEl.getBoundingClientRect();
-            const isVisible = rectAfter.width > 0 && rectAfter.height > 0;
-            
-            this.logger.debug('Modal state after opening:', {
-              visible: isVisible,
-              hasShowClass: historyModalEl.classList.contains('show'),
-              backdrop: !!document.querySelector('.modal-backdrop')
-            });
-            
-            // Forcer l'affichage si pas visible
-            if (!isVisible) {
-              this.logger.warn('Modal not visible - applying force styles');
-              historyModalEl.style.setProperty('display', 'block', 'important');
-              historyModalEl.style.setProperty('visibility', 'visible', 'important');
-              historyModalEl.style.setProperty('opacity', '1', 'important');
-              historyModalEl.style.setProperty('z-index', '2000', 'important');
-            }
+    if (isTaskModalOpen) {
+      if (currentTaskIdInModal === taskId) {
+        // Même tâche ouverte : utiliser l'accordéon dans la modale de détail
+        this.logger.info('Même tâche ouverte - utilisation accordéon dans modale de détail');
+        if (this.kanban.modalManager) {
+          this.kanban.modalManager.loadCommentHistoryInAccordion();
+          
+          // Ouvrir l'accordéon automatiquement
+          const accordion = document.getElementById('comment-history-accordion');
+          if (accordion && !accordion.classList.contains('show')) {
+            const bsCollapse = new bootstrap.Collapse(accordion, { show: true });
           }
-        }, 100);
+        }
+        return; // Ne pas ouvrir la modale séparée
       } else {
-        this.logger.error('HistoryModal ou ModalManager indisponible:', {
-          modalManager: !!this.kanban.modalManager,
-          historyModal: !!(this.kanban.modalManager && this.kanban.modalManager.historyModal)
-        });
+        // Tâche différente : fermer la modale d'édition d'abord
+        this.logger.info('Tâche différente ouverte - fermeture modale d\'édition');
+        if (this.kanban.modalManager?.taskModal) {
+          this.kanban.modalManager.taskModal.hide();
+          
+          // Attendre que la modale soit fermée avant d'ouvrir l'historique
+          setTimeout(() => {
+            this.openHistoryModalSeparately(task, taskId);
+          }, 300);
+          return;
+        }
       }
+    }
+    
+    // Cas par défaut : ouvrir la modale historique séparée
+    this.openHistoryModalSeparately(task, taskId);
+  }
+  
+  /**
+   * Ouvre la modale d'historique séparée
+   * @param {object} task - Données de la tâche
+   * @param {number} taskId - ID de la tâche
+   */
+  openHistoryModalSeparately(task, taskId) {
+    this.logger.info('Ouverture modale historique séparée');
+    this.logger.debug('DOM ready state:', document.readyState);
+    this.logger.debug('Task:', task?.id, task?.titre);
+    
+    // CORRECTIF: Nettoyer les backdrops orphelins avant d'ouvrir
+    this.cleanupOrphanBackdrops();
+    
+    // Mettre à jour le titre de la modale
+    const modalTitle = document.getElementById('task-history-modal-label');
+    if (modalTitle) {
+      modalTitle.innerHTML = `
+        <i class="bi bi-clock-history me-2"></i>
+        Historique de la tâche #${taskId} - ${task.titre}
+      `;
+    }
+    
+    // Rendre l'historique
+    this.renderTaskHistory(task);
+    
+    // Ouvrir la modale
+    this.logger.debug('Recherche élément task-history-modal dans le DOM...');
+    const historyModalEl = document.getElementById('task-history-modal');
+    
+    // Debug complet des modales présentes
+    const allModals = document.querySelectorAll('.modal');
+    this.logger.debug('Modales trouvées dans le DOM:', Array.from(allModals).map(m => m.id));
+    
+    if (!historyModalEl) {
+      this.logger.error('Élément task-history-modal introuvable dans le DOM');
+      this.logger.error('DOM actuel:', document.body.innerHTML.length, 'caractères');
+      return;
+    }
+    
+    this.logger.debug('Élément task-history-modal trouvé:', historyModalEl);
+    
+    // Vérifier l'état de la modale avant ouverture
+    this.logger.debug('État modale avant ouverture:', {
+      hasShow: historyModalEl.classList.contains('show'),
+      display: historyModalEl.style.display,
+      visibility: historyModalEl.style.visibility,
+      modalManager: !!this.kanban.modalManager?.historyModal
+    });
+
+    // SOLUTION SIMPLE: Utiliser la même approche que la modal de test
+    this.logger.info('Création modal simple avec contenu Bootstrap');
+    
+    // Supprimer toute modal existante
+    const existingSimple = document.getElementById('simple-history-modal');
+    if (existingSimple) existingSimple.remove();
+    
+    // Créer une modal simple mais avec le contenu Bootstrap
+    const simpleModal = document.createElement('div');
+    simpleModal.id = 'simple-history-modal';
+    
+    // Nettoyer COMPLÈTEMENT le contenu Bootstrap des attributs problématiques
+    let cleanContent = historyModalEl.innerHTML;
+    
+    // Supprimer TOUS les attributs Bootstrap
+    cleanContent = cleanContent.replace(/data-bs-[^=]*="[^"]*"/g, '');
+    cleanContent = cleanContent.replace(/aria-label="Close"/g, '');
+    cleanContent = cleanContent.replace(/type="button"/g, '');
+    
+    // Remplacer les boutons de fermeture par des boutons simples ALIGNÉS À DROITE
+    cleanContent = cleanContent.replace(/<button[^>]*class="[^"]*btn-close[^"]*"[^>]*>.*?<\/button>/g, 
+      '<button onclick="document.getElementById(\'simple-history-modal\').remove()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;position:absolute;top:10px;right:15px;color:#666;">&times;</button>');
+    
+    // Supprimer les trois boutons du bas (modal-footer)
+    cleanContent = cleanContent.replace(/<div[^>]*class="[^"]*modal-footer[^"]*"[^>]*>[\s\S]*?<\/div>/g, '');
+    
+    // Supprimer les classes Bootstrap problématiques des boutons restants
+    cleanContent = cleanContent.replace(/class="([^"]*)btn[^"]*"/g, (match, otherClasses) => {
+      const cleanClasses = otherClasses.replace(/\s*btn[^\s]*/g, '').trim();
+      return cleanClasses ? `class="${cleanClasses}"` : '';
+    });
+    
+    // Corriger les liens d'édition de tâche pour qu'ils ferment la modal et ouvrent l'édition  
+    cleanContent = cleanContent.replace(/onclick="([^"]*)"/g, (match, onclickContent) => {
+      if (onclickContent.includes('openTaskModal')) {
+        // Si c'est déjà openTaskModalById, ne pas modifier, sinon remplacer
+        if (onclickContent.includes('openTaskModalById')) {
+          // Déjà le bon format, juste ajouter la fermeture de modal
+          return 'onclick="document.getElementById(\'simple-history-modal\').remove(); ' + onclickContent + '"';
+        } else {
+          // Remplacer openTaskModal par openTaskModalById
+          const updatedContent = onclickContent.replace('openTaskModal', 'openTaskModalById');
+          return 'onclick="document.getElementById(\'simple-history-modal\').remove(); ' + updatedContent + '"';
+        }
+      }
+      return match;
+    });
+    
+    simpleModal.innerHTML = `
+      <div style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1060;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      " onclick="if(event.target === this) document.getElementById('simple-history-modal').remove();">
+        <div style="
+          background: white;
+          border-radius: 8px;
+          max-width: 1000px;
+          width: 90%;
+          max-height: 80vh;
+          overflow: hidden;
+          box-shadow: 0 5px 15px rgba(0,0,0,.5);
+          position: relative;
+        ">
+          ${cleanContent}
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(simpleModal);
+    
+    // Ajouter la gestion Escape
+    const escapeHandler = (e) => {
+      if (e.key === 'Escape') {
+        document.getElementById('simple-history-modal')?.remove();
+        document.removeEventListener('keydown', escapeHandler);
+      }
+    };
+    document.addEventListener('keydown', escapeHandler);
+    
+    this.logger.info('Modal simple créée avec succès');
+  }
+  
+  /**
+   * Ferme la modal d'historique manuellement
+   */
+  closeHistoryModal() {
+    const historyModalEl = document.getElementById('task-history-modal');
+    if (historyModalEl) {
+      historyModalEl.style.display = 'none';
+      historyModalEl.classList.remove('show');
+      historyModalEl.removeAttribute('aria-modal');
+      historyModalEl.setAttribute('aria-hidden', 'true');
+    }
+    
+    // Supprimer le backdrop
+    const backdrop = document.querySelector('.modal-backdrop');
+    if (backdrop) {
+      backdrop.remove();
+    }
+    
+    // Supprimer la classe du body
+    document.body.classList.remove('modal-open');
+    
+    this.logger.info('Modal d\'historique fermée manuellement');
+  }
+  
+  /**
+   * Force l'affichage de la modale d'historique
+   * @param {HTMLElement} modalEl - Élément de la modale
+   */
+  forceShowModal(modalEl) {
+    this.logger.info('Test: Création d\'une modal HTML simple');
+    
+    // Supprimer toute modal de test existante
+    const existingTest = document.getElementById('test-simple-modal');
+    if (existingTest) existingTest.remove();
+    
+    // Créer une modal simple sans Bootstrap
+    const testModal = document.createElement('div');
+    testModal.id = 'test-simple-modal';
+    testModal.innerHTML = `
+      <div style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9998;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      ">
+        <div style="
+          background: white;
+          padding: 30px;
+          border-radius: 8px;
+          max-width: 600px;
+          width: 90%;
+          max-height: 80vh;
+          overflow-y: auto;
+          box-shadow: 0 5px 15px rgba(0,0,0,.5);
+        ">
+          <h3>Modal de Test Simple</h3>
+          <p>Si vous voyez ceci, les modals HTML peuvent s'afficher !</p>
+          <hr>
+          <div id="test-modal-content">
+            ${modalEl.innerHTML}
+          </div>
+          <hr>
+          <button onclick="document.getElementById('test-simple-modal').remove()" style="
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+          ">
+            Fermer cette modal de test
+          </button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(testModal);
+    this.logger.info('Modal de test créée. Visible ?');
+    
+    // Log pour debug
+    this.logger.info('Comparaison:', {
+      modalBootstrap: modalEl.id,
+      modalBootstrapVisible: window.getComputedStyle(modalEl).display,
+      modalTestVisible: 'devrait être visible'
+    });
+  }
+  
+  /**
+   * Nettoie les backdrops orphelins
+   */
+  cleanupOrphanBackdrops() {
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    let cleaned = 0;
+    
+    backdrops.forEach(backdrop => {
+      // Vérifier s'il y a une modale visible correspondante
+      const visibleModals = document.querySelectorAll('.modal.show');
+      
+      if (visibleModals.length === 0) {
+        // Aucune modale visible, supprimer le backdrop
+        backdrop.remove();
+        cleaned++;
+        this.logger.debug('Backdrop orphelin supprimé');
+      }
+    });
+    
+    if (cleaned > 0) {
+      document.body.classList.remove('modal-open');
+      this.logger.info(`${cleaned} backdrop(s) orphelin(s) nettoyé(s)`);
     }
   }
   
@@ -734,7 +963,7 @@ export class HistoryManager {
       headerHTML = `
         <div class="timeline-header" style="margin-bottom: 20px; padding: 15px; background: #e3f2fd; border-radius: 6px;">
           <h5 style="margin: 0; color: #1565c0;">
-            <span class="timeline-task-title" onclick="window.kanbanManager?.modalManager?.openTaskModal(${task.id})">
+            <span class="timeline-task-title" onclick="window.kanbanManager?.modalManager?.openTaskModalById(${task.id})">
               ${task.titre}
             </span>
           </h5>
@@ -1503,77 +1732,142 @@ export class HistoryManager {
   }
   
   /**
-   * Sauvegarde les modifications du commentaire
+   * Restaure le commentaire en cours d'édition depuis le widget DOM
+   * @returns {boolean} True si restauré avec succès, false sinon
    */
-  async saveCommentEdit() {
-    this.logger.info('saveCommentEdit appelé');
-    this.logger.debug('currentEditingComment:', this.currentEditingComment);
+  restoreEditingCommentFromWidget() {
+    this.logger.debug('🔄 Tentative de restauration du commentaire depuis le widget');
     
-    // Debug initial complet
-    this.logger.debug('État initial complet:', {
-      hasCurrentEditingComment: !!this.currentEditingComment,
-      widgetExists: !!document.getElementById('accordion-comment-edit-widget'),
-      textAreaExists: !!document.getElementById('accordion-comment-edit-text'),
-      dateSpanExists: !!document.getElementById('accordion-comment-edit-date')
+    const widget = document.getElementById('accordion-comment-edit-widget');
+    const textArea = document.getElementById('accordion-comment-edit-text');
+    const dateSpan = document.getElementById('accordion-comment-edit-date');
+    
+    if (!widget || widget.style.display !== 'block' || !textArea) {
+      this.logger.error('❌ Widget d\'édition non disponible ou invisible');
+      displayError('Erreur: Aucun commentaire sélectionné pour édition');
+      return false;
+    }
+    
+    // Récupérer l'ID du commentaire depuis plusieurs sources possibles
+    const commentId = widget.dataset.commentId || 
+                     textArea.dataset.commentId || 
+                     textArea.getAttribute('data-comment-id') ||
+                     dateSpan?.dataset.commentId;
+    
+    if (!commentId) {
+      this.logger.error('❌ ID du commentaire non trouvé dans le widget');
+      this.logger.debug('Sources vérifiées:', {
+        widgetDataset: Object.keys(widget.dataset),
+        textAreaDataset: Object.keys(textArea.dataset),
+        dateSpanDataset: dateSpan ? Object.keys(dateSpan.dataset) : null
+      });
+      displayError('Erreur: Session d\'édition expirée. Veuillez réessayer.');
+      return false;
+    }
+    
+    // Reconstituer l'objet commentaire
+    this.currentEditingComment = {
+      id: commentId,
+      originalContent: textArea.defaultValue || textArea.getAttribute('data-original') || textArea.placeholder || '',
+      element: null // Plus de référence directe à l'élément
+    };
+    
+    this.logger.info('✅ Commentaire restauré depuis widget:', {
+      id: commentId,
+      hasOriginalContent: !!this.currentEditingComment.originalContent
     });
     
-    // Si pas de commentaire en cours, essayer de récupérer depuis le widget ouvert
-    if (!this.currentEditingComment) {
-      const widget = document.getElementById('accordion-comment-edit-widget');
-      const textArea = document.getElementById('accordion-comment-edit-text');
-      const dateSpan = document.getElementById('accordion-comment-edit-date');
-      
-      this.logger.debug('État détaillé du widget:', {
-        widget: !!widget,
-        widgetDisplay: widget?.style.display,
-        widgetDataset: widget?.dataset,
-        textArea: !!textArea,
-        textAreaValue: textArea?.value,
-        textAreaDataset: textArea?.dataset,
-        dateSpan: !!dateSpan,
-        dateText: dateSpan?.textContent
-      });
-      
-      if (widget && widget.style.display === 'block' && textArea) {
-        // Recréer l'objet depuis les données du widget
-        this.logger.warn('Tentative de récupération du commentaire depuis le widget');
-        
-        // Essayer de récupérer l'ID depuis les données du widget (plus de sources)
-        const commentId = widget.dataset.commentId || 
-                         textArea.dataset.commentId || 
-                         textArea.getAttribute('data-comment-id') ||
-                         dateSpan?.dataset.commentId;
-        
-        this.logger.debug('ID trouvé:', commentId);
-        
-        if (commentId) {
-          this.currentEditingComment = {
-            id: commentId,
-            originalContent: textArea.defaultValue || textArea.getAttribute('data-original') || textArea.placeholder,
-            element: null // On n'a plus la référence de l'élément
-          };
-          this.logger.info('Commentaire récupéré avec succès:', this.currentEditingComment);
-        } else {
-          this.logger.error('Impossible de récupérer l\'ID du commentaire');
-          this.logger.debug('Tous les attributs data du widget:', Object.keys(widget?.dataset || {}));
-          this.logger.debug('Tous les attributs data du textArea:', Object.keys(textArea?.dataset || {}));
-          displayError('Erreur: Session d\'édition expirée. Veuillez réessayer.');
-          return;
-        }
-      } else {
-        this.logger.error('Aucun commentaire en cours d\'édition');
-        this.logger.debug('Conditions de récupération échouées:', {
-          hasWidget: !!widget,
-          widgetVisible: widget?.style.display === 'block',
-          hasTextArea: !!textArea,
-          textAreaHasValue: !!textArea?.value
-        });
-        displayError('Erreur: Aucun commentaire sélectionné pour édition');
-        return;
+    return true;
+  }
+
+  /**
+   * Récupère l'ID de la tâche pour laquelle on édite un commentaire
+   * Utilise une hiérarchie claire de sources fiables
+   * @returns {number|null} L'ID de la tâche ou null si non trouvé
+   */
+  getCurrentEditingTaskId() {
+    this.logger.debug('🔍 Recherche de l\'ID de la tâche pour édition de commentaire...');
+    
+    let taskId = null;
+    let source = '';
+    
+    // PRIORITÉ 1: ID explicite dans currentTaskHistory (la tâche dont on affiche l'historique)
+    if (this.currentTaskHistory?.id) {
+      taskId = this.currentTaskHistory.id;
+      source = 'currentTaskHistory.id';
+    }
+    
+    // PRIORITÉ 2: Fallback vers ModalManager si ouvert (la tâche en cours d'édition dans la modale)
+    if (!taskId && this.kanban?.modalManager?.currentTaskId) {
+      taskId = this.kanban.modalManager.currentTaskId;
+      source = 'modalManager.currentTaskId';
+      this.logger.warn('⚠️ Fallback vers ModalManager - vérifier cohérence avec l\'historique');
+    }
+    
+    // PRIORITÉ 3: Autres champs dans currentTaskHistory
+    if (!taskId && this.currentTaskHistory) {
+      taskId = this.currentTaskHistory.id_task || this.currentTaskHistory.taskId;
+      if (taskId) {
+        source = 'currentTaskHistory.id_task/taskId';
+        this.logger.warn('⚠️ Utilisation champ alternatif dans currentTaskHistory');
       }
     }
     
-    const newContent = document.getElementById('accordion-comment-edit-text').value.trim();
+    // PRIORITÉ 4: Dernier recours - DOM (moins fiable)
+    if (!taskId) {
+      const modalElement = document.getElementById('popup-tache');
+      if (modalElement?.dataset.taskId) {
+        taskId = modalElement.dataset.taskId;
+        source = 'DOM.popup-tache.dataset.taskId';
+        this.logger.warn('⚠️ Dernier recours - récupération depuis DOM');
+      }
+    }
+    
+    // Validation et logging
+    if (taskId) {
+      taskId = parseInt(taskId);
+      this.logger.info(`✅ ID de tâche trouvé: ${taskId} (source: ${source})`);
+      
+      // Validation de cohérence si possible
+      if (this.currentTaskHistory?.id && taskId !== this.currentTaskHistory.id) {
+        this.logger.error(`❌ INCOHÉRENCE: ID trouvé (${taskId}) ≠ currentTaskHistory.id (${this.currentTaskHistory.id})`);
+        return null;
+      }
+    } else {
+      this.logger.error('❌ Aucun ID de tâche trouvé pour l\'édition de commentaire');
+      this.logger.debug('État de debug:', {
+        hasCurrentTaskHistory: !!this.currentTaskHistory,
+        currentTaskHistoryId: this.currentTaskHistory?.id,
+        modalManagerTaskId: this.kanban?.modalManager?.currentTaskId,
+        modalElementExists: !!document.getElementById('popup-tache')
+      });
+    }
+    
+    return taskId;
+  }
+
+  /**
+   * Sauvegarde les modifications du commentaire
+   * 
+   * REFACTORISÉ pour éviter la confusion des IDs:
+   * - Utilise getCurrentEditingTaskId() pour récupérer l'ID de tâche de manière centralisée
+   * - Utilise restoreEditingCommentFromWidget() pour restaurer les données du commentaire
+   * - Validation de cohérence entre les différentes sources d'IDs
+   * 
+   * @see getCurrentEditingTaskId() - Récupération centralisée de l'ID de tâche
+   * @see restoreEditingCommentFromWidget() - Restauration des données de commentaire
+   */
+  async saveCommentEdit() {
+    this.logger.info('💾 saveCommentEdit appelé');
+    
+    // Récupérer ou reconstituer le commentaire en cours d'édition
+    if (!this.currentEditingComment) {
+      if (!this.restoreEditingCommentFromWidget()) {
+        return; // Erreur déjà gérée dans restoreEditingCommentFromWidget
+      }
+    }
+    
+    const newContent = document.getElementById('accordion-comment-edit-text')?.value?.trim();
     
     if (!newContent) {
       displayError('Le commentaire ne peut pas être vide');
@@ -1587,43 +1881,12 @@ export class HistoryManager {
     }
     
     try {
-      // Extraire l'ID de la tâche - essayer plusieurs sources
-      let taskId = this.currentTaskHistory?.id;
-      
-      // Méthode 1: Depuis ModalManager
-      if (!taskId && this.kanban?.modalManager?.currentTaskId) {
-        taskId = this.kanban.modalManager.currentTaskId;
-        this.logger.debug('ID de tâche récupéré depuis ModalManager:', taskId);
-      }
-      
-      // Méthode 2: Depuis currentTaskHistory avec autres propriétés
-      if (!taskId && this.currentTaskHistory) {
-        taskId = this.currentTaskHistory.id_task || this.currentTaskHistory.taskId;
-        if (taskId) {
-          this.logger.debug('ID de tâche récupéré depuis currentTaskHistory (id_task):', taskId);
-        }
-      }
-      
-      // Méthode 3: Depuis l'URL ou contexte actuel
-      if (!taskId) {
-        // Essayer de récupérer depuis le DOM ou d'autres sources
-        const modalElement = document.getElementById('popup-tache');
-        if (modalElement && modalElement.dataset.taskId) {
-          taskId = modalElement.dataset.taskId;
-          this.logger.debug('ID de tâche récupéré depuis DOM:', taskId);
-        }
-      }
+      // Utiliser la méthode centralisée pour récupérer l'ID
+      const taskId = this.getCurrentEditingTaskId();
       
       if (!taskId) {
-        this.logger.error('ID de tâche non trouvé. État debug:', {
-          currentTaskHistory: !!this.currentTaskHistory,
-          modalManagerTaskId: this.kanban?.modalManager?.currentTaskId,
-          modalManagerCurrent: !!this.kanban?.modalManager?.currentTask
-        });
         throw new Error('ID de tâche non trouvé - impossible de sauvegarder le commentaire');
       }
-      
-      this.logger.info('ID de tâche confirmé pour sauvegarde:', taskId);
       
       // Désactiver le bouton de sauvegarde et afficher un loader
       const saveBtn = document.getElementById('accordion-btn-save-comment-edit');

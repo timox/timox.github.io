@@ -5,14 +5,19 @@ import {
   STATUTS, 
   DEFAULT_BUREAUX, 
   DEFAULT_RESPONSABLES, 
-  TABLE_ID
+  TABLE_ID,
+  STRATEGY_DATA
 } from './config/constants.js';
+
+import { generateSingleBureauBadge } from './utils/badges.js';
 
 class StatsManager {
   constructor() {
     this.tasks = [];
-    this.strategiesData = [];
+    this.strategiesData = STRATEGY_DATA || [];
     this.charts = {};
+    
+    console.log('📊 StatsManager créé avec', this.strategiesData.length, 'stratégies');
     
     this.init();
   }
@@ -34,13 +39,42 @@ class StatsManager {
   }
 
   async waitForGristReady() {
-    return new Promise((resolve) => {
-      if (typeof grist !== 'undefined') {
-        grist.ready();
-        resolve();
-      } else {
-        setTimeout(resolve, 100);
-      }
+    return new Promise((resolve, reject) => {
+      let attempts = 0;
+      const maxAttempts = 100; // 10 secondes max
+      
+      const checkGrist = () => {
+        attempts++;
+        
+        // Vérifier plusieurs variantes de l'API Grist
+        if (typeof window.grist !== 'undefined') {
+          console.log('✅ API Grist détectée (window.grist)');
+          window.grist.ready();
+          resolve();
+        } else if (typeof grist !== 'undefined') {
+          console.log('✅ API Grist détectée (grist global)');
+          grist.ready();
+          resolve();
+        } else if (attempts >= maxAttempts) {
+          console.error('❌ API Grist non disponible après', maxAttempts, 'tentatives');
+          console.error('Variables disponibles:', {
+            'typeof grist': typeof grist,
+            'typeof window.grist': typeof window.grist,
+            'window.grist exists': 'grist' in window,
+            'dans iframe': window !== window.top,
+            'origin': window.location.origin
+          });
+          
+          // Mode dégradé : continuer sans API Grist
+          console.warn('⚠️ Mode dégradé activé - pas d\'accès aux données Grist');
+          resolve();
+        } else {
+          console.log('⏳ Attente API Grist... tentative', attempts);
+          setTimeout(checkGrist, 100);
+        }
+      };
+      
+      checkGrist();
     });
   }
 
@@ -48,10 +82,40 @@ class StatsManager {
     try {
       console.log('📥 Chargement des tâches...');
       
-      const records = await grist.docApi.fetchTable(TABLE_ID);
+      // Utiliser la référence Grist correcte
+      const gristApi = window.grist || (typeof grist !== 'undefined' ? grist : null);
+      
+      if (!gristApi) {
+        console.warn('⚠️ API Grist non disponible - mode dégradé avec données vides');
+        this.tasks = [];
+        return;
+      }
+      
+      const records = await gristApi.docApi.fetchTable(TABLE_ID);
       this.tasks = this.mapGristRecords(records);
       
       console.log(`✅ ${this.tasks.length} tâches chargées`);
+      
+      // Debug complet: Afficher TOUS les champs de la première tâche
+      if (this.tasks.length > 0) {
+        const firstTask = this.tasks[0];
+        console.log('🔍 TOUS les champs de la première tâche:');
+        Object.keys(firstTask).sort().forEach(key => {
+          const value = firstTask[key];
+          if (value !== null && value !== undefined && value !== '') {
+            console.log(`  ${key}: ${typeof value === 'object' ? JSON.stringify(value) : value}`);
+          }
+        });
+        
+        // Chercher spécifiquement les champs qui pourraient contenir des stratégies
+        const potentialStrategyFields = Object.keys(firstTask).filter(key => 
+          key.toLowerCase().includes('strat') || 
+          key.toLowerCase().includes('object') || 
+          key.toLowerCase().includes('action') ||
+          key.toLowerCase().includes('sous')
+        );
+        console.log('🎯 Champs potentiels pour stratégies:', potentialStrategyFields);
+      }
       
     } catch (error) {
       console.error('❌ Erreur chargement tâches:', error);
@@ -171,9 +235,9 @@ class StatsManager {
       .sort((a, b) => b.total - a.total);
 
     tbody.innerHTML = sortedPersons.map(stats => {
-      const bureauxBadges = Array.from(stats.bureaux).map(bureau => 
-        `<span class="bureau-badge bg-secondary text-white">${bureau}</span>`
-      ).join(' ');
+      const bureauxBadges = Array.from(stats.bureaux).map(bureau => {
+        return generateSingleBureauBadge(bureau, true); // Mode compact pour les tableaux
+      }).join(' ');
 
       return `
         <tr>
@@ -192,6 +256,32 @@ class StatsManager {
 
   generateStrategicObjectiveStats() {
     console.log('🎯 Génération stats objectifs stratégiques...');
+    
+    // Debug: Regarder les champs stratégie dans les tâches
+    if (this.tasks.length > 0) {
+      const firstTask = this.tasks[0];
+      const strategyFields = Object.keys(firstTask).filter(key => key.toLowerCase().includes('strat'));
+      console.log('🔍 Champs stratégie trouvés:', strategyFields);
+      
+      // Tester quelques tâches
+      const tasksWithStrategy = this.tasks.filter(task => 
+        task.strategie_ids || task.strategie_id || task.strategie_objectif || 
+        task.strategie || task.strategy || task.objectif || task.sous_objectif
+      );
+      console.log('📊 Tâches avec champs stratégie:', tasksWithStrategy.length, '/', this.tasks.length);
+      
+      if (tasksWithStrategy.length > 0) {
+        console.log('📋 Exemple tâche avec stratégie:', {
+          id: tasksWithStrategy[0].id,
+          titre: tasksWithStrategy[0].titre,
+          strategie_ids: tasksWithStrategy[0].strategie_ids,
+          strategie_id: tasksWithStrategy[0].strategie_id,
+          strategie_objectif: tasksWithStrategy[0].strategie_objectif,
+          objectif: tasksWithStrategy[0].objectif,
+          sous_objectif: tasksWithStrategy[0].sous_objectif
+        });
+      }
+    }
     
     // Définir les 5 objectifs principaux (raccourcis)
     const objectifs = [
@@ -421,26 +511,50 @@ class StatsManager {
     if (!value) return [];
     
     if (Array.isArray(value)) {
-      return value.filter(v => v && v.trim());
+      return value.filter(v => {
+        if (!v) return false;
+        const str = String(v);
+        return str.trim() && str.trim() !== 'L';
+      });
     }
     
     if (typeof value === 'string') {
       // Grist format : ['value1', 'value2'] ou "value1, value2"
       if (value.startsWith('[') && value.endsWith(']')) {
         try {
-          return JSON.parse(value).filter(v => v && v.trim());
+          return JSON.parse(value).filter(v => {
+            if (!v) return false;
+            const str = String(v);
+            return str.trim() && str.trim() !== 'L';
+          });
         } catch (e) {
-          return [value.replace(/[\[\]']/g, '').trim()].filter(v => v);
+          return [value.replace(/[\[\]']/g, '').trim()].filter(v => v && v !== 'L');
         }
       }
-      return value.split(',').map(v => v.trim()).filter(v => v);
+      return value.split(',').map(v => v.trim()).filter(v => v && v !== 'L');
     }
     
-    return [String(value)].filter(v => v && v.trim());
+    const str = String(value);
+    return [str].filter(v => v && v.trim() && v.trim() !== 'L');
   }
 
   getTaskObjectives(task) {
     const objectifs = [];
+    
+    // Debug: Logger cette tâche si elle a des champs stratégie
+    const hasStrategyField = task.strategie_ids || task.strategie_id || task.strategie_objectif || 
+                            task.strategie || task.strategy || task.objectif || task.sous_objectif;
+    
+    if (hasStrategyField) {
+      console.log('🎯 Analyse tâche avec stratégie:', {
+        id: task.id,
+        titre: task.titre?.substring(0, 50),
+        strategie_ids: task.strategie_ids,
+        strategie_id: task.strategie_id,
+        objectif: task.objectif,
+        sous_objectif: task.sous_objectif
+      });
+    }
     
     // Méthode 1: Via strategie_ids
     if (task.strategie_ids) {
@@ -454,6 +568,7 @@ class StatsManager {
             const strategy = this.strategiesData.find(s => s.id == id);
             if (strategy && !objectifs.includes(strategy.objectif)) {
               objectifs.push(strategy.objectif);
+              console.log('✅ Objectif trouvé via strategie_ids:', strategy.objectif);
             }
           });
         }
@@ -462,17 +577,32 @@ class StatsManager {
       }
     }
     
-    // Méthode 2: Via strategie_id (ancien système)
+    // Méthode 2: Via strategie_id (traiter comme un tableau Grist)
     if (objectifs.length === 0 && task.strategie_id) {
-      const strategy = this.strategiesData.find(s => s.id == task.strategie_id);
-      if (strategy) {
-        objectifs.push(strategy.objectif);
-      }
+      const strategieIds = this.parseMultipleValues(task.strategie_id);
+      console.log('🔍 IDs stratégies parsés:', strategieIds);
+      
+      strategieIds.forEach(id => {
+        const strategy = this.strategiesData.find(s => s.id == id);
+        if (strategy && !objectifs.includes(strategy.objectif)) {
+          objectifs.push(strategy.objectif);
+          console.log('✅ Objectif trouvé via strategie_id:', strategy.objectif);
+        } else if (!strategy) {
+          console.log('❌ Stratégie non trouvée pour ID:', id);
+        }
+      });
     }
     
     // Méthode 3: Via champ objectif direct
+    if (objectifs.length === 0 && task.objectif) {
+      objectifs.push(task.objectif);
+      console.log('✅ Objectif trouvé via champ objectif:', task.objectif);
+    }
+    
+    // Méthode 4: Via champ strategie_objectif
     if (objectifs.length === 0 && task.strategie_objectif) {
       objectifs.push(task.strategie_objectif);
+      console.log('✅ Objectif trouvé via strategie_objectif:', task.strategie_objectif);
     }
     
     return objectifs;
@@ -488,6 +618,7 @@ class StatsManager {
     
     return mapping[objectif] || objectif;
   }
+
 
   showError(message) {
     console.error('Stats Error:', message);

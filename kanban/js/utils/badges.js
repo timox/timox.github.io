@@ -66,7 +66,7 @@ export function generateBureauBadges(bureauList, isCompact = false) {
   }
   
   // Extraction des bureaux (sans le 'L' initial de Grist)
-  const bureaux = bureauList.slice(1).filter(Boolean);
+  const bureaux = bureauList.filter(item => item !== 'L' && Boolean(item));
   
   if (bureaux.length === 0) {
     return '';
@@ -106,18 +106,35 @@ export function generatePriorityBadge(priorityLevel) {
  * @returns {string} HTML du badge projet
  */
 export function generateProjectBadge(projectData) {
-  const { projet, strategie_objectif, strategie_sous_objectif, strategie_action } = projectData;
+  const { 
+    projet, 
+    strategie_objectif, 
+    strategie_sous_objectif, 
+    strategie_action,
+    strategiesInfo // NOUVEAU: Support des stratégies multiples
+  } = projectData;
   
   if (!projet) return '';
   
-  // Construction du tooltip avec les informations stratégiques
-  const tooltipParts = [
-    strategie_objectif ? `Objectif: ${strategie_objectif}` : '',
-    strategie_sous_objectif ? `Sous-objectif: ${strategie_sous_objectif}` : '',
-    strategie_action ? `Action: ${strategie_action}` : ''
-  ].filter(Boolean);
+  let tooltip = projet;
   
-  const tooltip = tooltipParts.length > 0 ? tooltipParts.join('\n') : projet;
+  // Support des stratégies multiples (nouveau format)
+  if (strategiesInfo && Array.isArray(strategiesInfo) && strategiesInfo.length > 0) {
+    const strategiesText = strategiesInfo.map(s => `${s.objectif} → ${s.action}`).join(' | ');
+    tooltip = `${projet}\nStratégies: ${strategiesText}`;
+  }
+  // Support de l'ancien format (single stratégie)
+  else if (strategie_objectif || strategie_sous_objectif || strategie_action) {
+    const tooltipParts = [
+      strategie_objectif ? `Objectif: ${strategie_objectif}` : '',
+      strategie_sous_objectif ? `Sous-objectif: ${strategie_sous_objectif}` : '',
+      strategie_action ? `Action: ${strategie_action}` : ''
+    ].filter(Boolean);
+    
+    if (tooltipParts.length > 0) {
+      tooltip = `${projet}\n${tooltipParts.join('\n')}`;
+    }
+  }
   
   return `<span class="badge bg-info text-dark" title="${tooltip.replace(/"/g, '&quot;')}">${projet}</span>`;
 }
@@ -143,7 +160,7 @@ export function generateResponsablesBadges(responsablesList) {
     return '';
   }
   
-  const responsables = responsablesList.slice(1).filter(Boolean);
+  const responsables = responsablesList.filter(item => item !== 'L' && Boolean(item));
   
   if (responsables.length === 0) {
     return '';
@@ -165,8 +182,8 @@ export function generateResponsablesBadges(responsablesList) {
 export function generateHistoryBadge(historyCount, taskId) {
   if (!historyCount || historyCount <= 1) return '';
   
-  return `<button class="btn-history" title="Voir l'historique (${historyCount} étapes)" data-task-id="${taskId}">
-    <i class="bi bi-clock-history"></i> ${historyCount}
+  return `<button class="btn-history btn-timeline" title="Voir l'historique de la tâche" data-task-id="${taskId}">
+    <i class="bi bi-clock-history"></i>
   </button>`;
 }
 
@@ -288,8 +305,8 @@ export function validateBureauList(bureauList, availableBureaux = []) {
     return [];
   }
   
-  return bureauList.slice(1)
-    .filter(Boolean)
+  return bureauList
+    .filter(item => item !== 'L' && Boolean(item))
     .filter(bureau => isValidBureau(bureau, availableBureaux));
 }
 

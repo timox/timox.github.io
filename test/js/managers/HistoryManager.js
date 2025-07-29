@@ -1732,77 +1732,142 @@ export class HistoryManager {
   }
   
   /**
-   * Sauvegarde les modifications du commentaire
+   * Restaure le commentaire en cours d'édition depuis le widget DOM
+   * @returns {boolean} True si restauré avec succès, false sinon
    */
-  async saveCommentEdit() {
-    this.logger.info('saveCommentEdit appelé');
-    this.logger.debug('currentEditingComment:', this.currentEditingComment);
+  restoreEditingCommentFromWidget() {
+    this.logger.debug('🔄 Tentative de restauration du commentaire depuis le widget');
     
-    // Debug initial complet
-    this.logger.debug('État initial complet:', {
-      hasCurrentEditingComment: !!this.currentEditingComment,
-      widgetExists: !!document.getElementById('accordion-comment-edit-widget'),
-      textAreaExists: !!document.getElementById('accordion-comment-edit-text'),
-      dateSpanExists: !!document.getElementById('accordion-comment-edit-date')
+    const widget = document.getElementById('accordion-comment-edit-widget');
+    const textArea = document.getElementById('accordion-comment-edit-text');
+    const dateSpan = document.getElementById('accordion-comment-edit-date');
+    
+    if (!widget || widget.style.display !== 'block' || !textArea) {
+      this.logger.error('❌ Widget d\'édition non disponible ou invisible');
+      displayError('Erreur: Aucun commentaire sélectionné pour édition');
+      return false;
+    }
+    
+    // Récupérer l'ID du commentaire depuis plusieurs sources possibles
+    const commentId = widget.dataset.commentId || 
+                     textArea.dataset.commentId || 
+                     textArea.getAttribute('data-comment-id') ||
+                     dateSpan?.dataset.commentId;
+    
+    if (!commentId) {
+      this.logger.error('❌ ID du commentaire non trouvé dans le widget');
+      this.logger.debug('Sources vérifiées:', {
+        widgetDataset: Object.keys(widget.dataset),
+        textAreaDataset: Object.keys(textArea.dataset),
+        dateSpanDataset: dateSpan ? Object.keys(dateSpan.dataset) : null
+      });
+      displayError('Erreur: Session d\'édition expirée. Veuillez réessayer.');
+      return false;
+    }
+    
+    // Reconstituer l'objet commentaire
+    this.currentEditingComment = {
+      id: commentId,
+      originalContent: textArea.defaultValue || textArea.getAttribute('data-original') || textArea.placeholder || '',
+      element: null // Plus de référence directe à l'élément
+    };
+    
+    this.logger.info('✅ Commentaire restauré depuis widget:', {
+      id: commentId,
+      hasOriginalContent: !!this.currentEditingComment.originalContent
     });
     
-    // Si pas de commentaire en cours, essayer de récupérer depuis le widget ouvert
-    if (!this.currentEditingComment) {
-      const widget = document.getElementById('accordion-comment-edit-widget');
-      const textArea = document.getElementById('accordion-comment-edit-text');
-      const dateSpan = document.getElementById('accordion-comment-edit-date');
-      
-      this.logger.debug('État détaillé du widget:', {
-        widget: !!widget,
-        widgetDisplay: widget?.style.display,
-        widgetDataset: widget?.dataset,
-        textArea: !!textArea,
-        textAreaValue: textArea?.value,
-        textAreaDataset: textArea?.dataset,
-        dateSpan: !!dateSpan,
-        dateText: dateSpan?.textContent
-      });
-      
-      if (widget && widget.style.display === 'block' && textArea) {
-        // Recréer l'objet depuis les données du widget
-        this.logger.warn('Tentative de récupération du commentaire depuis le widget');
-        
-        // Essayer de récupérer l'ID depuis les données du widget (plus de sources)
-        const commentId = widget.dataset.commentId || 
-                         textArea.dataset.commentId || 
-                         textArea.getAttribute('data-comment-id') ||
-                         dateSpan?.dataset.commentId;
-        
-        this.logger.debug('ID trouvé:', commentId);
-        
-        if (commentId) {
-          this.currentEditingComment = {
-            id: commentId,
-            originalContent: textArea.defaultValue || textArea.getAttribute('data-original') || textArea.placeholder,
-            element: null // On n'a plus la référence de l'élément
-          };
-          this.logger.info('Commentaire récupéré avec succès:', this.currentEditingComment);
-        } else {
-          this.logger.error('Impossible de récupérer l\'ID du commentaire');
-          this.logger.debug('Tous les attributs data du widget:', Object.keys(widget?.dataset || {}));
-          this.logger.debug('Tous les attributs data du textArea:', Object.keys(textArea?.dataset || {}));
-          displayError('Erreur: Session d\'édition expirée. Veuillez réessayer.');
-          return;
-        }
-      } else {
-        this.logger.error('Aucun commentaire en cours d\'édition');
-        this.logger.debug('Conditions de récupération échouées:', {
-          hasWidget: !!widget,
-          widgetVisible: widget?.style.display === 'block',
-          hasTextArea: !!textArea,
-          textAreaHasValue: !!textArea?.value
-        });
-        displayError('Erreur: Aucun commentaire sélectionné pour édition');
-        return;
+    return true;
+  }
+
+  /**
+   * Récupère l'ID de la tâche pour laquelle on édite un commentaire
+   * Utilise une hiérarchie claire de sources fiables
+   * @returns {number|null} L'ID de la tâche ou null si non trouvé
+   */
+  getCurrentEditingTaskId() {
+    this.logger.debug('🔍 Recherche de l\'ID de la tâche pour édition de commentaire...');
+    
+    let taskId = null;
+    let source = '';
+    
+    // PRIORITÉ 1: ID explicite dans currentTaskHistory (la tâche dont on affiche l'historique)
+    if (this.currentTaskHistory?.id) {
+      taskId = this.currentTaskHistory.id;
+      source = 'currentTaskHistory.id';
+    }
+    
+    // PRIORITÉ 2: Fallback vers ModalManager si ouvert (la tâche en cours d'édition dans la modale)
+    if (!taskId && this.kanban?.modalManager?.currentTaskId) {
+      taskId = this.kanban.modalManager.currentTaskId;
+      source = 'modalManager.currentTaskId';
+      this.logger.warn('⚠️ Fallback vers ModalManager - vérifier cohérence avec l\'historique');
+    }
+    
+    // PRIORITÉ 3: Autres champs dans currentTaskHistory
+    if (!taskId && this.currentTaskHistory) {
+      taskId = this.currentTaskHistory.id_task || this.currentTaskHistory.taskId;
+      if (taskId) {
+        source = 'currentTaskHistory.id_task/taskId';
+        this.logger.warn('⚠️ Utilisation champ alternatif dans currentTaskHistory');
       }
     }
     
-    const newContent = document.getElementById('accordion-comment-edit-text').value.trim();
+    // PRIORITÉ 4: Dernier recours - DOM (moins fiable)
+    if (!taskId) {
+      const modalElement = document.getElementById('popup-tache');
+      if (modalElement?.dataset.taskId) {
+        taskId = modalElement.dataset.taskId;
+        source = 'DOM.popup-tache.dataset.taskId';
+        this.logger.warn('⚠️ Dernier recours - récupération depuis DOM');
+      }
+    }
+    
+    // Validation et logging
+    if (taskId) {
+      taskId = parseInt(taskId);
+      this.logger.info(`✅ ID de tâche trouvé: ${taskId} (source: ${source})`);
+      
+      // Validation de cohérence si possible
+      if (this.currentTaskHistory?.id && taskId !== this.currentTaskHistory.id) {
+        this.logger.error(`❌ INCOHÉRENCE: ID trouvé (${taskId}) ≠ currentTaskHistory.id (${this.currentTaskHistory.id})`);
+        return null;
+      }
+    } else {
+      this.logger.error('❌ Aucun ID de tâche trouvé pour l\'édition de commentaire');
+      this.logger.debug('État de debug:', {
+        hasCurrentTaskHistory: !!this.currentTaskHistory,
+        currentTaskHistoryId: this.currentTaskHistory?.id,
+        modalManagerTaskId: this.kanban?.modalManager?.currentTaskId,
+        modalElementExists: !!document.getElementById('popup-tache')
+      });
+    }
+    
+    return taskId;
+  }
+
+  /**
+   * Sauvegarde les modifications du commentaire
+   * 
+   * REFACTORISÉ pour éviter la confusion des IDs:
+   * - Utilise getCurrentEditingTaskId() pour récupérer l'ID de tâche de manière centralisée
+   * - Utilise restoreEditingCommentFromWidget() pour restaurer les données du commentaire
+   * - Validation de cohérence entre les différentes sources d'IDs
+   * 
+   * @see getCurrentEditingTaskId() - Récupération centralisée de l'ID de tâche
+   * @see restoreEditingCommentFromWidget() - Restauration des données de commentaire
+   */
+  async saveCommentEdit() {
+    this.logger.info('💾 saveCommentEdit appelé');
+    
+    // Récupérer ou reconstituer le commentaire en cours d'édition
+    if (!this.currentEditingComment) {
+      if (!this.restoreEditingCommentFromWidget()) {
+        return; // Erreur déjà gérée dans restoreEditingCommentFromWidget
+      }
+    }
+    
+    const newContent = document.getElementById('accordion-comment-edit-text')?.value?.trim();
     
     if (!newContent) {
       displayError('Le commentaire ne peut pas être vide');
@@ -1816,43 +1881,12 @@ export class HistoryManager {
     }
     
     try {
-      // Extraire l'ID de la tâche - essayer plusieurs sources
-      let taskId = this.currentTaskHistory?.id;
-      
-      // Méthode 1: Depuis ModalManager
-      if (!taskId && this.kanban?.modalManager?.currentTaskId) {
-        taskId = this.kanban.modalManager.currentTaskId;
-        this.logger.debug('ID de tâche récupéré depuis ModalManager:', taskId);
-      }
-      
-      // Méthode 2: Depuis currentTaskHistory avec autres propriétés
-      if (!taskId && this.currentTaskHistory) {
-        taskId = this.currentTaskHistory.id_task || this.currentTaskHistory.taskId;
-        if (taskId) {
-          this.logger.debug('ID de tâche récupéré depuis currentTaskHistory (id_task):', taskId);
-        }
-      }
-      
-      // Méthode 3: Depuis l'URL ou contexte actuel
-      if (!taskId) {
-        // Essayer de récupérer depuis le DOM ou d'autres sources
-        const modalElement = document.getElementById('popup-tache');
-        if (modalElement && modalElement.dataset.taskId) {
-          taskId = modalElement.dataset.taskId;
-          this.logger.debug('ID de tâche récupéré depuis DOM:', taskId);
-        }
-      }
+      // Utiliser la méthode centralisée pour récupérer l'ID
+      const taskId = this.getCurrentEditingTaskId();
       
       if (!taskId) {
-        this.logger.error('ID de tâche non trouvé. État debug:', {
-          currentTaskHistory: !!this.currentTaskHistory,
-          modalManagerTaskId: this.kanban?.modalManager?.currentTaskId,
-          modalManagerCurrent: !!this.kanban?.modalManager?.currentTask
-        });
         throw new Error('ID de tâche non trouvé - impossible de sauvegarder le commentaire');
       }
-      
-      this.logger.info('ID de tâche confirmé pour sauvegarde:', taskId);
       
       // Désactiver le bouton de sauvegarde et afficher un loader
       const saveBtn = document.getElementById('accordion-btn-save-comment-edit');

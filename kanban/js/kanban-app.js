@@ -86,6 +86,7 @@ class KanbanManager {
     this.currentTaskId = null;
     this.isUpdating = false;
     this.isRefreshing = false;
+    this.isInitialized = false; // CORRECTIF: Propriété attendue par app-initializer
     this.canEdit = true;
     this.gristOptions = {};
     this.strategiesData = [];
@@ -139,6 +140,10 @@ class KanbanManager {
       this.initializeManagers();
       
       this.refreshKanban();
+      
+      // CORRECTIF: Marquer comme initialisé pour app-initializer
+      this.isInitialized = true;
+      console.log('✅ KanbanManager.isInitialized = true');
       
       displaySuccess('Kanban initialisé avec succès');
       
@@ -618,13 +623,7 @@ class KanbanManager {
     
     // Stratégies multiples avec tooltip
     const strategiesInfo = this.getMultipleStrategiesInfo(record.strategie_id);
-    console.log(`🎯 Debug stratégie pour tâche ${record.id}:`, {
-      strategie_id: record.strategie_id,
-      strategiesData_available: !!this.strategiesData,
-      strategiesData_length: this.strategiesData?.length || 0,
-      strategiesInfo_length: strategiesInfo.length,
-      strategiesInfo: strategiesInfo
-    });
+    // Debug stratégies désactivé
     
     const strategiesText = strategiesInfo.length > 0 
       ? strategiesInfo.map(s => `${s.objectif} → ${s.action}`).join(' | ')
@@ -634,10 +633,7 @@ class KanbanManager {
     const strategyIcon = strategiesInfo.length > 0 ? 
       `<i class="fas fa-bullseye strategie-icon" ${strategyTooltip}></i>` : '';
     
-    console.log(`🎯 Icône stratégie générée pour tâche ${record.id}:`, {
-      strategyIcon_empty: strategyIcon === '',
-      strategyIcon_content: strategyIcon
-    });
+    // Debug icône stratégie désactivé
 
     // Projet
     const projectBadge = record.projet ? 
@@ -742,11 +738,9 @@ class KanbanManager {
     }
     
     const totalEvents = notesEventCount + commentCount + statusChangeCount;
-    if (totalEvents === 0) return '';
     
-    return `<button class="btn-timeline" title="Voir la timeline (${totalEvents} événement${totalEvents > 1 ? 's' : ''})" data-task-id="${record.id}">
-      <i class="bi bi-clock-history"></i> ${totalEvents}
-    </button>`;
+    // Utiliser la fonction centralisée pour générer le bouton
+    return generateHistoryBadge(totalEvents, record.id);
   }
 
   // Récupération des infos stratégie
@@ -814,7 +808,7 @@ class KanbanManager {
     
     // Rechercher les éléments de modal
     this.modalElement = document.getElementById('popup-tache');
-    this.historyModalElement = document.getElementById('history-modal');
+    this.historyModalElement = document.getElementById('task-history-modal');
     
     // Debug: Vérifier si les éléments existent
     console.log('Modal element trouvé:', !!this.modalElement);
@@ -823,11 +817,12 @@ class KanbanManager {
     // Initialiser la modal tâche
     if (this.modalElement) {
       try {
-        this.modal = new bootstrap.Modal(this.modalElement, { 
-          backdrop: 'static', 
-          keyboard: false 
-        });
-        console.log('✅ Modal tâche initialisée');
+        // DÉSACTIVÉ: Conflit avec ModalManager  
+        // this.modal = new bootstrap.Modal(this.modalElement, { 
+        //   backdrop: 'static', 
+        //   keyboard: false 
+        // });
+        console.log('🚫 Modal tâche désactivée - gérée par ModalManager');
         
         // Ajouter des événements de debug
         this.modalElement.addEventListener('show.bs.modal', () => {
@@ -850,11 +845,12 @@ class KanbanManager {
     // Initialiser la modal historique
     if (this.historyModalElement) {
       try {
-        this.historyModal = new bootstrap.Modal(this.historyModalElement, { 
-          backdrop: true, 
-          keyboard: true 
-        });
-        console.log('✅ Modal historique initialisée');
+        // DÉSACTIVÉ: Conflit avec ModalManager
+        // this.historyModal = new bootstrap.Modal(this.historyModalElement, { 
+        //   backdrop: true, 
+        //   keyboard: true 
+        // });
+        console.log('🚫 Modal historique désactivée - gérée par ModalManager');
       } catch (e) {
         console.error('❌ Erreur init modal historique:', e);
       }
@@ -1254,7 +1250,17 @@ class KanbanManager {
         e.stopPropagation();
         e.preventDefault();
         
-        const taskId = parseInt(btn.dataset.taskId, 10);
+        // CORRECTIF: Remonter au bouton parent si l'event target est l'icône
+        const button = e.target.closest('.btn-timeline') || btn;
+        const taskId = parseInt(button.dataset.taskId, 10);
+        
+        console.log('Debug bouton historique:', {
+          'e.target': e.target,
+          'button found': button,
+          'taskId': taskId,
+          'this.openTimelineModal(taskId)': taskId
+        });
+        
         this.openTimelineModal(taskId);
       });
     });
@@ -1503,7 +1509,7 @@ class KanbanManager {
     // Timeline modal buttons - GÉRÉS PAR HistoryManager.js (éviter duplication)
 
     // Force timeline modal close buttons to work
-    const timelineCloseButtons = document.querySelectorAll('#history-modal [data-bs-dismiss="modal"]');
+    const timelineCloseButtons = document.querySelectorAll('#task-history-modal [data-bs-dismiss="modal"]');
     timelineCloseButtons.forEach(button => {
       button.addEventListener('click', (e) => {
         e.preventDefault();
@@ -1655,21 +1661,15 @@ class KanbanManager {
       
       // ✅ ENREGISTRER L'HISTORIQUE AVEC LES BONNES VALEURS
       try {
-        console.log(`🔍 Debug: Tentative enregistrement ${taskId} ${oldStatus} → ${newStatus}`);
         const userActionManager = getUserActionManager();
-        console.log(`🔍 Debug: UserActionManager disponible:`, !!userActionManager);
-        
         if (userActionManager) {
-          console.log(`🔍 Debug: Appel statusChangeAction...`);
           await userActionManager.statusChangeAction(taskId, oldStatus, newStatus);
-          console.log(`✅ UserAction statusChangeAction réussie pour ${taskId}`);
+          console.log(`✅ Status change tracked: ${taskId} ${oldStatus} → ${newStatus}`);
         } else {
-          console.error(`❌ UserActionManager non disponible pour ${taskId}`);
+          console.error(`❌ UserActionManager non disponible`);
         }
-        console.log(`UserAction enregistrée pour ${taskId}`);
       } catch (userActionError) {
         console.error(`❌ Erreur UserAction:`, userActionError);
-        console.warn(`Erreur UserAction (non bloquante):`, userActionError);
       }
       
       // Refresh direct depuis Grist après sauvegarde

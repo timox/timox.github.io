@@ -61,11 +61,12 @@ export class ModalManager {
       });
     }
     
-    const historyModalElement = document.getElementById('history-modal');
+    const historyModalElement = document.getElementById('task-history-modal');
     if (historyModalElement) {
       this.historyModal = new bootstrap.Modal(historyModalElement, {
-        backdrop: false,
-        keyboard: true
+        backdrop: 'static',
+        keyboard: true,
+        focus: true
       });
     }
   }
@@ -83,7 +84,7 @@ export class ModalManager {
     }
     
     // Event listeners pour les boutons de la modal avec délégation
-    $(document).off('click.modal-events', '#btn-save-task, #btn-delete-task')
+    $(document).off('click.modal-events', '#btn-save-task, #btn-delete-task, #btn-show-history')
       .on('click.modal-events', '#btn-save-task', (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -95,6 +96,12 @@ export class ModalManager {
         e.stopPropagation();
         this.logger.debug('Delete button clicked');
         this.deleteTask();
+      })
+      .on('click.modal-events', '#btn-show-history', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.logger.debug('Show history button clicked');
+        this.showTaskHistory();
       });
     
     // Bouton ajouter projet
@@ -620,8 +627,12 @@ export class ModalManager {
       this.updateStrategyPreview();
       this.updateStrategyIds();
       
+      console.log(`✅ Final selectedStrategies:`, this.selectedStrategies);
+      console.log(`   selectedStrategies.length:`, this.selectedStrategies.length);
+      
       this.logger.debug(`Pre-selected strategies: ${this.selectedStrategies.length} items`);
     } else {
+      console.log(`❌ Strategy data not available - strategiesData:`, this.kanban.strategiesData?.length || 0);
       this.logger.warn('Strategy data not available for populating fields');
     }
   }
@@ -631,6 +642,11 @@ export class ModalManager {
    * @param {string|array} gristReferences - Références Grist [["L", id1], ["L", id2], ...]
    */
   populateStrategyFieldsFromGristReferences(gristReferences) {
+    console.log(`🔍 DEBUG populateStrategyFieldsFromGristReferences:`);
+    console.log(`   gristReferences:`, gristReferences);
+    console.log(`   type:`, typeof gristReferences);
+    console.log(`   length:`, gristReferences?.length);
+    
     this.logger.debug(`Loading strategies from Grist: ${gristReferences?.length || 0} references`);
     
     // Reset complet des stratégies à chaque tâche (approche stateless)
@@ -644,14 +660,19 @@ export class ModalManager {
     // Convertir les références Grist en array d'IDs
     let strategyIds = [];
     try {
-      if (typeof gristReferences === 'string') {
-        const parsed = JSON.parse(gristReferences);
-        if (Array.isArray(parsed)) {
-          // Format Grist: [["L", id1], ["L", id2], ...]
-          strategyIds = parsed.map(ref => Array.isArray(ref) && ref[0] === 'L' ? ref[1] : ref).filter(id => id);
+      if (Array.isArray(gristReferences)) {
+        // Format Grist ReferenceList: ['L', id1, id2, id3, ...]
+        if (gristReferences.length > 0 && gristReferences[0] === 'L') {
+          strategyIds = gristReferences.slice(1); // Prendre tout sauf le 'L'
+        } else {
+          // Fallback pour ancien format
+          strategyIds = gristReferences.filter(id => id !== 'L');
         }
-      } else if (Array.isArray(gristReferences)) {
-        strategyIds = gristReferences.map(ref => Array.isArray(ref) && ref[0] === 'L' ? ref[1] : ref).filter(id => id);
+      } else if (typeof gristReferences === 'string') {
+        const parsed = JSON.parse(gristReferences);
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0] === 'L') {
+          strategyIds = parsed.slice(1);
+        }
       } else {
         // Fallback: ID simple
         strategyIds = [gristReferences];
@@ -661,17 +682,23 @@ export class ModalManager {
       return;
     }
     
+    console.log(`   Extracted strategy IDs:`, strategyIds);
+    console.log(`   strategyIds.length:`, strategyIds.length);
+    
     this.logger.debug(`Extracted strategy IDs: ${strategyIds.length} items`);
     
     if (!Array.isArray(strategyIds) || strategyIds.length === 0) {
+      console.log(`❌ No valid strategy IDs - returning`);
       return;
     }
     
     // Charger les stratégies correspondantes
+    console.log(`   Available strategies data:`, this.kanban.strategiesData?.length || 0);
     if (this.kanban.strategiesData && this.kanban.strategiesData.length > 0) {
       let strategiesFromDB = [];
       
       strategyIds.forEach(strategyId => {
+        console.log(`   Processing strategy ID:`, strategyId, typeof strategyId);
         // Ignorer les IDs invalides ou vides (même logique que dans populateStrategyFieldsFromGristReferences)
         if (!strategyId || strategyId === 'L' || (Array.isArray(strategyId) && strategyId.length === 0)) {
           this.logger.debug('Skipping invalid strategy ID in loadStrategiesFromIds:', strategyId);
@@ -679,11 +706,14 @@ export class ModalManager {
         }
         
         const strategy = this.kanban.strategiesData.find(s => s.id == strategyId);
+        console.log(`   Found strategy:`, strategy ? `${strategy.id} - ${strategy.objectif}` : 'NOT FOUND');
         if (strategy) {
           strategiesFromDB.push(strategy);
           this.addStrategyToSelection(strategy);
           this.preSelectStrategyInAccordion(strategy);
         } else {
+          console.log(`❌ Strategy not found for ID ${strategyId}`);
+          console.log(`   Available IDs:`, this.kanban.strategiesData.map(s => s.id).slice(0, 10));
           this.logger.warn(`Strategy not found for ID:`, {
             original: strategyId,
             searchId: strategyId,
@@ -790,6 +820,30 @@ export class ModalManager {
   }
   
   /**
+   * Ouvre la modal de tâche par ID
+   * @param {number} taskId - ID de la tâche à ouvrir
+   */
+  openTaskModalById(taskId) {
+    this.logger.debug('openTaskModalById appelé avec ID:', taskId);
+    
+    if (!taskId) {
+      this.openTaskModal(); // Nouvelle tâche
+      return;
+    }
+    
+    // Récupérer la tâche depuis les données actuelles
+    const task = this.kanban.currentRecords?.find(r => r.id === parseInt(taskId));
+    
+    if (!task) {
+      this.logger.error('Tâche non trouvée pour ID:', taskId);
+      displayError(`Tâche ${taskId} non trouvée`);
+      return;
+    }
+    
+    this.openTaskModal(task);
+  }
+  
+  /**
    * Ouvre la modal de tâche
    * @param {object} task - Données de la tâche (null pour nouvelle tâche)
    */
@@ -797,6 +851,18 @@ export class ModalManager {
     if (!this.taskModal) {
       displayError('Modal de tâche non disponible');
       return;
+    }
+    
+    // Validation du paramètre : si ce n'est pas null, ça doit être un objet avec un id
+    if (task !== null && (typeof task !== 'object' || typeof task === 'number')) {
+      this.logger.error('openTaskModal appelé avec un paramètre invalide:', task);
+      displayError('Erreur: paramètre invalide. Utilisez openTaskModalById() pour ouvrir par ID.');
+      return;
+    }
+    
+    // CORRECTIF: Nettoyer les backdrops orphelins avant d'ouvrir
+    if (this.kanban.historyManager?.cleanupOrphanBackdrops) {
+      this.kanban.historyManager.cleanupOrphanBackdrops();
     }
     
     // ✅ RESET intelligent : seulement si nouvelle tâche ou changement de tâche
@@ -824,6 +890,9 @@ export class ModalManager {
     if (this.kanban.jalonManager) {
       this.kanban.jalonManager.setCurrentTaskId(this.currentTaskId);
     }
+    
+    // Peupler les options des selects d'abord
+    this.populateSelectOptions();
     
     // Peupler les champs APRÈS avoir configuré les caches
     this.populateTaskForm(task);
@@ -1210,6 +1279,31 @@ export class ModalManager {
    * Collecte les données du formulaire
    * @returns {object} Données collectées
    */
+  /**
+   * Collecte les données de stratégies sélectionnées
+   * @returns {Array|null} Format Grist pour strategie_id
+   */
+  collectStrategyData() {
+    console.log(`🔍 DEBUG collectStrategyData:`);
+    console.log(`   selectedStrategies:`, this.selectedStrategies);
+    console.log(`   length:`, this.selectedStrategies?.length);
+    console.log(`   type:`, typeof this.selectedStrategies);
+    
+    if (!this.selectedStrategies || this.selectedStrategies.length === 0) {
+      console.log(`❌ No strategies to collect - returning null`);
+      return null;
+    }
+
+    // Format Grist ReferenceList: ['L', id1, id2, id3, ...] comme bureau et qui  
+    const strategyIds = this.selectedStrategies.map(s => {
+      console.log(`   mapping strategy:`, s);
+      return s.id;
+    });
+    const gristFormat = ['L', ...strategyIds];
+    console.log(`🎯 Strategies saved: ${strategyIds.length} items`, gristFormat);
+    return gristFormat;
+  }
+
   collectFormData() {
     const data = {
       titre: getFieldValue('popup-titre').trim(),
@@ -1219,7 +1313,7 @@ export class ModalManager {
       impact: getFieldValue('popup-impact') || null,
       bureau: getSelectedOptionsAsGristFormat('popup-bureau'),
       qui: getSelectedOptionsAsGristFormat('popup-qui'),
-      strategie_id: getFieldValue('popup-strategie-id') || null, // Références multiples Grist
+      strategie_id: this.collectStrategyData(), // Collecte spécialisée stratégies
       jalons: this.kanban.jalonManager ? this.kanban.jalonManager.getJalonsForSave() : null
     };
     
@@ -1290,34 +1384,41 @@ export class ModalManager {
       gristData.qui = ['L'];
     }
     
-    // Pour strategie_id (ReferenceList), convertir au bon format ['L', id] AVEC VALIDATION
+    // Pour strategie_id (ReferenceList multiples), valider le format ['L', id1, id2, ...]
     if (gristData.strategie_id) {
-      let strategyId = null;
-      
-      // Extraire l'ID selon le format
-      if (typeof gristData.strategie_id === 'number') {
-        strategyId = gristData.strategie_id;
-      } else if (typeof gristData.strategie_id === 'string' && !isNaN(parseInt(gristData.strategie_id))) {
-        strategyId = parseInt(gristData.strategie_id);
-      } else if (typeof gristData.strategie_id === 'string' && gristData.strategie_id.startsWith('L,')) {
-        strategyId = parseInt(gristData.strategie_id.substring(2), 10);
-      } else if (Array.isArray(gristData.strategie_id) && gristData.strategie_id.length === 2 && gristData.strategie_id[0] === 'L') {
-        // Déjà au bon format ['L', id]
-        strategyId = gristData.strategie_id[1];
-      }
-      
-      // VALIDATION: Vérifier que l'ID existe dans les stratégies
-      if (strategyId && !isNaN(strategyId)) {
-        const strategyExists = this.kanban.strategiesData?.find(s => s.id === strategyId);
-        if (strategyExists) {
-          gristData.strategie_id = ['L', strategyId];  // Format correct pour ReferenceList
-          console.log(`✅ Stratégie ${strategyId} validée et convertie au format ['L', ${strategyId}]`);
+      if (Array.isArray(gristData.strategie_id) && gristData.strategie_id.length >= 1 && gristData.strategie_id[0] === 'L') {
+        // Format ReferenceList correct: ['L', id1, id2, id3, ...]
+        const strategyIds = gristData.strategie_id.slice(1); // Tout sauf le 'L'
+        
+        // VALIDATION: Vérifier que tous les IDs existent dans les stratégies
+        const validIds = [];
+        const invalidIds = [];
+        
+        strategyIds.forEach(id => {
+          if (id && !isNaN(id)) {
+            const strategyExists = this.kanban.strategiesData?.find(s => s.id == id);
+            if (strategyExists) {
+              validIds.push(parseInt(id));
+            } else {
+              invalidIds.push(id);
+            }
+          } else {
+            invalidIds.push(id);
+          }
+        });
+        
+        if (validIds.length > 0) {
+          gristData.strategie_id = ['L', ...validIds];  // Format correct pour ReferenceList multiple
+          console.log(`✅ ${validIds.length} stratégies validées:`, validIds);
+          if (invalidIds.length > 0) {
+            console.warn(`⚠️ ${invalidIds.length} stratégies invalides ignorées:`, invalidIds);
+          }
         } else {
-          console.warn(`⚠️ Stratégie ${strategyId} n'existe pas, suppression de la référence`);
+          console.warn(`⚠️ Aucune stratégie valide trouvée, suppression de la référence`);
           gristData.strategie_id = null;
         }
       } else {
-        console.warn(`⚠️ ID stratégie invalide:`, gristData.strategie_id);
+        console.warn(`⚠️ Format strategie_id invalide (attendu: ['L', id1, id2, ...]):`, gristData.strategie_id);
         gristData.strategie_id = null;
       }
     } else {
@@ -1361,11 +1462,18 @@ export class ModalManager {
     */
     
     // Vérifier les jalons pour Grist (déjà au format JSON string)
+    console.log('🔍 DEBUG prepareTaskDataForGrist - jalons:', gristData.jalons);
+    console.log('   Type:', typeof gristData.jalons);
+    console.log('   Valeur brute:', gristData.jalons);
+    
     if (gristData.jalons !== null && gristData.jalons !== undefined) {
       if (typeof gristData.jalons !== 'string') {
+        console.log('⚠️ Jalons pas au format string, conversion...');
         gristData.jalons = JSON.stringify(gristData.jalons || []);
       }
+      console.log('✅ Jalons après traitement:', gristData.jalons);
     } else {
+      console.log('❌ Jalons null/undefined, valeur par défaut');
       gristData.jalons = '{"jalons":[],"lastModified":0}'; // Valeur par défaut
     }
     
@@ -1977,7 +2085,7 @@ export class ModalManager {
     }
     
     // Mettre à jour le titre
-    const modalTitle = document.getElementById('history-modal-label');
+    const modalTitle = document.getElementById('task-history-modal-label');
     // Debug simplifié
     this.logger.debug(`Updating title for task ${taskId}`);
     

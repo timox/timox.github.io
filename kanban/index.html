@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <!-- Bootstrap CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   
@@ -26,14 +26,12 @@
             <h1 class="h3 mb-0 d-flex align-items-center">
               <i class="bi bi-kanban me-2"></i>
               Tableau Kanban
+              <span class="badge bg-success text-white ms-3">Production</span>
             </h1>
           </div>
           <button type="button" class="btn btn-primary btn-sm" id="btn-nouvelle-tache" aria-label="Créer une nouvelle tâche">
             <i class="bi bi-plus-lg me-1"></i>Nouvelle Tâche
           </button>
-          <a href="stats.html" class="btn btn-outline-success btn-sm" title="Voir les statistiques">
-            <i class="bi bi-graph-up me-1"></i>Statistiques
-          </a>
         </div>
       </div>
     </div>
@@ -41,7 +39,7 @@
     <!-- Controls -->
     <div class="container-fluid">
       <div class="kanban-controls">
-        <div class="row g-3 align-items-center">
+        <div class="row g-2 align-items-center" style="min-height: auto;">
           <!-- Boutons de mode de vue (sera injecté par JS) -->
           <div class="col-md-3">
             <div class="input-group">
@@ -68,6 +66,11 @@
               <input class="form-check-input" type="checkbox" id="show-termine" checked>
               <label class="form-check-label" for="show-termine">Terminés</label>
             </div>
+          </div>
+          <div class="col-auto">
+            <button class="btn btn-outline-danger btn-sm" type="button" id="btn-clean-backdrops" title="🚨 Nettoyer les overlays bloquants" style="display: none;">
+              <i class="bi bi-exclamation-triangle"></i> Débloquer
+            </button>
           </div>
         </div>
       </div>
@@ -148,7 +151,7 @@
                 <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="collapse" 
                         data-bs-target="#comment-history-accordion" aria-expanded="false" 
                         aria-controls="comment-history-accordion" id="btn-toggle-comment-history">
-                  <i class="bi bi-clock-history me-1"></i>Historique
+                  <i class="bi bi-clock-history me-1"></i>Voir l'historique
                 </button>
               </div>
               
@@ -170,30 +173,37 @@
                 </div>
               </div>
             </div>
+            
+            <!-- Ligne 1: Projet, Urgence, Impact sur 3 colonnes -->
+            <div class="col-12">
+              <div class="row">
+                <div class="col-md-4">
+                  <label for="popup-projet" class="form-label">Projet</label>
+                  <select class="form-select" id="popup-projet"></select>
+                  <input type="text" class="form-control d-none" id="projet-ajout" placeholder="Ajouter projet">
+                  <button class="btn btn-outline-secondary d-none" type="button" id="btn-ajout-projet" disabled>
+                    <i class="bi bi-plus"></i>
+                  </button>
+                </div>
+                <div class="col-md-4">
+                  <label for="popup-urgence" class="form-label">Urgence</label>
+                  <select class="form-select" id="popup-urgence">
+                    <option value="">-- Urgence --</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label for="popup-impact" class="form-label">Impact</label>
+                  <select class="form-select" id="popup-impact">
+                    <option value="">-- Impact --</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Ligne 2: Statut seul -->
             <div class="col-md-4">
               <label for="popup-statut-text" class="form-label">Statut *</label>
               <input type="text" class="form-control" id="popup-statut-text" readonly required>
-            </div>
-            <div class="col-md-4">
-              <label for="popup-projet" class="form-label">Projet</label>
-              <div class="input-group">
-                <select class="form-select" id="popup-projet"></select>
-                <input type="text" class="form-control" id="projet-ajout" placeholder="Ajouter projet">
-                <button class="btn btn-outline-secondary" type="button" id="btn-ajout-projet">
-                  <i class="bi bi-plus"></i>
-                </button>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <label for="popup-urgence" class="form-label">Urgence & Impact</label>
-              <div class="input-group">
-                <select class="form-select" id="popup-urgence">
-                  <option value="">-- Urgence --</option>
-                </select>
-                <select class="form-select" id="popup-impact">
-                  <option value="">-- Impact --</option>
-                </select>
-              </div>
             </div>
             
             <!-- SECTION STRATÉGIE - Interface guidée avec détails -->
@@ -269,8 +279,8 @@
                 </div>
               </div>
               
-              <!-- Champ caché pour strategie_id (sauvegarde finale) -->
-              <input type="hidden" id="popup-strategie-id" />
+              <!-- Champ caché pour strategie_ids (sauvegarde finale) -->
+              <input type="hidden" id="popup-strategie-ids" />
               
               <div class="form-text mt-2">
                 <i class="bi bi-info-circle me-1"></i>
@@ -292,7 +302,7 @@
                   <!-- En-tête avec bouton d'ajout -->
                   <div class="d-flex justify-content-between align-items-center mb-3">
                     <small class="text-muted fw-bold">
-                      <i class="bi bi-flag me-1"></i>Jalons
+                      <i class="bi bi-flag me-1"></i>Jalons planifiés
                       <span class="badge bg-secondary ms-1" id="jalons-count">0</span>
                     </small>
                     <button type="button" class="btn btn-sm btn-outline-primary" id="btn-add-jalon">
@@ -338,15 +348,24 @@
                 <span id="date-status" class="text-muted">Aucune date définie</span>
               </div>
             </div>
-            <div class="col-md-6">
-              <label for="popup-bureau" class="form-label">Bureaux</label>
-              <select class="form-select" id="popup-bureau" multiple size="4"></select>
-              <div class="form-text">Maintenez Ctrl pour sélectionner plusieurs bureaux</div>
-            </div>
-            <div class="col-md-6">
-              <label for="popup-qui" class="form-label">Responsables</label>
-              <select class="form-select" id="popup-qui" multiple size="4"></select>
-              <div class="form-text">Maintenez Ctrl pour sélectionner plusieurs responsables</div>
+            <!-- Bureaux et Responsables sur la même ligne -->
+            <div class="col-12">
+              <div class="row">
+                <div class="col-md-6">
+                  <label class="form-label">Bureaux</label>
+                  <div id="popup-bureau-checkboxes" class="checkbox-group">
+                    <!-- Cases à cocher générées dynamiquement -->
+                  </div>
+                  <select class="form-select d-none" id="popup-bureau" multiple></select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Responsables</label>
+                  <div id="popup-qui-checkboxes" class="checkbox-group">
+                    <!-- Cases à cocher générées dynamiquement -->
+                  </div>
+                  <select class="form-select d-none" id="popup-qui" multiple></select>
+                </div>
+              </div>
             </div>
           </div>
         </form>
@@ -354,6 +373,9 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-danger me-auto" id="btn-delete-task" style="display: none;">
           <i class="bi bi-trash me-2"></i>Supprimer
+        </button>
+        <button type="button" class="btn btn-info" id="btn-show-history">
+          <i class="bi bi-clock-history me-1"></i>Historique complet
         </button>
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
           <i class="bi bi-x-circle me-2"></i>Annuler
@@ -367,11 +389,11 @@
 </div>
 
   <!-- Modal Historique (identique à l'original) -->
-  <div class="modal fade history-modal" id="history-modal" tabindex="-1" aria-labelledby="history-modal-label" aria-hidden="true">
+  <div class="modal fade history-modal" id="task-history-modal" tabindex="-1" aria-labelledby="task-history-modal-label" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="history-modal-label">
+          <h5 class="modal-title" id="task-history-modal-label">
             <i class="bi bi-clock-history me-2"></i>Historique de la tâche
           </h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
@@ -380,38 +402,8 @@
           <div id="history-stats" class="history-stats"></div>
           <div id="history-timeline" class="history-timeline"></div>
           
-          <!-- Widget d'édition de commentaire (hidden par défaut) -->
-          <div id="comment-edit-widget" class="comment-edit-widget" style="display: none;">
-            <div class="comment-edit-overlay">
-              <div class="comment-edit-box">
-                <div class="comment-edit-header">
-                  <h6><i class="bi bi-pencil-square me-2"></i>Éditer le commentaire</h6>
-                  <button type="button" class="btn-close btn-close-sm" id="btn-close-comment-edit"></button>
-                </div>
-                <div class="comment-edit-body">
-                  <div class="mb-3">
-                    <label for="comment-edit-text" class="form-label">Texte du commentaire</label>
-                    <textarea class="form-control" id="comment-edit-text" rows="4" 
-                              placeholder="Modifiez votre commentaire..."></textarea>
-                  </div>
-                  <div class="comment-edit-info">
-                    <small class="text-muted">
-                      <i class="bi bi-info-circle me-1"></i>
-                      Commentaire créé le <span id="comment-edit-date"></span>
-                    </small>
-                  </div>
-                </div>
-                <div class="comment-edit-footer">
-                  <button type="button" class="btn btn-sm btn-secondary" id="btn-cancel-comment-edit">
-                    <i class="bi bi-x-circle me-1"></i>Annuler
-                  </button>
-                  <button type="button" class="btn btn-sm btn-primary" id="btn-save-comment-edit">
-                    <i class="bi bi-check2-circle me-1"></i>Sauvegarder
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <!-- Widget d'édition de commentaire supprimé - géré dynamiquement par HistoryManager -->
+          <!-- Voir HistoryManager.js:createCommentEditWidget() pour l'implémentation -->
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-info" id="btn-show-comments-only">
@@ -430,20 +422,113 @@
   
   <!-- Scripts externes -->
   <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    // Mode noConflict pour éviter les conflits avec jQuery de Grist
+    window.kanbanJQuery = jQuery.noConflict(true);
+    // Réassigner $ pour notre usage
+    window.$ = window.kanbanJQuery;
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script>
+    // Fix SortableJS will-change error - ULTIMATE VERSION
+    (function() {
+      // Protection will-change activée
+      
+      // 1. Override setProperty
+      const originalSetProperty = CSSStyleDeclaration.prototype.setProperty;
+      CSSStyleDeclaration.prototype.setProperty = function(property, value, priority) {
+        if (property === 'will-change') {
+          if (!value || value === '' || value === '""' || value === "''") {
+            // will-change vide corrigé
+            value = 'auto';
+          }
+        }
+        return originalSetProperty.call(this, property, value, priority);
+      };
+      
+      // 2. Override cssText
+      const originalStyleSetter = Object.getOwnPropertyDescriptor(CSSStyleDeclaration.prototype, 'cssText').set;
+      Object.defineProperty(CSSStyleDeclaration.prototype, 'cssText', {
+        set: function(value) {
+          // Nettoyer toutes les variantes de will-change vides
+          value = value.replace(/will-change\s*:\s*['"]*\s*['"]*\s*;?/g, 'will-change: auto;');
+          value = value.replace(/will-change\s*:\s*;/g, 'will-change: auto;');
+          return originalStyleSetter.call(this, value);
+        },
+        get: Object.getOwnPropertyDescriptor(CSSStyleDeclaration.prototype, 'cssText').get
+      });
+      
+      // 3. Override direct style access
+      const originalStylePropertySetter = function(property) {
+        const descriptor = Object.getOwnPropertyDescriptor(CSSStyleDeclaration.prototype, property);
+        if (descriptor && descriptor.set) {
+          Object.defineProperty(CSSStyleDeclaration.prototype, property, {
+            set: function(value) {
+              if (property === 'willChange' && (!value || value === '')) {
+                value = 'auto';
+              }
+              return descriptor.set.call(this, value);
+            },
+            get: descriptor.get
+          });
+        }
+      };
+      originalStylePropertySetter('willChange');
+      
+      // 4. Surveillance MutationObserver pour nettoyer en continu
+      const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+            const element = mutation.target;
+            if (element.style && element.style.willChange === '') {
+              element.style.willChange = 'auto';
+            }
+          }
+        });
+      });
+      
+      observer.observe(document, {
+        attributes: true,
+        attributeFilter: ['style'],
+        subtree: true
+      });
+      
+      console.log('✅ Protection will-change ultra-renforcée activée');
+    })();
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/fr.js"></script>
   
+  <!-- Gestionnaire de clics simple -->
+  
   <!-- Application Kanban modulaire -->
-  <script type="module" src="js/kanban-app.js"></script>
+  <script type="module" src="js/kanban-app.js?v=20250728-DEDUP-MODAL"></script>
+  
+  <!-- Initialisateur principal -->
+  <script type="module" src="js/app-initializer.js?v=20250728-DEDUP-MODAL"></script>
   
   <!-- Script d'export des données stratégiques (TEST uniquement) -->
-  <!-- <script type="module" src="js/utils/exportStrategyData.js"></script> -->
+  <script src="js/utils/exportStrategyData.js?v=20250728-DEDUP-MODAL"></script>
   
   <!-- Script de debug (développement seulement) -->
   <script>
+    // DIAGNOSTIC MODAL HISTORY IMMÉDIAT
+    console.log('=== DIAGNOSTIC MODAL HISTORY ===');
+    console.log('DOM ready state:', document.readyState);
+    console.log('task-history-modal au chargement:', !!document.getElementById('task-history-modal'));
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('DOMContentLoaded: task-history-modal existe:', !!document.getElementById('task-history-modal'));
+    });
+    
+    window.addEventListener('load', () => {
+      console.log('Window load: task-history-modal existe:', !!document.getElementById('task-history-modal'));
+    });
+    
+    // Script de diagnostic supprimé - modal techniquement OK mais invisible
+    
     // Mise à jour du panneau de debug
     // Debug info function (commenté avec le panel debug)
     /*
@@ -548,8 +633,8 @@
             </div>
             <div class="col-md-4">
               <div class="jalon-form-group">
-                <label for="jalon-date" class="form-label">Date & Heure *</label>
-                <input type="datetime-local" class="form-control" id="jalon-date">
+                <label for="jalon-date" class="form-label">Date *</label>
+                <input type="date" class="form-control" id="jalon-date">
               </div>
             </div>
           </div>
@@ -664,6 +749,25 @@
           <button type="button" class="btn btn-primary" id="btn-save-jalon">
             <i class="bi bi-check-lg me-1"></i>Enregistrer
           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mini-modale pour afficher les stratégies -->
+  <div class="modal fade" id="strategy-mini-modal" tabindex="-1" aria-labelledby="strategy-mini-modal-label" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header py-2" style="background: linear-gradient(135deg, #0d6efd, #0056b3); color: white; border-bottom: none;">
+          <h6 class="modal-title" id="strategy-mini-modal-label" style="font-size: 0.95rem; font-weight: 600;">
+            <i class="bi bi-bullseye me-2"></i>Stratégies
+          </h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer" style="filter: invert(1);"></button>
+        </div>
+        <div class="modal-body p-3">
+          <div id="strategy-mini-content">
+            <!-- Contenu généré dynamiquement -->
+          </div>
         </div>
       </div>
     </div>

@@ -33,13 +33,13 @@ export const TABLE_ID = "Ssir_principale_task";
 
 // === COLONNES REQUISES ET OPTIONNELLES ===
 export const REQUIRED_COLUMNS = [
-  'id', 'titre', 'description', 'statut', 'bureau', 'qui', 'urgence', 'impact',
+  'id', 'id_task', 'titre', 'description', 'statut', 'bureau', 'qui', 'urgence', 'impact',
   'projet', 'strategie_id', 'notes', 'date_derniere_maj', 'statut_precedent'
   // Removed: strategie_objectif, strategie_sous_objectif, strategie_action (auto-computed)
   // Removed: historique_statuts (Date field, not JSON)
 ];
 
-export const OPTIONAL_COLUMNS = ['date_debut', 'date_echeance'];
+export const OPTIONAL_COLUMNS = ['date_debut', 'date_echeance', 'jalons'];
 
 // === CONSTANTES DE L'INTERFACE ===
 export const VIEW_MODES = {
@@ -128,6 +128,7 @@ export const BUREAU_ICONS = {
   'comsic': 'bi-shield-check',
   'rssi': 'bi-shield-lock',
   'dpo': 'bi-file-earmark-person',
+  'cgssi': 'bi-shield-check',
   'default': 'bi-building'
 };
 
@@ -137,6 +138,7 @@ export const getStatutByClasse = (classe) => STATUTS.find(s => s.classe === clas
 export const getDefaultStatuts = () => STATUTS.map(s => s.id);
 
 // === DONNÉES STRATÉGIQUES INTÉGRÉES (depuis CSV SSIR_strategie2) ===
+// Import automatique depuis debug/kanban_SSIR_TEST-Ssir_strategie2.csv
 export const STRATEGY_DATA = [
   {
     "id": 1,
@@ -527,6 +529,35 @@ export const STRATEGY_DATA = [
   }
 ];
 
+/**
+ * Convertit les données stratégiques au format Grist
+ */
+export function convertToGristFormat(data) {
+  const gristFormat = {
+    id: {},
+    objectif: {},
+    sous_objectif: {},
+    action: {},
+    responsable: {},
+    echeance: {},
+    portee: {}
+  };
+  
+  data.forEach((item, index) => {
+    const key = index.toString();
+    gristFormat.id[key] = item.id;
+    gristFormat.objectif[key] = item.objectif;
+    gristFormat.sous_objectif[key] = item.sous_objectif;
+    gristFormat.action[key] = item.action;
+    gristFormat.responsable[key] = item.responsable;
+    gristFormat.echeance[key] = item.echeance;
+    gristFormat.portee[key] = item.portee;
+  });
+  
+  return gristFormat;
+}
+
+// === CONFIGURATION LOGS ===
 export const LOG_CONFIG = {
   PRODUCTION: false,  // Mode test : logs complets
   LEVEL: 'DEBUG',     // ERROR, WARN, INFO, DEBUG

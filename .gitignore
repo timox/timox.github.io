@@ -17,3 +17,5 @@ test/*
 # Dossiers de backup
 kanban_backup_*/
 *_backup_*/
+backup_avant_prod_*
+backup_avant_deploy_*
