@@ -174,10 +174,10 @@
               </div>
             </div>
             
-            <!-- Ligne 1: Projet, Urgence, Impact sur 3 colonnes -->
+            <!-- Ligne 1: Projet et Statut (verrouillé) -->
             <div class="col-12">
               <div class="row">
-                <div class="col-md-4">
+                <div class="col-md-6">
                   <label for="popup-projet" class="form-label">Projet</label>
                   <select class="form-select" id="popup-projet"></select>
                   <input type="text" class="form-control d-none" id="projet-ajout" placeholder="Ajouter projet">
@@ -185,6 +185,19 @@
                     <i class="bi bi-plus"></i>
                   </button>
                 </div>
+                <div class="col-md-6">
+                  <label for="popup-statut-text" class="form-label">
+                    Statut * 
+                    <i class="bi bi-lock text-muted ms-1" title="Champ verrouillé"></i>
+                  </label>
+                  <input type="text" class="form-control bg-light text-muted" id="popup-statut-text" readonly required>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Ligne 2: Urgence, Impact et Priorité calculée -->
+            <div class="col-12">
+              <div class="row">
                 <div class="col-md-4">
                   <label for="popup-urgence" class="form-label">Urgence</label>
                   <select class="form-select" id="popup-urgence">
@@ -197,13 +210,14 @@
                     <option value="">-- Impact --</option>
                   </select>
                 </div>
+                <div class="col-md-4">
+                  <label for="popup-priorite-calculee" class="form-label">
+                    Priorité qui en découle
+                    <i class="bi bi-lock text-muted ms-1" title="Champ verrouillé - calculé automatiquement"></i>
+                  </label>
+                  <input type="text" class="form-control bg-light text-muted" id="popup-priorite-calculee" readonly>
+                </div>
               </div>
-            </div>
-            
-            <!-- Ligne 2: Statut seul -->
-            <div class="col-md-4">
-              <label for="popup-statut-text" class="form-label">Statut *</label>
-              <input type="text" class="form-control" id="popup-statut-text" readonly required>
             </div>
             
             <!-- SECTION STRATÉGIE - Interface guidée avec détails -->
@@ -326,7 +340,8 @@
               
             </div>
             
-            <div class="col-md-6">
+            <!-- Date butoir -->
+            <div class="col-md-12">
               <label class="form-label">
                 <i class="bi bi-calendar-event me-2"></i>Date butoir
                 <small class="text-muted ms-2">(Optionnelle)</small>
@@ -348,6 +363,7 @@
                 <span id="date-status" class="text-muted">Aucune date définie</span>
               </div>
             </div>
+            
             <!-- Bureaux et Responsables sur la même ligne -->
             <div class="col-12">
               <div class="row">

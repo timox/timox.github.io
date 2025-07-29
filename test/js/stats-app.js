@@ -595,6 +595,17 @@ class StatsManager {
   getTaskObjectives(task) {
     const objectifs = [];
     
+    // DEBUG TEMPORAIRE : afficher les premiers 3 tasks pour comprendre le problème
+    if (this.debugCount < 3) {
+      console.log('🔍 DEBUG Task', task.id, ':', {
+        strategie_id: task.strategie_id,
+        strategie_ids: task.strategie_ids,
+        objectif: task.objectif,
+        strategies_data_count: this.strategiesData.length
+      });
+      this.debugCount = (this.debugCount || 0) + 1;
+    }
+    
     
     // Méthode 1: Via strategie_ids
     if (task.strategie_ids) {

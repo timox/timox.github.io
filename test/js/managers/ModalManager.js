@@ -131,6 +131,25 @@ export class ModalManager {
       }
     });
     
+    // Calcul automatique de la priorité basé sur urgence + impact
+    const urgenceSelect = document.getElementById('popup-urgence');
+    const impactSelect = document.getElementById('popup-impact');
+    
+    if (urgenceSelect && impactSelect) {
+      const updatePriorite = () => {
+        const urgence = urgenceSelect.value;
+        const impact = impactSelect.value;
+        const prioriteField = document.getElementById('popup-priorite-calculee');
+        
+        if (prioriteField) {
+          prioriteField.value = this.calculatePriorite(urgence, impact);
+        }
+      };
+      
+      urgenceSelect.addEventListener('change', updatePriorite);
+      impactSelect.addEventListener('change', updatePriorite);
+    }
+    
     // Raccourcis clavier - DÉSACTIVÉS (gérés centralement dans kanban-app.js)
     // document.addEventListener('keydown', (e) => {
     //   if ((e.key === 'n' || e.key === 'N') && !e.target.matches('input, textarea')) {
@@ -1031,6 +1050,10 @@ export class ModalManager {
     // Urgence et Impact
     setFieldValue('popup-urgence', tache.urgence || '');
     setFieldValue('popup-impact', tache.impact || '');
+    
+    // Priorité calculée automatiquement
+    const prioriteCalculee = this.calculatePriorite(tache.urgence || '', tache.impact || '');
+    setFieldValue('popup-priorite-calculee', prioriteCalculee);
     
     // Stratégies depuis Grist - gérer le format références multiples
     if (tache.strategie_id) {
@@ -2773,5 +2796,47 @@ export class ModalManager {
         newSummary: 'Erreur'
       };
     }
+  }
+  
+  /**
+   * Calcule la priorité automatiquement basée sur urgence et impact
+   * @param {string} urgence - Niveau d'urgence
+   * @param {string} impact - Niveau d'impact
+   * @returns {string} Priorité calculée
+   */
+  calculatePriorite(urgence, impact) {
+    if (!urgence || !impact) {
+      return '';
+    }
+    
+    // Matrice de calcul Urgence × Impact
+    const matrix = {
+      'Immédiate': {
+        'Critique': 'P1 - Critique',
+        'Important': 'P1 - Critique', 
+        'Moyen': 'P2 - Élevée',
+        'Faible': 'P3 - Moyenne'
+      },
+      'Courte': {
+        'Critique': 'P1 - Critique',
+        'Important': 'P2 - Élevée',
+        'Moyen': 'P2 - Élevée', 
+        'Faible': 'P3 - Moyenne'
+      },
+      'Moyenne': {
+        'Critique': 'P2 - Élevée',
+        'Important': 'P2 - Élevée',
+        'Moyen': 'P3 - Moyenne',
+        'Faible': 'P4 - Faible'
+      },
+      'Longue': {
+        'Critique': 'P3 - Moyenne',
+        'Important': 'P3 - Moyenne', 
+        'Moyen': 'P4 - Faible',
+        'Faible': 'P4 - Faible'
+      }
+    };
+    
+    return matrix[urgence]?.[impact] || 'Non définie';
   }
 }

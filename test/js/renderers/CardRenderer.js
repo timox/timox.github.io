@@ -78,6 +78,7 @@ export class CardRenderer {
         <div class="compact-header">
           <div class="compact-priority">${badges.priority}</div>
           <div class="compact-echeance">${echeanceElement}</div>
+          ${this.getStrategyIcon(record)}
           <button class="btn-expand" title="Voir les détails" aria-label="Développer la tâche">
             <i class="bi bi-chevron-down"></i>
           </button>
@@ -156,6 +157,7 @@ export class CardRenderer {
           <div class="item-badges">
             ${badges.project}
             ${badges.history}
+            ${this.getStrategyIcon(record)}
             ${collapseButton}
           </div>
         </div>
@@ -534,5 +536,40 @@ export class CardRenderer {
     if (state && Array.isArray(state.expandedCards)) {
       this.expandedCards = new Set(state.expandedCards);
     }
+  }
+  
+  /**
+   * Génère l'icône stratégie si la tâche en a une
+   * @param {object} record - Données de la tâche
+   * @returns {string} HTML de l'icône ou vide
+   */
+  getStrategyIcon(record) {
+    const hasStrategy = this.hasStrategy(record);
+    
+    if (!hasStrategy) {
+      return '';
+    }
+    
+    return `
+      <div class="strategy-indicator" title="Tâche alignée stratégiquement">
+        <i class="bi bi-bullseye text-success"></i>
+      </div>
+    `;
+  }
+  
+  /**
+   * Vérifie si une tâche a une stratégie associée
+   * @param {object} record - Données de la tâche
+   * @returns {boolean} True si la tâche a une stratégie
+   */
+  hasStrategy(record) {
+    // Vérifier les différents champs de stratégie
+    return !!(
+      (record.strategie_id && record.strategie_id.length > 0) ||
+      (record.strategie_ids && record.strategie_ids.length > 0) ||
+      record.objectif ||
+      record.sous_objectif ||
+      record.strategie_objectif
+    );
   }
 }
