@@ -340,6 +340,7 @@ class StatsManager {
   }
 
   generateBureauObjectiveMatrix() {
+    console.log('🏢 Génération matrice bureau × objectif...');
     
     const matrix = {};
     const bureaux = [...DEFAULT_BUREAUX];
@@ -599,7 +600,7 @@ class StatsManager {
     const objectifs = [];
     
     // DEBUG TEMPORAIRE : afficher les premiers 3 tasks pour comprendre le problème
-    if (this.debugCount < 3) {
+    if ((this.debugCount || 0) < 3) {
       console.log('🔍 DEBUG Task', task.id, ':', {
         strategie_id: task.strategie_id,
         strategie_ids: task.strategie_ids,
