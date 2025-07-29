@@ -487,14 +487,22 @@ class StatsManager {
     if (!value) return [];
     
     if (Array.isArray(value)) {
-      return value.filter(v => v && v.trim() && v.trim() !== 'L');
+      return value.filter(v => {
+        if (!v) return false;
+        const str = String(v);
+        return str.trim() && str.trim() !== 'L';
+      });
     }
     
     if (typeof value === 'string') {
       // Grist format : ['value1', 'value2'] ou "value1, value2"
       if (value.startsWith('[') && value.endsWith(']')) {
         try {
-          return JSON.parse(value).filter(v => v && v.trim() && v.trim() !== 'L');
+          return JSON.parse(value).filter(v => {
+            if (!v) return false;
+            const str = String(v);
+            return str.trim() && str.trim() !== 'L';
+          });
         } catch (e) {
           return [value.replace(/[\[\]']/g, '').trim()].filter(v => v && v !== 'L');
         }
@@ -502,7 +510,8 @@ class StatsManager {
       return value.split(',').map(v => v.trim()).filter(v => v && v !== 'L');
     }
     
-    return [String(value)].filter(v => v && v.trim() && v.trim() !== 'L');
+    const str = String(value);
+    return [str].filter(v => v && v.trim() && v.trim() !== 'L');
   }
 
   getTaskObjectives(task) {
