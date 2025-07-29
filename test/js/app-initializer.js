@@ -134,9 +134,11 @@ export class KanbanAppInitializer {
   async initializeBaseComponents() {
     
     try {
-      // Réutiliser KanbanManager existant si disponible
+      // Créer KanbanManager si nécessaire (puisque l'auto-init est désactivée)
       if (!window.kanbanManager) {
-        throw new Error('KanbanManager non disponible');
+        const { KanbanManager } = await import('./kanban-app.js');
+        window.kanbanManager = new KanbanManager();
+        this.components.kanbanManager = window.kanbanManager;
       } else {
         this.components.kanbanManager = window.kanbanManager;
       }

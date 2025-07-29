@@ -64,6 +64,8 @@ class StatsManager {
       const records = await grist.docApi.fetchTable(TABLE_ID);
       this.tasks = this.mapGristRecords(records);
       
+      console.log(`✅ ${this.tasks.length} tâches chargées - DEBUG activé`);
+      
       
     } catch (error) {
       console.error('❌ Erreur chargement tâches:', error);
@@ -101,6 +103,7 @@ class StatsManager {
   }
 
   generateGlobalMetrics() {
+    console.log('📊 Génération metrics globales...');
     const total = this.tasks.length;
     const completed = this.tasks.filter(t => t.statut === 'Terminé').length;
     const inProgress = this.tasks.filter(t => ['En cours', 'À faire'].includes(t.statut)).length;
