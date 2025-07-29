@@ -67,7 +67,7 @@ const STRATEGIES_TABLE_ID = "Ssir_strategie2";
 let projetsDynamiques = [];
 
 // === CLASSE KANBANMANAGER CORRIGÉE ===
-class KanbanManager {
+export class KanbanManager {
   constructor() {
     // Initialiser le logger en premier
     const logger = initLogger();
