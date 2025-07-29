@@ -572,7 +572,7 @@ class StatsManager {
       return value.filter(v => {
         if (!v) return false;
         const str = String(v);
-        return str.trim() && str.trim() !== 'L';
+        return str.trim() && str.trim() !== 'L' && !isNaN(str.trim());
       });
     }
     
@@ -634,11 +634,15 @@ class StatsManager {
     // Méthode 2: Via strategie_id (traiter comme un tableau Grist)
     if (objectifs.length === 0 && task.strategie_id) {
       const strategieIds = this.parseMultipleValues(task.strategie_id);
+      console.log('🔍 IDs stratégies parsés pour task', task.id, ':', strategieIds);
       
       strategieIds.forEach(id => {
         const strategy = this.strategiesData.find(s => s.id == id);
         if (strategy && !objectifs.includes(strategy.objectif)) {
           objectifs.push(strategy.objectif);
+          console.log('✅ Objectif trouvé via strategie_id:', strategy.objectif);
+        } else if (!strategy) {
+          console.log('❌ Stratégie non trouvée pour ID:', id, 'dans', this.strategiesData.length, 'stratégies');
         }
       });
     }
