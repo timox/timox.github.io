@@ -140,6 +140,38 @@ export function generateProjectBadge(projectData) {
 }
 
 /**
+ * Génère un badge stratégique visible sur les cartes
+ * @param {Object} record - Données de la tâche  
+ * @returns {string} HTML du badge stratégique
+ */
+export function generateStrategyBadge(record) {
+  const { strategiesInfo, strategie_objectif, strategie_id } = record;
+  
+  // Support stratégies multiples (nouveau format)
+  if (strategiesInfo && Array.isArray(strategiesInfo) && strategiesInfo.length > 0) {
+    const count = strategiesInfo.length;
+    const tooltip = strategiesInfo.map(s => `• ${s.objectif} → ${s.action}`).join('\n');
+    
+    return `
+      <span class="badge strategy-badge" title="${tooltip.replace(/"/g, '&quot;')}">
+        <i class="bi bi-bullseye"></i>
+        <span class="strategy-count">${count}</span>
+      </span>`;
+  }
+  
+  // Support ancien format (single stratégie)  
+  if (strategie_objectif || (strategie_id && strategie_id.length > 1)) {
+    const title = strategie_objectif ? `Stratégie: ${strategie_objectif}` : 'Stratégie liée';
+    return `
+      <span class="badge strategy-badge strategy-single" title="${title.replace(/"/g, '&quot;')}">
+        <i class="bi bi-bullseye"></i>
+      </span>`;
+  }
+  
+  return '';
+}
+
+/**
  * Génère un badge de responsable
  * @param {string} responsable - Nom du responsable
  * @returns {string} HTML du badge responsable
@@ -250,8 +282,10 @@ export function generateAllTaskBadges(task, isCompact = false) {
       projet: task.projet,
       strategie_objectif: task.strategie_objectif,
       strategie_sous_objectif: task.strategie_sous_objectif,
-      strategie_action: task.strategie_action
+      strategie_action: task.strategie_action,
+      strategiesInfo: task.strategiesInfo
     }),
+    strategy: generateStrategyBadge(task),
     responsables: generateResponsablesBadges(task.qui),
     urgenceImpact: generateUrgenceImpactBadge(task.urgence, task.impact),
     history: (() => {

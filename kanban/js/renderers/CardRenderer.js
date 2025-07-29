@@ -1,7 +1,7 @@
 // === renderers/CardRenderer.js ===
 // Gestionnaire pour le rendu des cartes de tâches
 
-import { generateAllTaskBadges } from '../utils/badges.js';
+import { generateAllTaskBadges, generateStrategyBadge } from '../utils/badges.js';
 import { generateDatesContainer } from '../utils/dates.js';
 import { VIEW_MODES } from '../config/constants.js';
 
@@ -56,12 +56,14 @@ export class CardRenderer {
     // Classes CSS pour les bordures d'échéance
     const hasEcheanceClass = record.date_echeance ? 'has-echeance' : '';
     const urgencyClass = this.getUrgencyClass(record.date_echeance);
+    const hasStrategy = record.strategie_objectif || record.strategie_id?.length > 1 || record.strategiesInfo?.length > 0;
     
     return `
       <div class="kanban-item kanban-item-compact ${hasEcheanceClass} ${urgencyClass}" 
            data-id="${record.id}" 
            data-priority="${priority}"
            data-status="${record.statut || ''}"
+           data-has-strategy="${hasStrategy ? 'true' : 'false'}"
            role="button" 
            tabindex="0"
            aria-label="Tâche: ${record.titre || 'Sans titre'}">
@@ -73,6 +75,9 @@ export class CardRenderer {
         
         <!-- Badges des bureaux -->
         ${badges.bureaux}
+        
+        <!-- Badge stratégique -->
+        ${badges.strategy ? `<div class="card-strategy-section">${badges.strategy}</div>` : ''}
         
         <!-- Header avec priorité, échéance et bouton expand -->
         <div class="compact-header">
@@ -123,6 +128,7 @@ export class CardRenderer {
     const hasEcheanceClass = record.date_echeance ? 'has-echeance' : '';
     const hasDateDebutClass = record.date_debut ? 'has-debut' : '';
     const urgencyClass = this.getUrgencyClass(record.date_echeance);
+    const hasStrategy = record.strategie_objectif || record.strategie_id?.length > 1 || record.strategiesInfo?.length > 0;
     
     // Bouton collapse pour les cartes expandées en mode compact
     const collapseButton = (viewMode === VIEW_MODES.COMPACT && isExpanded) ? 
@@ -138,6 +144,7 @@ export class CardRenderer {
            data-id="${record.id}" 
            data-priority="${priority}"
            data-status="${record.statut || ''}"
+           data-has-strategy="${hasStrategy ? 'true' : 'false'}"
            role="button" 
            tabindex="0"
            aria-label="Tâche: ${record.titre || 'Sans titre'}">
@@ -149,6 +156,9 @@ export class CardRenderer {
         
         <!-- Badges des bureaux -->
         ${badges.bureaux}
+        
+        <!-- Badge stratégique -->
+        ${badges.strategy ? `<div class="card-strategy-section">${badges.strategy}</div>` : ''}
         
         <!-- Header avec priorité et actions -->
         <div class="kanban-item-header">
