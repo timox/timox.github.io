@@ -124,7 +124,7 @@ class StatsManager {
     
     this.generateGlobalMetrics();
     this.generatePersonBureauStats();
-    this.generateStrategicObjectiveStats();
+    this.generateActivityHeatmap();  // Remplace generateStrategicObjectiveStats
     this.generateBureauObjectiveMatrix();
     this.generateCharts();
   }
@@ -230,116 +230,141 @@ class StatsManager {
     }).join('');
   }
 
-  generateStrategicObjectiveStats() {
-    console.log('🎯 Génération stats objectifs stratégiques...');
+  generateActivityHeatmap() {
+    console.log('🔥 Génération heatmap des activités...');
     
-    // Debug: Regarder les champs stratégie dans les tâches
-    if (this.tasks.length > 0) {
-      const firstTask = this.tasks[0];
-      const strategyFields = Object.keys(firstTask).filter(key => key.toLowerCase().includes('strat'));
-      console.log('🔍 Champs stratégie trouvés:', strategyFields);
-      
-      // Tester quelques tâches
-      const tasksWithStrategy = this.tasks.filter(task => 
-        task.strategie_ids || task.strategie_id || task.strategie_objectif || 
-        task.strategie || task.strategy || task.objectif || task.sous_objectif
-      );
-      console.log('📊 Tâches avec champs stratégie:', tasksWithStrategy.length, '/', this.tasks.length);
-      
-      if (tasksWithStrategy.length > 0) {
-        console.log('📋 Exemple tâche avec stratégie:', {
-          id: tasksWithStrategy[0].id,
-          titre: tasksWithStrategy[0].titre,
-          strategie_ids: tasksWithStrategy[0].strategie_ids,
-          strategie_id: tasksWithStrategy[0].strategie_id,
-          strategie_objectif: tasksWithStrategy[0].strategie_objectif,
-          objectif: tasksWithStrategy[0].objectif,
-          sous_objectif: tasksWithStrategy[0].sous_objectif
-        });
-      }
-    }
-    
-    // Définir les 5 objectifs principaux (raccourcis)
+    // Définir les objectifs principaux 
     const objectifs = [
-      'Assurer le fonctionnement des systèmes d\'information',
-      'Garantir la sécurité des systèmes d\'information', 
-      'Répondre aux demandes des métiers',
-      'Assurer la transition vers les systèmes d\'information de demain'
+      'Fonctionnement SI',
+      'Sécurité SI', 
+      'Demandes Métiers',
+      'Transition Future',
+      'Sans Stratégie'
     ];
-
-    const objectifStats = {};
     
-    // Initialiser les stats
-    objectifs.forEach(objectif => {
-      objectifStats[objectif] = {
-        name: this.shortenObjectifName(objectif),
-        total: 0,
-        termine: 0,
-        enCours: 0,
-        percentage: 0
-      };
+    // Créer la matrice bureau × objectif avec intensité
+    const heatmapData = {};
+    const maxValue = { value: 0 };
+    
+    // Initialiser la matrice
+    DEFAULT_BUREAUX.forEach(bureau => {
+      heatmapData[bureau] = {};
+      objectifs.forEach(obj => {
+        heatmapData[bureau][obj] = 0;
+      });
     });
     
-    objectifStats['Sans stratégie'] = {
-      name: 'Sans stratégie',
-      total: 0,
-      termine: 0,
-      enCours: 0,
-      percentage: 0
-    };
-
-    // Analyser chaque tâche
+    // Analyser chaque tâche pour remplir la matrice
     this.tasks.forEach(task => {
+      const taskBureaux = this.parseMultipleValues(task.bureau);
       const taskObjectifs = this.getTaskObjectives(task);
       
-      if (taskObjectifs.length === 0) {
-        // Tâche sans stratégie
-        objectifStats['Sans stratégie'].total++;
-        if (task.statut === 'Terminé') {
-          objectifStats['Sans stratégie'].termine++;
-        } else if (['En cours', 'À faire'].includes(task.statut)) {
-          objectifStats['Sans stratégie'].enCours++;
-        }
-      } else {
-        // Tâche avec stratégie(s)
-        taskObjectifs.forEach(objectif => {
-          if (objectifStats[objectif]) {
-            objectifStats[objectif].total++;
-            if (task.statut === 'Terminé') {
-              objectifStats[objectif].termine++;
-            } else if (['En cours', 'À faire'].includes(task.statut)) {
-              objectifStats[objectif].enCours++;
-            }
+      taskBureaux.forEach(bureau => {
+        if (heatmapData[bureau]) {
+          if (taskObjectifs.length === 0) {
+            heatmapData[bureau]['Sans Stratégie']++;
+            maxValue.value = Math.max(maxValue.value, heatmapData[bureau]['Sans Stratégie']);
+          } else {
+            taskObjectifs.forEach(objectif => {
+              const shortName = this.shortenObjectifName(objectif);
+              if (heatmapData[bureau][shortName] !== undefined) {
+                heatmapData[bureau][shortName]++;
+                maxValue.value = Math.max(maxValue.value, heatmapData[bureau][shortName]);
+              }
+            });
           }
-        });
-      }
+        }
+      });
     });
-
-    // Calculer les pourcentages
-    Object.values(objectifStats).forEach(stats => {
-      stats.percentage = stats.total > 0 ? Math.round((stats.termine / stats.total) * 100) : 0;
-    });
-
-    this.renderObjectivesProgress(objectifStats);
+    
+    this.renderActivityHeatmap(heatmapData, objectifs, maxValue.value);
   }
 
-  renderObjectivesProgress(objectifStats) {
-    const container = document.getElementById('objectives-progress');
+  renderActivityHeatmap(heatmapData, objectifs, maxValue) {
+    const container = document.getElementById('activity-heatmap');
     
-    container.innerHTML = Object.values(objectifStats).map(stats => `
-      <div class="mb-3">
-        <div class="d-flex justify-content-between align-items-center">
-          <span class="fw-bold">${stats.name}</span>
-          <small class="text-muted">${stats.termine}/${stats.total} (${stats.percentage}%)</small>
-        </div>
-        <div class="objectif-progress">
-          <div class="objectif-bar bg-success" style="width: ${stats.percentage}%"></div>
-        </div>
-        <small class="text-muted">
-          <i class="bi bi-play-circle text-warning"></i> ${stats.enCours} en cours
-        </small>
-      </div>
-    `).join('');
+    // Créer le tableau HTML pour la heatmap
+    let html = '<div class="table-responsive">';
+    html += '<table class="table table-sm table-bordered mb-0">';
+    
+    // En-tête avec les objectifs
+    html += '<thead><tr><th style="width: 120px;">Bureau</th>';
+    objectifs.forEach(obj => {
+      html += `<th class="text-center" style="font-size: 0.85rem;">${obj}</th>`;
+    });
+    html += '<th class="text-center">Total</th></tr></thead>';
+    
+    // Corps du tableau avec les données
+    html += '<tbody>';
+    DEFAULT_BUREAUX.forEach(bureau => {
+      html += `<tr><td class="fw-bold" style="font-size: 0.85rem;">${bureau}</td>`;
+      
+      let bureauTotal = 0;
+      objectifs.forEach(obj => {
+        const value = heatmapData[bureau][obj];
+        bureauTotal += value;
+        
+        // Calculer l'intensité de la couleur (0 à 1)
+        const intensity = maxValue > 0 ? value / maxValue : 0;
+        
+        // Couleur: du blanc au bleu foncé pour les stratégies, rouge pour sans stratégie
+        let bgColor;
+        if (obj === 'Sans Stratégie') {
+          bgColor = intensity > 0 ? `rgba(220, 53, 69, ${0.2 + intensity * 0.8})` : '#ffffff';
+        } else {
+          bgColor = intensity > 0 ? `rgba(13, 110, 253, ${0.1 + intensity * 0.9})` : '#ffffff';
+        }
+        
+        const textColor = intensity > 0.5 ? '#ffffff' : '#212529';
+        
+        html += `<td class="text-center" style="background-color: ${bgColor}; color: ${textColor}; font-weight: ${value > 0 ? 'bold' : 'normal'};">`;
+        html += value > 0 ? value : '-';
+        html += '</td>';
+      });
+      
+      // Total par bureau
+      html += `<td class="text-center fw-bold">${bureauTotal}</td>`;
+      html += '</tr>';
+    });
+    
+    // Ligne des totaux
+    html += '<tr class="table-secondary"><td class="fw-bold">Total</td>';
+    let grandTotal = 0;
+    objectifs.forEach(obj => {
+      const colTotal = Object.values(heatmapData).reduce((sum, bureau) => sum + bureau[obj], 0);
+      grandTotal += colTotal;
+      html += `<td class="text-center fw-bold">${colTotal}</td>`;
+    });
+    html += `<td class="text-center fw-bold">${grandTotal}</td>`;
+    html += '</tr>';
+    
+    html += '</tbody></table></div>';
+    
+    // Ajouter une légende
+    html += '<div class="heatmap-legend">';
+    html += '<div class="heatmap-legend-item">';
+    html += '<div class="heatmap-color-box" style="background-color: #ffffff;"></div>';
+    html += '<span>Aucune activité</span>';
+    html += '</div>';
+    html += '<div class="heatmap-legend-item">';
+    html += '<div class="heatmap-color-box" style="background-color: rgba(13, 110, 253, 0.3);"></div>';
+    html += '<span>Activité faible</span>';
+    html += '</div>';
+    html += '<div class="heatmap-legend-item">';
+    html += '<div class="heatmap-color-box" style="background-color: rgba(13, 110, 253, 0.6);"></div>';
+    html += '<span>Activité moyenne</span>';
+    html += '</div>';
+    html += '<div class="heatmap-legend-item">';
+    html += '<div class="heatmap-color-box" style="background-color: rgba(13, 110, 253, 1);"></div>';
+    html += '<span>Activité élevée</span>';
+    html += '</div>';
+    html += '<div class="heatmap-legend-item">';
+    html += '<div class="heatmap-color-box" style="background-color: rgba(220, 53, 69, 0.8);"></div>';
+    html += '<span>Sans stratégie</span>';
+    html += '</div>';
+    html += '</div>';
+    
+    container.innerHTML = html;
   }
 
   generateBureauObjectiveMatrix() {
@@ -445,28 +470,82 @@ class StatsManager {
   }
 
   generateStrategyChart() {
-    const strategyCounts = {
-      'Avec stratégie': 0,
-      'Sans stratégie': 0
-    };
+    console.log('📊 Génération répartition par sous-objectifs...');
+    
+    // Compter par sous-objectifs
+    const sousObjectifCounts = {};
+    let sansSousObjectif = 0;
     
     this.tasks.forEach(task => {
-      const taskObjectifs = this.getTaskObjectives(task);
-      if (taskObjectifs.length > 0) {
-        strategyCounts['Avec stratégie']++;
+      // Récupérer les IDs de stratégie
+      const strategieIds = this.parseMultipleValues(task.strategie_id);
+      
+      if (strategieIds.length === 0) {
+        sansSousObjectif++;
       } else {
-        strategyCounts['Sans stratégie']++;
+        strategieIds.forEach(id => {
+          const strategy = this.strategiesData.find(s => s.id == id);
+          if (strategy && strategy.sous_objectif) {
+            // Raccourcir le nom du sous-objectif pour l'affichage
+            const shortName = strategy.sous_objectif.length > 50 
+              ? strategy.sous_objectif.substring(0, 47) + '...' 
+              : strategy.sous_objectif;
+            
+            if (!sousObjectifCounts[shortName]) {
+              sousObjectifCounts[shortName] = {
+                count: 0,
+                objectif: this.shortenObjectifName(strategy.objectif)
+              };
+            }
+            sousObjectifCounts[shortName].count++;
+          }
+        });
       }
     });
+    
+    // Préparer les données pour le graphique
+    const labels = ['Sans stratégie'];
+    const data = [sansSousObjectif];
+    const backgroundColors = ['#dc3545']; // Rouge pour sans stratégie
+    
+    // Ajouter les sous-objectifs triés par count
+    const sortedSousObjectifs = Object.entries(sousObjectifCounts)
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 10); // Top 10 pour ne pas surcharger
+    
+    sortedSousObjectifs.forEach(([label, info]) => {
+      labels.push(`${label} (${info.objectif})`);
+      data.push(info.count);
+      
+      // Couleur selon l'objectif principal
+      switch(info.objectif) {
+        case 'Fonctionnement SI': backgroundColors.push('#0d6efd'); break;
+        case 'Sécurité SI': backgroundColors.push('#ffc107'); break;
+        case 'Demandes Métiers': backgroundColors.push('#198754'); break;
+        case 'Transition Future': backgroundColors.push('#6f42c1'); break;
+        default: backgroundColors.push('#6c757d');
+      }
+    });
+    
+    // Si d'autres sous-objectifs non affichés
+    const othersCount = Object.values(sousObjectifCounts)
+      .slice(10)
+      .reduce((sum, info) => sum + info.count, 0);
+    
+    if (othersCount > 0) {
+      labels.push('Autres sous-objectifs');
+      data.push(othersCount);
+      backgroundColors.push('#6c757d');
+    }
 
     const ctx = document.getElementById('strategy-chart').getContext('2d');
     this.charts.strategy = new Chart(ctx, {
-      type: 'pie',
+      type: 'doughnut',
       data: {
-        labels: Object.keys(strategyCounts),
+        labels: labels,
         datasets: [{
-          data: Object.values(strategyCounts),
-          backgroundColor: ['#28a745', '#dc3545']
+          data: data,
+          backgroundColor: backgroundColors
         }]
       },
       options: {
@@ -474,7 +553,40 @@ class StatsManager {
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            position: 'bottom'
+            position: 'bottom',
+            labels: {
+              padding: 10,
+              font: {
+                size: 11
+              },
+              generateLabels: function(chart) {
+                const data = chart.data;
+                const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+                
+                return data.labels.map((label, i) => {
+                  const value = data.datasets[0].data[i];
+                  const percentage = ((value / total) * 100).toFixed(1);
+                  
+                  return {
+                    text: `${label}: ${percentage}%`,
+                    fillStyle: data.datasets[0].backgroundColor[i],
+                    hidden: false,
+                    index: i
+                  };
+                });
+              }
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const value = context.parsed;
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = ((value / total) * 100).toFixed(1);
+                return `${label}: ${value} tâches (${percentage}%)`;
+              }
+            }
           }
         }
       }
