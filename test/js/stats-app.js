@@ -544,13 +544,20 @@ class StatsManager {
       }
     }
     
-    // Méthode 2: Via strategie_id (ancien système)
+    // Méthode 2: Via strategie_id (traiter comme un tableau Grist)
     if (objectifs.length === 0 && task.strategie_id) {
-      const strategy = this.strategiesData.find(s => s.id == task.strategie_id);
-      if (strategy) {
-        objectifs.push(strategy.objectif);
-        console.log('✅ Objectif trouvé via strategie_id:', strategy.objectif);
-      }
+      const strategieIds = this.parseMultipleValues(task.strategie_id);
+      console.log('🔍 IDs stratégies parsés:', strategieIds);
+      
+      strategieIds.forEach(id => {
+        const strategy = this.strategiesData.find(s => s.id == id);
+        if (strategy && !objectifs.includes(strategy.objectif)) {
+          objectifs.push(strategy.objectif);
+          console.log('✅ Objectif trouvé via strategie_id:', strategy.objectif);
+        } else if (!strategy) {
+          console.log('❌ Stratégie non trouvée pour ID:', id);
+        }
+      });
     }
     
     // Méthode 3: Via champ objectif direct
