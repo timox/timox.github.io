@@ -168,10 +168,10 @@ export class NotesJsonMigrator {
     // Ajouter l'entrée d'historique
     notesData.history.push(newHistoryEntry);
     
-    // ✅ NOUVEAU: Synchroniser content avec le dernier commentaire
-    if (historyEntry.action === 'comment' && historyEntry.newValue) {
+    // ✅ SOLUTION UNIVERSELLE: Toujours synchroniser content avec la dernière valeur significative
+    if (historyEntry.newValue && historyEntry.newValue.trim() !== '') {
       notesData.content = historyEntry.newValue;
-      console.log(`NotesJsonMigrator: Synchronizing content with latest comment for record ${record.id}`);
+      console.log(`NotesJsonMigrator: Synchronizing content with latest entry for record ${record.id}`);
     }
 
     // Limiter l'historique à 50 entrées pour éviter que les notes deviennent trop volumineuses
