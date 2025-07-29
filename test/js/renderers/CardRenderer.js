@@ -56,7 +56,9 @@ export class CardRenderer {
     // Classes CSS pour les bordures d'échéance
     const hasEcheanceClass = record.date_echeance ? 'has-echeance' : '';
     const urgencyClass = this.getUrgencyClass(record.date_echeance);
-    const hasStrategy = record.strategie_objectif || record.strategie_id?.length > 1 || record.strategiesInfo?.length > 0;
+    const hasStrategy = record.strategie_objectif || 
+                       (Array.isArray(record.strategie_id) && record.strategie_id.length > 1) || 
+                       (record.strategiesInfo && record.strategiesInfo.length > 0);
     
     return `
       <div class="kanban-item kanban-item-compact ${hasEcheanceClass} ${urgencyClass}" 
@@ -129,7 +131,9 @@ export class CardRenderer {
     const hasEcheanceClass = record.date_echeance ? 'has-echeance' : '';
     const hasDateDebutClass = record.date_debut ? 'has-debut' : '';
     const urgencyClass = this.getUrgencyClass(record.date_echeance);
-    const hasStrategy = record.strategie_objectif || record.strategie_id?.length > 1 || record.strategiesInfo?.length > 0;
+    const hasStrategy = record.strategie_objectif || 
+                       (Array.isArray(record.strategie_id) && record.strategie_id.length > 1) || 
+                       (record.strategiesInfo && record.strategiesInfo.length > 0);
     
     // Bouton collapse pour les cartes expandées en mode compact
     const collapseButton = (viewMode === VIEW_MODES.COMPACT && isExpanded) ? 
