@@ -233,21 +233,35 @@ class StatsManager {
 
   generateActivityHeatmap() {
     
-    // Définir les objectifs principaux 
+    // Définir les objectifs principaux avec les bonnes abréviations
     const objectifs = [
-      'Fonctionnement SI',
-      'Sécurité SI', 
-      'Demandes Métiers',
-      'Transition Future',
+      'Fonctionnement',
+      'Sécurité', 
+      'Métier',
+      'Transition',
       'Sans Stratégie'
     ];
+    
+    // Découvrir tous les bureaux présents dans les données
+    const bureauxInData = new Set();
+    this.tasks.forEach(task => {
+      const taskBureaux = this.parseMultipleValues(task.bureau);
+      taskBureaux.forEach(bureau => {
+        if (bureau && bureau.trim()) {
+          bureauxInData.add(bureau.trim());
+        }
+      });
+    });
+    
+    const bureaux = Array.from(bureauxInData).sort();
+    console.log('🔥 Bureaux pour heatmap:', bureaux);
     
     // Créer la matrice bureau × objectif avec intensité
     const heatmapData = {};
     const maxValue = { value: 0 };
     
-    // Initialiser la matrice
-    DEFAULT_BUREAUX.forEach(bureau => {
+    // Initialiser la matrice avec les vrais bureaux
+    bureaux.forEach(bureau => {
       heatmapData[bureau] = {};
       objectifs.forEach(obj => {
         heatmapData[bureau][obj] = 0;
@@ -277,10 +291,10 @@ class StatsManager {
       });
     });
     
-    this.renderActivityHeatmap(heatmapData, objectifs, maxValue.value);
+    this.renderActivityHeatmap(heatmapData, objectifs, bureaux, maxValue.value);
   }
 
-  renderActivityHeatmap(heatmapData, objectifs, maxValue) {
+  renderActivityHeatmap(heatmapData, objectifs, bureaux, maxValue) {
     const container = document.getElementById('activity-heatmap');
     
     // Créer le tableau HTML pour la heatmap
@@ -296,7 +310,7 @@ class StatsManager {
     
     // Corps du tableau avec les données
     html += '<tbody>';
-    DEFAULT_BUREAUX.forEach(bureau => {
+    bureaux.forEach(bureau => {
       html += `<tr><td class="fw-bold" style="font-size: 0.85rem;">${bureau}</td>`;
       
       let bureauTotal = 0;
@@ -508,8 +522,21 @@ class StatsManager {
   generateBureauObjectiveMatrix() {
     console.log('🏢 Génération matrice bureau × objectif...');
     
+    // Utiliser tous les bureaux présents dans les données réelles
+    const bureauxInData = new Set();
+    this.tasks.forEach(task => {
+      const taskBureaux = this.parseMultipleValues(task.bureau);
+      taskBureaux.forEach(bureau => {
+        if (bureau && bureau.trim()) {
+          bureauxInData.add(bureau.trim());
+        }
+      });
+    });
+    
+    const bureaux = Array.from(bureauxInData).sort();
+    console.log('🔍 Bureaux trouvés dans les données:', bureaux);
+    
     const matrix = {};
-    const bureaux = [...DEFAULT_BUREAUX];
     
     // Initialiser la matrice
     bureaux.forEach(bureau => {
@@ -524,9 +551,18 @@ class StatsManager {
     });
 
     // Analyser chaque tâche
-    this.tasks.forEach(task => {
+    this.tasks.forEach((task, index) => {
       const taskBureaux = this.parseMultipleValues(task.bureau);
       const taskObjectifs = this.getTaskObjectives(task);
+      
+      // DEBUG: afficher les 3 premières tâches
+      if (index < 3) {
+        console.log(`🔍 DEBUG Matrice Task ${task.id}:`, {
+          bureaux: taskBureaux,
+          objectifs: taskObjectifs,
+          objectifsShort: taskObjectifs.map(o => this.shortenObjectifName(o))
+        });
+      }
       
       taskBureaux.forEach(bureau => {
         if (matrix[bureau]) {
@@ -539,9 +575,16 @@ class StatsManager {
               const shortName = this.shortenObjectifName(objectif);
               if (matrix[bureau][shortName]) {
                 matrix[bureau][shortName]++;
+                if (index < 3) {
+                  console.log(`✅ Incrémenté ${bureau} → ${shortName}`);
+                }
+              } else if (index < 3) {
+                console.log(`❌ Clé non trouvée: ${bureau} → ${shortName}`);
               }
             });
           }
+        } else if (index < 3) {
+          console.log(`❌ Bureau non trouvé dans matrice: ${bureau}`);
         }
       });
     });
