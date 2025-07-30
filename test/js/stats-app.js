@@ -555,12 +555,15 @@ class StatsManager {
       const taskBureaux = this.parseMultipleValues(task.bureau);
       const taskObjectifs = this.getTaskObjectives(task);
       
-      // DEBUG: afficher les 3 premières tâches
-      if (index < 3) {
+      // DEBUG: afficher les 5 premières tâches + quelques autres
+      if (index < 5 || (index % 10 === 0 && index < 30)) {
         console.log(`🔍 DEBUG Matrice Task ${task.id}:`, {
-          bureaux: taskBureaux,
+          titre: task.titre,
+          bureau_raw: task.bureau,
+          bureaux_parsed: taskBureaux,
           objectifs: taskObjectifs,
-          objectifsShort: taskObjectifs.map(o => this.shortenObjectifName(o))
+          objectifsShort: taskObjectifs.map(o => this.shortenObjectifName(o)),
+          strategie_id: task.strategie_id
         });
       }
       
@@ -589,6 +592,17 @@ class StatsManager {
       });
     });
 
+    // DEBUG: Afficher le résultat final de la matrice
+    console.log('📊 MATRICE FINALE:', matrix);
+    
+    // Compter le total de tâches pour vérification
+    let totalTasksInMatrix = 0;
+    Object.values(matrix).forEach(bureauStats => {
+      totalTasksInMatrix += bureauStats['Total'];
+    });
+    
+    console.log(`🔢 Total tâches dans matrice: ${totalTasksInMatrix} / Total tâches réelles: ${this.tasks.length}`);
+    
     this.renderBureauObjectiveMatrix(matrix);
   }
 
@@ -792,11 +806,18 @@ class StatsManager {
     if (!value) return [];
     
     if (Array.isArray(value)) {
-      return value.filter(v => {
+      const result = value.filter(v => {
         if (!v) return false;
         const str = String(v);
         return str.trim() && str.trim() !== 'L';
       });
+      
+      // DEBUG occasionnel
+      if (Math.random() < 0.1) {
+        console.log('🔍 parseMultipleValues array:', { input: value, output: result });
+      }
+      
+      return result;
     }
     
     if (typeof value === 'string') {
@@ -822,12 +843,13 @@ class StatsManager {
   getTaskObjectives(task) {
     const objectifs = [];
     
-    // DEBUG TEMPORAIRE : afficher les premiers 3 tasks pour comprendre le problème
-    if ((this.debugCount || 0) < 3) {
-      console.log('🔍 DEBUG Task', task.id, ':', {
+    // DEBUG TEMPORAIRE : afficher plus de tâches pour comprendre le problème
+    if ((this.debugCount || 0) < 10) {
+      console.log('🎯 DEBUG getTaskObjectives Task', task.id, ':', {
         strategie_id: task.strategie_id,
         strategie_ids: task.strategie_ids,
         objectif: task.objectif,
+        strategie_objectif: task.strategie_objectif,
         strategies_data_count: this.strategiesData.length
       });
       this.debugCount = (this.debugCount || 0) + 1;
