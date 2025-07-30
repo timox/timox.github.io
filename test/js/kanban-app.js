@@ -630,7 +630,7 @@ export class KanbanManager {
     const strategyTooltip = strategiesText ? 
       `data-toggle="tooltip" data-placement="top" title="Stratégies: ${strategiesText}"` : '';
     const strategyIcon = strategiesInfo.length > 0 ? 
-      `<i class="fas fa-bullseye strategie-icon" ${strategyTooltip}></i>` : '';
+      `<i class="bi bi-bullseye strategie-icon" ${strategyTooltip}></i>` : '';
     
     // Debug icône stratégie désactivé
 
