@@ -592,6 +592,20 @@ class StatsManager {
 
   // === UTILITAIRES ===
 
+  parseStrategyIds(value) {
+    if (!value) return [];
+    
+    if (Array.isArray(value)) {
+      return value.filter(v => {
+        if (!v) return false;
+        const str = String(v);
+        return str.trim() && str.trim() !== 'L' && !isNaN(str);
+      }).map(v => parseInt(v));
+    }
+    
+    return [];
+  }
+
   parseMultipleValues(value) {
     if (!value) return [];
     
@@ -599,7 +613,7 @@ class StatsManager {
       return value.filter(v => {
         if (!v) return false;
         const str = String(v);
-        return str.trim() && str.trim() !== 'L' && !isNaN(str.trim());
+        return str.trim() && str.trim() !== 'L';
       });
     }
     
@@ -660,7 +674,7 @@ class StatsManager {
     
     // Méthode 2: Via strategie_id (traiter comme un tableau Grist)
     if (objectifs.length === 0 && task.strategie_id) {
-      const strategieIds = this.parseMultipleValues(task.strategie_id);
+      const strategieIds = this.parseStrategyIds(task.strategie_id);
       console.log('🔍 IDs stratégies parsés pour task', task.id, ':', strategieIds);
       
       strategieIds.forEach(id => {
