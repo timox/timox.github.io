@@ -368,10 +368,10 @@ class StatsManager {
   }
 
   generateTasksObjectivesTable() {
-    console.log('📋 Génération tableau tâches × objectifs...');
+    console.log('📋 Génération tableau tâches × objectifs regroupé...');
     
     const tbody = document.querySelector('#tasks-objectives-table tbody');
-    const tasksWithObjectives = [];
+    const objectifsGroups = {};
     
     // Grouper les tâches par objectif
     this.tasks.forEach(task => {
@@ -379,71 +379,97 @@ class StatsManager {
       
       if (objectifs.length > 0) {
         objectifs.forEach(objectif => {
-          tasksWithObjectives.push({
-            objectif: objectif,
-            task: task
-          });
+          if (!objectifsGroups[objectif]) {
+            objectifsGroups[objectif] = [];
+          }
+          objectifsGroups[objectif].push(task);
         });
       } else {
         // Tâches sans objectif stratégique
-        tasksWithObjectives.push({
-          objectif: 'Sans stratégie définie',
-          task: task
-        });
+        const sansStrategie = 'Sans stratégie définie';
+        if (!objectifsGroups[sansStrategie]) {
+          objectifsGroups[sansStrategie] = [];
+        }
+        objectifsGroups[sansStrategie].push(task);
       }
     });
     
-    // Trier par objectif puis par titre de tâche
-    tasksWithObjectives.sort((a, b) => {
-      if (a.objectif !== b.objectif) {
-        return a.objectif.localeCompare(b.objectif);
-      }
-      return (a.task.titre || '').localeCompare(b.task.titre || '');
-    });
+    // Trier les objectifs par nom
+    const sortedObjectifs = Object.keys(objectifsGroups).sort();
     
-    // Générer le HTML du tableau
-    tbody.innerHTML = tasksWithObjectives.map(item => {
-      const task = item.task;
-      const responsables = this.parseMultipleValues(task.qui);
-      const bureaux = this.parseMultipleValues(task.bureau);
+    let htmlRows = [];
+    
+    // Générer le HTML du tableau avec regroupement
+    sortedObjectifs.forEach(objectif => {
+      const tasks = objectifsGroups[objectif];
+      const taskCount = tasks.length;
       
-      // Badges pour responsables
-      const responsablesBadges = responsables.map(resp => 
-        `<span class="badge bg-secondary me-1">${resp}</span>`
-      ).join('');
+      // Trier les tâches par titre
+      tasks.sort((a, b) => (a.titre || '').localeCompare(b.titre || ''));
       
-      // Badges pour bureaux
-      const bureauxBadges = bureaux.map(bureau => {
-        return generateSingleBureauBadge(bureau, true);
-      }).join(' ');
-      
-      // Badge de priorité
-      const priorityClass = this.getPriorityClass(task.urgence, task.impact);
-      const priorityBadge = `<span class="badge ${priorityClass}">${this.getPriorityLabel(task.urgence, task.impact)}</span>`;
-      
-      // Badge de statut
-      const statusClass = this.getStatusClass(task.statut);
-      const statusBadge = `<span class="badge ${statusClass}">${task.statut || 'Non défini'}</span>`;
-      
-      // Date d'échéance
-      const echeance = task.date_echeance ? 
-        new Date(task.date_echeance).toLocaleDateString('fr-FR') : 
-        '<span class="text-muted">-</span>';
-      
-      return `
-        <tr>
-          <td><strong>${item.objectif}</strong></td>
-          <td>${task.titre || 'Sans titre'}</td>
-          <td>${statusBadge}</td>
-          <td>${responsablesBadges || '<span class="text-muted">-</span>'}</td>
-          <td>${bureauxBadges || '<span class="text-muted">-</span>'}</td>
-          <td>${priorityBadge}</td>
-          <td>${echeance}</td>
+      // Première ligne avec l'objectif et le compteur
+      htmlRows.push(`
+        <tr class="table-info">
+          <td rowspan="${taskCount}">
+            <strong>${objectif}</strong>
+            <br>
+            <span class="badge bg-primary">${taskCount} tâche${taskCount > 1 ? 's' : ''}</span>
+          </td>
+          ${this.generateTaskRow(tasks[0], false)}
         </tr>
-      `;
-    }).join('');
+      `);
+      
+      // Lignes suivantes pour les autres tâches du même objectif
+      for (let i = 1; i < tasks.length; i++) {
+        htmlRows.push(`
+          <tr>
+            ${this.generateTaskRow(tasks[i], false)}
+          </tr>
+        `);
+      }
+    });
     
-    console.log(`✅ ${tasksWithObjectives.length} entrées générées dans le tableau`);
+    tbody.innerHTML = htmlRows.join('');
+    
+    const totalEntries = Object.values(objectifsGroups).reduce((sum, tasks) => sum + tasks.length, 0);
+    console.log(`✅ ${totalEntries} tâches regroupées en ${sortedObjectifs.length} objectifs`);
+  }
+
+  generateTaskRow(task, includeObjectif = true) {
+    const responsables = this.parseMultipleValues(task.qui);
+    const bureaux = this.parseMultipleValues(task.bureau);
+    
+    // Badges pour responsables
+    const responsablesBadges = responsables.map(resp => 
+      `<span class="badge bg-secondary me-1">${resp}</span>`
+    ).join('');
+    
+    // Badges pour bureaux
+    const bureauxBadges = bureaux.map(bureau => {
+      return generateSingleBureauBadge(bureau, true);
+    }).join(' ');
+    
+    // Badge de priorité
+    const priorityClass = this.getPriorityClass(task.urgence, task.impact);
+    const priorityBadge = `<span class="badge ${priorityClass}">${this.getPriorityLabel(task.urgence, task.impact)}</span>`;
+    
+    // Badge de statut
+    const statusClass = this.getStatusClass(task.statut);
+    const statusBadge = `<span class="badge ${statusClass}">${task.statut || 'Non défini'}</span>`;
+    
+    // Date d'échéance
+    const echeance = task.date_echeance ? 
+      new Date(task.date_echeance).toLocaleDateString('fr-FR') : 
+      '<span class="text-muted">-</span>';
+    
+    return `
+      <td>${task.titre || 'Sans titre'}</td>
+      <td>${statusBadge}</td>
+      <td>${responsablesBadges || '<span class="text-muted">-</span>'}</td>
+      <td>${bureauxBadges || '<span class="text-muted">-</span>'}</td>
+      <td>${priorityBadge}</td>
+      <td>${echeance}</td>
+    `;
   }
 
   getPriorityClass(urgence, impact) {
@@ -488,10 +514,10 @@ class StatsManager {
     // Initialiser la matrice
     bureaux.forEach(bureau => {
       matrix[bureau] = {
-        'Fonctionnement SI': 0,
-        'Sécurité SI': 0,
-        'Demandes Métiers': 0,
-        'Transition Future': 0,
+        'Fonctionnement': 0,
+        'Sécurité': 0,
+        'Métier': 0,
+        'Transition': 0,
         'Sans Stratégie': 0,
         'Total': 0
       };
@@ -529,10 +555,10 @@ class StatsManager {
     tbody.innerHTML = Object.entries(matrix).map(([bureau, stats]) => `
       <tr>
         <td><strong>${bureau}</strong></td>
-        <td class="text-center">${stats['Fonctionnement SI']}</td>
-        <td class="text-center">${stats['Sécurité SI']}</td>
-        <td class="text-center">${stats['Demandes Métiers']}</td>
-        <td class="text-center">${stats['Transition Future']}</td>
+        <td class="text-center">${stats['Fonctionnement']}</td>
+        <td class="text-center">${stats['Sécurité']}</td>
+        <td class="text-center">${stats['Métier']}</td>
+        <td class="text-center">${stats['Transition']}</td>
         <td class="text-center">${stats['Sans Stratégie']}</td>
         <td class="text-center"><strong>${stats['Total']}</strong></td>
       </tr>
@@ -816,10 +842,10 @@ class StatsManager {
 
   shortenObjectifName(objectif) {
     const mapping = {
-      'Assurer le fonctionnement des systèmes d\'information': 'Fonctionnement SI',
-      'Garantir la sécurité des systèmes d\'information': 'Sécurité SI',
-      'Répondre aux demandes des métiers': 'Demandes Métiers',
-      'Assurer la transition vers les systèmes d\'information de demain': 'Transition Future'
+      'Assurer le fonctionnement des systèmes d\'information': 'Fonctionnement',
+      'Garantir la sécurité des systèmes d\'information': 'Sécurité',
+      'Répondre aux demandes des métiers': 'Métier',
+      'Assurer la transition vers les systèmes d\'information de demain': 'Transition'
     };
     
     return mapping[objectif] || objectif;
