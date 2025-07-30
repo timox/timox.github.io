@@ -126,6 +126,7 @@ class StatsManager {
     this.generatePersonBureauStats();
     this.generateActivityHeatmap();  // Remplace generateStrategicObjectiveStats
     this.generateBureauObjectiveMatrix();
+    this.generateTasksObjectivesTable();
     this.generateCharts();
   }
 
@@ -364,6 +365,118 @@ class StatsManager {
     html += '</div>';
     
     container.innerHTML = html;
+  }
+
+  generateTasksObjectivesTable() {
+    console.log('📋 Génération tableau tâches × objectifs...');
+    
+    const tbody = document.querySelector('#tasks-objectives-table tbody');
+    const tasksWithObjectives = [];
+    
+    // Grouper les tâches par objectif
+    this.tasks.forEach(task => {
+      const objectifs = this.getTaskObjectives(task);
+      
+      if (objectifs.length > 0) {
+        objectifs.forEach(objectif => {
+          tasksWithObjectives.push({
+            objectif: objectif,
+            task: task
+          });
+        });
+      } else {
+        // Tâches sans objectif stratégique
+        tasksWithObjectives.push({
+          objectif: 'Sans stratégie définie',
+          task: task
+        });
+      }
+    });
+    
+    // Trier par objectif puis par titre de tâche
+    tasksWithObjectives.sort((a, b) => {
+      if (a.objectif !== b.objectif) {
+        return a.objectif.localeCompare(b.objectif);
+      }
+      return (a.task.titre || '').localeCompare(b.task.titre || '');
+    });
+    
+    // Générer le HTML du tableau
+    tbody.innerHTML = tasksWithObjectives.map(item => {
+      const task = item.task;
+      const responsables = this.parseMultipleValues(task.qui);
+      const bureaux = this.parseMultipleValues(task.bureau);
+      
+      // Badges pour responsables
+      const responsablesBadges = responsables.map(resp => 
+        `<span class="badge bg-secondary me-1">${resp}</span>`
+      ).join('');
+      
+      // Badges pour bureaux
+      const bureauxBadges = bureaux.map(bureau => {
+        return generateSingleBureauBadge(bureau, true);
+      }).join(' ');
+      
+      // Badge de priorité
+      const priorityClass = this.getPriorityClass(task.urgence, task.impact);
+      const priorityBadge = `<span class="badge ${priorityClass}">${this.getPriorityLabel(task.urgence, task.impact)}</span>`;
+      
+      // Badge de statut
+      const statusClass = this.getStatusClass(task.statut);
+      const statusBadge = `<span class="badge ${statusClass}">${task.statut || 'Non défini'}</span>`;
+      
+      // Date d'échéance
+      const echeance = task.date_echeance ? 
+        new Date(task.date_echeance).toLocaleDateString('fr-FR') : 
+        '<span class="text-muted">-</span>';
+      
+      return `
+        <tr>
+          <td><strong>${item.objectif}</strong></td>
+          <td>${task.titre || 'Sans titre'}</td>
+          <td>${statusBadge}</td>
+          <td>${responsablesBadges || '<span class="text-muted">-</span>'}</td>
+          <td>${bureauxBadges || '<span class="text-muted">-</span>'}</td>
+          <td>${priorityBadge}</td>
+          <td>${echeance}</td>
+        </tr>
+      `;
+    }).join('');
+    
+    console.log(`✅ ${tasksWithObjectives.length} entrées générées dans le tableau`);
+  }
+
+  getPriorityClass(urgence, impact) {
+    if (urgence === 'Immédiate' || impact === 'Critique') {
+      return 'bg-danger';
+    } else if (urgence === 'Courte' || impact === 'Important') {
+      return 'bg-warning';
+    } else if (urgence === 'Moyenne' || impact === 'Modéré') {
+      return 'bg-info';
+    }
+    return 'bg-secondary';
+  }
+
+  getPriorityLabel(urgence, impact) {
+    if (urgence === 'Immédiate' || impact === 'Critique') {
+      return 'P1 - Critique';
+    } else if (urgence === 'Courte' || impact === 'Important') {
+      return 'P2 - Important';
+    } else if (urgence === 'Moyenne' || impact === 'Modéré') {
+      return 'P3 - Modéré';
+    }
+    return 'P4 - Faible';
+  }
+
+  getStatusClass(statut) {
+    switch (statut) {
+      case 'Terminé': return 'bg-success';
+      case 'En cours': return 'bg-primary';
+      case 'À faire': return 'bg-warning';
+      case 'Bloqué': return 'bg-danger';
+      case 'En attente': return 'bg-secondary';
+      default: return 'bg-light text-dark';
+    }
   }
 
   generateBureauObjectiveMatrix() {
