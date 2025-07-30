@@ -625,10 +625,10 @@ export class KanbanManager {
     // Debug stratégies désactivé
     
     const strategiesText = strategiesInfo.length > 0 
-      ? strategiesInfo.map(s => `${s.objectif} → ${s.action}`).join(' | ')
+      ? strategiesInfo.map(s => `• ${s.objectif}`).join('\n')
       : '';
     const strategyTooltip = strategiesText ? 
-      `data-toggle="tooltip" data-placement="top" title="Stratégies: ${strategiesText}"` : '';
+      `title="${strategiesInfo.length} stratégie${strategiesInfo.length > 1 ? 's' : ''} liée${strategiesInfo.length > 1 ? 's' : ''}"` : '';
     const strategyIcon = strategiesInfo.length > 0 ? 
       `<i class="bi bi-bullseye strategie-icon" ${strategyTooltip}></i>` : '';
     

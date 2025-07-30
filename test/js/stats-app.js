@@ -14,7 +14,7 @@ import { generateSingleBureauBadge } from './utils/badges.js';
 class StatsManager {
   constructor() {
     this.tasks = [];
-    this.strategiesData = STRATEGY_DATA || [];
+    this.strategiesData = [];
     this.charts = {};
     
     
@@ -25,6 +25,7 @@ class StatsManager {
     try {
       
       await this.waitForGristReady();
+      await this.loadStrategies();
       await this.loadTasks();
       this.generateStats();
       
@@ -56,6 +57,32 @@ class StatsManager {
       
       checkGrist();
     });
+  }
+
+  async loadStrategies() {
+    try {
+      const gristData = await grist.docApi.fetchTable('Ssir_strategie2');
+      
+      // Convertir le format Grist en tableau d'objets
+      this.strategiesData = [];
+      if (gristData && gristData.id) {
+        const count = gristData.id.length;
+        for (let i = 0; i < count; i++) {
+          this.strategiesData.push({
+            id: gristData.id[i],
+            objectif: gristData.objectif?.[i] || '',
+            sous_objectif: gristData.sous_objectif?.[i] || '',
+            action: gristData.action?.[i] || ''
+          });
+        }
+      }
+      
+      console.log(`✅ ${this.strategiesData.length} stratégies chargées`);
+    } catch (error) {
+      console.error('❌ Erreur chargement stratégies:', error);
+      // Ne pas faire échouer si les stratégies ne sont pas disponibles
+      this.strategiesData = [];
+    }
   }
 
   async loadTasks() {
