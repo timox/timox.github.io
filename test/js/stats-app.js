@@ -521,6 +521,7 @@ class StatsManager {
 
   generateBureauObjectiveMatrix() {
     console.log('🏢 Génération matrice bureau × objectif...');
+    console.log('📌 Note: Une tâche multi-bureaux compte pour chaque bureau (évaluation de charge de travail)');
     
     // Utiliser tous les bureaux présents dans les données réelles
     const bureauxInData = new Set();
@@ -597,11 +598,23 @@ class StatsManager {
     
     // Compter le total de tâches pour vérification
     let totalTasksInMatrix = 0;
+    let tasksWithMultipleBureaux = 0;
+    this.tasks.forEach(task => {
+      const bureaux = this.parseMultipleValues(task.bureau);
+      if (bureaux.length > 1) {
+        tasksWithMultipleBureaux++;
+      }
+    });
+    
     Object.values(matrix).forEach(bureauStats => {
       totalTasksInMatrix += bureauStats['Total'];
     });
     
-    console.log(`🔢 Total tâches dans matrice: ${totalTasksInMatrix} / Total tâches réelles: ${this.tasks.length}`);
+    console.log(`🔢 Comptage final:`);
+    console.log(`   - Total entrées dans matrice: ${totalTasksInMatrix}`);
+    console.log(`   - Total tâches réelles: ${this.tasks.length}`);
+    console.log(`   - Tâches multi-bureaux: ${tasksWithMultipleBureaux}`);
+    console.log(`   ℹ️  Différence normale car les tâches multi-bureaux comptent pour chaque bureau concerné`);
     
     this.renderBureauObjectiveMatrix(matrix);
   }
