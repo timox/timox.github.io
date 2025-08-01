@@ -942,6 +942,9 @@ class StatsManager {
   }
 
   shortenObjectifName(objectif) {
+    // Nettoyer les espaces en trop avant le mapping
+    const cleanObjectif = objectif?.trim();
+    
     const mapping = {
       'Assurer le fonctionnement des systèmes d\'information': 'Fonctionnement',
       'Garantir la sécurité des systèmes d\'information': 'Sécurité',
@@ -949,8 +952,9 @@ class StatsManager {
       'Assurer la transition vers les systèmes d\'information de demain': 'Transition'
     };
     
-    console.log('🔍 shortenObjectifName - Input:', JSON.stringify(objectif), '- Output:', mapping[objectif] || objectif);
-    return mapping[objectif] || objectif;
+    const result = mapping[cleanObjectif] || cleanObjectif;
+    console.log('🔍 shortenObjectifName - Input:', JSON.stringify(objectif), '- Cleaned:', JSON.stringify(cleanObjectif), '- Output:', result);
+    return result;
   }
 
 
