@@ -404,26 +404,26 @@ export class KanbanAppInitializer {
    */
   createQuickActionButtons() {
     console.log('🔘 Création des boutons d\'actions rapides...');
-    const header = document.querySelector('.kanban-header .d-flex');
-    if (!header) {
-      console.warn('Header .kanban-header .d-flex non trouvé pour les boutons d\'actions');
-      console.log('Headers disponibles:', document.querySelectorAll('.kanban-header'));
-      return;
-    }
     
-    // Vérifier s'ils existent déjà
-    if (header.querySelector('.quick-actions')) {
+    // Vérifier s'ils existent déjà (dans le header)
+    if (document.querySelector('.quick-actions')) {
       console.log('✅ Boutons d\'actions rapides déjà présents');
       return;
     }
     
+    // Chercher le conteneur des boutons dans le header
+    const buttonsContainer = document.querySelector('.kanban-header .d-flex.gap-2');
+    const newTaskBtn = document.querySelector('#btn-nouvelle-tache');
+    
+    if (!buttonsContainer || !newTaskBtn) {
+      console.warn('Container des boutons ou bouton Nouvelle Tâche non trouvé');
+      return;
+    }
+    
     const quickActionsDiv = document.createElement('div');
-    quickActionsDiv.className = 'quick-actions me-2';
+    quickActionsDiv.className = 'quick-actions';
     quickActionsDiv.innerHTML = `
       <div class="btn-group btn-group-sm" role="group" aria-label="Actions rapides">
-        <button type="button" class="btn btn-outline-secondary" id="btn-stats" title="Statistiques">
-          <i class="bi bi-graph-up"></i>
-        </button>
         <button type="button" class="btn btn-outline-secondary" id="btn-export" title="Exporter">
           <i class="bi bi-download"></i>
         </button>
@@ -433,18 +433,12 @@ export class KanbanAppInitializer {
       </div>
     `;
     
-    // Insérer après le titre et avant le bouton "Nouvelle Tâche"
-    const newTaskBtn = header.querySelector('#btn-nouvelle-tache');
-    if (newTaskBtn) {
-      header.insertBefore(quickActionsDiv, newTaskBtn);
-    } else {
-      header.appendChild(quickActionsDiv);
-    }
+    // Insérer avant le bouton "Nouvelle Tâche" dans le même conteneur
+    buttonsContainer.insertBefore(quickActionsDiv, newTaskBtn);
     
     // Attacher les événements
-    document.getElementById('btn-stats').addEventListener('click', () => this.showStatistics());
-    document.getElementById('btn-export').addEventListener('click', () => this.exportData());
-    document.getElementById('btn-help').addEventListener('click', () => this.showHelp());
+    document.getElementById('btn-export')?.addEventListener('click', () => this.exportData());
+    document.getElementById('btn-help')?.addEventListener('click', () => this.showHelp());
     
     console.log('✅ Boutons d\'actions rapides créés et événements attachés');
   }
