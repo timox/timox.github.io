@@ -885,7 +885,7 @@ class StatsManager {
   getTaskObjectives(task) {
     const objectifs = [];
     
-    
+    console.log('🔍 getTaskObjectives pour task', task.id, '- strategie_id:', task.strategie_id, '- strategiesData.length:', this.strategiesData.length);
     
     // Méthode 1: Via strategie_ids
     if (task.strategie_ids) {
@@ -899,6 +899,7 @@ class StatsManager {
             const strategy = this.strategiesData.find(s => s.id == id);
             if (strategy && !objectifs.includes(strategy.objectif)) {
               objectifs.push(strategy.objectif);
+              console.log('✅ Objectif trouvé via strategie_ids:', strategy.objectif);
             }
           });
         }
@@ -919,6 +920,9 @@ class StatsManager {
           console.log('✅ Objectif trouvé via strategie_id:', strategy.objectif);
         } else if (!strategy) {
           console.log('❌ Stratégie non trouvée pour ID:', id, 'dans', this.strategiesData.length, 'stratégies');
+          if (this.strategiesData.length > 0) {
+            console.log('Exemples d\'IDs disponibles:', this.strategiesData.slice(0, 3).map(s => s.id));
+          }
         }
       });
     }
@@ -933,6 +937,7 @@ class StatsManager {
       objectifs.push(task.strategie_objectif);
     }
     
+    console.log('🎯 Objectifs finaux pour task', task.id, ':', objectifs);
     return objectifs;
   }
 
@@ -944,6 +949,7 @@ class StatsManager {
       'Assurer la transition vers les systèmes d\'information de demain': 'Transition'
     };
     
+    console.log('🔍 shortenObjectifName - Input:', JSON.stringify(objectif), '- Output:', mapping[objectif] || objectif);
     return mapping[objectif] || objectif;
   }
 
