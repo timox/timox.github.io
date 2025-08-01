@@ -78,6 +78,10 @@ class StatsManager {
       }
       
       console.log(`✅ ${this.strategiesData.length} stratégies chargées`);
+      // Afficher quelques exemples de stratégies
+      if (this.strategiesData.length > 0) {
+        console.log('Exemples de stratégies:', this.strategiesData.slice(0, 3));
+      }
     } catch (error) {
       console.error('❌ Erreur chargement stratégies:', error);
       // Ne pas faire échouer si les stratégies ne sont pas disponibles
@@ -121,10 +125,16 @@ class StatsManager {
   }
 
   generateStats() {
+    // Calculs de base
+    this.tasksByBureau = this.calculateTasksByBureau();
+    this.tasksByObjective = this.calculateTasksByObjective();
+    this.tasksByPerson = this.calculateTasksByPerson();
+    this.tasksByPriority = this.calculateTasksByPriority();
     
+    // Génération des affichages
     this.generateGlobalMetrics();
     this.generatePersonBureauStats();
-    this.generateActivityHeatmap();  // Remplace generateStrategicObjectiveStats
+    this.generateActivityHeatmap();
     this.generateBureauObjectiveMatrix();
     this.generateTasksObjectivesTable();
     this.generateCharts();
@@ -189,10 +199,10 @@ class StatsManager {
           stats.termine++;
         }
         
-        // Priorités
-        if (task.urgence === 'P1' || task.urgence === 'Immédiate') {
+        // Priorités (utiliser le champ priority calculé par Grist)
+        if (task.priority === 1) {
           stats.p1++;
-        } else if (task.urgence === 'P2' || task.urgence === 'Courte') {
+        } else if (task.priority === 2) {
           stats.p2++;
         } else {
           stats.p3plus++;
@@ -232,35 +242,15 @@ class StatsManager {
   }
 
   generateActivityHeatmap() {
+    console.log('🔥 Génération heatmap des activités...');
     
-    // Définir les objectifs principaux avec les bonnes abréviations
-    const objectifs = [
-      'Fonctionnement',
-      'Sécurité', 
-      'Métier',
-      'Transition',
-      'Sans Stratégie'
-    ];
+    const bureaux = Object.keys(this.tasksByBureau).sort();
+    const objectifs = ['Fonctionnement', 'Sécurité', 'Métier', 'Transition', 'Sans Stratégie'];
     
-    // Découvrir tous les bureaux présents dans les données
-    const bureauxInData = new Set();
-    this.tasks.forEach(task => {
-      const taskBureaux = this.parseMultipleValues(task.bureau);
-      taskBureaux.forEach(bureau => {
-        if (bureau && bureau.trim()) {
-          bureauxInData.add(bureau.trim());
-        }
-      });
-    });
-    
-    const bureaux = Array.from(bureauxInData).sort();
-    console.log('🔥 Bureaux pour heatmap:', bureaux);
-    
-    // Créer la matrice bureau × objectif avec intensité
     const heatmapData = {};
-    const maxValue = { value: 0 };
+    let maxValue = 0;
     
-    // Initialiser la matrice avec les vrais bureaux
+    // Initialiser la heatmap
     bureaux.forEach(bureau => {
       heatmapData[bureau] = {};
       objectifs.forEach(obj => {
@@ -268,30 +258,27 @@ class StatsManager {
       });
     });
     
-    // Analyser chaque tâche pour remplir la matrice
-    this.tasks.forEach(task => {
-      const taskBureaux = this.parseMultipleValues(task.bureau);
-      const taskObjectifs = this.getTaskObjectives(task);
-      
-      taskBureaux.forEach(bureau => {
-        if (heatmapData[bureau]) {
-          if (taskObjectifs.length === 0) {
-            heatmapData[bureau]['Sans Stratégie']++;
-            maxValue.value = Math.max(maxValue.value, heatmapData[bureau]['Sans Stratégie']);
-          } else {
-            taskObjectifs.forEach(objectif => {
-              const shortName = this.shortenObjectifName(objectif);
-              if (heatmapData[bureau][shortName] !== undefined) {
-                heatmapData[bureau][shortName]++;
-                maxValue.value = Math.max(maxValue.value, heatmapData[bureau][shortName]);
-              }
-            });
-          }
+    // Remplir la heatmap en utilisant exactement la même logique que la matrice
+    Object.entries(this.tasksByBureau).forEach(([bureau, tasks]) => {
+      tasks.forEach(task => {
+        const objectifs = this.getTaskObjectives(task);
+        
+        if (objectifs.length === 0) {
+          heatmapData[bureau]['Sans Stratégie']++;
+          maxValue = Math.max(maxValue, heatmapData[bureau]['Sans Stratégie']);
+        } else {
+          objectifs.forEach(objectif => {
+            const shortName = this.shortenObjectifName(objectif);
+            if (heatmapData[bureau][shortName] !== undefined) {
+              heatmapData[bureau][shortName]++;
+              maxValue = Math.max(maxValue, heatmapData[bureau][shortName]);
+            }
+          });
         }
       });
     });
     
-    this.renderActivityHeatmap(heatmapData, objectifs, bureaux, maxValue.value);
+    this.renderActivityHeatmap(heatmapData, objectifs, bureaux, maxValue);
   }
 
   renderActivityHeatmap(heatmapData, objectifs, bureaux, maxValue) {
@@ -521,74 +508,37 @@ class StatsManager {
 
   generateBureauObjectiveMatrix() {
     console.log('🏢 Génération matrice bureau × objectif...');
-    console.log('📌 Note: Une tâche multi-bureaux compte pour chaque bureau (évaluation de charge de travail)');
     
-    // Utiliser tous les bureaux présents dans les données réelles
-    const bureauxInData = new Set();
-    this.tasks.forEach(task => {
-      const taskBureaux = this.parseMultipleValues(task.bureau);
-      taskBureaux.forEach(bureau => {
-        if (bureau && bureau.trim()) {
-          bureauxInData.add(bureau.trim());
-        }
-      });
-    });
-    
-    const bureaux = Array.from(bureauxInData).sort();
-    console.log('🔍 Bureaux trouvés dans les données:', bureaux);
+    const bureaux = Object.keys(this.tasksByBureau).sort();
+    const objectifs = ['Fonctionnement', 'Sécurité', 'Métier', 'Transition', 'Sans Stratégie'];
     
     const matrix = {};
     
     // Initialiser la matrice
     bureaux.forEach(bureau => {
-      matrix[bureau] = {
-        'Fonctionnement': 0,
-        'Sécurité': 0,
-        'Métier': 0,
-        'Transition': 0,
-        'Sans Stratégie': 0,
-        'Total': 0
-      };
+      matrix[bureau] = {};
+      objectifs.forEach(obj => {
+        matrix[bureau][obj] = 0;
+      });
+      matrix[bureau]['Total'] = 0;
     });
 
-    // Analyser chaque tâche
-    this.tasks.forEach((task, index) => {
-      const taskBureaux = this.parseMultipleValues(task.bureau);
-      const taskObjectifs = this.getTaskObjectives(task);
-      
-      // DEBUG: afficher les 5 premières tâches + quelques autres
-      if (index < 5 || (index % 10 === 0 && index < 30)) {
-        console.log(`🔍 DEBUG Matrice Task ${task.id}:`, {
-          titre: task.titre,
-          bureau_raw: task.bureau,
-          bureaux_parsed: taskBureaux,
-          objectifs: taskObjectifs,
-          objectifsShort: taskObjectifs.map(o => this.shortenObjectifName(o)),
-          strategie_id: task.strategie_id
-        });
-      }
-      
-      taskBureaux.forEach(bureau => {
-        if (matrix[bureau]) {
-          matrix[bureau]['Total']++;
-          
-          if (taskObjectifs.length === 0) {
-            matrix[bureau]['Sans Stratégie']++;
-          } else {
-            taskObjectifs.forEach(objectif => {
-              const shortName = this.shortenObjectifName(objectif);
-              if (matrix[bureau][shortName]) {
-                matrix[bureau][shortName]++;
-                if (index < 3) {
-                  console.log(`✅ Incrémenté ${bureau} → ${shortName}`);
-                }
-              } else if (index < 3) {
-                console.log(`❌ Clé non trouvée: ${bureau} → ${shortName}`);
-              }
-            });
-          }
-        } else if (index < 3) {
-          console.log(`❌ Bureau non trouvé dans matrice: ${bureau}`);
+    // Remplir la matrice en utilisant les calculs de base
+    Object.entries(this.tasksByBureau).forEach(([bureau, tasks]) => {
+      tasks.forEach(task => {
+        const objectifs = this.getTaskObjectives(task);
+        
+        matrix[bureau]['Total']++;
+        
+        if (objectifs.length === 0) {
+          matrix[bureau]['Sans Stratégie']++;
+        } else {
+          objectifs.forEach(objectif => {
+            const shortName = this.shortenObjectifName(objectif);
+            if (matrix[bureau][shortName] !== undefined) {
+              matrix[bureau][shortName]++;
+            }
+          });
         }
       });
     });
@@ -799,6 +749,89 @@ class StatsManager {
     });
   }
 
+  // === FONCTIONS DE CALCUL DE BASE ===
+  
+  calculateTasksByBureau() {
+    const result = {};
+    
+    this.tasks.forEach(task => {
+      const bureaux = this.parseMultipleValues(task.bureau);
+      
+      if (bureaux.length === 0) {
+        result['Non attribué'] = result['Non attribué'] || [];
+        result['Non attribué'].push(task);
+      } else {
+        bureaux.forEach(bureau => {
+          result[bureau] = result[bureau] || [];
+          result[bureau].push(task);
+        });
+      }
+    });
+    
+    return result;
+  }
+  
+  calculateTasksByObjective() {
+    const result = {};
+    
+    this.tasks.forEach(task => {
+      const objectifs = this.getTaskObjectives(task);
+      
+      if (objectifs.length === 0) {
+        result['Sans stratégie'] = result['Sans stratégie'] || [];
+        result['Sans stratégie'].push(task);
+      } else {
+        objectifs.forEach(objectif => {
+          result[objectif] = result[objectif] || [];
+          result[objectif].push(task);
+        });
+      }
+    });
+    
+    return result;
+  }
+  
+  calculateTasksByPerson() {
+    const result = {};
+    
+    this.tasks.forEach(task => {
+      const personnes = this.parseMultipleValues(task.qui);
+      
+      if (personnes.length === 0) {
+        result['Non assigné'] = result['Non assigné'] || [];
+        result['Non assigné'].push(task);
+      } else {
+        personnes.forEach(personne => {
+          result[personne] = result[personne] || [];
+          result[personne].push(task);
+        });
+      }
+    });
+    
+    return result;
+  }
+  
+  calculateTasksByPriority() {
+    const result = {
+      1: [],
+      2: [],
+      3: [],
+      4: [],
+      'Non définie': []
+    };
+    
+    this.tasks.forEach(task => {
+      const priority = task.priority;
+      if (priority && result[priority]) {
+        result[priority].push(task);
+      } else {
+        result['Non définie'].push(task);
+      }
+    });
+    
+    return result;
+  }
+
   // === UTILITAIRES ===
 
   parseStrategyIds(value) {
@@ -825,10 +858,6 @@ class StatsManager {
         return str.trim() && str.trim() !== 'L';
       });
       
-      // DEBUG occasionnel
-      if (Math.random() < 0.1) {
-        console.log('🔍 parseMultipleValues array:', { input: value, output: result });
-      }
       
       return result;
     }
@@ -856,17 +885,6 @@ class StatsManager {
   getTaskObjectives(task) {
     const objectifs = [];
     
-    // DEBUG TEMPORAIRE : afficher plus de tâches pour comprendre le problème
-    if ((this.debugCount || 0) < 10) {
-      console.log('🎯 DEBUG getTaskObjectives Task', task.id, ':', {
-        strategie_id: task.strategie_id,
-        strategie_ids: task.strategie_ids,
-        objectif: task.objectif,
-        strategie_objectif: task.strategie_objectif,
-        strategies_data_count: this.strategiesData.length
-      });
-      this.debugCount = (this.debugCount || 0) + 1;
-    }
     
     
     // Méthode 1: Via strategie_ids
