@@ -1,7 +1,7 @@
 // === js/app-initializer.js ===
 // Script d'initialisation et de configuration globale de l'application Kanban
 
-import { ViewManager } from './managers/ViewManager.js';
+import { ViewModeManager } from './managers/ViewModeManager.js';
 import { 
   getObjectivesByPriority, 
   getSubObjectives, 
@@ -23,7 +23,7 @@ export class KanbanAppInitializer {
     // Composants de l'application
     this.components = {
       kanbanManager: null,
-      viewManager: null,
+      viewModeManager: null,
       strategicData: null
     };
     
@@ -59,19 +59,29 @@ export class KanbanAppInitializer {
       console.log('🚀 Démarrage de l\'initialisation Kanban...');
       
       // Étape 1: Vérifier les prérequis
+      console.log('🔍 Étape 1: Vérification des prérequis...');
       await this.checkPrerequisites();
+      console.log('✅ Étape 1 terminée');
       
       // Étape 2: Initialiser les composants de base
+      console.log('⚙️ Étape 2: Initialisation des composants de base...');
       await this.initializeBaseComponents();
+      console.log('✅ Étape 2 terminée');
       
       // Étape 3: Configurer l'interface utilisateur
+      console.log('🎨 Étape 3: Configuration de l\'interface utilisateur...');
       await this.setupUserInterface();
+      console.log('✅ Étape 3 terminée');
       
       // Étape 4: Charger les données
+      console.log('📊 Étape 4: Chargement des données...');
       await this.loadApplicationData();
+      console.log('✅ Étape 4 terminée');
       
       // Étape 5: Finaliser l'initialisation
+      console.log('🏁 Étape 5: Finalisation de l\'initialisation...');
       await this.finalizeInitialization();
+      console.log('✅ Étape 5 terminée');
       
       this.isInitialized = true;
       
@@ -82,22 +92,8 @@ export class KanbanAppInitializer {
       
     } catch (error) {
       console.error('❌ Erreur lors de l\'initialisation:', error);
-      
-      if (this.retryCount < this.maxRetries) {
-        this.retryCount++;
-        console.log(`🔄 Tentative de récupération ${this.retryCount}/${this.maxRetries}...`);
-        
-        // Attendre avant de réessayer
-        await this.delay(2000 * this.retryCount);
-        
-        // Réinitialiser la promesse pour permettre une nouvelle tentative
-        this.initializationPromise = null;
-        
-        return this.init();
-      } else {
-        displayError(`Échec de l'initialisation après ${this.maxRetries} tentatives: ${error.message}`);
-        throw error;
-      }
+      displayError(`Erreur d'initialisation: ${error.message}`);
+      throw error;
     }
   }
   
@@ -111,7 +107,7 @@ export class KanbanAppInitializer {
     const requiredElements = [
       'kanban-container',
       'popup-tache',
-      'history-modal',
+      'task-history-modal',
       'error-container'
     ];
     
@@ -136,18 +132,41 @@ export class KanbanAppInitializer {
    * Initialise les composants de base
    */
   async initializeBaseComponents() {
-    console.log('⚙️ Initialisation des composants de base...');
     
-    // Importer et initialiser le KanbanManager principal
-    const { KanbanManager } = await import('./kanban-app.js');
-    this.components.kanbanManager = new KanbanManager();
+    try {
+      // Créer KanbanManager si nécessaire (puisque l'auto-init est désactivée)
+      if (!window.kanbanManager) {
+        const { KanbanManager } = await import('./kanban-app.js');
+        window.kanbanManager = new KanbanManager();
+        this.components.kanbanManager = window.kanbanManager;
+      } else {
+        this.components.kanbanManager = window.kanbanManager;
+      }
+      
+      
+      // Si déjà initialisé, passer directement
+      if (this.components.kanbanManager.isInitialized) {
+      } else {
+        // Attendre que le KanbanManager soit prêt
+        await this.waitForComponent(
+          () => this.components.kanbanManager && this.components.kanbanManager.isInitialized,
+          15000,
+          'KanbanManager.isInitialized'
+        );
+      }
+    } catch (error) {
+      console.error('❌ Erreur initialisation composants de base:', error);
+      // Essayer de continuer même en cas d'erreur
+      if (!this.components.kanbanManager) {
+        const { KanbanManager } = await import('./kanban-app.js');
+        this.components.kanbanManager = new KanbanManager();
+        window.kanbanManager = this.components.kanbanManager;
+      }
+    }
     
-    // Attendre que le KanbanManager soit prêt
-    await this.waitForComponent(() => this.components.kanbanManager.isInitialized);
-    
-    // Initialiser le ViewManager
-    this.components.viewManager = new ViewManager(this.components.kanbanManager);
-    this.components.kanbanManager.viewManager = this.components.viewManager;
+    // Initialiser le ViewModeManager
+    this.components.viewModeManager = new ViewModeManager(this.components.kanbanManager);
+    this.components.kanbanManager.viewModeManager = this.components.viewModeManager;
     
     // Charger les données stratégiques
     this.components.strategicData = {
@@ -179,7 +198,7 @@ export class KanbanAppInitializer {
     }
     
     // Initialiser le mode de vue préféré
-    this.components.viewManager.initializeViewMode();
+    this.components.viewModeManager.initializeViewMode();
     
     console.log('✅ Interface utilisateur configurée');
   }
@@ -311,14 +330,45 @@ export class KanbanAppInitializer {
    * Initialise les tooltips Bootstrap
    */
   initializeTooltips() {
-    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"], [title]');
-    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => 
-      new bootstrap.Tooltip(tooltipTriggerEl, {
-        delay: { show: 500, hide: 100 }
-      })
-    );
+    // D'abord, disposer de tous les tooltips existants
+    this.disposeExistingTooltips();
+    
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"], [title]:not(select):not(option)');
+    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => {
+      // Éviter de créer un tooltip s'il en existe déjà un
+      const existingTooltip = bootstrap.Tooltip.getInstance(tooltipTriggerEl);
+      if (existingTooltip) {
+        existingTooltip.dispose();
+      }
+      
+      return new bootstrap.Tooltip(tooltipTriggerEl, {
+        delay: { show: 500, hide: 100 },
+        placement: 'top',
+        trigger: 'hover focus'
+      });
+    });
     
     console.log(`💡 ${tooltipList.length} tooltips initialisés`);
+  }
+  
+  /**
+   * Dispose tous les tooltips existants
+   */
+  disposeExistingTooltips() {
+    // Trouver tous les éléments avec des tooltips Bootstrap
+    document.querySelectorAll('[data-bs-toggle="tooltip"], [title]:not(select):not(option)').forEach(element => {
+      const tooltip = bootstrap.Tooltip.getInstance(element);
+      if (tooltip) {
+        tooltip.dispose();
+      }
+    });
+    
+    // Nettoyer les tooltips "orphelins" qui pourraient rester dans le DOM
+    document.querySelectorAll('.tooltip').forEach(tooltipEl => {
+      if (tooltipEl.parentNode) {
+        tooltipEl.parentNode.removeChild(tooltipEl);
+      }
+    });
   }
   
   /**
@@ -353,19 +403,45 @@ export class KanbanAppInitializer {
    * Crée les boutons d'actions rapides
    */
   createQuickActionButtons() {
-    const header = document.querySelector('.kanban-header .col-auto');
-    if (!header) return;
+    console.log('🔘 Création des boutons d\'actions rapides...');
     
-    // Vérifier s'ils existent déjà
-    if (header.querySelector('.quick-actions')) return;
+    // Vérifier s'ils existent déjà (dans le header)
+    if (document.querySelector('.quick-actions')) {
+      console.log('✅ Boutons d\'actions rapides déjà présents');
+      return;
+    }
+    
+    // Chercher le conteneur des boutons dans le header
+    const buttonsContainer = document.querySelector('.kanban-header .d-flex.gap-2');
+    const newTaskBtn = document.querySelector('#btn-nouvelle-tache');
+    
+    console.log('🔍 Debug insertBefore:', {
+      buttonsContainer: !!buttonsContainer,
+      newTaskBtn: !!newTaskBtn,
+      containerHTML: buttonsContainer?.outerHTML.substring(0, 100),
+      newTaskBtnParent: newTaskBtn?.parentElement?.className,
+      areRelated: buttonsContainer?.contains(newTaskBtn)
+    });
+    
+    if (!buttonsContainer || !newTaskBtn) {
+      console.warn('Container des boutons ou bouton Nouvelle Tâche non trouvé');
+      console.warn('buttonsContainer:', buttonsContainer);
+      console.warn('newTaskBtn:', newTaskBtn);
+      return;
+    }
+    
+    // Vérifier que newTaskBtn est bien un enfant de buttonsContainer
+    if (!buttonsContainer.contains(newTaskBtn)) {
+      console.error('❌ Le bouton Nouvelle Tâche n\'est pas un enfant du conteneur trouvé');
+      console.error('Container:', buttonsContainer);
+      console.error('NewTaskBtn parent:', newTaskBtn.parentElement);
+      return;
+    }
     
     const quickActionsDiv = document.createElement('div');
-    quickActionsDiv.className = 'quick-actions me-2';
+    quickActionsDiv.className = 'quick-actions';
     quickActionsDiv.innerHTML = `
       <div class="btn-group btn-group-sm" role="group" aria-label="Actions rapides">
-        <button type="button" class="btn btn-outline-secondary" id="btn-stats" title="Statistiques">
-          <i class="bi bi-graph-up"></i>
-        </button>
         <button type="button" class="btn btn-outline-secondary" id="btn-export" title="Exporter">
           <i class="bi bi-download"></i>
         </button>
@@ -375,13 +451,22 @@ export class KanbanAppInitializer {
       </div>
     `;
     
-    // Insérer avant les boutons existants
-    header.insertBefore(quickActionsDiv, header.firstChild);
+    try {
+      // Insérer avant le bouton "Nouvelle Tâche" dans le même conteneur
+      buttonsContainer.insertBefore(quickActionsDiv, newTaskBtn);
+      console.log('✅ insertBefore réussi');
+    } catch (error) {
+      console.error('❌ Erreur insertBefore:', error);
+      // Fallback : ajouter à la fin
+      buttonsContainer.appendChild(quickActionsDiv);
+      console.log('✅ Fallback appendChild réussi');
+    }
     
     // Attacher les événements
-    document.getElementById('btn-stats').addEventListener('click', () => this.showStatistics());
-    document.getElementById('btn-export').addEventListener('click', () => this.exportData());
-    document.getElementById('btn-help').addEventListener('click', () => this.showHelp());
+    document.getElementById('btn-export')?.addEventListener('click', () => this.exportData());
+    document.getElementById('btn-help')?.addEventListener('click', () => this.showHelp());
+    
+    console.log('✅ Boutons d\'actions rapides créés et événements attachés');
   }
   
   /**
@@ -452,7 +537,7 @@ export class KanbanAppInitializer {
     window.KanbanAPI = {
       // Accès aux composants
       getKanbanManager: () => this.components.kanbanManager,
-      getViewManager: () => this.components.viewManager,
+      getViewModeManager: () => this.components.viewModeManager,
       
       // Actions rapides
       refresh: () => this.reloadApplication(),
@@ -466,7 +551,10 @@ export class KanbanAppInitializer {
       
       // Debug
       debug: () => this.getDebugInfo(),
-      toggleDebug: () => this.toggleDebugMode()
+      toggleDebug: () => this.toggleDebugMode(),
+      
+      // Utilitaires
+      cleanTooltips: () => this.forceCleanTooltips()
     };
     
     console.log('🔌 APIs publiques exposées');
@@ -491,15 +579,37 @@ export class KanbanAppInitializer {
    * Effectue le nettoyage périodique
    */
   performHousekeeping() {
-    // Nettoyer les tooltips orphelins
+    // Nettoyer les tooltips orphelins et bloqués
     document.querySelectorAll('.tooltip').forEach(tooltip => {
-      if (!document.body.contains(tooltip)) {
+      // Supprimer si pas dans le body ou si pas d'élément associé
+      if (!document.body.contains(tooltip) || !tooltip.previousElementSibling) {
+        tooltip.remove();
+      }
+    });
+    
+    // Nettoyer les tooltips sans trigger valide
+    document.querySelectorAll('.tooltip.show').forEach(tooltip => {
+      const trigger = document.querySelector(`[aria-describedby="${tooltip.id}"]`);
+      if (!trigger || !trigger.offsetParent) {
         tooltip.remove();
       }
     });
     
     // Nettoyer le localStorage
     this.cleanupLocalStorage();
+  }
+  
+  /**
+   * Force le nettoyage immédiat des tooltips
+   */
+  forceCleanTooltips() {
+    // Supprimer tous les tooltips visibles
+    document.querySelectorAll('.tooltip').forEach(tooltip => tooltip.remove());
+    
+    // Supprimer tous les backdrops de tooltips
+    document.querySelectorAll('.tooltip-backdrop').forEach(backdrop => backdrop.remove());
+    
+    console.log('🧹 Tooltips forcés nettoyés');
   }
   
   /**
@@ -530,7 +640,11 @@ export class KanbanAppInitializer {
    */
   autoSave() {
     try {
-      const state = this.components.kanbanManager.exportFullState();
+      // Utiliser les données existantes au lieu d'une méthode inexistante
+      const state = {
+        records: this.components.kanbanManager.currentRecords || [],
+        timestamp: Date.now()
+      };
       localStorage.setItem('kanban-autosave', JSON.stringify(state));
     } catch (e) {
       console.warn('Erreur sauvegarde automatique:', e);
@@ -656,14 +770,23 @@ export class KanbanAppInitializer {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
   
-  async waitForComponent(condition, timeout = 10000) {
+  async waitForComponent(condition, timeout = 10000, description = 'component') {
     const start = Date.now();
+    console.log(`⏱️ Attente ${description}...`);
+    
     while (!condition() && Date.now() - start < timeout) {
       await this.delay(100);
+      if (Date.now() - start > 2000 && (Date.now() - start) % 2000 < 100) {
+        console.log(`⏳ Toujours en attente de ${description} (${Math.round((Date.now() - start)/1000)}s)`);
+      }
     }
+    
     if (!condition()) {
-      throw new Error('Timeout waiting for component');
+      console.error(`❌ Timeout après ${Math.round((Date.now() - start)/1000)}s pour ${description}`);
+      throw new Error(`Timeout waiting for ${description}`);
     }
+    
+    console.log(`✅ ${description} prêt après ${Math.round((Date.now() - start)/1000)}s`);
   }
   
   saveCurrentState() {
@@ -711,9 +834,11 @@ let appInitializer = null;
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     appInitializer = new KanbanAppInitializer();
+    
     await appInitializer.init();
   } catch (error) {
-    console.error('Échec de l\'initialisation de l\'application:', error);
+    console.error('❌ Échec de l\'initialisation de l\'application:', error);
+    console.error('❌ Stack trace complète:', error.stack);
   }
 });
 

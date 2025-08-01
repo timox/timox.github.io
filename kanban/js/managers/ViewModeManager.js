@@ -31,10 +31,11 @@ export class ViewModeManager {
    * Crée les contrôles de mode de vue
    */
   createViewModeControls() {
-    // Chercher le bandeau haut (header) où se trouve "environnement de test"
-    const headerContainer = document.querySelector('.kanban-header .d-flex');
-    if (!headerContainer) {
-      this.logger.error('Bandeau header introuvable');
+    // Chercher le conteneur des boutons dans le header
+    const buttonsContainer = document.querySelector('.kanban-header .d-flex .d-flex.gap-2');
+    if (!buttonsContainer) {
+      this.logger.error('Conteneur des boutons introuvable');
+      this.logger.debug('Structures disponibles:', document.querySelectorAll('.kanban-header .d-flex'));
       return;
     }
     
@@ -64,11 +65,11 @@ export class ViewModeManager {
     `;
     
     // Insérer avant le bouton "Nouvelle Tâche"
-    const newTaskButton = headerContainer.querySelector('#btn-nouvelle-tache');
-    if (newTaskButton) {
-      headerContainer.insertBefore(viewModeContainer, newTaskButton);
+    const newTaskButton = buttonsContainer.querySelector('#btn-nouvelle-tache');
+    if (newTaskButton && buttonsContainer.contains(newTaskButton)) {
+      buttonsContainer.insertBefore(viewModeContainer, newTaskButton);
     } else {
-      headerContainer.appendChild(viewModeContainer);
+      buttonsContainer.appendChild(viewModeContainer);
     }
     
     this.logger.info('Contrôles de vue créés et insérés dans le bandeau haut');
