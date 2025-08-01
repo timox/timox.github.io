@@ -120,11 +120,8 @@ export function generateProjectBadge(projectData) {
   
   // Support des stratégies multiples (nouveau format)
   if (strategiesInfo && Array.isArray(strategiesInfo) && strategiesInfo.length > 0) {
-    const strategiesText = strategiesInfo.map(s => 
-      `🎯 ${s.objectif}\n   → ${s.sous_objectif || 'N/A'}\n   → ${s.action}`
-    ).join('\n\n');
-    
-    tooltip = `📋 ${projet}\n\n📊 STRATÉGIES LIÉES (${strategiesInfo.length}):\n${strategiesText}`;
+    const strategiesText = strategiesInfo.map(s => `${s.objectif} → ${s.action}`).join(' | ');
+    tooltip = `${projet}\nStratégies: ${strategiesText}`;
   }
   // Support de l'ancien format (single stratégie)
   else if (strategie_objectif || strategie_sous_objectif || strategie_action) {

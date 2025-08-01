@@ -1,4 +1,0 @@
-id,id2,objectif,sous_objectif,action,responsable,echeance,portee
-1,1,Sécurité Infrastructure,Mise à jour systèmes,Déployer patches sécurité,SSIR,2025-12-31,Critique
-2,2,Conformité RGPD,Audit données,Révision politiques,DPO,2025-06-30,Importante
-3,3,Continuité Service,Plan de reprise,Tests disaster recovery,Admin,2025-09-30,Majeure
