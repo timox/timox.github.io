@@ -2,8 +2,8 @@ debug
 debug/*
 
 # Répertoire de test avec identifiants sensibles
-test/
-test/*
+#test/
+#test/*
 
 # Fichiers contenant des clés API et identifiants
 **/test-*.js

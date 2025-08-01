@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>🧪 Tests API Grist</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 20px;
+        }
+        .output {
+            white-space: pre-wrap;
+            background: #000;
+            padding: 20px;
+            border: 1px solid #00ff00;
+            border-radius: 5px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        button {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #00cc00;
+        }
+        .error { color: #ff5555; }
+        .success { color: #00ff00; }
+        .info { color: #55aaff; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Tests API Grist - Kanban GSSI</h1>
+    
+    <div>
+        <button onclick="testConnection()">📡 Test Connexion</button>
+        <button onclick="testTables()">📊 Test Tables</button>
+        <button onclick="testData()">📝 Test Données</button>
+        <button onclick="runAllTests()">🚀 Suite Complète</button>
+    </div>
+    
+    <div id="output" class="output">Prêt pour les tests...</div>
+
+    <script>
+        const API_CONFIG = {
+            BASE_URL: 'https://grist.numerique.gouv.fr',
+            DOC_ID: 'e4navPUHoV29jnDQfqMFwo',
+            API_KEY: '246a54fe9f95afca85b8d0f1acb4c421406200e9'
+        };
+
+        const output = document.getElementById('output');
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            output.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        async function apiCall(endpoint) {
+            const url = `${API_CONFIG.BASE_URL}/api/docs/${API_CONFIG.DOC_ID}${endpoint}`;
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${API_CONFIG.API_KEY}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                log(`Erreur API: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+
+        async function testConnection() {
+            log('🧪 Test de connexion...', 'info');
+            try {
+                const doc = await apiCall('');
+                log(`✅ Document accessible: ${doc.name}`, 'success');
+                log(`   ID: ${doc.id}`, 'info');
+                log(`   Workspace: ${doc.workspace.name}`, 'info');
+            } catch (error) {
+                log('❌ Échec connexion', 'error');
+            }
+        }
+
+        async function testTables() {
+            log('🧪 Test des tables...', 'info');
+            try {
+                const tables = await apiCall('/tables');
+                log(`✅ ${tables.tables.length} tables trouvées:`, 'success');
+                tables.tables.forEach(table => {
+                    log(`   - ${table.id} (${table.fields.tableRef} enregistrements)`, 'info');
+                });
+            } catch (error) {
+                log('❌ Échec lecture tables', 'error');
+            }
+        }
+
+        async function testData() {
+            log('🧪 Test lecture données...', 'info');
+            try {
+                // Test tâches
+                const tasks = await apiCall('/tables/Ssir_principale_task/records?limit=5');
+                log(`✅ Tâches: ${tasks.records.length} enregistrements`, 'success');
+                
+                if (tasks.records.length > 0) {
+                    const example = tasks.records[0];
+                    log('   Exemple:', 'info');
+                    log(`   - ID: ${example.id}`, 'info');
+                    log(`   - Titre: ${example.fields.titre}`, 'info');
+                    log(`   - Statut: ${example.fields.statut}`, 'info');
+                }
+                
+                // Test stratégies
+                const strategies = await apiCall('/tables/Ssir_strategie2/records?limit=5');
+                log(`✅ Stratégies: ${strategies.records.length} enregistrements`, 'success');
+                
+            } catch (error) {
+                log('❌ Échec lecture données', 'error');
+            }
+        }
+
+        async function runAllTests() {
+            output.innerHTML = '';
+            log('🚀 Lancement suite complète de tests\n', 'info');
+            
+            await testConnection();
+            log('', 'info');
+            
+            await testTables();
+            log('', 'info');
+            
+            await testData();
+            log('', 'info');
+            
+            log('✅ Tests terminés !', 'success');
+        }
+
+        // Log initial
+        log('🧪 Console de test API Grist prête', 'success');
+        log(`📋 Document: ${API_CONFIG.DOC_ID}`, 'info');
+        log('Cliquez sur un bouton pour commencer les tests\n', 'info');
+    </script>
+</body>
+</html>
