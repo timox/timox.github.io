@@ -415,8 +415,26 @@ export class KanbanAppInitializer {
     const buttonsContainer = document.querySelector('.kanban-header .d-flex.gap-2');
     const newTaskBtn = document.querySelector('#btn-nouvelle-tache');
     
+    console.log('🔍 Debug insertBefore:', {
+      buttonsContainer: !!buttonsContainer,
+      newTaskBtn: !!newTaskBtn,
+      containerHTML: buttonsContainer?.outerHTML.substring(0, 100),
+      newTaskBtnParent: newTaskBtn?.parentElement?.className,
+      areRelated: buttonsContainer?.contains(newTaskBtn)
+    });
+    
     if (!buttonsContainer || !newTaskBtn) {
       console.warn('Container des boutons ou bouton Nouvelle Tâche non trouvé');
+      console.warn('buttonsContainer:', buttonsContainer);
+      console.warn('newTaskBtn:', newTaskBtn);
+      return;
+    }
+    
+    // Vérifier que newTaskBtn est bien un enfant de buttonsContainer
+    if (!buttonsContainer.contains(newTaskBtn)) {
+      console.error('❌ Le bouton Nouvelle Tâche n\'est pas un enfant du conteneur trouvé');
+      console.error('Container:', buttonsContainer);
+      console.error('NewTaskBtn parent:', newTaskBtn.parentElement);
       return;
     }
     
@@ -433,8 +451,16 @@ export class KanbanAppInitializer {
       </div>
     `;
     
-    // Insérer avant le bouton "Nouvelle Tâche" dans le même conteneur
-    buttonsContainer.insertBefore(quickActionsDiv, newTaskBtn);
+    try {
+      // Insérer avant le bouton "Nouvelle Tâche" dans le même conteneur
+      buttonsContainer.insertBefore(quickActionsDiv, newTaskBtn);
+      console.log('✅ insertBefore réussi');
+    } catch (error) {
+      console.error('❌ Erreur insertBefore:', error);
+      // Fallback : ajouter à la fin
+      buttonsContainer.appendChild(quickActionsDiv);
+      console.log('✅ Fallback appendChild réussi');
+    }
     
     // Attacher les événements
     document.getElementById('btn-export')?.addEventListener('click', () => this.exportData());
