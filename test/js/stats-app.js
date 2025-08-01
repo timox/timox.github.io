@@ -673,12 +673,12 @@ class StatsManager {
       labels.push(`${label} (${info.objectif})`);
       data.push(info.count);
       
-      // Couleur selon l'objectif principal
+      // Couleur selon l'objectif principal  
       switch(info.objectif) {
-        case 'Fonctionnement SI': backgroundColors.push('#0d6efd'); break;
-        case 'Sécurité SI': backgroundColors.push('#ffc107'); break;
-        case 'Demandes Métiers': backgroundColors.push('#198754'); break;
-        case 'Transition Future': backgroundColors.push('#6f42c1'); break;
+        case 'Fonctionnement': backgroundColors.push('#0d6efd'); break;
+        case 'Sécurité': backgroundColors.push('#ffc107'); break;
+        case 'Métier': backgroundColors.push('#198754'); break;
+        case 'Transition': backgroundColors.push('#6f42c1'); break;
         default: backgroundColors.push('#6c757d');
       }
     });
