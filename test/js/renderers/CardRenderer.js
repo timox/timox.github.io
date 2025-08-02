@@ -1,219 +1,28 @@
 // === renderers/CardRenderer.js ===
-// Gestionnaire pour le rendu des cartes de tâches
+// Gestionnaire pour le rendu des cartes de tâches (style original restauré)
 
-import { generateAllTaskBadges, generateStrategyBadge } from '../utils/badges.js';
+import { 
+  generateBureauBadges, 
+  generatePriorityBadge, 
+  generateProjectBadge, 
+  generateResponsablesBadges 
+} from '../utils/badges.js';
 import { generateDatesContainer } from '../utils/dates.js';
 import { VIEW_MODES } from '../config/constants.js';
-import { referenceManager } from '../utils/ReferenceManager.js';
 
 /**
- * Gestionnaire pour le rendu des cartes de tâches
+ * Gestionnaire pour le rendu des cartes de tâches (style original restauré)
  */
 export class CardRenderer {
   constructor(kanbanManager) {
     this.kanban = kanbanManager;
-    this.expandedCards = new Set();
   }
   
   /**
-   * Rend une carte de tâche selon le mode de vue
-   * @param {object} record - Données de la tâche
-   * @param {string} viewMode - Mode de vue (compact, detailed, focus)
-   * @returns {string} HTML de la carte
-   */
-  renderTaskCard(record, viewMode = VIEW_MODES.COMPACT) {
-    if (!record || !record.id) {
-      console.warn('CardRenderer: Données de tâche invalides');
-      return '';
-    }
-    
-    const isExpanded = this.expandedCards.has(record.id);
-    
-    // Décider du rendu selon le mode et l'état d'expansion
-    if (viewMode === VIEW_MODES.COMPACT && !isExpanded) {
-      return this.renderCompactCard(record, viewMode);
-    } else {
-      return this.renderDetailedCard(record, viewMode, isExpanded);
-    }
-  }
-  
-  /**
-   * Rend une carte en mode compact
-   * @param {object} record - Données de la tâche
-   * @param {string} viewMode - Mode de vue
-   * @returns {string} HTML de la carte compacte
-   */
-  renderCompactCard(record, viewMode) {
-    const priority = this.calculatePriority(record.urgence, record.impact);
-    const badges = generateAllTaskBadges({
-      ...record,
-      priority: priority
-    }, true);
-    
-    // Générer l'élément d'échéance pour le mode compact
-    const echeanceElement = generateDatesContainer({
-      date_echeance: record.date_echeance
-    }, true);
-    
-    // Classes CSS pour les bordures d'échéance
-    const hasEcheanceClass = record.date_echeance ? 'has-echeance' : '';
-    const urgencyClass = this.getUrgencyClass(record.date_echeance);
-    const hasStrategy = record.strategie_objectif || 
-                       (Array.isArray(record.strategie_id) && record.strategie_id.length > 1) || 
-                       (record.strategiesInfo && record.strategiesInfo.length > 0);
-    
-    return `
-      <div class="kanban-item kanban-item-compact ${hasEcheanceClass} ${urgencyClass}" 
-           data-id="${record.id}" 
-           data-priority="${priority}"
-           data-status="${record.statut || ''}"
-           data-has-strategy="${hasStrategy ? 'true' : 'false'}"
-           role="button" 
-           tabindex="0"
-           aria-label="Tâche: ${record.titre || 'Sans titre'}">
-        
-        <!-- Handle de drag & drop -->
-        <div class="drag-handle" title="Glisser pour déplacer">
-          <i class="bi bi-grip-vertical"></i>
-        </div>
-        
-        <!-- Badges des bureaux -->
-        ${badges.bureaux}
-        
-        <!-- Badge stratégique -->
-        ${badges.strategy ? `<div class="card-strategy-section">${badges.strategy}</div>` : ''}
-        
-        <!-- Header avec priorité, échéance et bouton expand -->
-        <div class="compact-header">
-          <div class="compact-priority">${badges.priority}</div>
-          <div class="compact-echeance">${echeanceElement}</div>
-          ${this.getStrategyIcon(record)}
-          ${this.getReferencesIndicator(record)}
-          <button class="btn-expand" title="Voir les détails" aria-label="Développer la tâche">
-            <i class="bi bi-chevron-down"></i>
-          </button>
-        </div>
-        
-        <!-- Titre de la tâche -->
-        <div class="compact-title editable-zone" title="${record.titre || ''}">${record.titre || 'Sans titre'}</div>
-        
-        <!-- Indicateurs visuels cachés (pour les lecteurs d'écran) -->
-        <div class="sr-only">
-          Statut: ${record.statut || 'Non défini'}
-          ${record.projet ? `Projet: ${record.projet}` : ''}
-          ${record.date_echeance ? `Échéance: ${record.date_echeance}` : ''}
-        </div>
-      </div>
-    `;
-  }
-  
-  /**
-   * Rend une carte en mode détaillé
-   * @param {object} record - Données de la tâche
-   * @param {string} viewMode - Mode de vue
-   * @param {boolean} isExpanded - Si la carte est expandée (pour mode compact)
-   * @returns {string} HTML de la carte détaillée
-   */
-  renderDetailedCard(record, viewMode, isExpanded = false) {
-    const priority = this.calculatePriority(record.urgence, record.impact);
-    const badges = generateAllTaskBadges({
-      ...record,
-      priority: priority
-    }, false);
-    
-    // Résumé de description (pas en mode compact, même si expanded)
-    const resumeDesc = (viewMode === VIEW_MODES.COMPACT) ? '' : this.generateDescriptionResume(record);
-    
-    // Container des dates
-    const datesElement = generateDatesContainer({
-      date_debut: record.date_debut,
-      date_echeance: record.date_echeance
-    }, false);
-    
-    // Classes CSS
-    const hasEcheanceClass = record.date_echeance ? 'has-echeance' : '';
-    const hasDateDebutClass = record.date_debut ? 'has-debut' : '';
-    const urgencyClass = this.getUrgencyClass(record.date_echeance);
-    const hasStrategy = record.strategie_objectif || 
-                       (Array.isArray(record.strategie_id) && record.strategie_id.length > 1) || 
-                       (record.strategiesInfo && record.strategiesInfo.length > 0);
-    
-    // Bouton collapse pour les cartes expandées en mode compact
-    const collapseButton = (viewMode === VIEW_MODES.COMPACT && isExpanded) ? 
-      `<button class="btn-collapse" title="Réduire" aria-label="Réduire la tâche">
-        <i class="bi bi-chevron-up"></i>
-      </button>` : '';
-    
-    // Indicateurs de progression si disponibles
-    const progressIndicators = this.generateProgressIndicators(record);
-    
-    return `
-      <div class="kanban-item kanban-item-detailed ${hasEcheanceClass} ${hasDateDebutClass} ${urgencyClass}" 
-           data-id="${record.id}" 
-           data-priority="${priority}"
-           data-status="${record.statut || ''}"
-           data-has-strategy="${hasStrategy ? 'true' : 'false'}"
-           role="button" 
-           tabindex="0"
-           aria-label="Tâche: ${record.titre || 'Sans titre'}">
-        
-        <!-- Handle de drag & drop -->
-        <div class="drag-handle" title="Glisser pour déplacer">
-          <i class="bi bi-grip-vertical"></i>
-        </div>
-        
-        <!-- Badges des bureaux -->
-        ${badges.bureaux}
-        
-        <!-- Badge stratégique -->
-        ${badges.strategy ? `<div class="card-strategy-section">${badges.strategy}</div>` : ''}
-        
-        <!-- Header avec priorité et actions -->
-        <div class="kanban-item-header">
-          <div class="priority-section">${badges.priority}</div>
-          <div class="item-badges">
-            ${badges.project}
-            ${badges.history}
-            ${this.getStrategyIcon(record)}
-            ${collapseButton}
-          </div>
-        </div>
-        
-        <!-- Titre de la tâche -->
-        <div class="item-title editable-zone" title="${record.titre || ''}">${record.titre || 'Sans titre'}</div>
-        
-        <!-- Résumé de description -->
-        ${resumeDesc}
-        
-        <!-- Dates et échéances -->
-        ${datesElement}
-        
-        <!-- Badges responsables -->
-        ${badges.responsables}
-        
-        <!-- Références et documentation -->
-        ${this.generateReferencesHtml(record)}
-        
-        <!-- Indicateurs de progression -->
-        ${progressIndicators}
-        
-        <!-- Informations cachées pour accessibilité -->
-        <div class="sr-only">
-          ID: ${record.id}
-          Statut: ${record.statut || 'Non défini'}
-          ${record.urgence ? `Urgence: ${record.urgence}` : ''}
-          ${record.impact ? `Impact: ${record.impact}` : ''}
-          ${record.projet ? `Projet: ${record.projet}` : ''}
-        </div>
-      </div>
-    `;
-  }
-  
-  /**
-   * Calcule la priorité d'une tâche
+   * Calcule la priorité d'une tâche (méthode originale)
    * @param {string} urgence - Niveau d'urgence
    * @param {string} impact - Niveau d'impact
-   * @returns {number} Niveau de priorité (1-4)
+   * @returns {number} Priorité (1-4)
    */
   calculatePriority(urgence, impact) {
     const imp = String(impact || '').trim().toLowerCase();
@@ -223,212 +32,165 @@ export class CardRenderer {
     if (imp === 'important') return (urg === 'immédiate' || urg === 'courte') ? 1 : 2;
     if (imp === 'modéré') return (urg === 'immédiate') ? 2 : 3;
     if (imp === 'mineur') return 4;
-    return 3; // Priorité par défaut
+    return 3;
   }
   
   /**
-   * Génère le résumé de description
-   * @param {object} record - Données de la tâche
-   * @returns {string} HTML du résumé
+   * Obtient les informations des stratégies multiples
+   * @param {string} strategieId - IDs des stratégies (séparés par virgules)
+   * @returns {Array} Informations des stratégies
    */
-  generateDescriptionResume(record) {
-    let latestDesc = '';
+  getMultipleStrategiesInfo(strategieId) {
+    if (!strategieId || !this.kanban.strategyData) return [];
     
-    // Utiliser UNIQUEMENT notes.content (synchronisé avec le dernier commentaire)
+    const ids = String(strategieId).split(',').map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id));
+    return ids.map(id => this.kanban.strategyData.find(s => s.id === id)).filter(Boolean);
+  }
+  
+  /**
+   * Génère le bouton timeline
+   * @param {object} record - Données de la tâche
+   * @returns {string} HTML du bouton timeline
+   */
+  generateTimelineButton(record) {
+    // Compter les événements depuis les notes JSON
+    let notesEventCount = 0;
+    if (record.notes) {
+      try {
+        const notesData = JSON.parse(record.notes);
+        if (notesData && notesData.history && Array.isArray(notesData.history)) {
+          notesEventCount = notesData.history.length;
+        }
+      } catch (e) {
+        notesEventCount = 0;
+      }
+    }
+    
+    const totalEvents = notesEventCount;
+    
+    if (totalEvents === 0) {
+      return `<button class="btn btn-sm btn-outline-secondary timeline-btn" 
+                      data-task-id="${record.id}" 
+                      title="Aucun événement">
+                <i class="bi bi-clock-history"></i>
+              </button>`;
+    }
+    
+    return `<button class="btn btn-sm btn-outline-info timeline-btn" 
+                    data-task-id="${record.id}" 
+                    title="${totalEvents} événement${totalEvents > 1 ? 's' : ''}">
+              <i class="bi bi-clock-history"></i>
+              <span class="badge bg-info text-white ms-1">${totalEvents}</span>
+            </button>`;
+  }
+  
+  /**
+   * Rend une carte de tâche selon le style original
+   * @param {object} record - Données de la tâche
+   * @param {string} viewMode - Mode de vue (compact, detailed, focus)
+   * @returns {string} HTML de la carte
+   */
+  renderTaskCard(record, viewMode = VIEW_MODES.COMPACT) {
+    if (!record?.id) {
+      console.warn('CardRenderer: record sans ID', record);
+      return '';
+    }
+    
+    console.log(`Création HTML pour tâche ${record.id}: ${record.titre}`);
+    
+    const priority = this.calculatePriority(record.urgence, record.impact);
+    const priorityBadge = generatePriorityBadge(priority);
+    
+    // Stratégies multiples avec tooltip
+    const strategiesInfo = this.getMultipleStrategiesInfo(record.strategie_id);
+    
+    const strategiesText = strategiesInfo.length > 0 
+      ? strategiesInfo.map(s => `• ${s.objectif}`).join('\\n')
+      : '';
+    const strategyTooltip = strategiesText ? 
+      `title="${strategiesInfo.length} stratégie${strategiesInfo.length > 1 ? 's' : ''} liée${strategiesInfo.length > 1 ? 's' : ''}"` : '';
+    const strategyIcon = strategiesInfo.length > 0 ? 
+      `<i class="bi bi-bullseye strategie-icon" ${strategyTooltip}></i>` : '';
+
+    // Projet
+    const projectBadge = record.projet ? 
+      generateProjectBadge({
+        projet: record.projet,
+        strategie_objectif: strategiesInfo[0]?.objectif,
+        strategie_sous_objectif: strategiesInfo[0]?.sous_objectif,
+        strategie_action: strategiesInfo[0]?.action
+      }) : '';
+
+    // Description résumée depuis notes.content
+    let resumeDesc = '';
     if (record.notes) {
       try {
         const notesData = JSON.parse(record.notes);
         if (notesData && notesData.content) {
-          latestDesc = notesData.content;
+          const content = notesData.content.substring(0, 80);
+          resumeDesc = `<div class="desc-resume">${content}${notesData.content.length > 80 ? '…' : ''}</div>`;
         }
       } catch (error) {
-        console.warn('CardRenderer: Error parsing notes JSON for record', record.id);
-        return '';
+        // Ignore JSON parse errors
       }
     }
     
-    if (!latestDesc || !latestDesc.trim()) {
-      return '';
-    }
+    // Dates
+    const datesElement = generateDatesContainer({
+      date_debut: record.date_debut,
+      date_echeance: record.date_echeance
+    }, viewMode === VIEW_MODES.COMPACT);
     
-    // Tronquer à 12 mots pour le résumé
-    const mots = latestDesc.split(/\s+/).slice(0, 12);
-    const resume = mots.join(' ');
-    const isTruncated = latestDesc.split(/\s+/).length > 12;
+    // Badges bureaux
+    const bureauBadges = generateBureauBadges(record.bureau, viewMode === VIEW_MODES.COMPACT);
     
-    return `
-      <div class="desc-resume" title="${latestDesc.replace(/"/g, '&quot;')}">
-        ${resume}${isTruncated ? '…' : ''}
+    // Badges responsables
+    const responsablesBadges = generateResponsablesBadges(record.qui);
+    
+    // Timeline button
+    const timelineButton = this.generateTimelineButton(record);
+    
+    const hasEcheanceClass = record.date_echeance ? 'has-echeance' : '';
+    const hasDateDebutClass = record.date_debut ? 'has-debut' : '';
+    
+    // Classe selon le mode de vue
+    const cardClass = viewMode === VIEW_MODES.COMPACT ? 'kanban-item-compact' : 'kanban-item';
+    
+    return `<div class="kanban-item ${cardClass} ${hasEcheanceClass} ${hasDateDebutClass}" data-id="${record.id}">
+      <div class="drag-handle">
+        <i class="bi bi-grip-vertical"></i>
       </div>
-    `;
-  }
-  
-  /**
-   * Génère les indicateurs de progression
-   * @param {object} record - Données de la tâche
-   * @returns {string} HTML des indicateurs
-   */
-  generateProgressIndicators(record) {
-    const indicators = [];
-    
-    // Indicateur de tâche récente (créée il y a moins de 24h)
-    if (this.isRecentTask(record)) {
-      indicators.push('<span class="badge bg-success badge-sm" title="Tâche récente">Nouveau</span>');
-    }
-    
-    // Indicateur de tâche mise à jour récemment
-    if (this.isRecentlyUpdated(record)) {
-      indicators.push('<span class="badge bg-info badge-sm" title="Mise à jour récente">MAJ</span>');
-    }
-    
-    // Indicateur de tâche bloquée depuis longtemps
-    if (record.statut === 'Bloqué' && this.isLongBlocked(record)) {
-      indicators.push('<span class="badge bg-warning badge-sm" title="Bloqué depuis longtemps">⚠️</span>');
-    }
-    
-    // Indicateur de tâche en retard
-    if (this.isOverdue(record)) {
-      indicators.push('<span class="badge bg-danger badge-sm" title="En retard">Retard</span>');
-    }
-    
-    if (indicators.length === 0) return '';
-    
-    return `
-      <div class="progress-indicators mt-2">
-        ${indicators.join(' ')}
+      
+      ${bureauBadges}
+      
+      <div class="kanban-item-header">
+        <div class="priority-section">
+          ${priorityBadge}
+          ${strategyIcon}
+        </div>
+        <div class="item-badges">
+          ${projectBadge}
+          ${timelineButton}
+        </div>
       </div>
-    `;
+      
+      <div class="item-title editable-zone">${record.titre || 'Sans titre'}</div>
+      
+      ${resumeDesc}
+      
+      ${datesElement}
+      
+      ${responsablesBadges}
+    </div>`;
   }
   
   /**
-   * Détermine la classe CSS d'urgence selon l'échéance
-   * @param {string} dateEcheance - Date d'échéance
-   * @returns {string} Classe CSS
-   */
-  getUrgencyClass(dateEcheance) {
-    if (!dateEcheance) return '';
-    
-    const today = new Date();
-    const echeance = new Date(dateEcheance);
-    const diffDays = Math.ceil((echeance - today) / (1000 * 60 * 60 * 24));
-    
-    if (diffDays < 0) return 'card-overdue';
-    if (diffDays === 0) return 'card-due-today';
-    if (diffDays <= 3) return 'card-due-soon';
-    if (diffDays <= 7) return 'card-due-week';
-    
-    return '';
-  }
-  
-  /**
-   * Tronque un texte à une longueur donnée
-   * @param {string} text - Texte à tronquer
-   * @param {number} maxLength - Longueur maximale
-   * @returns {string} Texte tronqué
-   */
-  truncateText(text, maxLength) {
-    if (!text || text.length <= maxLength) return text || '';
-    return text.substring(0, maxLength - 1) + '…';
-  }
-  
-  /**
-   * Vérifie si une tâche est récente (moins de 24h)
-   * @param {object} record - Données de la tâche
-   * @returns {boolean} True si récente
-   */
-  isRecentTask(record) {
-    if (!record.date_creation && !record.id) return false;
-    
-    // Si on a une date de création
-    if (record.date_creation) {
-      const creation = new Date(record.date_creation);
-      const now = new Date();
-      return (now - creation) < (24 * 60 * 60 * 1000); // 24h en ms
-    }
-    
-    // Fallback: considérer les IDs élevés comme récents (approximation)
-    if (record.id && this.kanban.currentRecords) {
-      const maxId = Math.max(...this.kanban.currentRecords.map(r => r.id));
-      return record.id > (maxId - 5); // 5 dernières tâches créées
-    }
-    
-    return false;
-  }
-  
-  /**
-   * Vérifie si une tâche a été mise à jour récemment
-   * @param {object} record - Données de la tâche
-   * @returns {boolean} True si mise à jour récemment
-   */
-  isRecentlyUpdated(record) {
-    if (!record.date_derniere_maj) return false;
-    
-    const lastUpdate = new Date(record.date_derniere_maj);
-    const now = new Date();
-    const diffHours = (now - lastUpdate) / (1000 * 60 * 60);
-    
-    return diffHours < 4; // Mise à jour dans les 4 dernières heures
-  }
-  
-  /**
-   * Vérifie si une tâche est bloquée depuis longtemps
-   * @param {object} record - Données de la tâche
-   * @returns {boolean} True si bloquée depuis longtemps
-   */
-  isLongBlocked(record) {
-    if (record.statut !== 'Bloqué') return false;
-    
-    // Analyser l'historique pour voir depuis quand elle est bloquée
-    if (record.historique_statuts) {
-      try {
-        const history = JSON.parse(record.historique_statuts);
-        if (history.historique && history.historique.length > 0) {
-          const lastEntry = history.historique[history.historique.length - 1];
-          if (lastEntry.statut === 'Bloqué' && lastEntry.date_entree) {
-            const blockedSince = new Date(lastEntry.date_entree);
-            const now = new Date();
-            const diffDays = (now - blockedSince) / (1000 * 60 * 60 * 24);
-            return diffDays > 3; // Bloqué depuis plus de 3 jours
-          }
-        }
-      } catch (e) {
-        // Ignore les erreurs de parsing
-      }
-    }
-    
-    return false;
-  }
-  
-  /**
-   * Vérifie si une tâche est en retard
-   * @param {object} record - Données de la tâche
-   * @returns {boolean} True si en retard
-   */
-  isOverdue(record) {
-    if (!record.date_echeance || record.statut === 'Terminé') return false;
-    
-    const today = new Date();
-    const echeance = new Date(record.date_echeance);
-    today.setHours(0, 0, 0, 0);
-    echeance.setHours(0, 0, 0, 0);
-    
-    return echeance < today;
-  }
-  
-  /**
-   * Attache les écouteurs d'événements aux cartes rendues
+   * Attache les écouteurs d'événements pour les cartes
    * @param {HTMLElement} container - Container des cartes
    */
   attachCardEventListeners(container) {
-    if (!container) return;
-    
-    // Les anciens écouteurs sont automatiquement supprimés par innerHTML dans refreshKanban
-    // Pas besoin de nettoyage manuel
-    
-    // Écouteurs pour l'édition des tâches
-    const editableZones = container.querySelectorAll('.editable-zone');
-    
-    editableZones.forEach(zone => {
+    // Événements pour les zones éditables (pour ouvrir le modal)
+    container.querySelectorAll('.editable-zone').forEach(zone => {
       zone.addEventListener('click', (e) => {
         e.stopPropagation();
         e.preventDefault();
@@ -443,206 +205,43 @@ export class CardRenderer {
           }
         }
       });
-      
-      // Support clavier
-      zone.addEventListener('keydown', (e) => {
-        // Ignorer si on est dans un champ de saisie ou modal ouverte
-        if (e.target.matches('input, textarea, select') || 
-            document.querySelector('.modal.show') ||
-            document.querySelector('#accordion-comment-edit-widget[style*="block"]')) {
-          return;
-        }
+    });
+    
+    // Événements pour les boutons timeline
+    container.querySelectorAll('.timeline-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
         
+        const taskId = parseInt(btn.dataset.taskId, 10);
+        if (!isNaN(taskId)) {
+          const task = this.kanban.currentRecords?.find(r => r.id === taskId);
+          if (task) {
+            // Ouvrir la timeline pour cette tâche
+            window.open(`timeline.html?task=${taskId}`, '_blank');
+          }
+        }
+      });
+    });
+    
+    // Écouteurs pour l'accessibilité (navigation clavier)
+    container.querySelectorAll('.kanban-item').forEach(card => {
+      card.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          zone.click();
+          const editableZone = card.querySelector('.editable-zone');
+          if (editableZone) {
+            editableZone.click();
+          }
         }
       });
     });
-    
-    // Écouteurs pour les boutons expand/collapse
-    container.querySelectorAll('.btn-expand').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        
-        const card = btn.closest('.kanban-item');
-        const taskId = parseInt(card.dataset.id, 10);
-        
-        if (!isNaN(taskId)) {
-          this.expandCard(taskId);
-        }
-      });
-    });
-    
-    container.querySelectorAll('.btn-collapse').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        
-        const card = btn.closest('.kanban-item');
-        const taskId = parseInt(card.dataset.id, 10);
-        
-        if (!isNaN(taskId)) {
-          this.collapseCard(taskId);
-        }
-      });
-    });
-    
-    // 🚫 SUPPRIMÉ: Écouteurs d'historique déjà gérés par HistoryManager (évite duplication)
-    // Les boutons .btn-history sont gérés par l'écouteur global dans HistoryManager.js:69-77
   }
   
   /**
-   * Expand une carte
-   * @param {number} taskId - ID de la tâche
+   * Nettoie les ressources
    */
-  expandCard(taskId) {
-    this.expandedCards.add(taskId);
-    this.refreshCard(taskId);
-  }
-  
-  /**
-   * Collapse une carte
-   * @param {number} taskId - ID de la tâche
-   */
-  collapseCard(taskId) {
-    this.expandedCards.delete(taskId);
-    this.refreshCard(taskId);
-  }
-  
-  /**
-   * Rafraîchit une carte spécifique
-   * @param {number} taskId - ID de la tâche
-   */
-  refreshCard(taskId) {
-    if (this.kanban.refreshKanban) {
-      this.kanban.refreshKanban();
-    }
-  }
-  
-  /**
-   * Obtient l'état d'expansion d'une carte
-   * @param {number} taskId - ID de la tâche
-   * @returns {boolean} True si expandée
-   */
-  isCardExpanded(taskId) {
-    return this.expandedCards.has(taskId);
-  }
-  
-  /**
-   * Réinitialise l'état d'expansion de toutes les cartes
-   */
-  clearExpandedCards() {
-    this.expandedCards.clear();
-  }
-  
-  /**
-   * Exporte l'état du renderer
-   * @returns {object} État du renderer
-   */
-  exportState() {
-    return {
-      expandedCards: Array.from(this.expandedCards),
-      timestamp: Date.now()
-    };
-  }
-  
-  /**
-   * Importe un état du renderer
-   * @param {object} state - État à importer
-   */
-  importState(state) {
-    if (state && Array.isArray(state.expandedCards)) {
-      this.expandedCards = new Set(state.expandedCards);
-    }
-  }
-  
-  /**
-   * Génère l'icône stratégie si la tâche en a une
-   * @param {object} record - Données de la tâche
-   * @returns {string} HTML de l'icône ou vide
-   */
-  getStrategyIcon(record) {
-    const hasStrategy = this.hasStrategy(record);
-    
-    if (!hasStrategy) {
-      return '';
-    }
-    
-    return `
-      <div class="strategy-indicator" title="Tâche alignée stratégiquement">
-        <i class="bi bi-crosshair text-success"></i>
-      </div>
-    `;
-  }
-  
-  /**
-   * Vérifie si une tâche a une stratégie associée
-   * @param {object} record - Données de la tâche
-   * @returns {boolean} True si la tâche a une stratégie
-   */
-  hasStrategy(record) {
-    // Vérifier les différents champs de stratégie
-    return !!(
-      (record.strategie_id && record.strategie_id.length > 0) ||
-      (record.strategie_ids && record.strategie_ids.length > 0) ||
-      record.objectif ||
-      record.sous_objectif ||
-      record.strategie_objectif
-    );
-  }
-
-  /**
-   * Génère un indicateur de références pour le mode compact
-   * @param {object} record - Données de la tâche
-   * @returns {string} HTML de l'indicateur ou vide
-   */
-  getReferencesIndicator(record) {
-    let referencesText = '';
-    if (record.notes) {
-      try {
-        const notesData = JSON.parse(record.notes);
-        referencesText = notesData.references || '';
-      } catch (e) {
-        // Ignorer
-      }
-    }
-    
-    if (!referencesText || !referencesText.trim()) {
-      return '';
-    }
-    
-    const count = referencesText.split('\n').filter(r => r.trim()).length;
-    return `
-      <div class="references-indicator" title="${count} référence${count > 1 ? 's' : ''}">
-        <i class="bi bi-link-45deg text-info"></i>
-        <span class="badge bg-info text-white">${count}</span>
-      </div>
-    `;
-  }
-
-  /**
-   * Génère l'HTML des références pour les cartes
-   * @param {object} record - Données de la tâche
-   * @returns {string} HTML des références
-   */
-  generateReferencesHtml(record) {
-    // Extraire les références depuis le champ notes
-    let referencesText = '';
-    if (record.notes) {
-      try {
-        const notesData = JSON.parse(record.notes);
-        referencesText = notesData.references || '';
-      } catch (e) {
-        // Si les notes ne sont pas du JSON valide, ignorer
-      }
-    }
-    
-    if (!referencesText || !referencesText.trim()) {
-      return '';
-    }
-
-    return referenceManager.generateCardHtml(referencesText);
+  destroy() {
+    console.log('CardRenderer: Ressources nettoyées');
   }
 }
