@@ -31,6 +31,20 @@
     .vis-timeline .vis-time-axis .vis-text {
       font-size: 11px !important;
     }
+    
+    /* Styles pour les jalons */
+    .vis-timeline .milestone-item {
+      border-radius: 0 !important;
+      transform: rotate(45deg) !important;
+      background-color: #ff6b35 !important;
+      border: 3px solid #ff6b35 !important;
+      z-index: 10 !important;
+    }
+    
+    .vis-timeline .milestone-item:hover {
+      transform: rotate(45deg) scale(1.1) !important;
+      box-shadow: 0 2px 8px rgba(255, 107, 53, 0.4) !important;
+    }
   </style>
   
   <!-- CSS Kanban pour les badges -->
@@ -414,6 +428,10 @@
             <div class="legend-item">
               <div class="legend-color" style="border-color: #198754; background-color: #198754;"></div>
               <span>Terminé</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="border-color: #ff6b35; background-color: #ff6b35; transform: rotate(45deg);"></div>
+              <span>Jalon 🏁</span>
             </div>
           </div>
         </div>
