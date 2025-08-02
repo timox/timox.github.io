@@ -1081,8 +1081,17 @@ export class ModalManager {
     this.syncSelectToCheckbox('popup-bureau-checkboxes', 'popup-bureau');
     this.syncSelectToCheckbox('popup-qui-checkboxes', 'popup-qui');
     
-    // Références et documentation
-    setFieldValue('popup-references', tache.references || '');
+    // Références et documentation (extraire depuis le champ notes)
+    let referencesValue = '';
+    if (tache.notes) {
+      try {
+        const notesData = JSON.parse(tache.notes);
+        referencesValue = notesData.references || '';
+      } catch (e) {
+        // Si les notes ne sont pas du JSON valide, ignorer
+      }
+    }
+    setFieldValue('popup-references', referencesValue);
     
     // Charger les jalons si disponibles
     if (this.kanban.jalonManager) {
@@ -1341,8 +1350,7 @@ export class ModalManager {
       bureau: getSelectedOptionsAsGristFormat('popup-bureau'),
       qui: getSelectedOptionsAsGristFormat('popup-qui'),
       strategie_id: this.collectStrategyData(), // Collecte spécialisée stratégies
-      jalons: this.kanban.jalonManager ? this.kanban.jalonManager.getJalonsForSave() : null,
-      references: referenceManager.cleanReferences(getFieldValue('popup-references')) || null
+      jalons: this.kanban.jalonManager ? this.kanban.jalonManager.getJalonsForSave() : null
     };
     
     this.logger.debug(`Collecting form data: ${data.titre || 'untitled'} (${data.statut})`);
@@ -1517,6 +1525,33 @@ export class ModalManager {
         if (!isNaN(strategyId)) {
           gristData.strategie_id = JSON.stringify([["L", strategyId]]);
         }
+      }
+    }
+    
+    // Gérer les références dans le champ notes
+    const referencesText = referenceManager.cleanReferences(getFieldValue('popup-references'));
+    if (referencesText || this.currentTask?.notes) {
+      try {
+        // Parser les notes existantes ou créer une nouvelle structure
+        let notesData = {};
+        if (this.currentTask?.notes) {
+          try {
+            notesData = JSON.parse(this.currentTask.notes);
+          } catch (e) {
+            // Si les notes existantes ne sont pas du JSON valide, créer une nouvelle structure
+            notesData = { content: this.currentTask.notes || "", history: [] };
+          }
+        } else {
+          notesData = { content: "", history: [] };
+        }
+        
+        // Ajouter les références
+        notesData.references = referencesText || "";
+        
+        // Sérialiser les notes mises à jour
+        gristData.notes = JSON.stringify(notesData);
+      } catch (error) {
+        this.logger.error('Error preparing notes with references:', error);
       }
     }
     

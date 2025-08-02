@@ -573,7 +573,7 @@ export class CardRenderer {
     
     return `
       <div class="strategy-indicator" title="Tâche alignée stratégiquement">
-        <i class="bi bi-bullseye text-success"></i>
+        <i class="bi bi-crosshair text-success"></i>
       </div>
     `;
   }
@@ -600,10 +600,21 @@ export class CardRenderer {
    * @returns {string} HTML des références
    */
   generateReferencesHtml(record) {
-    if (!record.references || !record.references.trim()) {
+    // Extraire les références depuis le champ notes
+    let referencesText = '';
+    if (record.notes) {
+      try {
+        const notesData = JSON.parse(record.notes);
+        referencesText = notesData.references || '';
+      } catch (e) {
+        // Si les notes ne sont pas du JSON valide, ignorer
+      }
+    }
+    
+    if (!referencesText || !referencesText.trim()) {
       return '';
     }
 
-    return referenceManager.generateCardHtml(record.references);
+    return referenceManager.generateCardHtml(referencesText);
   }
 }
