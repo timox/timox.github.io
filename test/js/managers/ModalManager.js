@@ -1219,6 +1219,26 @@ export class ModalManager {
             );
           }
           
+          // ✅ VÉRIFIER CHANGEMENT DE RÉFÉRENCES
+          const oldReferences = this.extractReferencesFromNotes(this.currentTask?.notes);
+          const newReferences = referenceManager.cleanReferences(getFieldValue('popup-references'));
+          
+          if (oldReferences !== newReferences) {
+            const changeDescription = this.describeReferenceChange(oldReferences, newReferences);
+            if (changeDescription) {
+              historyPromises.push(
+                userActionManager.addHistoryEntry(
+                  this.currentTaskId,
+                  'field_update',
+                  changeDescription,
+                  oldReferences || '',
+                  newReferences || '',
+                  gristData.statut || this.currentTask?.statut
+                )
+              );
+            }
+          }
+          
           // ✅ VÉRIFIER CHANGEMENT DE STATUT SPÉCIFIQUEMENT
           if (this.currentTask && this.currentTask.statut !== gristData.statut) {
             console.log(`📝 Modal: Changement statut ${this.currentTask.statut} → ${gristData.statut}`);
@@ -2886,5 +2906,41 @@ export class ModalManager {
     };
     
     return matrix[urgence]?.[impact] || 'Non définie';
+  }
+
+  /**
+   * Extrait les références depuis le champ notes JSON
+   * @param {string} notes - Champ notes JSON
+   * @returns {string} Texte des références
+   */
+  extractReferencesFromNotes(notes) {
+    if (!notes) return '';
+    try {
+      const notesData = JSON.parse(notes);
+      return notesData.references || '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  /**
+   * Décrit le changement de références pour l'historique
+   * @param {string} oldRefs - Anciennes références
+   * @param {string} newRefs - Nouvelles références
+   * @returns {string} Description du changement
+   */
+  describeReferenceChange(oldRefs, newRefs) {
+    const oldCount = oldRefs ? oldRefs.split('\n').filter(r => r.trim()).length : 0;
+    const newCount = newRefs ? newRefs.split('\n').filter(r => r.trim()).length : 0;
+    
+    if (!oldRefs && newRefs) {
+      return `Ajout de ${newCount} référence${newCount > 1 ? 's' : ''}`;
+    } else if (oldRefs && !newRefs) {
+      return `Suppression de ${oldCount} référence${oldCount > 1 ? 's' : ''}`;
+    } else if (oldCount !== newCount) {
+      return `Modification des références (${oldCount} → ${newCount})`;
+    } else {
+      return 'Modification des références';
+    }
   }
 }
