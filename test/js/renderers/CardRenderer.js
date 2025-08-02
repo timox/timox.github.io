@@ -80,7 +80,6 @@ export class CardRenderer {
                     data-task-id="${record.id}" 
                     title="${totalEvents} événement${totalEvents > 1 ? 's' : ''}">
               <i class="bi bi-clock-history"></i>
-              <span class="badge bg-info text-white ms-1">${totalEvents}</span>
             </button>`;
   }
   
@@ -110,7 +109,7 @@ export class CardRenderer {
     const strategyTooltip = strategiesText ? 
       `title="${strategiesInfo.length} stratégie${strategiesInfo.length > 1 ? 's' : ''} liée${strategiesInfo.length > 1 ? 's' : ''}"` : '';
     const strategyIcon = strategiesInfo.length > 0 ? 
-      `<i class="bi bi-bullseye strategie-icon" ${strategyTooltip}></i>` : '';
+      `<i class="bi bi-crosshair strategie-icon" ${strategyTooltip} style="font-size: 1.1em;"></i>` : '';
 
     // Projet
     const projectBadge = record.projet ? 

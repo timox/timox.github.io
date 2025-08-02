@@ -54,6 +54,9 @@ export class BoardRenderer {
     
     // Attacher les écouteurs d'événements
     this.attachEventListeners(kanbanContainer);
+    
+    // Initialiser les flèches de navigation
+    this.initializeScrollArrows();
   }
   
   /**
@@ -662,6 +665,56 @@ export class BoardRenderer {
     if (this.kanban.handleDragEnd) {
       this.kanban.handleDragEnd(evt, targetStatus);
     }
+  }
+  
+  /**
+   * Initialise les flèches de navigation horizontale
+   */
+  initializeScrollArrows() {
+    const leftArrow = document.getElementById('scroll-left');
+    const rightArrow = document.getElementById('scroll-right');
+    const kanbanContainer = this.kanban.kanbanContainer;
+    
+    if (!leftArrow || !rightArrow || !kanbanContainer) return;
+    
+    // Fonction pour mettre à jour la visibilité des flèches
+    const updateArrows = () => {
+      const scrollLeft = kanbanContainer.scrollLeft;
+      const scrollWidth = kanbanContainer.scrollWidth;
+      const clientWidth = kanbanContainer.clientWidth;
+      
+      // Afficher/masquer les flèches selon la position de scroll
+      if (scrollLeft <= 0) {
+        leftArrow.classList.add('hidden');
+      } else {
+        leftArrow.classList.remove('hidden');
+      }
+      
+      if (scrollLeft >= scrollWidth - clientWidth - 10) {
+        rightArrow.classList.add('hidden');
+      } else {
+        rightArrow.classList.remove('hidden');
+      }
+    };
+    
+    // Événements de scroll
+    kanbanContainer.addEventListener('scroll', updateArrows);
+    
+    // Événements des boutons
+    leftArrow.addEventListener('click', () => {
+      kanbanContainer.scrollBy({ left: -300, behavior: 'smooth' });
+    });
+    
+    rightArrow.addEventListener('click', () => {
+      kanbanContainer.scrollBy({ left: 300, behavior: 'smooth' });
+    });
+    
+    // Observer les changements de taille
+    const resizeObserver = new ResizeObserver(updateArrows);
+    resizeObserver.observe(kanbanContainer);
+    
+    // Mettre à jour initialement
+    setTimeout(updateArrows, 100);
   }
   
   /**

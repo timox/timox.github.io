@@ -274,6 +274,10 @@ export class FilterManager {
     if (!Array.isArray(records)) return [];
     
     return records.filter(record => {
+      // Masquer les tâches temporaires
+      if (record.titre && record.titre.includes('__TEMP_USER_RECORD__')) {
+        return false;
+      }
       // Filtre bureau - Vérifier explicitement que la valeur n'est pas vide
       if (this.filters.bureau && this.filters.bureau.trim() !== '' && Array.isArray(record.bureau)) {
         const bureaux = record.bureau.slice(1); // Enlever le 'L' de Grist
