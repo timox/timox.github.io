@@ -411,30 +411,26 @@ export class KanbanAppInitializer {
       return;
     }
     
-    // Chercher le conteneur des boutons dans le header
-    const buttonsContainer = document.querySelector('.kanban-header .d-flex.gap-2');
+    // Chercher le bouton nouvelle tâche d'abord
     const newTaskBtn = document.querySelector('#btn-nouvelle-tache');
+    
+    if (!newTaskBtn) {
+      console.warn('Bouton Nouvelle Tâche non trouvé');
+      return;
+    }
+    
+    // Utiliser le parent direct du bouton comme conteneur
+    const buttonsContainer = newTaskBtn.parentElement;
     
     console.log('🔍 Debug insertBefore:', {
       buttonsContainer: !!buttonsContainer,
       newTaskBtn: !!newTaskBtn,
-      containerHTML: buttonsContainer?.outerHTML.substring(0, 100),
-      newTaskBtnParent: newTaskBtn?.parentElement?.className,
-      areRelated: buttonsContainer?.contains(newTaskBtn)
+      containerClass: buttonsContainer?.className,
+      newTaskBtnParent: newTaskBtn?.parentElement?.className
     });
     
-    if (!buttonsContainer || !newTaskBtn) {
-      console.warn('Container des boutons ou bouton Nouvelle Tâche non trouvé');
-      console.warn('buttonsContainer:', buttonsContainer);
-      console.warn('newTaskBtn:', newTaskBtn);
-      return;
-    }
-    
-    // Vérifier que newTaskBtn est bien un enfant de buttonsContainer
-    if (!buttonsContainer.contains(newTaskBtn)) {
-      console.error('❌ Le bouton Nouvelle Tâche n\'est pas un enfant du conteneur trouvé');
-      console.error('Container:', buttonsContainer);
-      console.error('NewTaskBtn parent:', newTaskBtn.parentElement);
+    if (!buttonsContainer) {
+      console.warn('Container des boutons non trouvé');
       return;
     }
     
