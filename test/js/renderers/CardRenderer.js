@@ -4,6 +4,7 @@
 import { generateAllTaskBadges, generateStrategyBadge } from '../utils/badges.js';
 import { generateDatesContainer } from '../utils/dates.js';
 import { VIEW_MODES } from '../config/constants.js';
+import { referenceManager } from '../utils/ReferenceManager.js';
 
 /**
  * Gestionnaire pour le rendu des cartes de tâches
@@ -93,6 +94,9 @@ export class CardRenderer {
         
         <!-- Titre de la tâche -->
         <div class="compact-title editable-zone" title="${record.titre || ''}">${record.titre || 'Sans titre'}</div>
+        
+        <!-- Références et documentation (compact) -->
+        ${this.generateReferencesHtml(record)}
         
         <!-- Indicateurs visuels cachés (pour les lecteurs d'écran) -->
         <div class="sr-only">
@@ -187,6 +191,9 @@ export class CardRenderer {
         
         <!-- Badges responsables -->
         ${badges.responsables}
+        
+        <!-- Références et documentation -->
+        ${this.generateReferencesHtml(record)}
         
         <!-- Indicateurs de progression -->
         ${progressIndicators}
@@ -585,5 +592,18 @@ export class CardRenderer {
       record.sous_objectif ||
       record.strategie_objectif
     );
+  }
+
+  /**
+   * Génère l'HTML des références pour les cartes
+   * @param {object} record - Données de la tâche
+   * @returns {string} HTML des références
+   */
+  generateReferencesHtml(record) {
+    if (!record.references || !record.references.trim()) {
+      return '';
+    }
+
+    return referenceManager.generateCardHtml(record.references);
   }
 }

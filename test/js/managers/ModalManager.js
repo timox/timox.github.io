@@ -18,6 +18,7 @@ import {
 import { TABLE_ID } from '../config/constants.js';
 import { getUserActionManager } from '../utils/UserActionManager.js';
 import { createModuleLogger } from '../utils/LoggerManager.js';
+import { referenceManager } from '../utils/ReferenceManager.js';
 
 /**
  * Gestionnaire pour les modales et formulaires
@@ -45,6 +46,7 @@ export class ModalManager {
     this.initializeModals();
     this.setupEventListeners();
     this.setupStrategySelects();
+    this.setupReferenceField();
     this.logger.debug('ModalManager initialized');
   }
   
@@ -171,6 +173,13 @@ export class ModalManager {
   setupStrategySelects() {
     // Initialiser l'interface accordéon des stratégies
     this.setupStrategyAccordion();
+  }
+
+  /**
+   * Configure le champ des références
+   */
+  setupReferenceField() {
+    referenceManager.initializeField('popup-references', 'references-preview');
   }
   
   /**
@@ -1072,6 +1081,9 @@ export class ModalManager {
     this.syncSelectToCheckbox('popup-bureau-checkboxes', 'popup-bureau');
     this.syncSelectToCheckbox('popup-qui-checkboxes', 'popup-qui');
     
+    // Références et documentation
+    setFieldValue('popup-references', tache.references || '');
+    
     // Charger les jalons si disponibles
     if (this.kanban.jalonManager) {
       this.logger.debug(`Processing jalons: ${typeof tache.jalons} - ${tache.jalons}`);
@@ -1329,7 +1341,8 @@ export class ModalManager {
       bureau: getSelectedOptionsAsGristFormat('popup-bureau'),
       qui: getSelectedOptionsAsGristFormat('popup-qui'),
       strategie_id: this.collectStrategyData(), // Collecte spécialisée stratégies
-      jalons: this.kanban.jalonManager ? this.kanban.jalonManager.getJalonsForSave() : null
+      jalons: this.kanban.jalonManager ? this.kanban.jalonManager.getJalonsForSave() : null,
+      references: referenceManager.cleanReferences(getFieldValue('popup-references')) || null
     };
     
     this.logger.debug(`Collecting form data: ${data.titre || 'untitled'} (${data.statut})`);
