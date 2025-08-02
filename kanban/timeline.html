@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Timeline Tâche - Kanban SSIR</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+  
+  <!-- Vis.js Timeline CSS -->
+  <link href="https://unpkg.com/vis-timeline@latest/standalone/umd/vis-timeline-graph2d.min.css" rel="stylesheet" type="text/css" />
+  
+  <!-- Style customizations pour timeline -->
+  <style>
+    .vis-timeline .vis-item {
+      font-size: 11px !important;
+    }
+    .vis-timeline .vis-item .vis-item-content {
+      padding: 2px 4px !important;
+      font-size: 11px !important;
+    }
+    .vis-timeline .vis-labelset .vis-label {
+      font-size: 13px !important;
+      font-weight: 500 !important;
+    }
+    .vis-timeline .vis-time-axis .vis-text {
+      font-size: 11px !important;
+    }
+    
+    /* Styles pour les jalons */
+    .vis-timeline .milestone-item {
+      border-radius: 0 !important;
+      transform: rotate(45deg) !important;
+      background-color: #ff6b35 !important;
+      border: 3px solid #ff6b35 !important;
+      z-index: 10 !important;
+    }
+    
+    .vis-timeline .milestone-item:hover {
+      transform: rotate(45deg) scale(1.1) !important;
+      box-shadow: 0 2px 8px rgba(255, 107, 53, 0.4) !important;
+    }
+    
+    /* Empêcher la superposition */
+    #visualization {
+      overflow: hidden !important;
+      position: relative !important;
+      z-index: 1 !important;
+    }
+    
+    #detailed-timeline {
+      position: relative !important;
+      z-index: 0 !important;
+      margin-top: 20px !important;
+    }
+  </style>
+  
+  <!-- CSS Kanban pour les badges -->
+  <link href="css/kanban-responsive.css" rel="stylesheet">
+  
+  <style>
+    .timeline-card {
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+      margin-bottom: 1.5rem;
+    }
+    
+    .timeline-card:hover {
+      transform: translateY(-2px);
+    }
+    
+    .task-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1.5rem;
+      border-radius: 12px 12px 0 0;
+    }
+    
+    .task-id {
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+    
+    .task-title {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin: 0.5rem 0;
+    }
+    
+    .timeline-container {
+      position: relative;
+      padding: 2rem 0;
+    }
+    
+    .timeline {
+      position: relative;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    
+    .timeline::after {
+      content: '';
+      position: absolute;
+      width: 4px;
+      background: linear-gradient(to bottom, #007bff, #28a745);
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      margin-left: -2px;
+      border-radius: 2px;
+    }
+    
+    .timeline-item {
+      padding: 10px 40px;
+      position: relative;
+      background-color: inherit;
+      width: 50%;
+    }
+    
+    .timeline-item::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      right: -10px;
+      background-color: white;
+      border: 4px solid;
+      top: 15px;
+      border-radius: 50%;
+      z-index: 1;
+    }
+    
+    .timeline-item.left {
+      left: 0;
+    }
+    
+    .timeline-item.right {
+      left: 50%;
+    }
+    
+    .timeline-item.right::after {
+      left: -10px;
+    }
+    
+    .timeline-content {
+      padding: 1rem 1.5rem;
+      background: white;
+      position: relative;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-left: 4px solid #007bff;
+    }
+    
+    .timeline-item.left .timeline-content {
+      margin-right: 30px;
+    }
+    
+    .timeline-item.right .timeline-content {
+      margin-left: 30px;
+    }
+    
+    .timeline-date {
+      font-size: 0.85rem;
+      color: #6c757d;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+    }
+    
+    .timeline-status {
+      font-weight: 600;
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .timeline-details {
+      font-size: 0.9rem;
+      color: #495057;
+      margin-bottom: 0.5rem;
+    }
+    
+    .timeline-user {
+      font-size: 0.8rem;
+      color: #6c757d;
+      font-style: italic;
+    }
+    
+    /* Couleurs par statut */
+    .status-backlog {
+      border-left-color: #6c757d !important;
+    }
+    .status-backlog::after {
+      border-color: #6c757d !important;
+    }
+    
+    .status-afaire {
+      border-left-color: #0d6efd !important;
+    }
+    .status-afaire::after {
+      border-color: #0d6efd !important;
+    }
+    
+    .status-encours {
+      border-left-color: #fd7e14 !important;
+    }
+    .status-encours::after {
+      border-color: #fd7e14 !important;
+    }
+    
+    .status-enattente {
+      border-left-color: #20c997 !important;
+    }
+    .status-enattente::after {
+      border-color: #20c997 !important;
+    }
+    
+    .status-bloque {
+      border-left-color: #dc3545 !important;
+    }
+    .status-bloque::after {
+      border-color: #dc3545 !important;
+    }
+    
+    .status-validation {
+      border-left-color: #ffc107 !important;
+    }
+    .status-validation::after {
+      border-color: #ffc107 !important;
+    }
+    
+    .status-termine {
+      border-left-color: #198754 !important;
+    }
+    .status-termine::after {
+      border-color: #198754 !important;
+    }
+    
+    .legend {
+      background: white;
+      border-radius: 10px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    
+    .legend-color {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      margin-right: 0.75rem;
+      border: 3px solid;
+    }
+    
+    .duration-badge {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 15px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    
+    .loading-spinner {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 300px;
+    }
+    
+    /* Responsive */
+    @media screen and (max-width: 768px) {
+      .timeline::after {
+        left: 31px;
+      }
+      
+      .timeline-item {
+        width: 100%;
+        padding-left: 70px;
+        padding-right: 25px;
+      }
+      
+      .timeline-item::before {
+        left: 60px;
+        border: medium solid white;
+        border-width: 10px 10px 10px 0;
+        border-color: transparent white transparent transparent;
+      }
+      
+      .timeline-item.left::after,
+      .timeline-item.right::after {
+        left: 21px;
+      }
+      
+      .timeline-item.right {
+        left: 0%;
+      }
+      
+      .timeline-item.left .timeline-content,
+      .timeline-item.right .timeline-content {
+        margin: 0;
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-light">
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="index.html">
+        <i class="bi bi-arrow-left me-2"></i>
+        Retour au Kanban
+      </a>
+      <div class="d-flex gap-2">
+        <a href="stats.html" class="btn btn-outline-light btn-sm">
+          <i class="bi bi-graph-up me-1"></i>
+          Stats
+        </a>
+        <a href="history.html" class="btn btn-outline-light btn-sm">
+          <i class="bi bi-clock-history me-1"></i>
+          Historique
+        </a>
+      </div>
+      <span class="navbar-text">
+        <i class="bi bi-diagram-3 me-2"></i>
+        Timeline Tâche
+      </span>
+    </div>
+  </nav>
+
+  <div class="container-fluid py-4">
+    
+    <!-- Container d'erreur -->
+    <div id="error-container"></div>
+    
+    <!-- Sélecteur de tâche -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card timeline-card">
+          <div class="card-body">
+            <h5 class="card-title mb-3">
+              <i class="bi bi-search me-2"></i>
+              Sélectionner une tâche
+            </h5>
+            <div class="row g-3">
+              <div class="col-md-8">
+                <select class="form-select form-select-lg" id="task-selector">
+                  <option value="">Choisir une tâche...</option>
+                  <!-- Sera rempli par JS -->
+                </select>
+              </div>
+              <div class="col-md-4">
+                <button class="btn btn-primary btn-lg w-100" id="load-timeline-btn" disabled>
+                  <i class="bi bi-diagram-3 me-2"></i>
+                  Charger Timeline
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Informations de la tâche -->
+    <div id="task-info" style="display: none;">
+      <div class="timeline-card">
+        <div class="task-header">
+          <div class="task-id" id="task-id"></div>
+          <div class="task-title" id="task-title"></div>
+          <div class="d-flex flex-wrap gap-2 mt-3" id="task-badges"></div>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-8">
+              <p class="mb-2"><strong>Description:</strong></p>
+              <p id="task-description" class="text-muted"></p>
+            </div>
+            <div class="col-md-4">
+              <div class="d-flex flex-column gap-2">
+                <div>
+                  <strong>Durée totale:</strong>
+                  <span class="duration-badge ms-2" id="total-duration"></span>
+                </div>
+                <div>
+                  <strong>Nombre d'étapes:</strong>
+                  <span class="badge bg-info" id="steps-count"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Légende -->
+    <div id="legend" style="display: none;">
+      <div class="legend">
+        <h5 class="mb-3">
+          <i class="bi bi-palette me-2"></i>
+          Légende des statuts
+        </h5>
+        <div class="row">
+          <div class="col-md-6">
+            <div class="legend-item">
+              <div class="legend-color" style="border-color: #6c757d; background-color: #6c757d;"></div>
+              <span>Backlog</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="border-color: #0d6efd; background-color: #0d6efd;"></div>
+              <span>À faire</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="border-color: #fd7e14; background-color: #fd7e14;"></div>
+              <span>En cours</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="border-color: #20c997; background-color: #20c997;"></div>
+              <span>En attente</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="legend-item">
+              <div class="legend-color" style="border-color: #dc3545; background-color: #dc3545;"></div>
+              <span>Bloqué</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="border-color: #ffc107; background-color: #ffc107;"></div>
+              <span>Validation</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="border-color: #198754; background-color: #198754;"></div>
+              <span>Terminé</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="border-color: #ff6b35; background-color: #ff6b35; transform: rotate(45deg);"></div>
+              <span>Jalon 🏁</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timeline Vis.js -->
+    <div id="timeline-container" style="display: none;">
+      <div class="timeline-card">
+        <div class="card-header bg-primary text-white">
+          <h4 class="mb-0">
+            <i class="bi bi-clock-history me-2"></i>
+            Évolution de la tâche
+          </h4>
+        </div>
+        <div class="card-body">
+          <div id="visualization" style="height: 400px; overflow: visible; position: relative; z-index: 1;"></div>
+        </div>
+      </div>
+      
+      <!-- Timeline détaillée -->
+      <div class="timeline-card mt-4" style="position: relative; z-index: 0; clear: both;">
+        <div class="card-header bg-secondary text-white">
+          <h5 class="mb-0">
+            <i class="bi bi-list-ul me-2"></i>
+            Détail chronologique
+          </h5>
+        </div>
+        <div class="card-body" id="detailed-timeline" style="position: relative; z-index: 0;">
+          <!-- Sera rempli par JS -->
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <!-- Vis.js Timeline -->
+  <script src="https://unpkg.com/vis-timeline@latest/standalone/umd/vis-timeline-graph2d.min.js"></script>
+  
+  <!-- Application Timeline -->
+  <script type="module" src="js/timeline-app.js"></script>
+</body>
+</html>
