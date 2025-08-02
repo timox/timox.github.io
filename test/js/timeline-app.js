@@ -244,12 +244,21 @@ class TimelineManager {
   }
 
   getEventDetails(entry) {
+    // Limiter la longueur du contenu
+    const truncate = (str, length = 50) => {
+      if (!str) return '';
+      return str.length > length ? str.substring(0, length) + '...' : str;
+    };
+    
     if (entry.oldValue && entry.newValue) {
-      return `${entry.field || 'Champ'}: "${entry.oldValue}" → "${entry.newValue}"`;
+      const oldVal = truncate(String(entry.oldValue), 30);
+      const newVal = truncate(String(entry.newValue), 30);
+      return `${entry.field || 'Champ'}: "${oldVal}" → "${newVal}"`;
     }
     
     if (entry.newValue) {
-      return `${entry.field || 'Champ'}: "${entry.newValue}"`;
+      const newVal = truncate(String(entry.newValue), 40);
+      return `${entry.field || 'Champ'}: "${newVal}"`;
     }
     
     return entry.field || 'Modification';
@@ -283,31 +292,48 @@ class TimelineManager {
       items.add({
         id: index,
         group: 1,
-        content: `<div style="padding: 4px;">
-          <strong style="color: ${statusColor};">${event.status}</strong><br>
-          <small>${event.details}</small><br>
-          <small style="color: #666;"><i class="bi bi-person"></i> ${event.user}</small>
+        content: `<div style="padding: 2px 4px; font-size: 11px; line-height: 1.2;">
+          <strong style="color: white; font-size: 12px;">${event.status}</strong><br>
+          <small style="font-size: 10px; color: #f0f0f0;">${event.details}</small><br>
+          <small style="color: #e0e0e0; font-size: 9px;"><i class="bi bi-person"></i> ${event.user}</small>
         </div>`,
         start: event.date,
         end: index < timelineData.length - 1 ? timelineData[index + 1].date : new Date(event.date.getTime() + 3600000), // +1h pour le dernier
         type: 'range',
-        style: `background-color: ${statusColor}; border-color: ${statusColor}; color: white;`,
+        style: `background-color: ${statusColor}; border-color: ${statusColor}; color: white; font-size: 11px;`,
         className: this.getStatusCSSClass(event.status)
       });
     });
+    
+    // Calculer la plage de dates
+    const startDate = new Date(Math.min(...timelineData.map(d => d.date)));
+    const endDate = new Date(Math.max(...timelineData.map(d => d.date)));
+    const now = new Date();
+    
+    // S'assurer que la vue se centre sur les données récentes
+    let viewStart = startDate;
+    let viewEnd = endDate;
+    
+    // Si les données sont anciennes, centrer sur les 30 derniers jours ou les données existantes
+    if ((now - endDate) < (30 * 24 * 60 * 60 * 1000)) { // Si moins de 30 jours
+      viewEnd = now;
+      viewStart = new Date(startDate.getTime() - (7 * 24 * 60 * 60 * 1000)); // -7 jours avant le début
+    }
     
     // Configuration de la timeline
     const options = {
       width: '100%',
       height: '400px',
       margin: {
-        item: 10,
-        axis: 40
+        item: 5,
+        axis: 30
       },
       orientation: 'top',
       showCurrentTime: true,
-      zoomMin: 1000 * 60 * 60 * 24, // 1 jour
-      zoomMax: 1000 * 60 * 60 * 24 * 365, // 1 an
+      start: viewStart,
+      end: viewEnd,
+      zoomMin: 1000 * 60 * 60, // 1 heure
+      zoomMax: 1000 * 60 * 60 * 24 * 90, // 90 jours
       format: {
         minorLabels: {
           millisecond:'SSS',
