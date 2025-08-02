@@ -305,20 +305,53 @@ class TimelineManager {
       });
     });
     
-    // Calculer la plage de dates
-    const startDate = new Date(Math.min(...timelineData.map(d => d.date)));
-    const endDate = new Date(Math.max(...timelineData.map(d => d.date)));
+    // Filtrer les dates invalides (1970, etc.) et calculer la plage de dates
+    const validDates = timelineData
+      .map(d => d.date)
+      .filter(date => date.getFullYear() > 2020); // Ignorer les dates avant 2020
+    
+    let startDate, endDate;
+    
+    if (validDates.length > 0) {
+      startDate = new Date(Math.min(...validDates));
+      endDate = new Date(Math.max(...validDates));
+    } else {
+      // Si aucune date valide, prendre la première date non-1970 et ajuster
+      const sortedDates = timelineData
+        .map(d => d.date)
+        .sort((a, b) => a - b)
+        .filter(date => date.getFullYear() > 1980); // Un peu plus large pour être sûr
+      
+      if (sortedDates.length > 0) {
+        startDate = new Date(sortedDates[0].getTime() - (24 * 60 * 60 * 1000)); // -1 jour
+        endDate = new Date(Math.max(...sortedDates));
+      } else {
+        // Fallback: utiliser les dates actuelles
+        const now = new Date();
+        startDate = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000)); // -7 jours
+        endDate = now;
+      }
+    }
+    
     const now = new Date();
     
     // S'assurer que la vue se centre sur les données récentes
     let viewStart = startDate;
     let viewEnd = endDate;
     
-    // Si les données sont anciennes, centrer sur les 30 derniers jours ou les données existantes
+    // Si les données sont récentes, inclure maintenant dans la vue
     if ((now - endDate) < (30 * 24 * 60 * 60 * 1000)) { // Si moins de 30 jours
       viewEnd = now;
-      viewStart = new Date(startDate.getTime() - (7 * 24 * 60 * 60 * 1000)); // -7 jours avant le début
+      viewStart = new Date(startDate.getTime() - (2 * 24 * 60 * 60 * 1000)); // -2 jours avant le début
     }
+    
+    console.log('📅 Plage de dates timeline:', {
+      originalRange: `${new Date(Math.min(...timelineData.map(d => d.date)))} → ${new Date(Math.max(...timelineData.map(d => d.date)))}`,
+      validRange: `${startDate} → ${endDate}`,
+      viewRange: `${viewStart} → ${viewEnd}`,
+      totalEvents: timelineData.length,
+      validEvents: validDates.length
+    });
     
     // Configuration de la timeline
     const options = {
