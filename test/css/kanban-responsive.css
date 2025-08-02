@@ -103,6 +103,43 @@
   padding: 0.1rem 0.3rem;
 }
 
+/* Boutons expand/collapse des cartes */
+.btn-expand, .btn-collapse {
+  background: none;
+  border: none;
+  color: #6c757d;
+  padding: 0.2rem;
+  border-radius: 3px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+}
+
+.btn-expand:hover, .btn-collapse:hover {
+  background-color: #e9ecef;
+  color: #495057;
+  transform: scale(1.1);
+}
+
+.btn-expand:focus, .btn-collapse:focus {
+  outline: 2px solid #0d6efd;
+  outline-offset: 1px;
+}
+
+/* Style spécifique pour le header compact */
+.compact-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
 /* === Badges Bureaux === */
 .bureau-badges {
   display: flex;
