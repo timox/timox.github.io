@@ -553,6 +553,10 @@ class TimelineManager {
       validEvents: validDates.length
     });
     
+    // Ajuster la hauteur du conteneur pour timeline simple
+    const container = document.getElementById('visualization');
+    container.style.height = '400px';
+    
     // Configuration de la timeline
     const options = {
       width: '100%',
@@ -595,7 +599,6 @@ class TimelineManager {
     };
     
     // Créer la timeline
-    const container = document.getElementById('visualization');
     const timeline = new vis.Timeline(container, items, groups, options);
     
     // Générer la timeline détaillée
@@ -698,9 +701,15 @@ class TimelineManager {
     console.log(`📅 Timeline groupe: ${Object.keys(taskGroups).length} tâches, ${groupTimelineData.length} événements`);
     
     // Configuration de la timeline
+    const timelineHeight = Math.max(400, Object.keys(taskGroups).length * 60);
+    
+    // Ajuster la hauteur du conteneur
+    const container = document.getElementById('visualization');
+    container.style.height = `${timelineHeight}px`;
+    
     const options = {
       width: '100%',
-      height: `${Math.max(400, Object.keys(taskGroups).length * 60)}px`, // Hauteur dynamique
+      height: `${timelineHeight}px`, // Hauteur dynamique
       margin: {
         item: 3,
         axis: 25
@@ -739,7 +748,6 @@ class TimelineManager {
     };
     
     // Créer la timeline
-    const container = document.getElementById('visualization');
     const timeline = new vis.Timeline(container, items, groups, options);
     
     // Générer la timeline détaillée

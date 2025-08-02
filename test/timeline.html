@@ -45,6 +45,19 @@
       transform: rotate(45deg) scale(1.1) !important;
       box-shadow: 0 2px 8px rgba(255, 107, 53, 0.4) !important;
     }
+    
+    /* Empêcher la superposition */
+    #visualization {
+      overflow: hidden !important;
+      position: relative !important;
+      z-index: 1 !important;
+    }
+    
+    #detailed-timeline {
+      position: relative !important;
+      z-index: 0 !important;
+      margin-top: 20px !important;
+    }
   </style>
   
   <!-- CSS Kanban pour les badges -->
@@ -448,19 +461,19 @@
           </h4>
         </div>
         <div class="card-body">
-          <div id="visualization" style="height: 400px;"></div>
+          <div id="visualization" style="height: 400px; overflow: visible; position: relative; z-index: 1;"></div>
         </div>
       </div>
       
       <!-- Timeline détaillée -->
-      <div class="timeline-card mt-4">
+      <div class="timeline-card mt-4" style="position: relative; z-index: 0; clear: both;">
         <div class="card-header bg-secondary text-white">
           <h5 class="mb-0">
             <i class="bi bi-list-ul me-2"></i>
             Détail chronologique
           </h5>
         </div>
-        <div class="card-body" id="detailed-timeline">
+        <div class="card-body" id="detailed-timeline" style="position: relative; z-index: 0;">
           <!-- Sera rempli par JS -->
         </div>
       </div>
