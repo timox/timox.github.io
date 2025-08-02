@@ -1093,6 +1093,12 @@ export class ModalManager {
     }
     setFieldValue('popup-references', referencesValue);
     
+    // Forcer la mise à jour de l'aperçu des références
+    const preview = document.getElementById('references-preview');
+    if (preview) {
+      referenceManager.updatePreview(referencesValue, preview);
+    }
+    
     // Charger les jalons si disponibles
     if (this.kanban.jalonManager) {
       this.logger.debug(`Processing jalons: ${typeof tache.jalons} - ${tache.jalons}`);

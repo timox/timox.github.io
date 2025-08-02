@@ -31,7 +31,7 @@ export class CardRenderer {
     
     // Décider du rendu selon le mode et l'état d'expansion
     if (viewMode === VIEW_MODES.COMPACT && !isExpanded) {
-      return this.renderCompactCard(record);
+      return this.renderCompactCard(record, viewMode);
     } else {
       return this.renderDetailedCard(record, viewMode, isExpanded);
     }
@@ -40,9 +40,10 @@ export class CardRenderer {
   /**
    * Rend une carte en mode compact
    * @param {object} record - Données de la tâche
+   * @param {string} viewMode - Mode de vue
    * @returns {string} HTML de la carte compacte
    */
-  renderCompactCard(record) {
+  renderCompactCard(record, viewMode) {
     const priority = this.calculatePriority(record.urgence, record.impact);
     const badges = generateAllTaskBadges({
       ...record,
@@ -87,6 +88,7 @@ export class CardRenderer {
           <div class="compact-priority">${badges.priority}</div>
           <div class="compact-echeance">${echeanceElement}</div>
           ${this.getStrategyIcon(record)}
+          ${this.getReferencesIndicator(record)}
           <button class="btn-expand" title="Voir les détails" aria-label="Développer la tâche">
             <i class="bi bi-chevron-down"></i>
           </button>
@@ -94,9 +96,6 @@ export class CardRenderer {
         
         <!-- Titre de la tâche -->
         <div class="compact-title editable-zone" title="${record.titre || ''}">${record.titre || 'Sans titre'}</div>
-        
-        <!-- Références et documentation (compact) -->
-        ${this.generateReferencesHtml(record)}
         
         <!-- Indicateurs visuels cachés (pour les lecteurs d'écran) -->
         <div class="sr-only">
@@ -592,6 +591,35 @@ export class CardRenderer {
       record.sous_objectif ||
       record.strategie_objectif
     );
+  }
+
+  /**
+   * Génère un indicateur de références pour le mode compact
+   * @param {object} record - Données de la tâche
+   * @returns {string} HTML de l'indicateur ou vide
+   */
+  getReferencesIndicator(record) {
+    let referencesText = '';
+    if (record.notes) {
+      try {
+        const notesData = JSON.parse(record.notes);
+        referencesText = notesData.references || '';
+      } catch (e) {
+        // Ignorer
+      }
+    }
+    
+    if (!referencesText || !referencesText.trim()) {
+      return '';
+    }
+    
+    const count = referencesText.split('\n').filter(r => r.trim()).length;
+    return `
+      <div class="references-indicator" title="${count} référence${count > 1 ? 's' : ''}">
+        <i class="bi bi-link-45deg text-info"></i>
+        <span class="badge bg-info text-white">${count}</span>
+      </div>
+    `;
   }
 
   /**

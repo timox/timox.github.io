@@ -90,6 +90,19 @@
   border-radius: 6px;
 }
 
+/* Indicateur de références dans les cartes compactes */
+.references-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.85rem;
+}
+
+.references-indicator .badge {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.3rem;
+}
+
 /* === Badges Bureaux === */
 .bureau-badges {
   display: flex;
