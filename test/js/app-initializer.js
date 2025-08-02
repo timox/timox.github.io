@@ -136,7 +136,7 @@ export class KanbanAppInitializer {
     try {
       // Créer KanbanManager si nécessaire (puisque l'auto-init est désactivée)
       if (!window.kanbanManager) {
-        const { KanbanManager } = await import('./kanban-app.js');
+        const { KanbanManager } = await import('./core/KanbanManager.js');
         window.kanbanManager = new KanbanManager();
         this.components.kanbanManager = window.kanbanManager;
       } else {
@@ -158,7 +158,7 @@ export class KanbanAppInitializer {
       console.error('❌ Erreur initialisation composants de base:', error);
       // Essayer de continuer même en cas d'erreur
       if (!this.components.kanbanManager) {
-        const { KanbanManager } = await import('./kanban-app.js');
+        const { KanbanManager } = await import('./core/KanbanManager.js');
         this.components.kanbanManager = new KanbanManager();
         window.kanbanManager = this.components.kanbanManager;
       }

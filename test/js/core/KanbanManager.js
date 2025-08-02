@@ -12,7 +12,7 @@ import { FilterManager } from '../managers/FilterManager.js';
 
 // Importation des renderers
 import { CardRenderer } from '../renderers/CardRenderer.js';
-import { BoardRenderer } from '../renderers/BoardRenderer.js';
+import { BoardRenderer } from '../renderers/boardRenderer.js';
 
 // Importation du gestionnaire Grist
 import { GristManager } from '../managers/GristManager.js';
