@@ -116,19 +116,19 @@ export const MESSAGES = {
 
 // === ICÔNES PAR BUREAU ===
 export const BUREAU_ICONS = {
-  'exploit': 'bi-server',
-  'réseau': 'bi-router',
-  'reseau': 'bi-router',
-  'bdd': 'bi-database',
-  'chef': 'bi-person-badge',
-  'ssir': 'bi-person-badge',
-  'sig': 'bi-geo-alt',
-  'nexsis': 'bi-broadcast',
-  'rrf': 'bi-broadcast',
-  'comsic': 'bi-shield-check',
-  'rssi': 'bi-shield-lock',
-  'dpo': 'bi-file-earmark-person',
-  'cgssi': 'bi-shield-check',
+  'exploit': 'bi-gear-wide-connected',  // Admins système - engrenages connectés
+  'réseau': 'bi-diagram-3',             // Réseau - diagramme de réseau plus visible
+  'reseau': 'bi-diagram-3',             // Réseau - diagramme de réseau plus visible  
+  'bdd': 'bi-database',                 // DBA + applications - base de données
+  'chef': 'bi-person-badge-fill',       // Chef SSIR - badge rempli pour + d'autorité
+  'ssir': 'bi-person-badge-fill',       // Chef SSIR - badge rempli pour + d'autorité
+  'sig': 'bi-map',                      // SIG - carte géographique
+  'nexsis': 'bi-broadcast-pin',         // Service parallèle - diffusion localisée
+  'rrf': 'bi-broadcast-pin',            // Service parallèle - diffusion localisée
+  'comsic': 'bi-router',                // Responsable opérationnel communications
+  'rssi': 'bi-shield-lock-fill',        // Responsable sécurité - bouclier rempli
+  'dpo': 'bi-file-earmark-person',      // DPO - fichier personne
+  'cgssi': 'bi-stars',                  // Chef de groupement - étoiles pour grade
   'default': 'bi-building'
 };
 

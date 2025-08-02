@@ -69,16 +69,18 @@ export class CardRenderer {
     const totalEvents = notesEventCount;
     
     if (totalEvents === 0) {
-      return `<button class="btn btn-sm btn-outline-secondary timeline-btn" 
+      return `<button class="btn btn-sm timeline-btn" 
                       data-task-id="${record.id}" 
-                      title="Aucun événement">
+                      title="Aucun événement"
+                      style="border: none; background: none; color: #6c757d;">
                 <i class="bi bi-clock-history"></i>
               </button>`;
     }
     
-    return `<button class="btn btn-sm btn-outline-info timeline-btn" 
+    return `<button class="btn btn-sm timeline-btn" 
                     data-task-id="${record.id}" 
-                    title="${totalEvents} événement${totalEvents > 1 ? 's' : ''}">
+                    title="${totalEvents} événement${totalEvents > 1 ? 's' : ''}"
+                    style="border: none; background: none; color: #0dcaf0;">
               <i class="bi bi-clock-history"></i>
             </button>`;
   }
