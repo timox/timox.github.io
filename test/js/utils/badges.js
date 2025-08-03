@@ -116,25 +116,8 @@ export function generateProjectBadge(projectData) {
   
   if (!projet) return '';
   
-  let tooltip = projet;
-  
-  // Support des stratégies multiples (nouveau format)
-  if (strategiesInfo && Array.isArray(strategiesInfo) && strategiesInfo.length > 0) {
-    const strategiesText = strategiesInfo.map(s => `${s.objectif} → ${s.action}`).join(' | ');
-    tooltip = `${projet}\nStratégies: ${strategiesText}`;
-  }
-  // Support de l'ancien format (single stratégie)
-  else if (strategie_objectif || strategie_sous_objectif || strategie_action) {
-    const tooltipParts = [
-      strategie_objectif ? `Objectif: ${strategie_objectif}` : '',
-      strategie_sous_objectif ? `Sous-objectif: ${strategie_sous_objectif}` : '',
-      strategie_action ? `Action: ${strategie_action}` : ''
-    ].filter(Boolean);
-    
-    if (tooltipParts.length > 0) {
-      tooltip = `${projet}\n${tooltipParts.join('\n')}`;
-    }
-  }
+  // Tooltip simple avec juste le nom du projet (pas les stratégies)
+  const tooltip = projet;
   
   return `<span class="badge bg-info text-dark" title="${tooltip.replace(/"/g, '&quot;')}">${projet}</span>`;
 }

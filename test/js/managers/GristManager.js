@@ -737,6 +737,23 @@ export class GristManager {
   }
   
   /**
+   * Charge une table spécifique depuis Grist
+   * @param {string} tableId - ID de la table à charger
+   * @returns {Promise<object>} Données de la table
+   */
+  async fetchTable(tableId) {
+    try {
+      this.logger.debug(`Chargement table ${tableId}...`);
+      const records = await grist.docApi.fetchTable(tableId);
+      this.logger.debug(`Table ${tableId} chargée: ${Object.keys(records.id || {}).length} enregistrements`);
+      return records;
+    } catch (error) {
+      this.logger.error(`Erreur chargement table ${tableId}:`, error);
+      throw error;
+    }
+  }
+  
+  /**
    * Nettoie les ressources
    */
   destroy() {

@@ -1,7 +1,7 @@
 // === core/KanbanManager.js ===
 // Orchestrateur principal all�g� pour l'application Kanban
 
-import { VIEW_MODES, STATUTS, STRATEGY_DATA, convertToGristFormat } from '../config/constants.js';
+import { VIEW_MODES, STATUTS } from '../config/constants.js';
 import { displayError, displaySuccess, toggleLoadingSpinner } from '../utils/dom.js';
 
 // Importation des managers
@@ -167,24 +167,21 @@ export class KanbanManager {
   }
   
   /**
-   * Charge les données stratégiques (version intégrée)
+   * Charge les données stratégiques depuis Grist
    */
   async loadStrategyData() {
     try {
-      console.log('KanbanManager: Chargement des données stratégiques intégrées...');
+      console.log('KanbanManager: Chargement des données stratégiques depuis Grist...');
       
-      // Utiliser les données importées statiquement
-      console.log('KanbanManager: STRATEGY_DATA disponible:', STRATEGY_DATA?.length);
-      
-      // Convertir au format Grist pour compatibilité avec mapStrategyRecords
-      const strategyRecords = convertToGristFormat(STRATEGY_DATA);
+      // Charger depuis Grist uniquement
+      const strategyRecords = await this.gristManager.fetchTable('Ssir_strategie2');
       
       // Mapper les enregistrements de stratégie
       this.strategyData = this.mapStrategyRecords(strategyRecords);
-      console.log(`KanbanManager: ${this.strategyData.length} stratégies chargées depuis les données intégrées`);
+      console.log(`KanbanManager: ${this.strategyData.length} stratégies chargées depuis Grist`);
       
     } catch (error) {
-      console.warn('KanbanManager: Erreur chargement stratégies intégrées:', error);
+      console.error('KanbanManager: Erreur chargement stratégies depuis Grist:', error);
       this.strategyData = [];
     }
   }

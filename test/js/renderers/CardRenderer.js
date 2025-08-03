@@ -105,13 +105,20 @@ export class CardRenderer {
     // Stratégies multiples avec tooltip
     const strategiesInfo = this.getMultipleStrategiesInfo(record.strategie_id);
     
+    // Vérifier aussi s'il y a des champs de stratégie directement dans le record
+    const hasStrategy = strategiesInfo.length > 0 || 
+                       record.strategie_objectif || 
+                       record.strategie_sous_objectif || 
+                       record.strategie_action;
+    
     const strategiesText = strategiesInfo.length > 0 
       ? strategiesInfo.map(s => `• ${s.objectif}`).join('\\n')
       : '';
     const strategyTooltip = strategiesText ? 
-      `title="${strategiesInfo.length} stratégie${strategiesInfo.length > 1 ? 's' : ''} liée${strategiesInfo.length > 1 ? 's' : ''}"` : '';
-    const strategyIcon = strategiesInfo.length > 0 ? 
-      `<i class="bi bi-crosshair strategie-icon" ${strategyTooltip} style="font-size: 1.1em;"></i>` : '';
+      `title="${strategiesInfo.length} stratégie${strategiesInfo.length > 1 ? 's' : ''} liée${strategiesInfo.length > 1 ? 's' : ''}"` : 
+      (hasStrategy ? 'title="Stratégie associée"' : '');
+    const strategyIcon = hasStrategy ? 
+      `<i class="bi bi-crosshair strategie-icon" ${strategyTooltip} style="font-size: 1.1em; color: #28a745;"></i>` : '';
 
     // Projet
     const projectBadge = record.projet ? 
