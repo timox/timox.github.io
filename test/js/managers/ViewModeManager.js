@@ -24,6 +24,10 @@ export class ViewModeManager {
     this.createViewModeControls();
     this.setupEventListeners();
     this.loadSavedViewMode();
+    // État de repliage des colonnes
+    this.collapsedColumns = new Set();
+    this.collapsedStack = null; // Référence à la pile des colonnes repliées
+    
     this.logger.info('Gestionnaire de modes de vue initialisé');
   }
   
@@ -124,6 +128,9 @@ export class ViewModeManager {
     const previousMode = this.currentMode;
     this.currentMode = mode;
     
+    // Réinitialiser tous les filtres avant de changer de vue
+    this.resetAllFilters();
+    
     // Mettre à jour les boutons
     this.updateViewModeButtons();
     
@@ -133,7 +140,7 @@ export class ViewModeManager {
     // Sauvegarder la préférence
     this.saveViewMode();
     
-    this.logger.info(`View mode changed to "${mode}"`);
+    this.logger.info(`View mode changed to "${mode}" - filtres réinitialisés`);
   }
   
   /**
@@ -231,12 +238,15 @@ export class ViewModeManager {
     container.style.gap = '';
     container.style.height = '';
     
+    // Initialiser le système de repliage des colonnes
+    this.initColumnCollapse();
+    
     // Masquer les colonnes vides
     setTimeout(() => {
       this.hideEmptyColumns();
     }, 100);
     
-    this.logger.info('Mode détaillé appliqué - colonnes vides masquées');
+    this.logger.info('Mode détaillé appliqué - système de repliage initialisé');
   }
   
   /**
@@ -578,10 +588,242 @@ export class ViewModeManager {
   }
   
   /**
+   * Réinitialise tous les filtres
+   */
+  resetAllFilters() {
+    if (!this.kanban.filterManager) return;
+    
+    try {
+      // Réinitialiser les filtres via le FilterManager
+      this.kanban.filterManager.clearAllFilters();
+      this.logger.info('Tous les filtres réinitialisés');
+    } catch (error) {
+      this.logger.error('Erreur lors de la réinitialisation des filtres:', error);
+    }
+  }
+
+  /**
+   * Initialise le système de repliage des colonnes pour le mode détaillé
+   */
+  initColumnCollapse() {
+    // Supprimer les anciens écouteurs
+    this.removeColumnCollapseListeners();
+    
+    // Ajouter les nouveaux écouteurs
+    setTimeout(() => {
+      const collapseButtons = document.querySelectorAll('.btn-collapse-column');
+      collapseButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => this.handleColumnCollapse(e));
+      });
+      
+      // Créer la pile des colonnes repliées si elle n'existe pas
+      this.createCollapsedStack();
+      
+      this.logger.info(`${collapseButtons.length} boutons de repliage initialisés`);
+    }, 100);
+  }
+
+  /**
+   * Gère le repliage/dépliage d'une colonne
+   * @param {Event} e - Événement click
+   */
+  handleColumnCollapse(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const button = e.currentTarget;
+    const statusId = button.dataset.status;
+    const column = button.closest('.kanban-board');
+    
+    if (!column) return;
+    
+    if (this.collapsedColumns.has(statusId)) {
+      this.expandColumn(statusId, column, button);
+    } else {
+      this.collapseColumn(statusId, column, button);
+    }
+  }
+
+  /**
+   * Replie une colonne
+   * @param {string} statusId - ID du statut
+   * @param {HTMLElement} column - Élément colonne
+   * @param {HTMLElement} button - Bouton de repliage
+   */
+  collapseColumn(statusId, column, button) {
+    this.collapsedColumns.add(statusId);
+    
+    // Animer la colonne vers la pile
+    column.classList.add('column-collapsing');
+    
+    setTimeout(() => {
+      // Masquer la colonne originale
+      column.style.display = 'none';
+      
+      // Ajouter à la pile
+      this.addToCollapsedStack(statusId, column);
+      
+      // Recalculer la largeur des colonnes restantes
+      this.redistributeColumnWidths();
+      
+    }, 300);
+    
+    // Mettre à jour l'icône
+    button.innerHTML = '<i class="bi bi-chevron-right"></i>';
+    button.title = 'Déplier la colonne';
+    
+    this.logger.info(`Colonne ${statusId} repliée`);
+  }
+
+  /**
+   * Déplie une colonne
+   * @param {string} statusId - ID du statut
+   * @param {HTMLElement} column - Élément colonne
+   * @param {HTMLElement} button - Bouton de repliage
+   */
+  expandColumn(statusId, column, button) {
+    this.collapsedColumns.delete(statusId);
+    
+    // Retirer de la pile
+    this.removeFromCollapsedStack(statusId);
+    
+    // Réafficher la colonne
+    column.style.display = '';
+    column.classList.remove('column-collapsing');
+    column.classList.add('column-expanding');
+    
+    setTimeout(() => {
+      column.classList.remove('column-expanding');
+      
+      // Recalculer la largeur des colonnes
+      this.redistributeColumnWidths();
+    }, 300);
+    
+    // Mettre à jour l'icône
+    button.innerHTML = '<i class="bi bi-chevron-left"></i>';
+    button.title = 'Replier la colonne';
+    
+    this.logger.info(`Colonne ${statusId} dépliée`);
+  }
+
+  /**
+   * Crée la pile des colonnes repliées
+   */
+  createCollapsedStack() {
+    if (this.collapsedStack) return;
+    
+    const container = this.kanban.kanbanContainer;
+    
+    this.collapsedStack = document.createElement('div');
+    this.collapsedStack.className = 'collapsed-columns-stack';
+    this.collapsedStack.innerHTML = `
+      <div class="stack-header">
+        <i class="bi bi-stack"></i>
+        <span>Colonnes repliées</span>
+      </div>
+      <div class="stack-content"></div>
+    `;
+    
+    // Insérer au début du container
+    container.insertBefore(this.collapsedStack, container.firstChild);
+  }
+
+  /**
+   * Ajoute une colonne à la pile repliée
+   * @param {string} statusId - ID du statut
+   * @param {HTMLElement} column - Élément colonne
+   */
+  addToCollapsedStack(statusId, column) {
+    if (!this.collapsedStack) return;
+    
+    const stackContent = this.collapsedStack.querySelector('.stack-content');
+    const title = column.querySelector('.board-title').textContent.trim();
+    const count = column.querySelector('.board-count').textContent.trim();
+    
+    const stackItem = document.createElement('div');
+    stackItem.className = 'stack-item';
+    stackItem.dataset.status = statusId;
+    stackItem.innerHTML = `
+      <span class="stack-item-title">${title}</span>
+      <span class="stack-item-count">${count}</span>
+      <button class="btn-expand-from-stack" data-status="${statusId}" title="Déplier">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    `;
+    
+    // Ajouter l'écouteur pour déplier depuis la pile
+    stackItem.querySelector('.btn-expand-from-stack').addEventListener('click', (e) => {
+      e.preventDefault();
+      const originalButton = column.querySelector('.btn-collapse-column');
+      this.expandColumn(statusId, column, originalButton);
+    });
+    
+    stackContent.appendChild(stackItem);
+    
+    // Afficher la pile si elle était cachée
+    this.collapsedStack.style.display = 'block';
+  }
+
+  /**
+   * Retire une colonne de la pile repliée
+   * @param {string} statusId - ID du statut
+   */
+  removeFromCollapsedStack(statusId) {
+    if (!this.collapsedStack) return;
+    
+    const stackItem = this.collapsedStack.querySelector(`[data-status="${statusId}"]`);
+    if (stackItem) {
+      stackItem.remove();
+    }
+    
+    // Masquer la pile si elle est vide
+    const stackContent = this.collapsedStack.querySelector('.stack-content');
+    if (stackContent.children.length === 0) {
+      this.collapsedStack.style.display = 'none';
+    }
+  }
+
+  /**
+   * Redistribue la largeur des colonnes visibles
+   */
+  redistributeColumnWidths() {
+    const container = this.kanban.kanbanContainer;
+    const visibleColumns = container.querySelectorAll('.kanban-board:not([style*="display: none"])');
+    const collapsedCount = this.collapsedColumns.size;
+    
+    if (visibleColumns.length === 0) return;
+    
+    // Calculer la largeur disponible (moins la pile si elle existe)
+    const stackWidth = this.collapsedStack && this.collapsedStack.style.display !== 'none' ? 200 : 0;
+    const availableWidth = `calc((100% - ${stackWidth}px) / ${visibleColumns.length})`;
+    
+    visibleColumns.forEach(column => {
+      column.style.flex = '0 0 ' + availableWidth;
+      column.style.minWidth = availableWidth;
+      column.style.maxWidth = availableWidth;
+    });
+  }
+
+  /**
+   * Supprime les écouteurs de repliage de colonnes
+   */
+  removeColumnCollapseListeners() {
+    document.querySelectorAll('.btn-collapse-column').forEach(btn => {
+      btn.replaceWith(btn.cloneNode(true));
+    });
+  }
+
+  /**
    * Nettoie les ressources
    */
   destroy() {
     this.hideFocusNavigation();
+    this.removeColumnCollapseListeners();
+    
+    if (this.collapsedStack) {
+      this.collapsedStack.remove();
+      this.collapsedStack = null;
+    }
     
     const viewModeControls = document.getElementById('view-mode-controls');
     if (viewModeControls) {

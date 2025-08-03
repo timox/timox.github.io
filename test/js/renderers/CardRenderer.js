@@ -175,6 +175,8 @@ export class CardRenderer {
         <div class="priority-section">
           ${priorityBadge}
           ${strategyIcon}
+          ${this.generateReferenceIcon(record, viewMode)}
+          ${this.generateJalonIcon(record, viewMode)}
         </div>
         <div class="item-badges">
           ${projectBadge}
@@ -184,14 +186,153 @@ export class CardRenderer {
       
       <div class="item-title editable-zone">${record.titre || 'Sans titre'}</div>
       
+      ${this.generateExpandedContent(record, viewMode)}
+      
       ${resumeDesc}
       
       ${datesElement}
       
-      ${responsablesBadges}
+      ${viewMode !== VIEW_MODES.COMPACT ? responsablesBadges : ''}
     </div>`;
   }
   
+  /**
+   * Génère l'icône de référence pour une tâche
+   * @param {object} record - Données de la tâche
+   * @param {string} viewMode - Mode de vue
+   * @returns {string} HTML de l'icône de référence
+   */
+  generateReferenceIcon(record, viewMode) {
+    if (viewMode === VIEW_MODES.COMPACT) return '';
+    
+    // Vérifier s'il y a des références (chemins réseau, liens, etc.)
+    const hasReference = record.notes && (
+      record.notes.includes('\\\\') || 
+      record.notes.includes('http') ||
+      record.notes.includes('file://')  ||
+      record.notes.includes('C:') ||
+      record.notes.includes('D:')
+    );
+    
+    if (!hasReference) return '';
+    
+    const tooltip = viewMode === VIEW_MODES.FOCUS ? 
+      'title="Contient des références - cliquer pour voir le détail"' : 
+      'title="Contient des références"';
+      
+    return `<i class="bi bi-link-45deg reference-icon" ${tooltip} style="font-size: 1.1em; color: #6f42c1;"></i>`;
+  }
+
+  /**
+   * Génère l'icône de jalon pour une tâche
+   * @param {object} record - Données de la tâche
+   * @param {string} viewMode - Mode de vue
+   * @returns {string} HTML de l'icône de jalon
+   */
+  generateJalonIcon(record, viewMode) {
+    if (viewMode === VIEW_MODES.COMPACT) return '';
+    
+    // Vérifier s'il y a des jalons
+    const hasJalons = record.jalons && record.jalons !== '[]' && record.jalons.trim() !== '';
+    
+    if (!hasJalons) return '';
+    
+    let jalonCount = 0;
+    try {
+      const jalons = JSON.parse(record.jalons);
+      jalonCount = Array.isArray(jalons) ? jalons.length : 0;
+    } catch {
+      jalonCount = 1; // Assume au moins un jalon si pas JSON
+    }
+    
+    const tooltip = viewMode === VIEW_MODES.FOCUS ? 
+      `title="${jalonCount} jalon${jalonCount > 1 ? 's' : ''} planifié${jalonCount > 1 ? 's' : ''} - cliquer pour voir"` : 
+      `title="${jalonCount} jalon${jalonCount > 1 ? 's' : ''}"`;
+      
+    return `<i class="bi bi-calendar-event jalon-icon" ${tooltip} style="font-size: 1.1em; color: #fd7e14;"></i>`;
+  }
+
+  /**
+   * Génère le contenu étendu selon le mode de vue
+   * @param {object} record - Données de la tâche
+   * @param {string} viewMode - Mode de vue
+   * @returns {string} HTML du contenu étendu
+   */
+  generateExpandedContent(record, viewMode) {
+    if (viewMode !== VIEW_MODES.FOCUS) return '';
+    
+    let expandedContent = '';
+    
+    // Stratégies détaillées
+    const strategiesInfo = this.getMultipleStrategiesInfo(record.strategie_id);
+    if (strategiesInfo.length > 0) {
+      expandedContent += `
+        <div class="expanded-strategies">
+          <h6><i class="bi bi-crosshair me-1"></i>Stratégies:</h6>
+          <ul class="list-unstyled ms-3">
+            ${strategiesInfo.map(s => `<li>• ${s.objectif} → ${s.action}</li>`).join('')}
+          </ul>
+        </div>`;
+    }
+    
+    // Jalons détaillés
+    if (record.jalons && record.jalons !== '[]') {
+      try {
+        const jalons = JSON.parse(record.jalons);
+        if (Array.isArray(jalons) && jalons.length > 0) {
+          expandedContent += `
+            <div class="expanded-jalons">
+              <h6><i class="bi bi-calendar-event me-1"></i>Jalons:</h6>
+              <ul class="list-unstyled ms-3">
+                ${jalons.map(j => `<li>• ${j.titre} (${j.date})</li>`).join('')}
+              </ul>
+            </div>`;
+        }
+      } catch (e) {
+        // Ignore parsing errors
+      }
+    }
+    
+    // Références détaillées
+    if (record.notes && (record.notes.includes('\\\\') || record.notes.includes('http'))) {
+      const references = this.extractReferences(record.notes);
+      if (references.length > 0) {
+        expandedContent += `
+          <div class="expanded-references">
+            <h6><i class="bi bi-link-45deg me-1"></i>Références:</h6>
+            <ul class="list-unstyled ms-3">
+              ${references.map(ref => `<li>• <code>${ref}</code></li>`).join('')}
+            </ul>
+          </div>`;
+      }
+    }
+    
+    return expandedContent;
+  }
+
+  /**
+   * Extrait les références d'un texte
+   * @param {string} text - Texte à analyser
+   * @returns {Array} Liste des références trouvées
+   */
+  extractReferences(text) {
+    const references = [];
+    
+    // Regex pour chemins réseau
+    const networkPaths = text.match(/\\\\[^\s]+/g) || [];
+    references.push(...networkPaths);
+    
+    // Regex pour URLs
+    const urls = text.match(/https?:\/\/[^\s]+/g) || [];
+    references.push(...urls);
+    
+    // Regex pour chemins locaux
+    const localPaths = text.match(/[A-Z]:[^\s]+/g) || [];
+    references.push(...localPaths);
+    
+    return [...new Set(references)]; // Supprimer les doublons
+  }
+
   /**
    * Attache les écouteurs d'événements pour les cartes
    * @param {HTMLElement} container - Container des cartes

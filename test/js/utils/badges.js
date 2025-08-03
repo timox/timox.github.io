@@ -72,6 +72,14 @@ export function generateBureauBadges(bureauList, isCompact = false) {
     return '';
   }
   
+  // En mode compact, limiter l'affichage
+  if (isCompact && bureaux.length > 2) {
+    return `<div class="bureau-badges compact">
+      ${generateSingleBureauBadge(bureaux[0])}
+      <span class="badge badge-secondary">+${bureaux.length - 1}</span>
+    </div>`;
+  }
+  
   // Classe du container selon le nombre de bureaux
   const containerClass = bureaux.length > 1 ? 'bureau-badges multiple-bureaux' : 'bureau-badges';
   
@@ -148,7 +156,7 @@ export function generateStrategyBadge(record) {
     console.log(`✅ Strategy badge multi: ${count} stratégies pour task ${record.id}`);
     return `
       <span class="badge strategy-badge" title="${tooltip.replace(/"/g, '&quot;')}">
-        <i class="bi bi-bullseye"></i>
+        <i class="bi bi-crosshair"></i>
         <span class="strategy-count">${count}</span>
       </span>`;
   }
@@ -162,7 +170,7 @@ export function generateStrategyBadge(record) {
     console.log(`✅ Strategy badge Grist: ${strategyCount} stratégies pour task ${record.id}`);
     return `
       <span class="badge strategy-badge" title="${title}">
-        <i class="bi bi-bullseye"></i>
+        <i class="bi bi-crosshair"></i>
         <span class="strategy-count">${strategyCount}</span>
       </span>`;
   }
@@ -173,7 +181,7 @@ export function generateStrategyBadge(record) {
     console.log(`✅ Strategy badge single: ${strategie_objectif} pour task ${record.id}`);
     return `
       <span class="badge strategy-badge strategy-single" title="${title.replace(/"/g, '&quot;')}">
-        <i class="bi bi-bullseye"></i>
+        <i class="bi bi-crosshair"></i>
       </span>`;
   }
   

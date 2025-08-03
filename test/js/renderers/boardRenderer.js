@@ -195,6 +195,7 @@ export class BoardRenderer {
             ${statut.libelle}
           </span>
           <div class="board-meta">
+            ${mode === VIEW_MODES.DETAILED ? this.generateCollapseButton(statut.id) : ''}
             <button class="board-count" 
                     data-status="${statut.id}" 
                     title="Filtrer par ${statut.libelle} (${count} tâche${count !== 1 ? 's' : ''})"
@@ -362,16 +363,25 @@ export class BoardRenderer {
     }
     
     // Indicateur de priorité élevée
-    if (stats.highPriorityTasks > 0) {
-      indicators.push(`
-        <span class="indicator high-priority" title="${stats.highPriorityTasks} tâche${stats.highPriorityTasks > 1 ? 's' : ''} haute priorité">
-          <i class="bi bi-star text-primary"></i>
-          ${stats.highPriorityTasks}
-        </span>
-      `);
-    }
+    // Indicateur de priorité élevée supprimé - trop lourd visuellement
     
     return indicators.length > 0 ? `<div class="performance-indicators">${indicators.join('')}</div>` : '';
+  }
+
+  /**
+   * Génère le bouton de repliage de colonne
+   * @param {string} statusId - ID du statut
+   * @returns {string} HTML du bouton
+   */
+  generateCollapseButton(statusId) {
+    return `
+      <button class="btn-collapse-column" 
+              data-status="${statusId}" 
+              title="Replier/Déplier la colonne"
+              aria-label="Replier ou déplier la colonne">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+    `;
   }
   
   /**
