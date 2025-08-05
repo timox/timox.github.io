@@ -197,13 +197,19 @@ export class ModalManager {
     this.selectedStrategies = [];
     
     // Vérifier si on a des données stratégiques disponibles
-    this.logger.debug(`Strategy data check: ${this.kanban.strategiesData?.length || 0} strategies available`);
+    // Diagnostic des données stratégiques
+    console.log('🔍 DIAGNOSTIC STRATEGIES ModalManager:');
+    console.log('  - kanban.strategiesData length:', this.kanban?.strategiesData?.length || 0);
+    console.log('  - kanban.strategyData length:', this.kanban?.strategyData?.length || 0);
     
-    if (this.kanban.strategiesData && this.kanban.strategiesData.length > 0) {
-      this.logger.debug('Rendering strategy accordion from integrated data');
+    // Récupérer les données depuis KanbanManager (cache ou Grist)
+    const strategiesSource = this.kanban?.strategiesData || this.kanban?.strategyData;
+    
+    if (strategiesSource && strategiesSource.length > 0) {
+      console.log(`✅ Rendu accordéon avec ${strategiesSource.length} stratégies`);
       this.renderStrategyAccordion(strategyBrowser);
     } else {
-      this.logger.warn('Rendering strategy accordion with fallback data');
+      console.log('❌ Aucune donnée stratégique disponible');
       this.renderFallbackStrategyAccordion(strategyBrowser);
     }
     
@@ -517,15 +523,18 @@ export class ModalManager {
   }
   
   /**
-   * Génère l'interface avec données de fallback
+   * Génère l'interface sans données stratégiques
    */
   renderFallbackStrategyAccordion(container) {
     container.innerHTML = `
-      <div class="alert alert-warning">
-        <i class="bi bi-exclamation-triangle me-2"></i>
-        <strong>Données stratégiques non disponibles</strong>
-        <p class="mb-0 mt-2">Impossible de charger les stratégies depuis Grist. 
-        Veuillez vérifier la connexion ou contacter l'administrateur.</p>
+      <div class="alert alert-info">
+        <i class="bi bi-info-circle me-2"></i>
+        <strong>Stratégies non disponibles</strong>
+        <p class="mb-0 mt-2">Les données stratégiques ne sont pas chargées. 
+        Cette fonctionnalité est optionnelle pour la gestion des tâches.</p>
+        <p class="mb-0 mt-2"><small class="text-muted">
+        Cause probable : Grist ne peut se connecter qu'à une seule table à la fois.
+        </small></p>
       </div>
     `;
   }

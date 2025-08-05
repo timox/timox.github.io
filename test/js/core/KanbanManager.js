@@ -170,22 +170,67 @@ export class KanbanManager {
    * Charge les données stratégiques depuis Grist
    */
   async loadStrategyData() {
+    console.log('KanbanManager: Chargement des données stratégiques...');
+    
+    // SOLUTION: Grist ne peut pas se connecter à plusieurs tables simultanément
+    // Utilisation des données en cache depuis constants.js
+    
+    if (typeof STRATEGY_DATA !== 'undefined' && STRATEGY_DATA.length > 0) {
+      console.log(`✅ KanbanManager: ${STRATEGY_DATA.length} stratégies chargées depuis le cache constants.js`);
+      this.strategyData = STRATEGY_DATA;
+      
+      // Exposer pour debug et ModalManager
+      window.debugStrategyData = this.strategyData;
+      this.strategiesData = this.strategyData; // Alias pour ModalManager
+      
+      return;
+    }
+    
+    // Si pas de cache disponible, tenter Grist (mais ça va échouer)
     try {
-      console.log('KanbanManager: Chargement des données stratégiques depuis Grist...');
+      console.warn('KanbanManager: Pas de cache STRATEGY_DATA - tentative Grist (va probablement échouer)');
       
-      // Charger depuis Grist uniquement
       const strategyRecords = await this.gristManager.fetchTable('Ssir_strategie2');
-      
-      // Mapper les enregistrements de stratégie
       this.strategyData = this.mapStrategyRecords(strategyRecords);
-      console.log(`KanbanManager: ${this.strategyData.length} stratégies chargées depuis Grist`);
+      this.strategiesData = this.strategyData;
+      
+      console.log(`✅ KanbanManager: ${this.strategyData.length} stratégies chargées depuis Grist`);
       
     } catch (error) {
-      console.error('KanbanManager: Erreur chargement stratégies depuis Grist:', error);
+      console.error('❌ KanbanManager: Erreur Grist (attendue - limitation connexion multiple):', error.message);
+      
+      // En cas d'échec, données vides mais pas d'erreur utilisateur
+      console.log('🔄 KanbanManager: Fonctionnement en mode dégradé sans stratégies');
       this.strategyData = [];
+      this.strategiesData = [];
     }
   }
   
+  /**
+   * Affiche une erreur de connexion à l'utilisateur
+   */
+  displayConnectionError() {
+    const container = document.getElementById('kanban-container');
+    if (container) {
+      container.innerHTML = `
+        <div class="alert alert-danger m-4">
+          <h4><i class="bi bi-exclamation-triangle me-2"></i>Erreur de connexion Grist</h4>
+          <p>L'application ne peut pas se connecter à la base de données Grist.</p>
+          <p><strong>Causes possibles :</strong></p>
+          <ul>
+            <li>Table "Ssir_strategie2" inexistante ou inaccessible</li>
+            <li>Permissions insuffisantes sur le document Grist</li>
+            <li>Connexion réseau interrompue</li>
+            <li>Document Grist non partagé avec cette application</li>
+          </ul>
+          <button class="btn btn-primary" onclick="window.location.reload()">
+            <i class="bi bi-arrow-clockwise me-1"></i>Recharger la page
+          </button>
+        </div>
+      `;
+    }
+  }
+
   /**
    * Mappe les enregistrements de stratégie depuis Grist
    * @param {object} records - Enregistrements bruts de Grist
