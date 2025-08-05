@@ -1145,83 +1145,36 @@ export class ModalManager {
         const userActionManager = getUserActionManager();
         if (userActionManager) {
           const descriptionContent = getFieldValue('popup-description').trim();
-          const oldJalons = this.currentTask?.jalons || null;
-          const newJalons = gristData.jalons || null;
-          const jalonsChanged = this.hasJalonsChanged(oldJalons, newJalons);
-          const oldStrategies = this.currentTask?.strategie_id || null;
-          const newStrategies = gristData.strategie_id || null;
-          const strategiesChanged = this.hasStrategiesChanged(oldStrategies, newStrategies);
           
-          // Préparer toutes les opérations d'historique en parallèle
-          const historyPromises = [];
-          
+          // ✅ SOLUTION PROPRE: Un seul appel qui gère tout
           if (descriptionContent) {
-            historyPromises.push(
-              userActionManager.addHistoryEntry(
-                this.currentTaskId,
-                'comment',
-                `Commentaire ajouté: ${descriptionContent}`,
-                '',
-                descriptionContent,
-                gristData.statut || this.currentTask?.statut
-              )
-            );
-            
-            const hasOtherChanges = this.hasSignificantChanges(this.currentTask, gristData, ['description']);
-            if (hasOtherChanges) {
-              historyPromises.push(
-                userActionManager.updateTaskAction(this.currentTaskId, this.currentTask, gristData, 'Task updated via modal')
-              );
-            }
-          } else {
-            historyPromises.push(
-              userActionManager.updateTaskAction(this.currentTaskId, this.currentTask, gristData, 'Task updated via modal')
+            // S'il y a un commentaire, on l'enregistre SEUL
+            await userActionManager.addHistoryEntry(
+              this.currentTaskId,
+              'comment',
+              `Commentaire ajouté: ${descriptionContent}`,
+              '',
+              descriptionContent,
+              gristData.statut || this.currentTask?.statut
             );
           }
           
-          // ✅ VÉRIFIER CHANGEMENT DE STATUT SPÉCIFIQUEMENT
+          // Enregistrer les changements de champs (sauf si SEULEMENT un commentaire)
+          const hasFieldChanges = this.hasSignificantChanges(this.currentTask, gristData, ['description']);
+          if (hasFieldChanges && !descriptionContent) {
+            await userActionManager.updateTaskAction(
+              this.currentTaskId, 
+              this.currentTask, 
+              gristData, 
+              'Task updated via modal'
+            );
+          }
+          
+          // ✅ CHANGEMENT DE STATUT - Géré séparément car c'est spécial
           if (this.currentTask && this.currentTask.statut !== gristData.statut) {
             console.log(`📝 Modal: Changement statut ${this.currentTask.statut} → ${gristData.statut}`);
-            historyPromises.push(
-              userActionManager.statusChangeAction(
-                this.currentTaskId, 
-                this.currentTask.statut, 
-                gristData.statut
-              )
-            );
+            // Le changement de statut est déjà géré par GristManager, pas besoin de doublon
           }
-          
-          // Ajouter les changements spéciaux aux promesses
-          if (jalonsChanged) {
-            const jalonsDetails = this.getJalonsChangeDetails(oldJalons, newJalons);
-            historyPromises.push(
-              userActionManager.addHistoryEntry(
-                this.currentTaskId,
-                'jalons_update',
-                jalonsDetails.message,
-                jalonsDetails.oldSummary,
-                jalonsDetails.newSummary,
-                gristData.statut || this.currentTask?.statut
-              )
-            );
-          }
-          
-          if (strategiesChanged) {
-            const strategiesDetails = this.getStrategiesChangeDetails(oldStrategies, newStrategies);
-            historyPromises.push(
-              userActionManager.addHistoryEntry(
-                this.currentTaskId,
-                'strategies_update',
-                strategiesDetails.message,
-                strategiesDetails.oldSummary,
-                strategiesDetails.newSummary,
-                gristData.statut || this.currentTask?.statut
-              )
-            );
-          }
-          
-          // Exécuter toutes les opérations d'historique en parallèle sans attendre
-          Promise.allSettled(historyPromises).catch(e => this.logger.warn('History promises failed:', e.message));
         }
         
         displaySuccess('Tâche mise à jour avec succès');
