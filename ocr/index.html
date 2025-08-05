@@ -179,11 +179,12 @@
     </div>
 
     <script>
+        // Configuration manuelle de la table
+        const TABLE_NAME = 'OCR_texte'; // Changez selon le nom de votre table
+        
         let selectedFile = null;
         let extractedText = '';
         let currentRecord = null;
-        let tableId = null;
-        let columnMapping = {};
         let isGristReady = false;
 
         // Initialisation de Grist
@@ -195,11 +196,16 @@
             try {
                 // grist est déjà disponible globalement dans un widget embarqué
                 grist.ready({
+                    columns: [
+                        { name: "texte_ocr", type: "Text" },
+                        { name: "date_extraction", type: "DateTime" },
+                        { name: "nom_fichier", type: "Text", optional: true }
+                    ],
                     requiredAccess: 'full'
                 });
 
                 // Écouter la sélection d'enregistrement
-                grist.onRecord(function(record, mappings) {
+                grist.onRecord(function(record) {
                     console.log('Enregistrement sélectionné:', record);
                     currentRecord = record;
                     
@@ -211,25 +217,8 @@
                     }
                 });
 
-                // Écouter les options (pour obtenir le mapping des colonnes)
-                grist.onOptions(function(options, interaction) {
-                    console.log('Options reçues:', options);
-                    if (options) {
-                        tableId = options.tableId || null;
-                        columnMapping = options.columns || {};
-                    }
-                });
-
-                // Obtenir les infos de la table
-                grist.getTable().then(function(table) {
-                    console.log('Table info:', table);
-                    tableId = table.tableId;
-                    isGristReady = true;
-                    updateInfoBox('✅ Connecté à Grist - Prêt pour l\'OCR');
-                }).catch(function(error) {
-                    console.error('Erreur getTable:', error);
-                    updateInfoBox('⚠️ Mode autonome - Sauvegarde Grist limitée', 'error');
-                });
+                isGristReady = true;
+                updateInfoBox('✅ Connecté à Grist - Prêt pour l\'OCR');
 
             } catch (error) {
                 console.error('Erreur initialisation Grist:', error);
@@ -370,7 +359,7 @@
                 return;
             }
             
-            if (!isGristReady || !tableId) {
+            if (!isGristReady) {
                 updateStatus('Grist non connecté. Impossible d\'enregistrer.', 'error');
                 return;
             }
@@ -378,12 +367,13 @@
             try {
                 const record = {
                     texte_ocr: extractedText,
-                    date_extraction: new Date().toISOString()
+                    date_extraction: new Date().toISOString(),
+                    nom_fichier: selectedFile ? selectedFile.name : ''
                 };
                 
                 // Utiliser l'API docApi pour ajouter un enregistrement
                 const result = await grist.docApi.applyUserActions([
-                    ['AddRecord', tableId, null, record]
+                    ['AddRecord', TABLE_NAME, null, record]
                 ]);
                 
                 console.log('Enregistrement ajouté:', result);
@@ -413,7 +403,7 @@
                 return;
             }
             
-            if (!isGristReady || !tableId) {
+            if (!isGristReady) {
                 updateStatus('Grist non connecté. Impossible de mettre à jour.', 'error');
                 return;
             }
@@ -421,12 +411,13 @@
             try {
                 const updates = {
                     texte_ocr: extractedText,
-                    date_extraction: new Date().toISOString()
+                    date_extraction: new Date().toISOString(),
+                    nom_fichier: selectedFile ? selectedFile.name : ''
                 };
                 
                 // Utiliser l'API docApi pour mettre à jour l'enregistrement
                 const result = await grist.docApi.applyUserActions([
-                    ['UpdateRecord', tableId, currentRecord.id, updates]
+                    ['UpdateRecord', TABLE_NAME, currentRecord.id, updates]
                 ]);
                 
                 console.log('Enregistrement mis à jour:', result);
