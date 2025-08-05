@@ -148,6 +148,21 @@
             ⏳ Connexion à Grist en cours...
         </div>
         
+        <details style="margin-bottom: 20px;">
+            <summary style="cursor: pointer; font-weight: bold;">📚 Instructions de configuration</summary>
+            <div style="padding: 10px; background-color: #f8f9fa; border-radius: 6px; margin-top: 10px;">
+                <p><strong>1. Créez une table dans Grist avec ces colonnes :</strong></p>
+                <ul>
+                    <li><code>texte_ocr</code> (type: Text)</li>
+                    <li><code>date_extraction</code> (type: DateTime)</li>
+                    <li><code>nom_fichier</code> (type: Text) - optionnel</li>
+                </ul>
+                <p><strong>2. Modifiez le nom de la table dans le code :</strong></p>
+                <p>Ligne ~290 : <code>const TABLE_NAME = 'OCR_Results';</code></p>
+                <p>Remplacez <code>'OCR_Results'</code> par le nom exact de votre table.</p>
+            </div>
+        </details>
+        
         <div class="upload-area" id="uploadArea">
             <div class="upload-icon">📷</div>
             <p><strong>Cliquez pour choisir une image</strong><br>ou glissez-déposez un fichier ici</p>
@@ -179,9 +194,11 @@
     </div>
 
     <script>
-        // Configuration manuelle de la table
-        const TABLE_NAME = 'OCR_texte'; // Changez selon le nom de votre table
+        // ===== CONFIGURATION =====
+        // Changez cette valeur selon le nom de votre table dans Grist
+        const TABLE_NAME = 'OCR_Results'; // Remplacez par le nom exact de votre table
         
+        // Variables globales
         let selectedFile = null;
         let extractedText = '';
         let currentRecord = null;
