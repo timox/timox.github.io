@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>OCR Widget Français</title>
+    <script src="https://unpkg.com/tesseract.js@5.0.0/dist/tesseract.min.js"></script>
+    <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #333;
+            margin-top: 0;
+        }
+        .upload-area {
+            border: 2px dashed #4A90E2;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            background-color: #f8f9fa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .upload-area:hover {
+            background-color: #e8f0fe;
+            border-color: #1967d2;
+        }
+        .upload-area.dragover {
+            background-color: #e8f0fe;
+            border-color: #1967d2;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .upload-icon {
+            font-size: 48px;
+            color: #4A90E2;
+            margin-bottom: 10px;
+        }
+        button {
+            background-color: #4A90E2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 10px 5px;
+        }
+        button:hover:not(:disabled) {
+            background-color: #357ABD;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #preview {
+            margin: 20px 0;
+            text-align: center;
+        }
+        #preview img {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        #status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        #status.processing {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        #status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        #status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #4A90E2;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🔍 OCR Français avec Tesseract.js</h2>
+        
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📷</div>
+            <p><strong>Cliquez pour choisir une image</strong><br>ou glissez-déposez un fichier ici</p>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+        
+        <div id="preview"></div>
+        <div id="status"></div>
+        <div class="progress-bar" id="progressBar" style="display: none;">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        
+        <div class="actions">
+            <button id="processBtn" style="display: none;" onclick="processImage()">
+                🚀 Lancer l'OCR
+            </button>
+            <button id="saveBtn" style="display: none;" onclick="saveToGrist()">
+                💾 Enregistrer dans Grist
+            </button>
+            <button id="clearBtn" style="display: none;" onclick="clearAll()">
+                🗑️ Effacer
+            </button>
+        </div>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+        let extractedText = '';
+        let grist = null;
+
+        // Initialisation de Grist
+        grist = window.grist;
+        grist.ready({
+            columns: [
+                { name: "texte_ocr", type: "Text" },
+                { name: "date_extraction", type: "DateTime" }
+            ]
+        });
+
+        // Gestion du drag & drop
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('image/')) {
+                handleFile(files[0]);
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            selectedFile = file;
+            const reader = new FileReader();
+            
+            reader.onload = (e) => {
+                document.getElementById('preview').innerHTML = 
+                    `<img src="${e.target.result}" alt="Image à analyser">`;
+                document.getElementById('processBtn').style.display = 'inline-block';
+                document.getElementById('clearBtn').style.display = 'inline-block';
+                updateStatus('Image chargée. Cliquez sur "Lancer l\'OCR" pour commencer.', 'success');
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
+        function updateStatus(message, type = 'processing') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = type;
+            status.style.display = 'block';
+        }
+
+        function updateProgress(progress) {
+            const progressBar = document.getElementById('progressBar');
+            const progressFill = document.getElementById('progressFill');
+            
+            progressBar.style.display = 'block';
+            progressFill.style.width = `${progress * 100}%`;
+        }
+
+        async function processImage() {
+            if (!selectedFile) return;
+            
+            document.getElementById('processBtn').disabled = true;
+            document.getElementById('result').innerHTML = '';
+            extractedText = '';
+            
+            updateStatus('Initialisation de Tesseract...', 'processing');
+            
+            try {
+                const worker = await Tesseract.createWorker({
+                    logger: (m) => {
+                        console.log(m);
+                        if (m.status === 'recognizing text') {
+                            updateProgress(m.progress);
+                            updateStatus(`Reconnaissance en cours... ${Math.round(m.progress * 100)}%`, 'processing');
+                        }
+                    }
+                });
+                
+                await worker.loadLanguage('fra');
+                await worker.initialize('fra');
+                
+                updateStatus('Analyse de l\'image en cours...', 'processing');
+                
+                const { data: { text } } = await worker.recognize(selectedFile);
+                
+                extractedText = text;
+                
+                document.getElementById('result').innerHTML = 
+                    `<h3>Texte extrait :</h3>${text || 'Aucun texte détecté'}`;
+                
+                updateStatus('OCR terminé avec succès !', 'success');
+                document.getElementById('saveBtn').style.display = 'inline-block';
+                document.getElementById('progressBar').style.display = 'none';
+                
+                await worker.terminate();
+                
+            } catch (error) {
+                console.error('Erreur OCR:', error);
+                updateStatus(`Erreur : ${error.message}`, 'error');
+            } finally {
+                document.getElementById('processBtn').disabled = false;
+            }
+        }
+
+        async function saveToGrist() {
+            if (!extractedText) {
+                updateStatus('Aucun texte à enregistrer', 'error');
+                return;
+            }
+            
+            try {
+                const record = {
+                    texte_ocr: extractedText,
+                    date_extraction: new Date().toISOString()
+                };
+                
+                await grist.docApi.applyUserActions([
+                    ['AddRecord', '_grist_Tables_column', null, record]
+                ]);
+                
+                updateStatus('Texte enregistré dans Grist !', 'success');
+                
+                // Optionnel : effacer après sauvegarde
+                setTimeout(() => {
+                    if (confirm('Voulez-vous effacer l\'image et recommencer ?')) {
+                        clearAll();
+                    }
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Erreur Grist:', error);
+                updateStatus(`Erreur d'enregistrement : ${error.message}`, 'error');
+            }
+        }
+
+        function clearAll() {
+            selectedFile = null;
+            extractedText = '';
+            document.getElementById('preview').innerHTML = '';
+            document.getElementById('result').innerHTML = '';
+            document.getElementById('status').style.display = 'none';
+            document.getElementById('progressBar').style.display = 'none';
+            document.getElementById('processBtn').style.display = 'none';
+            document.getElementById('saveBtn').style.display = 'none';
+            document.getElementById('clearBtn').style.display = 'none';
+            fileInput.value = '';
+        }
+
+        // Écouter les changements de sélection dans Grist (optionnel)
+        grist.onRecord(function(record) {
+            console.log('Enregistrement sélectionné:', record);
+        });
+    </script>
+</body>
+</html>
