@@ -326,7 +326,7 @@ export class UserActionManager {
    */
   extractChanges(oldData, newData) {
     const relevantFields = [
-      'statut', 'titre', 'description', 'bureau', 'qui', 'urgence', 'impact', 'projet',
+      'statut', 'titre', 'bureau', 'qui', 'urgence', 'impact', 'projet',
       'strategie_objectif', 'strategie_sous_objectif', 'strategie_action',
       'date_debut', 'date_echeance'
     ];
@@ -367,48 +367,14 @@ export class UserActionManager {
       }
     }
 
-    // Récupérer le contenu réel du commentaire depuis le champ description
-    const newDescription = newData.description || '';
-    const actualContent = this.extractActualComment(newDescription);
-    
     return {
       hasChanges: changes.length > 0,
       oldValue: changes.length > 0 ? changes.join(', ') : 'No changes detected',
-      newValue: actualContent || (changes.length > 0 ? 'Updated' : 'No changes'),
+      newValue: changes.length > 0 ? 'Field changes' : 'No changes',
       detailedChanges
     };
   }
 
-  /**
-   * Extrait le contenu réel du commentaire depuis la description
-   * @param {string} description - Champ description de la tâche
-   * @returns {string} Contenu du commentaire utilisateur
-   */
-  extractActualComment(description) {
-    if (!description) return '';
-    
-    // La description contient le commentaire utilisateur + historique
-    // Prendre la première ligne ou section avant horodatage
-    const lines = description.split('\n');
-    
-    for (let line of lines) {
-      const trimmed = line.trim();
-      
-      // Ignorer les lignes vides
-      if (!trimmed) continue;
-      
-      // Ignorer les horodatages (format: "--- 2025-08-05 ...")
-      if (trimmed.startsWith('---')) continue;
-      
-      // Ignorer les anciennes entrées d'historique  
-      if (trimmed.includes('[') && trimmed.includes(']')) continue;
-      
-      // Cette ligne est probablement le commentaire utilisateur
-      return trimmed;
-    }
-    
-    return description.trim();
-  }
 
   /**
    * Récupère l'historique d'une tâche
