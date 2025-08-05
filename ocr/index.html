@@ -130,11 +130,23 @@
             gap: 10px;
             flex-wrap: wrap;
         }
+        .info-box {
+            background-color: #e8f0fe;
+            border: 1px solid #4A90E2;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>🔍 OCR Français avec Tesseract.js</h2>
+        
+        <div class="info-box" id="infoBox">
+            ⏳ Connexion à Grist en cours...
+        </div>
         
         <div class="upload-area" id="uploadArea">
             <div class="upload-icon">📷</div>
@@ -155,6 +167,9 @@
             <button id="saveBtn" style="display: none;" onclick="saveToGrist()">
                 💾 Enregistrer dans Grist
             </button>
+            <button id="updateBtn" style="display: none;" onclick="updateCurrentRecord()">
+                🔄 Mettre à jour l'enregistrement
+            </button>
             <button id="clearBtn" style="display: none;" onclick="clearAll()">
                 🗑️ Effacer
             </button>
@@ -166,16 +181,75 @@
     <script>
         let selectedFile = null;
         let extractedText = '';
-        let grist = null;
+        let currentRecord = null;
+        let tableId = null;
+        let columnMapping = {};
+        let isGristReady = false;
 
         // Initialisation de Grist
-        grist = window.grist;
-        grist.ready({
-            columns: [
-                { name: "texte_ocr", type: "Text" },
-                { name: "date_extraction", type: "DateTime" }
-            ]
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeGrist();
         });
+
+        function initializeGrist() {
+            try {
+                // grist est déjà disponible globalement dans un widget embarqué
+                grist.ready({
+                    requiredAccess: 'full'
+                });
+
+                // Écouter la sélection d'enregistrement
+                grist.onRecord(function(record, mappings) {
+                    console.log('Enregistrement sélectionné:', record);
+                    currentRecord = record;
+                    
+                    // Si un enregistrement est sélectionné, afficher le bouton de mise à jour
+                    if (record && record.id) {
+                        document.getElementById('updateBtn').style.display = 
+                            extractedText ? 'inline-block' : 'none';
+                        updateInfoBox(`📌 Enregistrement sélectionné (ID: ${record.id})`);
+                    }
+                });
+
+                // Écouter les options (pour obtenir le mapping des colonnes)
+                grist.onOptions(function(options, interaction) {
+                    console.log('Options reçues:', options);
+                    if (options) {
+                        tableId = options.tableId || null;
+                        columnMapping = options.columns || {};
+                    }
+                });
+
+                // Obtenir les infos de la table
+                grist.getTable().then(function(table) {
+                    console.log('Table info:', table);
+                    tableId = table.tableId;
+                    isGristReady = true;
+                    updateInfoBox('✅ Connecté à Grist - Prêt pour l\'OCR');
+                }).catch(function(error) {
+                    console.error('Erreur getTable:', error);
+                    updateInfoBox('⚠️ Mode autonome - Sauvegarde Grist limitée', 'error');
+                });
+
+            } catch (error) {
+                console.error('Erreur initialisation Grist:', error);
+                updateInfoBox('⚠️ Impossible de se connecter à Grist', 'error');
+            }
+        }
+
+        function updateInfoBox(message, type = 'success') {
+            const infoBox = document.getElementById('infoBox');
+            infoBox.textContent = message;
+            if (type === 'error') {
+                infoBox.style.backgroundColor = '#f8d7da';
+                infoBox.style.borderColor = '#f5c6cb';
+                infoBox.style.color = '#721c24';
+            } else {
+                infoBox.style.backgroundColor = '#e8f0fe';
+                infoBox.style.borderColor = '#4A90E2';
+                infoBox.style.color = '#004085';
+            }
+        }
 
         // Gestion du drag & drop
         const uploadArea = document.getElementById('uploadArea');
@@ -272,6 +346,12 @@
                 
                 updateStatus('OCR terminé avec succès !', 'success');
                 document.getElementById('saveBtn').style.display = 'inline-block';
+                
+                // Si un enregistrement est sélectionné, montrer aussi le bouton de mise à jour
+                if (currentRecord && currentRecord.id) {
+                    document.getElementById('updateBtn').style.display = 'inline-block';
+                }
+                
                 document.getElementById('progressBar').style.display = 'none';
                 
                 await worker.terminate();
@@ -290,16 +370,23 @@
                 return;
             }
             
+            if (!isGristReady || !tableId) {
+                updateStatus('Grist non connecté. Impossible d\'enregistrer.', 'error');
+                return;
+            }
+            
             try {
                 const record = {
                     texte_ocr: extractedText,
                     date_extraction: new Date().toISOString()
                 };
                 
-                await grist.docApi.applyUserActions([
-                    ['AddRecord', '_grist_Tables_column', null, record]
+                // Utiliser l'API docApi pour ajouter un enregistrement
+                const result = await grist.docApi.applyUserActions([
+                    ['AddRecord', tableId, null, record]
                 ]);
                 
+                console.log('Enregistrement ajouté:', result);
                 updateStatus('Texte enregistré dans Grist !', 'success');
                 
                 // Optionnel : effacer après sauvegarde
@@ -315,6 +402,42 @@
             }
         }
 
+        async function updateCurrentRecord() {
+            if (!extractedText) {
+                updateStatus('Aucun texte à enregistrer', 'error');
+                return;
+            }
+            
+            if (!currentRecord || !currentRecord.id) {
+                updateStatus('Aucun enregistrement sélectionné', 'error');
+                return;
+            }
+            
+            if (!isGristReady || !tableId) {
+                updateStatus('Grist non connecté. Impossible de mettre à jour.', 'error');
+                return;
+            }
+            
+            try {
+                const updates = {
+                    texte_ocr: extractedText,
+                    date_extraction: new Date().toISOString()
+                };
+                
+                // Utiliser l'API docApi pour mettre à jour l'enregistrement
+                const result = await grist.docApi.applyUserActions([
+                    ['UpdateRecord', tableId, currentRecord.id, updates]
+                ]);
+                
+                console.log('Enregistrement mis à jour:', result);
+                updateStatus(`Enregistrement ${currentRecord.id} mis à jour !`, 'success');
+                
+            } catch (error) {
+                console.error('Erreur mise à jour:', error);
+                updateStatus(`Erreur de mise à jour : ${error.message}`, 'error');
+            }
+        }
+
         function clearAll() {
             selectedFile = null;
             extractedText = '';
@@ -324,14 +447,10 @@
             document.getElementById('progressBar').style.display = 'none';
             document.getElementById('processBtn').style.display = 'none';
             document.getElementById('saveBtn').style.display = 'none';
+            document.getElementById('updateBtn').style.display = 'none';
             document.getElementById('clearBtn').style.display = 'none';
             fileInput.value = '';
         }
-
-        // Écouter les changements de sélection dans Grist (optionnel)
-        grist.onRecord(function(record) {
-            console.log('Enregistrement sélectionné:', record);
-        });
     </script>
 </body>
 </html>
