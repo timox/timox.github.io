@@ -940,16 +940,13 @@ export class ModalManager {
         field.removeAttribute('disabled');
         field.tabIndex = 0;
         
-        // Ajouter un gestionnaire de clic pour forcer le focus
+        // Ajouter un gestionnaire de clic pour stopper la propagation seulement
         if (!field.dataset.focusHandlerAdded) {
           field.dataset.focusHandlerAdded = 'true';
-          field.addEventListener('click', function() {
-            setTimeout(() => {
-              this.focus();
-              if (this.tagName === 'TEXTAREA' || this.type === 'text') {
-                this.setSelectionRange(this.value.length, this.value.length);
-              }
-            }, 10);
+          field.addEventListener('click', function(e) {
+            e.stopPropagation();
+            // Ne pas forcer le focus ou repositionner le curseur
+            // Laisser le comportement natif des champs
           });
         }
       }
@@ -1026,7 +1023,7 @@ export class ModalManager {
     this.resetCommentHistoryAccordion();
 
     // Références - remplir le champ avec les données existantes
-    setFieldValue('popup-references', tache.references || '');
+    setFieldValue('popup-references', tache.reference || '');
     
     // Statut (lecture seule)
     const statut = tache.statut || (isNewTask ? 'Backlog' : '');
@@ -1271,7 +1268,7 @@ export class ModalManager {
       qui: getSelectedOptionsAsGristFormat('popup-qui'),
       strategie_id: this.collectStrategyData(), // Collecte spécialisée stratégies
       jalons: this.kanban.jalonManager ? this.kanban.jalonManager.getJalonsForSave() : null,
-      references: referenceManager.cleanReferences(getFieldValue('popup-references'))
+      reference: referenceManager.cleanReferences(getFieldValue('popup-references'))
     };
     
     this.logger.debug(`Collecting form data: ${data.titre || 'untitled'} (${data.statut})`);
