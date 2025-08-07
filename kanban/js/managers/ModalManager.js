@@ -145,6 +145,9 @@ export class ModalManager {
     if (descriptionTextarea) {
       descriptionTextarea.addEventListener('input', this.autoResizeTextarea);
     }
+
+    // Configuration du champ de références
+    this.setupReferenceField();
   }
   
   /**
@@ -981,6 +984,15 @@ export class ModalManager {
       // Laisser le comportement natif du textarea
     });
   }
+
+  /**
+   * Configure le champ de références avec le ReferenceManager
+   */
+  setupReferenceField() {
+    // Initialiser le ReferenceManager pour le champ de références
+    referenceManager.initializeField('popup-references', 'references-preview');
+    this.logger.debug('Reference field configured');
+  }
   
   /**
    * Peuple le formulaire avec les données d'une tâche
@@ -1012,6 +1024,9 @@ export class ModalManager {
     
     // Réinitialiser l'accordéon historique
     this.resetCommentHistoryAccordion();
+
+    // Références - remplir le champ avec les données existantes
+    setFieldValue('popup-references', tache.references || '');
     
     // Statut (lecture seule)
     const statut = tache.statut || (isNewTask ? 'Backlog' : '');
@@ -1255,7 +1270,8 @@ export class ModalManager {
       bureau: getSelectedOptionsAsGristFormat('popup-bureau'),
       qui: getSelectedOptionsAsGristFormat('popup-qui'),
       strategie_id: this.collectStrategyData(), // Collecte spécialisée stratégies
-      jalons: this.kanban.jalonManager ? this.kanban.jalonManager.getJalonsForSave() : null
+      jalons: this.kanban.jalonManager ? this.kanban.jalonManager.getJalonsForSave() : null,
+      references: referenceManager.cleanReferences(getFieldValue('popup-references'))
     };
     
     this.logger.debug(`Collecting form data: ${data.titre || 'untitled'} (${data.statut})`);
