@@ -1970,11 +1970,14 @@ class KanbanManager {
   }
 }
 
-// === INITIALISATION ===
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('🚀 Initialisation Kanban avec gestionnaires...');
-  window.kanbanManager = new KanbanManager();
-});
+// === INITIALISATION DÉSACTIVÉE ===
+// L'initialisation est maintenant gérée par app-initializer.js pour éviter les doublons
+// 
+// ROLLBACK SI NÉCESSAIRE :
+// document.addEventListener('DOMContentLoaded', () => {
+//   console.log('🚀 Initialisation Kanban avec gestionnaires...');
+//   window.kanbanManager = new KanbanManager();
+// });
 
 // === EXPORT POUR UTILISATION EXTERNE ===
 window.KanbanApp = {
