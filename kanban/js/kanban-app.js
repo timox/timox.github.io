@@ -1970,6 +1970,9 @@ class KanbanManager {
   }
 }
 
+// === EXPORT DE LA CLASSE ===
+export { KanbanManager };
+
 // === INITIALISATION DÉSACTIVÉE ===
 // L'initialisation est maintenant gérée par app-initializer.js pour éviter les doublons
 // 
