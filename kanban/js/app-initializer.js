@@ -384,17 +384,21 @@ export class KanbanAppInitializer {
       'f1': () => this.showHelp()
     };
     
-    document.addEventListener('keydown', (e) => {
-      const key = (e.ctrlKey ? 'ctrl+' : '') + 
-                  (e.shiftKey ? 'shift+' : '') + 
-                  (e.altKey ? 'alt+' : '') + 
-                  e.key.toLowerCase();
-      
-      if (shortcuts[key] && !e.target.matches('input, textarea, select')) {
-        e.preventDefault();
-        shortcuts[key]();
-      }
-    });
+    // Éviter les listeners en double
+    if (!this.globalKeyboardListenerAdded) {
+      this.globalKeyboardListenerAdded = true;
+      document.addEventListener('keydown', (e) => {
+        const key = (e.ctrlKey ? 'ctrl+' : '') + 
+                    (e.shiftKey ? 'shift+' : '') + 
+                    (e.altKey ? 'alt+' : '') + 
+                    e.key.toLowerCase();
+        
+        if (shortcuts[key] && !e.target.matches('input, textarea, select')) {
+          e.preventDefault();
+          shortcuts[key]();
+        }
+      });
+    }
     
     console.log('⌨️ Raccourcis clavier configurés');
   }

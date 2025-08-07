@@ -973,24 +973,11 @@ export class ModalManager {
     if (descriptionField.dataset.focusHandlerAdded) return;
     descriptionField.dataset.focusHandlerAdded = 'true';
     
-    // Ajouter un gestionnaire de clic pour forcer le focus
+    // Ajouter un gestionnaire de clic pour stopper la propagation seulement
     descriptionField.addEventListener('click', function(e) {
       e.stopPropagation();
-      setTimeout(() => {
-        this.focus();
-        this.setSelectionRange(this.value.length, this.value.length);
-      }, 10);
-    });
-    
-    // Ajouter un gestionnaire pour débugger les problèmes de focus
-    descriptionField.addEventListener('focus', function() {
-    });
-    
-    descriptionField.addEventListener('blur', function() {
-    });
-    
-    // Gestionnaire pour forcer le focus au survol
-    descriptionField.addEventListener('mouseenter', function() {
+      // Ne pas forcer le focus ou repositionner le curseur
+      // Laisser le comportement natif du textarea
     });
   }
   

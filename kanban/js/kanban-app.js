@@ -1081,21 +1081,25 @@ class KanbanManager {
     this.attachCardEventListeners();
     
     // TEMPORAIRE: Attacher les listeners des cartes directement ici
+    // Utiliser cloneNode pour éviter les listeners en double
     this.kanbanContainer.querySelectorAll('.editable-zone').forEach(zone => {
-      zone.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        
-        const card = zone.closest('.kanban-item');
-        const taskId = parseInt(card.dataset.id, 10);
-        
-        if (!isNaN(taskId) && this.modalManager) {
-          const task = this.currentRecords?.find(r => r.id === taskId);
-          if (task) {
-            this.modalManager.openTaskModal(task);
+      if (!zone.dataset.listenerAttached) {
+        zone.dataset.listenerAttached = 'true';
+        zone.addEventListener('click', (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          
+          const card = zone.closest('.kanban-item');
+          const taskId = parseInt(card.dataset.id, 10);
+          
+          if (!isNaN(taskId) && this.modalManager) {
+            const task = this.currentRecords?.find(r => r.id === taskId);
+            if (task) {
+              this.modalManager.openTaskModal(task);
+            }
           }
-        }
-      });
+        });
+      }
     });
     
     this.attachBadgeEventListeners();
@@ -1246,23 +1250,26 @@ class KanbanManager {
     // Seuls les boutons timeline - les autres événements sont gérés par CardRenderer
     // Le nettoyage se fait automatiquement via innerHTML dans refreshKanban
     this.kanbanContainer.querySelectorAll('.btn-timeline').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        
-        // CORRECTIF: Remonter au bouton parent si l'event target est l'icône
-        const button = e.target.closest('.btn-timeline') || btn;
-        const taskId = parseInt(button.dataset.taskId, 10);
-        
-        console.log('Debug bouton historique:', {
-          'e.target': e.target,
-          'button found': button,
-          'taskId': taskId,
-          'this.openTimelineModal(taskId)': taskId
+      if (!btn.dataset.timelineListenerAttached) {
+        btn.dataset.timelineListenerAttached = 'true';
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          
+          // CORRECTIF: Remonter au bouton parent si l'event target est l'icône
+          const button = e.target.closest('.btn-timeline') || btn;
+          const taskId = parseInt(button.dataset.taskId, 10);
+          
+          console.log('Debug bouton historique:', {
+            'e.target': e.target,
+            'button found': button,
+            'taskId': taskId,
+            'this.openTimelineModal(taskId)': taskId
+          });
+          
+          this.openTimelineModal(taskId);
         });
-        
-        this.openTimelineModal(taskId);
-      });
+      }
     });
   }
 
