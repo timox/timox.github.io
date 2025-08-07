@@ -18,6 +18,7 @@ import {
 import { TABLE_ID } from '../config/constants.js';
 import { getUserActionManager } from '../utils/UserActionManager.js';
 import { createModuleLogger } from '../utils/LoggerManager.js';
+import { referenceManager } from '../utils/ReferenceManager.js';
 
 /**
  * Gestionnaire pour les modales et formulaires
