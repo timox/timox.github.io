@@ -439,7 +439,9 @@ export class KanbanAppInitializer {
       console.error('❌ Le bouton Nouvelle Tâche n\'est pas un enfant du conteneur trouvé');
       console.error('Container:', buttonsContainer);
       console.error('NewTaskBtn parent:', newTaskBtn.parentElement);
-      return;
+      // Utiliser le parent direct du bouton comme conteneur de fallback
+      buttonsContainer = newTaskBtn.parentElement;
+      console.log('🔄 Utilisation du parent direct comme conteneur');
     }
     
     const quickActionsDiv = document.createElement('div');
