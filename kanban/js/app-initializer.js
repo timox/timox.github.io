@@ -458,14 +458,23 @@ export class KanbanAppInitializer {
     `;
     
     try {
-      // Insérer avant le bouton "Nouvelle Tâche" dans le même conteneur
-      buttonsContainer.insertBefore(quickActionsDiv, newTaskBtn);
-      console.log('✅ insertBefore réussi');
+      // Vérifier une dernière fois avant l'insertion
+      if (buttonsContainer.contains(newTaskBtn)) {
+        buttonsContainer.insertBefore(quickActionsDiv, newTaskBtn);
+        console.log('✅ insertBefore réussi');
+      } else {
+        throw new Error('Bouton pas dans le conteneur au moment de l\'insertion');
+      }
     } catch (error) {
       console.error('❌ Erreur insertBefore:', error);
-      // Fallback : ajouter à la fin
-      buttonsContainer.appendChild(quickActionsDiv);
-      console.log('✅ Fallback appendChild réussi');
+      // Fallback : ajouter à la fin du parent direct du bouton
+      const directParent = newTaskBtn.parentElement;
+      if (directParent) {
+        directParent.appendChild(quickActionsDiv);
+        console.log('✅ Fallback appendChild au parent direct réussi');
+      } else {
+        console.error('❌ Impossible d\'ajouter les boutons d\'action rapide');
+      }
     }
     
     // Attacher les événements

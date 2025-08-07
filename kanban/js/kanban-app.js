@@ -1249,28 +1249,35 @@ class KanbanManager {
   attachCardEventListeners() {
     // Seuls les boutons timeline - les autres événements sont gérés par CardRenderer
     // Le nettoyage se fait automatiquement via innerHTML dans refreshKanban
-    this.kanbanContainer.querySelectorAll('.btn-timeline').forEach(btn => {
-      if (!btn.dataset.timelineListenerAttached) {
-        btn.dataset.timelineListenerAttached = 'true';
-        btn.addEventListener('click', (e) => {
+    
+    // Supprimer tous les anciens listeners en utilisant la délégation d'événements
+    // au lieu d'attacher individuellement à chaque bouton
+    
+    // Vérifier si le listener global est déjà attaché
+    if (!this.timelineListenerAttached) {
+      this.timelineListenerAttached = true;
+      
+      // Utiliser la délégation d'événements sur le conteneur
+      this.kanbanContainer.addEventListener('click', (e) => {
+        const button = e.target.closest('.btn-timeline');
+        if (button) {
           e.stopPropagation();
           e.preventDefault();
           
-          // CORRECTIF: Remonter au bouton parent si l'event target est l'icône
-          const button = e.target.closest('.btn-timeline') || btn;
           const taskId = parseInt(button.dataset.taskId, 10);
           
-          console.log('Debug bouton historique:', {
+          console.log('Debug bouton historique (délégation):', {
             'e.target': e.target,
             'button found': button,
-            'taskId': taskId,
-            'this.openTimelineModal(taskId)': taskId
+            'taskId': taskId
           });
           
           this.openTimelineModal(taskId);
-        });
-      }
-    });
+        }
+      });
+      
+      console.log('✅ Listener timeline attaché par délégation');
+    }
   }
 
   // === GESTION DE LA MODAL TIMELINE ===
