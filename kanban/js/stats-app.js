@@ -44,8 +44,8 @@ class StatsManager {
       const checkGrist = () => {
         attempts++;
         
-        if (typeof grist !== 'undefined') {
-          grist.ready();
+        if (typeof window.grist !== 'undefined') {
+          window.grist.ready();
           resolve();
         } else if (attempts >= maxAttempts) {
           console.error('❌ API Grist non disponible après', maxAttempts, 'tentatives');
@@ -61,7 +61,7 @@ class StatsManager {
 
   async loadStrategies() {
     try {
-      const gristData = await grist.docApi.fetchTable('Ssir_strategie2');
+      const gristData = await window.grist.docApi.fetchTable('Ssir_strategie2');
       
       // Convertir le format Grist en tableau d'objets
       this.strategiesData = [];
@@ -92,7 +92,7 @@ class StatsManager {
   async loadTasks() {
     try {
       
-      const records = await grist.docApi.fetchTable(TABLE_ID);
+      const records = await window.grist.docApi.fetchTable(TABLE_ID);
       this.tasks = this.mapGristRecords(records);
       
       console.log(`✅ ${this.tasks.length} tâches chargées - DEBUG activé`);

@@ -44,7 +44,7 @@ class HistoryManager {
         attempts++;
         
         if (typeof grist !== 'undefined') {
-          grist.ready();
+          window.grist.ready();
           resolve();
         } else if (attempts >= maxAttempts) {
           console.error('❌ API Grist non disponible après', maxAttempts, 'tentatives');
@@ -60,7 +60,7 @@ class HistoryManager {
 
   async loadTasks() {
     try {
-      const records = await grist.docApi.fetchTable(TABLE_ID);
+      const records = await window.grist.docApi.fetchTable(TABLE_ID);
       this.tasks = this.mapGristRecords(records);
       
       console.log(`✅ ${this.tasks.length} tâches chargées pour l'historique`);

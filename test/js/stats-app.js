@@ -44,8 +44,8 @@ class StatsManager {
       const checkGrist = () => {
         attempts++;
         
-        if (typeof grist !== 'undefined') {
-          grist.ready();
+        if (typeof window.grist !== 'undefined') {
+          window.grist.ready();
           resolve();
         } else if (attempts >= maxAttempts) {
           console.error('❌ API Grist non disponible après', maxAttempts, 'tentatives');
@@ -61,7 +61,7 @@ class StatsManager {
 
   async loadStrategies() {
     try {
-      const gristData = await grist.docApi.fetchTable('Ssir_strategie2');
+      const gristData = await window.grist.docApi.fetchTable('Ssir_strategie2');
       
       // Convertir le format Grist en tableau d'objets
       this.strategiesData = [];
@@ -92,7 +92,7 @@ class StatsManager {
   async loadTasks() {
     try {
       
-      const records = await grist.docApi.fetchTable(TABLE_ID);
+      const records = await window.grist.docApi.fetchTable(TABLE_ID);
       this.tasks = this.mapGristRecords(records);
       
       console.log(`✅ ${this.tasks.length} tâches chargées - DEBUG activé`);
@@ -134,7 +134,6 @@ class StatsManager {
     // Génération des affichages
     this.generateGlobalMetrics();
     this.generatePersonBureauStats();
-    this.generatePriorityStatusTable();
     this.generateActivityHeatmap();
     this.generateBureauObjectiveMatrix();
     this.generateTasksObjectivesTable();
@@ -213,83 +212,6 @@ class StatsManager {
 
     // Générer le tableau
     this.renderPersonBureauTable(personStats);
-  }
-
-  generatePriorityStatusTable() {
-    console.log('📊 Génération tableau priorité par statut...');
-    
-    // Calculer la répartition priorité/statut
-    const priorityStatusData = {};
-    
-    // Initialiser la structure pour tous les statuts
-    Object.values(STATUTS).forEach(statut => {
-      priorityStatusData[statut] = {
-        p1: 0,
-        p2: 0,
-        p3plus: 0,
-        total: 0
-      };
-    });
-    
-    // Analyser chaque tâche
-    this.tasks.forEach(task => {
-      const statut = task.statut || 'Sans statut';
-      
-      if (!priorityStatusData[statut]) {
-        priorityStatusData[statut] = { p1: 0, p2: 0, p3plus: 0, total: 0 };
-      }
-      
-      const stats = priorityStatusData[statut];
-      stats.total++;
-      
-      // Priorité basée sur le champ priority de Grist
-      if (task.priority === 1) {
-        stats.p1++;
-      } else if (task.priority === 2) {
-        stats.p2++;
-      } else {
-        stats.p3plus++;
-      }
-    });
-    
-    // Générer le tableau HTML
-    this.renderPriorityStatusTable(priorityStatusData);
-  }
-
-  renderPriorityStatusTable(priorityStatusData) {
-    const tbody = document.querySelector('#priority-status-table tbody');
-    
-    // Trier par total décroissant
-    const sortedStatuts = Object.entries(priorityStatusData)
-      .sort(([,a], [,b]) => b.total - a.total)
-      .filter(([statut, data]) => data.total > 0); // Exclure les statuts vides
-    
-    tbody.innerHTML = sortedStatuts.map(([statut, data]) => {
-      const p1Percent = data.total > 0 ? Math.round((data.p1 / data.total) * 100) : 0;
-      const p2Percent = data.total > 0 ? Math.round((data.p2 / data.total) * 100) : 0;
-      const p3Percent = data.total > 0 ? Math.round((data.p3plus / data.total) * 100) : 0;
-      
-      return `
-        <tr>
-          <td><strong>${statut}</strong></td>
-          <td class="text-center">
-            <span class="badge bg-danger">${data.p1}</span>
-            <small class="text-muted d-block">${p1Percent}%</small>
-          </td>
-          <td class="text-center">
-            <span class="badge bg-warning">${data.p2}</span>
-            <small class="text-muted d-block">${p2Percent}%</small>
-          </td>
-          <td class="text-center">
-            <span class="badge bg-secondary">${data.p3plus}</span>
-            <small class="text-muted d-block">${p3Percent}%</small>
-          </td>
-          <td class="text-center">
-            <strong>${data.total}</strong>
-          </td>
-        </tr>
-      `;
-    }).join('');
   }
 
   renderPersonBureauTable(personStats) {
@@ -1053,13 +975,7 @@ class StatsManager {
   }
 }
 
-// 🔧 CORRECTION: Éviter conflit avec KanbanManager
+// Initialisation
 document.addEventListener('DOMContentLoaded', () => {
-  // Vérifier si on est sur la page stats (pas sur index.html)
-  if (document.getElementById('stats-container')) {
-    console.log('📊 Initialisation StatsManager (page dédiée)');
-    new StatsManager();
-  } else {
-    console.log('♻️ StatsManager géré par KanbanManager principal');
-  }
+  new StatsManager();
 });
