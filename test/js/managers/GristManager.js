@@ -131,12 +131,13 @@ export class GristManager {
     }
     
     const keys = Object.keys(gristData);
-    if (!keys.includes('id') || !Array.isArray(gristData.id)) {
-      this.logger.warn('Structure de données Grist invalide');
+    if (!keys.includes('id_task') || !Array.isArray(gristData.id_task)) {
+      this.logger.warn('Structure de données Grist invalide - colonne id_task manquante');
+      this.logger.debug('Colonnes disponibles:', keys.slice(0, 10));
       return [];
     }
     
-    const recordCount = gristData.id.length;
+    const recordCount = gristData.id_task.length;
     
     for (let i = 0; i < recordCount; i++) {
       const record = {};
@@ -161,8 +162,8 @@ export class GristManager {
             record[columnName] = value;
           }
           
-        } else if (columnName === 'id') {
-          // L'ID est absolument requis
+        } else if (columnName === 'id_task') {
+          // L'id_task est absolument requis
           isValidRecord = false;
           break;
         } else {
@@ -191,9 +192,12 @@ export class GristManager {
       
       // Valider et ajouter l'enregistrement
       if (isValidRecord) {
-        record.id = parseInt(record.id, 10);
-        if (!isNaN(record.id)) {
+        // Utiliser id_task comme identifiant unique et créer un id pour compatibilité
+        record.id = parseInt(record.id_task, 10);
+        if (!isNaN(record.id) && record.id > 0) {
           records.push(record);
+        } else {
+          this.logger.warn(`Record invalide - id_task: ${record.id_task}`);
         }
       }
     }

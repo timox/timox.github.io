@@ -1,7 +1,7 @@
 // === js/app-initializer.js ===
 // Script d'initialisation et de configuration globale de l'application Kanban
 
-import { ViewModeManager } from './managers/ViewModeManager.js';
+// ViewModeManager sera créé par KanbanManager
 import { 
   getObjectivesByPriority, 
   getSubObjectives, 
@@ -134,20 +134,19 @@ export class KanbanAppInitializer {
   async initializeBaseComponents() {
     
     try {
-      // Créer KanbanManager si nécessaire (puisque l'auto-init est désactivée)
+      // 🔧 CORRECTION: Une seule instance de KanbanManager (singleton pattern)
       if (!window.kanbanManager) {
+        console.log('🏗️ Création de la première instance KanbanManager');
         const { KanbanManager } = await import('./core/KanbanManager.js');
         window.kanbanManager = new KanbanManager();
-        this.components.kanbanManager = window.kanbanManager;
       } else {
-        this.components.kanbanManager = window.kanbanManager;
+        console.log('♻️ Réutilisation de l\'instance KanbanManager existante');
       }
       
+      this.components.kanbanManager = window.kanbanManager;
       
-      // Si déjà initialisé, passer directement
-      if (this.components.kanbanManager.isInitialized) {
-      } else {
-        // Attendre que le KanbanManager soit prêt
+      // Attendre l'initialisation si nécessaire
+      if (!this.components.kanbanManager.isInitialized) {
         await this.waitForComponent(
           () => this.components.kanbanManager && this.components.kanbanManager.isInitialized,
           15000,
@@ -156,17 +155,12 @@ export class KanbanAppInitializer {
       }
     } catch (error) {
       console.error('❌ Erreur initialisation composants de base:', error);
-      // Essayer de continuer même en cas d'erreur
-      if (!this.components.kanbanManager) {
-        const { KanbanManager } = await import('./core/KanbanManager.js');
-        this.components.kanbanManager = new KanbanManager();
-        window.kanbanManager = this.components.kanbanManager;
-      }
+      throw error; // Ne pas masquer l'erreur
     }
     
-    // Initialiser le ViewModeManager
-    this.components.viewModeManager = new ViewModeManager(this.components.kanbanManager);
-    this.components.kanbanManager.viewModeManager = this.components.viewModeManager;
+    // ViewModeManager est maintenant géré directement par KanbanManager
+    // (évite les doublons de managers comme en prod)
+    this.components.viewModeManager = this.components.kanbanManager.viewModeManager;
     
     // Charger les données stratégiques
     this.components.strategicData = {
@@ -214,9 +208,30 @@ export class KanbanAppInitializer {
     
     const kanban = this.components.kanbanManager;
     
+    console.log('📊 État des données après chargement:', {
+      hasRecords: !!kanban.currentRecords,
+      recordsLength: kanban.currentRecords?.length || 0,
+      gristConnected: kanban.gristManager?.isConnected,
+      isGristAvailable: typeof grist !== 'undefined'
+    });
+    
     if (!kanban.currentRecords || kanban.currentRecords.length === 0) {
-      console.warn('⚠️ Aucune donnée trouvée - utilisation du mode démo');
-      await this.loadDemoData();
+      console.error('❌ Aucune donnée chargée depuis Grist');
+      console.error('🔧 Vérifier la connexion Grist et la structure de la table');
+      
+      // Tenter un rechargement
+      if (kanban.gristManager?.isConnected) {
+        console.log('🔄 Tentative de rechargement des données...');
+        try {
+          await kanban.gristManager.reloadData();
+          console.log('✅ Rechargement terminé:', kanban.currentRecords?.length || 0, 'tâches');
+        } catch (error) {
+          console.error('❌ Échec rechargement:', error);
+          throw new Error('Impossible de charger les données depuis Grist: ' + error.message);
+        }
+      } else {
+        throw new Error('Grist non connecté - impossible de charger les données');
+      }
     }
     
     // Valider la cohérence des données
@@ -240,6 +255,8 @@ export class KanbanAppInitializer {
     // Exposer les APIs publiques
     this.exposePublicAPIs();
     
+    // Mode test : pas de monitoring automatique (données Grist fiables)
+    
     // Marquer l'application comme prête
     document.body.classList.add('kanban-ready');
     
@@ -255,41 +272,6 @@ export class KanbanAppInitializer {
     console.log('✅ Initialisation finalisée');
   }
   
-  /**
-   * Charge des données de démonstration
-   */
-  async loadDemoData() {
-    const demoTasks = [
-      {
-        id: 1,
-        titre: 'Mise en place du monitoring',
-        description: 'Déploiement de la solution de monitoring des serveurs',
-        statut: 'En cours',
-        bureau: ['L', 'Exploit'],
-        qui: ['L', 'Alex'],
-        urgence: 'Courte',
-        impact: 'Important',
-        projet: 'Infrastructure 2024',
-        strategie_objectif: 'Performance Optimisée',
-        date_echeance: '2024-03-15'
-      },
-      {
-        id: 2,
-        titre: 'Audit sécurité réseau',
-        description: 'Audit complet de la sécurité du réseau interne',
-        statut: 'À faire',
-        bureau: ['L', 'Réseau', 'RSSI'],
-        qui: ['L', 'Timothée', 'Isabelle'],
-        urgence: 'Immédiate',
-        impact: 'Critique',
-        projet: 'Sécurité 2024',
-        strategie_objectif: 'Sécurité Renforcée'
-      }
-    ];
-    
-    this.components.kanbanManager.currentRecords = demoTasks;
-    console.log('📝 Données de démonstration chargées');
-  }
   
   /**
    * Valide l'intégrité des données
@@ -819,8 +801,57 @@ export class KanbanAppInitializer {
       config: this.config,
       components: Object.keys(this.components),
       isInitialized: this.isInitialized,
-      retryCount: this.retryCount
+      retryCount: this.retryCount,
+      taskCount: this.components.kanbanManager?.currentRecords?.length || 0,
+      gristConnected: this.components.kanbanManager?.gristManager?.isConnected || false
     };
+  }
+  
+  /**
+   * Démarre le monitoring automatique des données
+   */
+  startDataMonitoring() {
+    let checkCount = 0;
+    const maxChecks = 10;
+    
+    const monitor = setInterval(() => {
+      checkCount++;
+      const kanban = this.components.kanbanManager;
+      
+      // Vérifier si on a trop peu de tâches (probablement en mode démo)
+      if (kanban && kanban.currentRecords && kanban.currentRecords.length <= 2) {
+        console.log(`🔍 Check #${checkCount}: Seulement ${kanban.currentRecords.length} tâches détectées`);
+        
+        // Essayer de recharger les données depuis Grist
+        if (kanban.gristManager?.isConnected && typeof grist !== 'undefined') {
+          console.log('🔄 Tentative de rechargement automatique...');
+          kanban.gristManager.reloadData()
+            .then(() => {
+              const newCount = kanban.currentRecords?.length || 0;
+              if (newCount > 2) {
+                console.log(`✅ Récupération réussie: ${newCount} tâches chargées`);
+                displaySuccess(`Données récupérées: ${newCount} tâches`);
+                clearInterval(monitor);
+                kanban.refreshKanban();
+              }
+            })
+            .catch(err => {
+              console.warn('Échec rechargement auto:', err);
+            });
+        }
+      } else if (kanban && kanban.currentRecords && kanban.currentRecords.length > 2) {
+        console.log(`✅ Données normales détectées: ${kanban.currentRecords.length} tâches`);
+        clearInterval(monitor);
+      }
+      
+      // Arrêter après un certain nombre de tentatives
+      if (checkCount >= maxChecks) {
+        console.log('⏰ Monitoring automatique terminé');
+        clearInterval(monitor);
+      }
+    }, 5000); // Vérifier toutes les 5 secondes
+    
+    console.log('👁️ Monitoring automatique des données démarré');
   }
 }
 

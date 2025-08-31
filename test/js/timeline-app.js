@@ -979,7 +979,13 @@ class TimelineManager {
   }
 }
 
-// Initialisation
+// 🔧 CORRECTION: Éviter conflit avec KanbanManager  
 document.addEventListener('DOMContentLoaded', () => {
-  new TimelineManager();
+  // Vérifier si on est sur la page timeline (pas sur index.html)
+  if (document.getElementById('timeline-container')) {
+    console.log('📅 Initialisation TimelineManager (page dédiée)');
+    new TimelineManager();
+  } else {
+    console.log('♻️ TimelineManager géré par KanbanManager principal');
+  }
 });

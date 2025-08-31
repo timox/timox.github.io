@@ -1053,7 +1053,13 @@ class StatsManager {
   }
 }
 
-// Initialisation
+// 🔧 CORRECTION: Éviter conflit avec KanbanManager
 document.addEventListener('DOMContentLoaded', () => {
-  new StatsManager();
+  // Vérifier si on est sur la page stats (pas sur index.html)
+  if (document.getElementById('stats-container')) {
+    console.log('📊 Initialisation StatsManager (page dédiée)');
+    new StatsManager();
+  } else {
+    console.log('♻️ StatsManager géré par KanbanManager principal');
+  }
 });

@@ -19,6 +19,7 @@ import { TABLE_ID } from '../config/constants.js';
 import { getUserActionManager } from '../utils/UserActionManager.js';
 import { createModuleLogger } from '../utils/LoggerManager.js';
 import { referenceManager } from '../utils/ReferenceManager.js';
+import { safeOn, cleanNamespace } from '../utils/EventManager.js';
 
 /**
  * Gestionnaire pour les modales et formulaires
@@ -77,25 +78,28 @@ export class ModalManager {
    * Configure les écouteurs d'événements pour les modales
    */
   setupEventListeners() {
-    // Bouton nouvelle tâche
-    const btnNouvelleTache = document.getElementById('btn-nouvelle-tache');
-    if (btnNouvelleTache) {
-      btnNouvelleTache.addEventListener('click', () => {
-        this.openTaskModal();
-      });
-    }
+    // 🔧 CORRECTION: Utiliser EventManager pour éviter les écouteurs multiples
+    cleanNamespace('modal'); // Nettoyer les anciens événements modal
     
-    // Event listeners pour les boutons de la modal avec délégation
-    $(document).off('click.modal-events', '#btn-save-task, #btn-delete-task, #btn-show-history')
-      .on('click.modal-events', '#btn-save-task', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.logger.debug('Save button clicked');
-        this.saveTask();
-      })
-      .on('click.modal-events', '#btn-delete-task', (e) => {
-        e.preventDefault(); 
-        e.stopPropagation();
+    // Bouton nouvelle tâche
+    safeOn('#btn-nouvelle-tache', 'click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.logger.debug('Nouvelle tâche clicked (EventManager)');
+      this.openTaskModal();
+    }, 'modal');
+    
+    // Boutons de la modal
+    safeOn('#btn-save-task', 'click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.logger.debug('Save button clicked');
+      this.saveTask();
+    }, 'modal');
+    
+    safeOn('#btn-delete-task', 'click', (e) => {
+      e.preventDefault(); 
+      e.stopPropagation();
         this.logger.debug('Delete button clicked');
         this.deleteTask();
       })

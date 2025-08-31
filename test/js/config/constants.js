@@ -33,13 +33,19 @@ export const TABLE_ID = "Ssir_principale_task";
 
 // === COLONNES REQUISES ET OPTIONNELLES ===
 export const REQUIRED_COLUMNS = [
-  'id', 'id_task', 'titre', 'description', 'statut', 'bureau', 'qui', 'urgence', 'impact',
+  'id_task', 'titre', 'description', 'statut', 'bureau', 'qui', 'urgence', 'impact',
   'projet', 'strategie_id', 'notes', 'date_derniere_maj', 'statut_precedent'
-  // Removed: strategie_objectif, strategie_sous_objectif, strategie_action (auto-computed)
-  // Removed: historique_statuts (Date field, not JSON)
+  // Note: id_task est l'identifiant unique (pas 'id')
+  // Note: reference et jalons sont maintenant dans OPTIONAL_COLUMNS (comme en prod)
 ];
 
-export const OPTIONAL_COLUMNS = ['date_debut', 'date_echeance', 'jalons'];
+export const OPTIONAL_COLUMNS = [
+  'date_debut', 'date_echeance', 'jalons', 'reference',
+  // Colonnes de prod actives
+  'type_tache_id', 'priorite', 'historique_statuts', 'datenow', 
+  'str_statut', 'str_urgence', 'str_qui', 'str_bureau', 'str_impact',
+  'date_creation', 'date_modif', 'Créé par'
+];
 
 // === CONSTANTES DE L'INTERFACE ===
 export const VIEW_MODES = {

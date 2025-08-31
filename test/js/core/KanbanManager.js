@@ -9,6 +9,7 @@ import { DatePickerManager } from '../managers/DatePickerManager.js';
 import { ModalManager } from '../managers/ModalManager.js';
 import { HistoryManager } from '../managers/HistoryManager.js';
 import { FilterManager } from '../managers/FilterManager.js';
+import { ViewModeManager } from '../managers/ViewModeManager.js';
 
 // Importation des renderers
 import { CardRenderer } from '../renderers/CardRenderer.js';
@@ -35,6 +36,7 @@ export class KanbanManager {
     this.modalManager = null;
     this.historyManager = null;
     this.filterManager = null;
+    this.viewModeManager = null;
     this.cardRenderer = null;
     this.boardRenderer = null;
     
@@ -139,8 +141,11 @@ export class KanbanManager {
     // 5. Gestionnaire d'historique
     this.historyManager = new HistoryManager(this);
     
-    // 6. Gestionnaire de filtres (en dernier car il d�pend des autres)
+    // 6. Gestionnaire de filtres
     this.filterManager = new FilterManager(this);
+    
+    // 7. Gestionnaire de modes de vue (en dernier)
+    this.viewModeManager = new ViewModeManager(this);
     
     console.log('KanbanManager: Gestionnaires initialis�s');
   }

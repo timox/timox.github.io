@@ -85,6 +85,9 @@
             <button class="btn btn-outline-danger btn-sm" type="button" id="btn-clean-backdrops" title="🚨 Nettoyer les overlays bloquants" style="display: none;">
               <i class="bi bi-exclamation-triangle"></i> Débloquer
             </button>
+            <button class="btn btn-outline-warning btn-sm" type="button" id="btn-diagnostic" title="🔧 Diagnostic du Kanban">
+              <i class="bi bi-tools"></i> Diagnostic
+            </button>
           </div>
         </div>
       </div>
@@ -604,6 +607,39 @@
           window.kanbanManager.refreshKanban();
           console.log('🔄 Kanban rechargé manuellement');
         }
+      }
+    });
+    
+    // Bouton diagnostic
+    document.addEventListener('DOMContentLoaded', () => {
+      const btnDiagnostic = document.getElementById('btn-diagnostic');
+      if (btnDiagnostic) {
+        btnDiagnostic.addEventListener('click', () => {
+          // Charger et exécuter le script de diagnostic
+          if (window.location.hostname === 'localhost' || window.location.hostname.includes('test')) {
+            const script = document.createElement('script');
+            script.src = 'debug_kanban.js';
+            script.onload = () => {
+              console.log('🔧 Script de diagnostic chargé et exécuté');
+            };
+            document.head.appendChild(script);
+          } else {
+            // Version diagnostic simplifiée pour production
+            console.log('=== DIAGNOSTIC RAPIDE ===');
+            console.log('Tâches:', window.kanbanManager?.currentRecords?.length || 0);
+            console.log('Grist connecté:', window.kanbanManager?.gristManager?.isConnected || false);
+            
+            if (window.KanbanAPI?.debug) {
+              console.log('État:', window.KanbanAPI.debug());
+            }
+            
+            // Essayer de recharger
+            if (window.kanbanManager?.refreshKanban) {
+              window.kanbanManager.refreshKanban();
+              console.log('🔄 Rechargement forcé effectué');
+            }
+          }
+        });
       }
     });
     
