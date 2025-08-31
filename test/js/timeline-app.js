@@ -38,7 +38,7 @@ class TimelineManager {
       const checkGrist = () => {
         attempts++;
         
-        if (typeof grist !== 'undefined') {
+        if (typeof window.grist !== 'undefined') {
           window.grist.ready();
           resolve();
         } else if (attempts >= maxAttempts) {
