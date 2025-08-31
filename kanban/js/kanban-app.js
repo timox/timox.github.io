@@ -209,14 +209,28 @@ class KanbanManager {
   async waitForGristReady() {
     return new Promise((resolve) => {
       this.logger.info("Attente de l'initialisation Grist...");
+      
+      // Vérifier que l'API Grist est disponible
+      if (typeof window.grist === 'undefined') {
+        console.error("API Grist non disponible - vérifiez que le widget a accès 'full'");
+        resolve();
+        return;
+      }
+      
       try {
-        grist.ready({ requiredAccess: 'full' });
-        grist.onRecords(this.handleGristUpdate.bind(this));
+        if (!window.grist) {
+          console.error("window.grist is undefined - API not loaded");
+          resolve();
+          return;
+        }
+        
+        window.grist.ready({ requiredAccess: 'full' });
+        window.grist.onRecords(this.handleGristUpdate.bind(this));
         this.logger.info("Listener onRecords attaché.");
         
         // Initialiser le gestionnaire d'actions utilisateur et le migrateur
-        initUserActionManager(grist);
-        initNotesJsonMigrator(grist);
+        initUserActionManager(window.grist);
+        initNotesJsonMigrator(window.grist);
         this.logger.info("UserActionManager et NotesJsonMigrator initialisés.");
         
         // Initialiser le nom d'utilisateur
@@ -245,7 +259,7 @@ class KanbanManager {
     this.logger.info("Chargement des données depuis Grist...");
     try {
       // Charger les tâches principales
-      const records = await grist.docApi.fetchTable(TABLE_ID);
+      const records = await window.grist.docApi.fetchTable(TABLE_ID);
       this.currentRecords = this.mapGristRecords(records);
       this.logger.info(`Données mappées: ${this.currentRecords.length} tâches`);
       if (!this.currentRecords?.length) console.warn("Aucune donnée tâche Grist chargée.");
@@ -264,7 +278,7 @@ class KanbanManager {
           if (migrated > 0) {
             this.logger.info(`Migration terminée: ${migrated} tâches migrées vers JSON`);
             // Recharger les données après migration
-            const updatedRecords = await grist.docApi.fetchTable(TABLE_ID);
+            const updatedRecords = await window.grist.docApi.fetchTable(TABLE_ID);
             this.currentRecords = this.mapGristRecords(updatedRecords);
           } else {
             this.logger.debug("Aucune migration nécessaire - notes déjà en JSON");
@@ -334,7 +348,7 @@ class KanbanManager {
   async loadGristDataDirect() {
     try {
       // Charger les tâches principales
-      const records = await grist.docApi.fetchTable(TABLE_ID);
+      const records = await window.grist.docApi.fetchTable(TABLE_ID);
       
       if (records && typeof records === 'object') {
         this.availableColumns = new Set(Object.keys(records));
@@ -479,7 +493,7 @@ class KanbanManager {
     try {
       console.log('🔍 Récupération utilisateur Grist...');
       
-      const userInfo = await grist.docApi.getDocInfo();
+      const userInfo = await window.grist.docApi.getDocInfo();
       console.log('Info Grist reçue:', userInfo);
       
       const user = userInfo?.user || userInfo?.users?.[0] || null;
@@ -1668,7 +1682,7 @@ class KanbanManager {
       
       // Les strategie_id sont maintenant au bon format ['L', id] - pas besoin de les corriger
       
-      await grist.docApi.applyUserActions([
+      await window.grist.docApi.applyUserActions([
         ['UpdateRecord', TABLE_ID, taskId, updateData]
       ]);
       console.log(`Grist sauvegardé pour ${taskId}`);
@@ -1733,7 +1747,7 @@ class KanbanManager {
     this.isUpdating = true;
     
     this.logger.debug("Stratégie: Re-fetch des données");
-    grist.docApi.fetchTable(TABLE_ID).then(fresh => {
+    window.grist.docApi.fetchTable(TABLE_ID).then(fresh => {
       this.logger.debug("Données re-fetchées avec succès");
       this.currentRecords = this.mapGristRecords(fresh);
       this.refreshKanban();
