@@ -44,20 +44,23 @@ export class GristManager {
   waitForGristReady() {
     return new Promise((resolve, reject) => {
       try {
-        grist.ready({ 
-          requiredAccess: 'full',
-          onEditOptions: () => this.handleEditOptions()
-        });
-        
-        // S'abonner aux changements de données
-        grist.onRecords((records, mappings) => {
-          this.handleRecordsUpdate(records, mappings);
-        });
-        
-        // S'abonner aux changements d'options
-        grist.onOptions((options) => {
-          this.handleOptionsUpdate(options);
-        });
+        // Éviter les appels multiples à grist.ready()
+        if (!window._gristReadyInitialized) {
+          grist.ready({ 
+            requiredAccess: 'full',
+            onEditOptions: () => this.handleEditOptions()
+          });
+          
+          grist.onRecords((records, mappings) => {
+            this.handleRecordsUpdate(records, mappings);
+          });
+          
+          grist.onOptions((options) => {
+            this.handleOptionsUpdate(options);
+          });
+          
+          window._gristReadyInitialized = true;
+        }
         
         setTimeout(resolve, 100);
       } catch (error) {

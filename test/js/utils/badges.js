@@ -138,22 +138,12 @@ export function generateProjectBadge(projectData) {
 export function generateStrategyBadge(record) {
   const { strategiesInfo, strategie_objectif, strategie_id } = record;
   
-  // DEBUG: Log pour comprendre les données
-  if (record.id && (strategiesInfo || strategie_objectif || strategie_id)) {
-    console.log(`🎯 DEBUG Strategy Badge - Task ${record.id}:`, {
-      strategiesInfo,
-      strategie_objectif, 
-      strategie_id: Array.isArray(strategie_id) ? strategie_id : typeof strategie_id,
-      strategie_id_length: Array.isArray(strategie_id) ? strategie_id.length : 'not array'
-    });
-  }
   
   // Support stratégies multiples (nouveau format)
   if (strategiesInfo && Array.isArray(strategiesInfo) && strategiesInfo.length > 0) {
     const count = strategiesInfo.length;
     const tooltip = strategiesInfo.map(s => `• ${s.objectif} → ${s.action}`).join('\n');
     
-    console.log(`✅ Strategy badge multi: ${count} stratégies pour task ${record.id}`);
     return `
       <span class="badge strategy-badge" title="${tooltip.replace(/"/g, '&quot;')}">
         <i class="bi bi-crosshair"></i>
@@ -167,7 +157,6 @@ export function generateStrategyBadge(record) {
     const strategyCount = strategie_id.length - 1; // -1 pour enlever le 'L'
     const title = `${strategyCount} stratégie${strategyCount > 1 ? 's' : ''} liée${strategyCount > 1 ? 's' : ''}`;
     
-    console.log(`✅ Strategy badge Grist: ${strategyCount} stratégies pour task ${record.id}`);
     return `
       <span class="badge strategy-badge" title="${title}">
         <i class="bi bi-crosshair"></i>
@@ -178,7 +167,6 @@ export function generateStrategyBadge(record) {
   // Support ancien format (single stratégie)  
   if (strategie_objectif) {
     const title = `Stratégie: ${strategie_objectif}`;
-    console.log(`✅ Strategy badge single: ${strategie_objectif} pour task ${record.id}`);
     return `
       <span class="badge strategy-badge strategy-single" title="${title.replace(/"/g, '&quot;')}">
         <i class="bi bi-crosshair"></i>

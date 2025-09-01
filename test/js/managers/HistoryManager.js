@@ -12,6 +12,7 @@ import {
 import { displayError, displaySuccess } from '../utils/dom.js';
 import { TABLE_ID } from '../config/constants.js';
 import { createModuleLogger } from '../utils/LoggerManager.js';
+import { safeOn, cleanNamespace } from '../utils/EventManager.js';
 
 /**
  * Gestionnaire pour l'historique des tâches et commentaires
@@ -29,10 +30,10 @@ export class HistoryManager {
    * Initialise le gestionnaire d'historique
    */
   init() {
-    // Event listeners supprimés - gérés par SimpleClickHandler
+    // Événements maintenant gérés par EventCentralizer (jQuery)
     this.setupCommentEditWidget();
     this.setupModalCleanupListeners();
-    this.logger.info('History manager initialized (listeners centralisés)');
+    this.logger.info('History manager initialized (événements centralisés via EventCentralizer)');
   }
   
   /**

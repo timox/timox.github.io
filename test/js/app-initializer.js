@@ -2,13 +2,9 @@
 // Script d'initialisation et de configuration globale de l'application Kanban
 
 // ViewModeManager sera créé par KanbanManager
-import { 
-  getObjectivesByPriority, 
-  getSubObjectives, 
-  getActions,
-  searchStrategyData 
-} from './config/strategyData.js';
+// Données de stratégie chargées directement depuis Grist
 import { displayError, displaySuccess } from './utils/dom.js';
+import { initLogger } from './utils/LoggerManager.js';
 
 /**
  * Classe d'initialisation de l'application Kanban
@@ -19,6 +15,9 @@ export class KanbanAppInitializer {
     this.initializationPromise = null;
     this.retryCount = 0;
     this.maxRetries = 3;
+    
+    // Initialiser le système de logging centralisé
+    initLogger();
     
     // Composants de l'application
     this.components = {
@@ -56,36 +55,13 @@ export class KanbanAppInitializer {
    */
   async _performInitialization() {
     try {
-      console.log('🚀 Démarrage de l\'initialisation Kanban...');
-      
-      // Étape 1: Vérifier les prérequis
-      console.log('🔍 Étape 1: Vérification des prérequis...');
       await this.checkPrerequisites();
-      console.log('✅ Étape 1 terminée');
-      
-      // Étape 2: Initialiser les composants de base
-      console.log('⚙️ Étape 2: Initialisation des composants de base...');
       await this.initializeBaseComponents();
-      console.log('✅ Étape 2 terminée');
-      
-      // Étape 3: Configurer l'interface utilisateur
-      console.log('🎨 Étape 3: Configuration de l\'interface utilisateur...');
       await this.setupUserInterface();
-      console.log('✅ Étape 3 terminée');
-      
-      // Étape 4: Charger les données
-      console.log('📊 Étape 4: Chargement des données...');
       await this.loadApplicationData();
-      console.log('✅ Étape 4 terminée');
-      
-      // Étape 5: Finaliser l'initialisation
-      console.log('🏁 Étape 5: Finalisation de l\'initialisation...');
       await this.finalizeInitialization();
-      console.log('✅ Étape 5 terminée');
       
       this.isInitialized = true;
-      
-      console.log('✅ Application Kanban initialisée avec succès');
       displaySuccess('Application Kanban chargée et prête à utiliser');
       
       return true;
@@ -101,7 +77,6 @@ export class KanbanAppInitializer {
    * Vérifie les prérequis de l'application
    */
   async checkPrerequisites() {
-    console.log('🔍 Vérification des prérequis...');
     
     // Vérifier la présence des éléments DOM requis
     const requiredElements = [
@@ -125,7 +100,6 @@ export class KanbanAppInitializer {
       throw new Error(`APIs manquantes: ${missingAPIs.join(', ')}`);
     }
     
-    console.log('✅ Prérequis vérifiés');
   }
   
   /**
@@ -134,13 +108,10 @@ export class KanbanAppInitializer {
   async initializeBaseComponents() {
     
     try {
-      // 🔧 CORRECTION: Une seule instance de KanbanManager (singleton pattern)
-      if (!window.kanbanManager) {
-        console.log('🏗️ Création de la première instance KanbanManager');
+      // Une seule instance de KanbanManager (singleton pattern)
+      if (!window.kanbanManager || !window.kanbanManager.isInitialized) {
         const { KanbanManager } = await import('./core/KanbanManager.js');
         window.kanbanManager = new KanbanManager();
-      } else {
-        console.log('♻️ Réutilisation de l\'instance KanbanManager existante');
       }
       
       this.components.kanbanManager = window.kanbanManager;
@@ -162,21 +133,14 @@ export class KanbanAppInitializer {
     // (évite les doublons de managers comme en prod)
     this.components.viewModeManager = this.components.kanbanManager.viewModeManager;
     
-    // Charger les données stratégiques
-    this.components.strategicData = {
-      objectives: getObjectivesByPriority(),
-      searchFunction: searchStrategyData
-    };
+    // Les données stratégiques sont chargées par KanbanManager depuis Grist
     
-    console.log('✅ Composants de base initialisés');
   }
   
   /**
    * Configure l'interface utilisateur
    */
   async setupUserInterface() {
-    console.log('🎨 Configuration de l\'interface utilisateur...');
-    
     // Initialiser les tooltips Bootstrap
     this.initializeTooltips();
     
@@ -194,39 +158,19 @@ export class KanbanAppInitializer {
     // Initialiser le mode de vue préféré
     this.components.viewModeManager.initializeViewMode();
     
-    console.log('✅ Interface utilisateur configurée');
   }
   
   /**
    * Charge les données de l'application
    */
   async loadApplicationData() {
-    console.log('📊 Chargement des données...');
-    
-    // Les données sont déjà chargées par le KanbanManager
-    // Ici on peut ajouter des validations ou transformations supplémentaires
-    
     const kanban = this.components.kanbanManager;
     
-    console.log('📊 État des données après chargement:', {
-      hasRecords: !!kanban.currentRecords,
-      recordsLength: kanban.currentRecords?.length || 0,
-      gristConnected: kanban.gristManager?.isConnected,
-      isGristAvailable: typeof grist !== 'undefined'
-    });
-    
     if (!kanban.currentRecords || kanban.currentRecords.length === 0) {
-      console.error('❌ Aucune donnée chargée depuis Grist');
-      console.error('🔧 Vérifier la connexion Grist et la structure de la table');
-      
-      // Tenter un rechargement
       if (kanban.gristManager?.isConnected) {
-        console.log('🔄 Tentative de rechargement des données...');
         try {
           await kanban.gristManager.reloadData();
-          console.log('✅ Rechargement terminé:', kanban.currentRecords?.length || 0, 'tâches');
         } catch (error) {
-          console.error('❌ Échec rechargement:', error);
           throw new Error('Impossible de charger les données depuis Grist: ' + error.message);
         }
       } else {
@@ -237,14 +181,12 @@ export class KanbanAppInitializer {
     // Valider la cohérence des données
     this.validateDataIntegrity();
     
-    console.log(`✅ ${kanban.currentRecords.length} tâches chargées`);
   }
   
   /**
    * Finalise l'initialisation
    */
   async finalizeInitialization() {
-    console.log('🎯 Finalisation de l\'initialisation...');
     
     // Démarrer les services en arrière-plan
     this.startBackgroundServices();
@@ -269,7 +211,6 @@ export class KanbanAppInitializer {
       }
     }));
     
-    console.log('✅ Initialisation finalisée');
   }
   
   
@@ -304,7 +245,6 @@ export class KanbanAppInitializer {
     if (issuesFound > 0) {
       console.warn(`⚠️ ${issuesFound} problème(s) de données corrigé(s)`);
     } else {
-      console.log('✅ Intégrité des données validée');
     }
   }
   
@@ -330,7 +270,6 @@ export class KanbanAppInitializer {
       });
     });
     
-    console.log(`💡 ${tooltipList.length} tooltips initialisés`);
   }
   
   /**
@@ -378,18 +317,15 @@ export class KanbanAppInitializer {
       }
     });
     
-    console.log('⌨️ Raccourcis clavier configurés');
   }
   
   /**
    * Crée les boutons d'actions rapides
    */
   createQuickActionButtons() {
-    console.log('🔘 Création des boutons d\'actions rapides...');
     
     // Vérifier s'ils existent déjà (dans le header)
     if (document.querySelector('.quick-actions')) {
-      console.log('✅ Boutons d\'actions rapides déjà présents');
       return;
     }
     
@@ -404,7 +340,6 @@ export class KanbanAppInitializer {
     // Utiliser le parent direct du bouton comme conteneur
     const buttonsContainer = newTaskBtn.parentElement;
     
-    console.log('🔍 Debug insertBefore:', {
       buttonsContainer: !!buttonsContainer,
       newTaskBtn: !!newTaskBtn,
       containerClass: buttonsContainer?.className,
@@ -432,19 +367,16 @@ export class KanbanAppInitializer {
     try {
       // Insérer avant le bouton "Nouvelle Tâche" dans le même conteneur
       buttonsContainer.insertBefore(quickActionsDiv, newTaskBtn);
-      console.log('✅ insertBefore réussi');
     } catch (error) {
       console.error('❌ Erreur insertBefore:', error);
       // Fallback : ajouter à la fin
       buttonsContainer.appendChild(quickActionsDiv);
-      console.log('✅ Fallback appendChild réussi');
     }
     
     // Attacher les événements
     document.getElementById('btn-export')?.addEventListener('click', () => this.exportData());
     document.getElementById('btn-help')?.addEventListener('click', () => this.showHelp());
     
-    console.log('✅ Boutons d\'actions rapides créés et événements attachés');
   }
   
   /**
@@ -491,7 +423,6 @@ export class KanbanAppInitializer {
       this.performHousekeeping();
     }, 300000); // 5 minutes
     
-    console.log('🔄 Services en arrière-plan démarrés');
   }
   
   /**
@@ -503,7 +434,6 @@ export class KanbanAppInitializer {
         this.autoSave();
       }, this.config.autoSaveInterval);
       
-      console.log(`💾 Sauvegarde automatique configurée (${this.config.autoSaveInterval}ms)`);
     }
   }
   
@@ -535,7 +465,6 @@ export class KanbanAppInitializer {
       cleanTooltips: () => this.forceCleanTooltips()
     };
     
-    console.log('🔌 APIs publiques exposées');
   }
   
   /**
@@ -587,7 +516,6 @@ export class KanbanAppInitializer {
     // Supprimer tous les backdrops de tooltips
     document.querySelectorAll('.tooltip-backdrop').forEach(backdrop => backdrop.remove());
     
-    console.log('🧹 Tooltips forcés nettoyés');
   }
   
   /**
@@ -764,7 +692,6 @@ export class KanbanAppInitializer {
       throw new Error(`Timeout waiting for ${description}`);
     }
     
-    console.log(`✅ ${description} prêt après ${Math.round((Date.now() - start)/1000)}s`);
   }
   
   saveCurrentState() {
@@ -820,7 +747,6 @@ export class KanbanAppInitializer {
       
       // Vérifier si on a trop peu de tâches (probablement en mode démo)
       if (kanban && kanban.currentRecords && kanban.currentRecords.length <= 2) {
-        console.log(`🔍 Check #${checkCount}: Seulement ${kanban.currentRecords.length} tâches détectées`);
         
         // Essayer de recharger les données depuis Grist
         if (kanban.gristManager?.isConnected && typeof grist !== 'undefined') {
@@ -829,7 +755,6 @@ export class KanbanAppInitializer {
             .then(() => {
               const newCount = kanban.currentRecords?.length || 0;
               if (newCount > 2) {
-                console.log(`✅ Récupération réussie: ${newCount} tâches chargées`);
                 displaySuccess(`Données récupérées: ${newCount} tâches`);
                 clearInterval(monitor);
                 kanban.refreshKanban();
@@ -840,7 +765,6 @@ export class KanbanAppInitializer {
             });
         }
       } else if (kanban && kanban.currentRecords && kanban.currentRecords.length > 2) {
-        console.log(`✅ Données normales détectées: ${kanban.currentRecords.length} tâches`);
         clearInterval(monitor);
       }
       

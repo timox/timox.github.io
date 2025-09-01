@@ -8,7 +8,7 @@ import {
 
 import { generateSingleBureauBadge } from './utils/badges.js';
 
-class TimelineManager {
+class TimelineAppManager {
   constructor() {
     this.tasks = [];
     this.selectedTask = null;
@@ -984,7 +984,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Vérifier si on est sur la page timeline (pas sur index.html)
   if (document.getElementById('timeline-container')) {
     console.log('📅 Initialisation TimelineManager (page dédiée)');
-    new TimelineManager();
+    new TimelineAppManager();
   } else {
     console.log('♻️ TimelineManager géré par KanbanManager principal');
   }

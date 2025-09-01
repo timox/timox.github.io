@@ -10,7 +10,7 @@ import {
 
 import { generateSingleBureauBadge } from './utils/badges.js';
 
-class HistoryManager {
+class HistoryAppManager {
   constructor() {
     this.tasks = [];
     this.modifications = [];
@@ -467,6 +467,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Le HistoryManager est déjà initialisé par KanbanManager
   } else {
     console.warn('⚠️ KanbanManager non trouvé, création standalone');
-    new HistoryManager();
+    new HistoryAppManager();
   }
 });

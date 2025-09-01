@@ -1,8 +1,9 @@
 // === core/KanbanManager.js ===
 // Orchestrateur principal all�g� pour l'application Kanban
 
-import { VIEW_MODES, STATUTS } from '../config/constants.js';
+import { VIEW_MODES } from '../config/constants.js';
 import { displayError, displaySuccess, toggleLoadingSpinner } from '../utils/dom.js';
+import { getEventCentralizer } from './EventCentralizer.js';
 
 // Importation des managers
 import { DatePickerManager } from '../managers/DatePickerManager.js';
@@ -78,6 +79,9 @@ export class KanbanManager {
       
       // Premier rendu
       this.refreshKanban();
+      
+      // Initialiser la centralisation des événements
+      this.setupEventCentralizer();
       
       this.isInitialized = true;
       displaySuccess('Kanban initialis� avec succ�s');
@@ -175,37 +179,13 @@ export class KanbanManager {
    * Charge les données stratégiques depuis Grist
    */
   async loadStrategyData() {
-    console.log('KanbanManager: Chargement des données stratégiques...');
-    
-    // SOLUTION: Grist ne peut pas se connecter à plusieurs tables simultanément
-    // Utilisation des données en cache depuis constants.js
-    
-    if (typeof STRATEGY_DATA !== 'undefined' && STRATEGY_DATA.length > 0) {
-      console.log(`✅ KanbanManager: ${STRATEGY_DATA.length} stratégies chargées depuis le cache constants.js`);
-      this.strategyData = STRATEGY_DATA;
-      
-      // Exposer pour debug et ModalManager
-      window.debugStrategyData = this.strategyData;
-      this.strategiesData = this.strategyData; // Alias pour ModalManager
-      
-      return;
-    }
-    
-    // Si pas de cache disponible, tenter Grist (mais ça va échouer)
+    // Stratégies chargées uniquement si nécessaire (pas en temps réel)
     try {
-      console.warn('KanbanManager: Pas de cache STRATEGY_DATA - tentative Grist (va probablement échouer)');
-      
       const strategyRecords = await this.gristManager.fetchTable('Ssir_strategie2');
       this.strategyData = this.mapStrategyRecords(strategyRecords);
-      this.strategiesData = this.strategyData;
-      
-      console.log(`✅ KanbanManager: ${this.strategyData.length} stratégies chargées depuis Grist`);
-      
+      this.strategiesData = this.strategyData; // Alias pour ModalManager
     } catch (error) {
-      console.error('❌ KanbanManager: Erreur Grist (attendue - limitation connexion multiple):', error.message);
-      
-      // En cas d'échec, données vides mais pas d'erreur utilisateur
-      console.log('🔄 KanbanManager: Fonctionnement en mode dégradé sans stratégies');
+      // Fonctionnement dégradé sans stratégies
       this.strategyData = [];
       this.strategiesData = [];
     }
@@ -325,7 +305,6 @@ export class KanbanManager {
    */
   setupGlobalKeyboardShortcuts() {
     // DÉSACTIVÉ: Event listeners gérés centralement via jQuery dans kanban-app.js
-    console.log('⚠️ Raccourcis clavier KanbanManager désactivés (gérés par jQuery)');
     
     /*
     document.addEventListener('keydown', (e) => {
@@ -940,5 +919,21 @@ export class KanbanManager {
     this.strategyData = [];
     
     console.log('KanbanManager: Ressources nettoy�es');
+  }
+  
+  /**
+   * Configure la centralisation des événements
+   */
+  setupEventCentralizer() {
+    const eventCentralizer = getEventCentralizer();
+    
+    // Enregistrer tous les managers pour délégation
+    eventCentralizer.registerManager('history', this.historyManager);
+    eventCentralizer.registerManager('viewMode', this.viewModeManager);
+    eventCentralizer.registerManager('modal', this.modalManager);
+    eventCentralizer.registerManager('jalon', this.jalonManager);
+    eventCentralizer.registerManager('filter', this.filterManager);
+    
+    this.eventCentralizer = eventCentralizer;
   }
 }
