@@ -218,12 +218,6 @@ class KanbanManager {
       }
       
       try {
-        if (!window.grist) {
-          console.error("window.grist is undefined - API not loaded");
-          resolve();
-          return;
-        }
-        
         window.grist.ready({ requiredAccess: 'full' });
         window.grist.onRecords(this.handleGristUpdate.bind(this));
         this.logger.info("Listener onRecords attaché.");

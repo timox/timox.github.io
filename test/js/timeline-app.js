@@ -38,8 +38,8 @@ class TimelineAppManager {
       const checkGrist = () => {
         attempts++;
         
-        if (typeof grist !== 'undefined') {
-          grist.ready();
+        if (typeof window.grist !== 'undefined') {
+          window.grist.ready();
           resolve();
         } else if (attempts >= maxAttempts) {
           console.error('❌ API Grist non disponible après', maxAttempts, 'tentatives');
@@ -55,7 +55,7 @@ class TimelineAppManager {
 
   async loadTasks() {
     try {
-      const records = await grist.docApi.fetchTable(TABLE_ID);
+      const records = await window.grist.docApi.fetchTable(TABLE_ID);
       this.tasks = this.mapGristRecords(records);
       
       console.log(`✅ ${this.tasks.length} tâches chargées pour la timeline`);
@@ -979,13 +979,12 @@ class TimelineAppManager {
   }
 }
 
-// 🔧 CORRECTION: Éviter conflit avec KanbanManager  
+// Initialisation
 document.addEventListener('DOMContentLoaded', () => {
+
   // Vérifier si on est sur la page timeline (pas sur index.html)
   if (document.getElementById('timeline-container')) {
     console.log('📅 Initialisation TimelineManager (page dédiée)');
     new TimelineAppManager();
-  } else {
-    console.log('♻️ TimelineManager géré par KanbanManager principal');
   }
 });

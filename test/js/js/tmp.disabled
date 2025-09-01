@@ -1,0 +1,1214 @@
+// === CORRECTIONS DES RÉGRESSIONS - kanban-app.js ===
+
+// === IMPORTS DES MODULES ===
+import { 
+  STATUTS, 
+  DEFAULT_BUREAUX, 
+  DEFAULT_RESPONSABLES, 
+  TABLE_ID,
+  REQUIRED_COLUMNS,
+  OPTIONAL_COLUMNS,
+  VIEW_MODES,
+  getDefaultStatuts
+} from './config/constants.js';
+
+import {
+  normalizeDate,
+  formatDate,
+  prepareDateForGrist,
+  generateTimestamp,
+  generateDatesContainer,
+  calculateDurationMinutes,
+  formatDuration
+} from './utils/dates.js';
+
+import {
+  generateBureauBadges,
+  generatePriorityBadge,
+  generateProjectBadge,
+  generateResponsablesBadges,
+  generateHistoryBadge,
+  generateAllTaskBadges
+} from './utils/badges.js';
+
+import {
+  displayError,
+  displaySuccess,
+  toggleLoadingSpinner,
+  populateSelect,
+  setSelectedOptions,
+  getSelectedOptionsAsGristFormat,
+  setFieldValue,
+  getFieldValue,
+  confirmAction,
+  validateForm,
+  addEventListenerSafe,
+  toggleVisibility
+} from './utils/dom.js';
+
+// === CONSTANTES ===
+const TABLE_ID = "Ssir_principale_task";
+const STRATEGIES_TABLE_ID = "Ssir_strategie2"; // Table des stratégies
+
+let projetsDynamiques = [];
+
+// === CLASSE KANBANMANAGER CORRIGÉE ===
+class KanbanManager {
+  constructor() {
+    // Propriétés principales
+    this.kanbanContainer = document.getElementById('kanban-container');
+    this.currentRecords = [];
+    this.modalElement = document.getElementById('popup-tache');
+    this.timelineModalElement = document.getElementById('timeline-modal'); // AJOUT
+    this.currentTaskId = null;
+    this.isUpdating = false;
+    this.canEdit = true;
+    this.gristOptions = {};
+    this.strategiesData = []; // AJOUT pour les stratégies depuis Grist
+    this.ignoreNextOnRecords = false;
+    this.availableColumns = new Set();
+    
+    // Filtres et modes de vue
+    this.filters = { bureau: '', qui: '', projet: '', statut: '' };
+    this.showTermine = true;
+    this.viewMode = VIEW_MODES.COMPACT;
+    this.focusColumn = null;
+    this.expandedCards = new Set();
+    
+    // Gestion utilisateur
+    this.currentUser = null;
+    this.userInitialized = false;
+    
+    // Instances Sortable
+    this.sortableInstances = [];
+    
+    // Modal instances
+    this.modal = null;
+    this.timelineModal = null; // AJOUT
+    
+    this.init();
+  }
+
+  // === INITIALISATION ===
+  async init() {
+    try {
+      toggleLoadingSpinner(true);
+      
+      await this.waitForGristReady();
+      await this.loadGristDataAndOptions();
+      await this.initializeUser();
+      
+      this.initModals(); // AJOUT
+      this.initEventListeners();
+      
+      this.refreshKanban();
+      
+      displaySuccess('Kanban initialisé avec succès');
+      
+    } catch (error) {
+      console.error('Erreur lors de l\'initialisation:', error);
+      displayError(`Erreur d'initialisation: ${error.message}`);
+    } finally {
+      toggleLoadingSpinner(false);
+    }
+  }
+
+  async waitForGristReady() {
+    return new Promise((resolve) => {
+      grist.ready({ requiredAccess: 'full' });
+      grist.onRecords(this.handleGristUpdate.bind(this));
+      setTimeout(resolve, 50);
+    });
+  }
+
+  // === CORRECTION 1: CHARGEMENT DES STRATÉGIES DEPUIS GRIST ===
+  async loadGristDataAndOptions() {
+    try {
+      // Charger les tâches principales
+      const records = await grist.docApi.fetchTable(TABLE_ID);
+      
+      if (records && typeof records === 'object') {
+        this.availableColumns = new Set(Object.keys(records));
+        console.log('Colonnes disponibles:', Array.from(this.availableColumns));
+      }
+      
+      this.currentRecords = this.mapGristRecords(records);
+      
+      // Charger les options de base
+      this.gristOptions.statut = getDefaultStatuts();
+      this.gristOptions.urgence = ['Immédiate', 'Courte', 'Moyenne', 'Longue'];
+      this.gristOptions.impact = ['Critique', 'Important', 'Modéré', 'Mineur'];
+      
+      const bureaux = this.getUniqueValuesFromData('bureau', true);
+      this.gristOptions.bureau = [...new Set([...DEFAULT_BUREAUX, ...bureaux])].sort();
+      
+      const responsables = this.getUniqueValuesFromData('qui', true);
+      this.gristOptions.responsables = [...new Set([...DEFAULT_RESPONSABLES, ...responsables])].sort();
+      
+      const projets = this.getUniqueValuesFromData('projet');
+      this.gristOptions.projet = [...new Set([...projets, ...projetsDynamiques])].sort();
+      
+      // NOUVEAU: Charger les stratégies depuis Grist
+      await this.loadStrategiesFromGrist();
+      
+    } catch (error) {
+      console.error('Erreur lors du chargement des données:', error);
+      // Valeurs par défaut en cas d'erreur
+      this.gristOptions.statut = getDefaultStatuts();
+      this.gristOptions.urgence = ['Immédiate', 'Courte', 'Moyenne', 'Longue'];
+      this.gristOptions.impact = ['Critique', 'Important', 'Modéré', 'Mineur'];
+      this.gristOptions.bureau = DEFAULT_BUREAUX;
+      this.gristOptions.responsables = DEFAULT_RESPONSABLES;
+      this.gristOptions.projet = [];
+      this.strategiesData = [];
+      if (!this.currentRecords) this.currentRecords = [];
+    }
+  }
+
+  // NOUVEAU: Chargement des stratégies depuis la table Grist
+  async loadStrategiesFromGrist() {
+    try {
+      console.log(`Chargement table stratégies: ${STRATEGIES_TABLE_ID}...`);
+      const strategiesTable = await grist.docApi.fetchTable(STRATEGIES_TABLE_ID);
+      
+      if (strategiesTable && strategiesTable.id) {
+        this.strategiesData = strategiesTable.id.map((id, index) => ({
+          id: id,
+          objectif: strategiesTable.objectif?.[index] || '',
+          sous_objectif: strategiesTable.sous_objectif?.[index] || '',
+          action: strategiesTable.action?.[index] || '',
+          responsable: strategiesTable.responsable?.[index] || '',
+          echeance: strategiesTable.echeance?.[index] || '',
+          portee: strategiesTable.portee?.[index] || ''
+        }));
+        
+        console.log(`${this.strategiesData.length} stratégies chargées depuis Grist`);
+      } else {
+        console.warn('Table stratégies vide ou non trouvée');
+        this.strategiesData = [];
+      }
+    } catch (error) {
+      console.error('Erreur chargement stratégies:', error);
+      this.strategiesData = [];
+    }
+  }
+
+  // CORRECTION 2: INITIALISATION DES MODALS (TASK + TIMELINE)
+  initModals() {
+    // Modal tâche
+    if (this.modalElement) {
+      try {
+        this.modal = new bootstrap.Modal(this.modalElement, { 
+          backdrop: 'static', 
+          keyboard: false 
+        });
+        console.log('Modal tâche initialisée');
+      } catch (e) {
+        console.error('Erreur init modal tâche:', e);
+      }
+    }
+
+    // NOUVEAU: Modal timeline
+    this.timelineModalElement = document.getElementById('timeline-modal');
+    if (this.timelineModalElement) {
+      try {
+        this.timelineModal = new bootstrap.Modal(this.timelineModalElement, { 
+          backdrop: true, 
+          keyboard: true 
+        });
+        console.log('Modal timeline initialisée');
+      } catch (e) {
+        console.error('Erreur init modal timeline:', e);
+        // Créer la modal timeline si elle n'existe pas
+        this.createTimelineModal();
+      }
+    } else {
+      // Créer la modal timeline si elle n'existe pas
+      this.createTimelineModal();
+    }
+
+    // Peupler les options des selects
+    this.populateSelectOptions();
+  }
+
+  // NOUVEAU: Création de la modal timeline
+  createTimelineModal() {
+    const timelineModalHTML = `
+      <div class="modal fade" id="timeline-modal" tabindex="-1" aria-labelledby="timeline-modal-label" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+          <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+              <h5 class="modal-title" id="timeline-modal-label">
+                <i class="bi bi-clock-history me-2"></i>Timeline de la tâche
+              </h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+              <div id="timeline-stats" class="mb-4"></div>
+              <div id="timeline-content"></div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-info" id="btn-add-comment">
+                <i class="bi bi-chat-plus me-2"></i>Ajouter un commentaire
+              </button>
+              <button type="button" class="btn btn-success" id="btn-export-timeline">
+                <i class="bi bi-download me-2"></i>Exporter timeline
+              </button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', timelineModalHTML);
+    this.timelineModalElement = document.getElementById('timeline-modal');
+    
+    try {
+      this.timelineModal = new bootstrap.Modal(this.timelineModalElement, { 
+        backdrop: true, 
+        keyboard: true 
+      });
+      console.log('Modal timeline créée et initialisée');
+    } catch (e) {
+      console.error('Erreur création modal timeline:', e);
+    }
+  }
+
+  mapGristRecords(gristData) {
+    const records = [];
+    if (!gristData || typeof gristData !== 'object') return [];
+    
+    const keys = Object.keys(gristData);
+    if (!keys.includes('id') || !Array.isArray(gristData.id)) return [];
+    
+    const num = gristData.id.length;
+    
+    for (let i = 0; i < num; i++) {
+      const rec = {};
+      let ok = true;
+      
+      // Colonnes requises
+      for (const key of REQUIRED_COLUMNS) {
+        if (gristData.hasOwnProperty(key) && Array.isArray(gristData[key]) && gristData[key].length > i) {
+          const v = gristData[key][i];
+          if ((key === 'bureau' || key === 'qui') && Array.isArray(v) && v[0] === 'L') {
+            rec[key] = v;
+          } else if ((key === 'bureau' || key === 'qui') && (!Array.isArray(v) || v[0] !== 'L')) {
+            rec[key] = ['L'];
+          } else {
+            rec[key] = v;
+          }
+        } else if (key === 'id') { 
+          ok = false; 
+          break; 
+        } else {
+          rec[key] = null;
+        }
+      }
+      
+      // Colonnes optionnelles
+      for (const key of OPTIONAL_COLUMNS) {
+        if (gristData.hasOwnProperty(key) && Array.isArray(gristData[key]) && gristData[key].length > i) {
+          rec[key] = gristData[key][i];
+        } else {
+          rec[key] = null;
+        }
+      }
+      
+      if (ok) { 
+        rec.id = parseInt(rec.id, 10); 
+        if (!isNaN(rec.id)) records.push(rec); 
+      }
+    }
+    return records;
+  }
+
+  getUniqueValuesFromData(key, isList = false) {
+    const values = new Set();
+    (this.currentRecords || []).forEach(rec => {
+      const v = rec[key];
+      if (isList && Array.isArray(v)) {
+        v.slice(1).forEach(i => i && values.add(String(i).trim()));
+      } else if (!isList && v !== null && typeof v !== 'undefined') {
+        values.add(String(v).trim());
+      }
+    });
+    return Array.from(values).filter(v => v).sort();
+  }
+
+  // === GESTION UTILISATEUR ===
+  async getCurrentGristUser() {
+    try {
+      console.log('🔍 Récupération utilisateur Grist...');
+      
+      const userInfo = await grist.docApi.getDocInfo();
+      console.log('Info Grist reçue:', userInfo);
+      
+      const user = userInfo?.user || userInfo?.users?.[0] || null;
+      
+      if (user) {
+        const userName = user.name || user.displayName || user.email || user.id || null;
+        if (userName) {
+          console.log('✅ Nom utilisateur trouvé:', userName);
+          this.currentUser = userName;
+          return this.currentUser;
+        }
+      }
+      
+      this.currentUser = 'Utilisateur';
+      return this.currentUser;
+      
+    } catch (error) {
+      console.log('❌ Erreur API getDocInfo:', error.message);
+      this.currentUser = 'Utilisateur';
+      return this.currentUser;
+    }
+  }
+
+  async initializeUser() {
+    if (this.userInitialized) return this.currentUser;
+    
+    console.log('Initialisation de l\'utilisateur Grist...');
+    this.currentUser = await this.getCurrentGristUser();
+    this.userInitialized = true;
+    
+    console.log('✅ Utilisateur Grist initialisé:', this.currentUser);
+    return this.currentUser;
+  }
+
+  // === GESTION DES COMMENTAIRES CORRIGÉE ===
+  addTimestampToDescription(currentDescription, newContent, userName = null) {
+    if (!newContent || newContent.trim() === '') {
+      return currentDescription || '';
+    }
+
+    const user = userName || this.currentUser || 'Utilisateur';
+    const timestamp = generateTimestamp(new Date(), user);
+    const separator = '---';
+    
+    if (!currentDescription || currentDescription.trim() === '') {
+      return `${timestamp}\n${newContent.trim()}`;
+    }
+    
+    // Vérifier si le contenu n'a pas changé
+    const lines = currentDescription.split('\n');
+    const lastContentIndex = lines.findIndex(line => line.startsWith('[') && line.includes(']'));
+    
+    if (lastContentIndex >= 0) {
+      const lastContent = lines.slice(lastContentIndex + 1)
+        .join('\n')
+        .replace(/^---\s*$/gm, '')
+        .trim();
+      
+      if (lastContent === newContent.trim()) {
+        return currentDescription;
+      }
+    }
+    
+    return `${timestamp}\n${newContent.trim()}\n\n${separator}\n\n${currentDescription}`;
+  }
+
+  getLatestDescription(description) {
+    if (!description) return '';
+    
+    const lines = description.split('\n');
+    const firstTimestampIndex = lines.findIndex(line => line.match(/^\[.*\]$/));
+    
+    if (firstTimestampIndex >= 0) {
+      const separatorIndex = lines.findIndex((line, index) => 
+        index > firstTimestampIndex && line.trim() === '---'
+      );
+      
+      const endIndex = separatorIndex >= 0 ? separatorIndex : lines.length;
+      return lines.slice(firstTimestampIndex + 1, endIndex).join('\n').trim();
+    }
+    
+    return description;
+  }
+
+  // === CALCUL DE PRIORITÉ ===
+  calculerPriorite(urgence, impact) {
+    const imp = String(impact || '').trim().toLowerCase();
+    const urg = String(urgence || '').trim().toLowerCase();
+    
+    if (imp === 'critique') return 1;
+    if (imp === 'important') return (urg === 'immédiate' || urg === 'courte') ? 1 : 2;
+    if (imp === 'modéré') return (urg === 'immédiate') ? 2 : 3;
+    if (imp === 'mineur') return 4;
+    return 3;
+  }
+
+  // === CORRECTION 3: RENDU DES CARTES SANS TEXTE SUPERFLU ===
+  createTaskElementHTML(record) {
+    if (!record?.id) return '';
+    
+    const priority = this.calculerPriorite(record.urgence, record.impact);
+    const priorityBadge = generatePriorityBadge(priority);
+    
+    // Stratégie avec tooltip si disponible
+    const strategyInfo = this.getStrategyInfo(record.strategie_id);
+    const strategyTooltip = strategyInfo ? 
+      `data-toggle="tooltip" data-placement="top" title="Objectif: ${strategyInfo.objectif} | Action: ${strategyInfo.action}"` : '';
+    const strategyIcon = strategyInfo ? 
+      `<i class="fas fa-bullseye strategie-icon" ${strategyTooltip}></i>` : '';
+
+    // Projet
+    const projectBadge = record.projet ? 
+      generateProjectBadge({
+        projet: record.projet,
+        strategie_objectif: strategyInfo?.objectif,
+        strategie_sous_objectif: strategyInfo?.sous_objectif,
+        strategie_action: strategyInfo?.action
+      }) : '';
+
+    // Description résumée
+    const resumeDesc = record.description ? 
+      `<div class="desc-resume">${this.getLatestDescription(record.description).substring(0, 80)}${record.description.length > 80 ? '…' : ''}</div>` : '';
+    
+    // Dates
+    const datesElement = generateDatesContainer({
+      date_debut: record.date_debut,
+      date_echeance: record.date_echeance
+    }, false);
+    
+    // CORRECTION: Badges bureaux (sans texte superflu en dessous)
+    const bureauBadges = generateBureauBadges(record.bureau, false);
+    
+    // CORRECTION: Badges responsables (sans texte superflu en dessous)
+    const responsablesBadges = generateResponsablesBadges(record.qui);
+    
+    // Timeline button (NOUVEAU)
+    const timelineButton = this.generateTimelineButton(record);
+    
+    const hasEcheanceClass = record.date_echeance ? 'has-echeance' : '';
+    const hasDateDebutClass = record.date_debut ? 'has-debut' : '';
+    
+    return `<div class="kanban-item ${hasEcheanceClass} ${hasDateDebutClass}" data-id="${record.id}">
+      <div class="drag-handle">
+        <i class="bi bi-grip-vertical"></i>
+      </div>
+      
+      ${bureauBadges}
+      
+      <div class="kanban-item-header">
+        <div class="priority-section">
+          ${priorityBadge}
+          ${strategyIcon}
+        </div>
+        <div class="item-badges">
+          ${projectBadge}
+          ${timelineButton}
+        </div>
+      </div>
+      
+      <div class="item-title editable-zone">${record.titre || 'Sans titre'}</div>
+      
+      ${resumeDesc}
+      
+      ${datesElement}
+      
+      ${responsablesBadges}
+    </div>`;
+  }
+
+  // NOUVEAU: Génération du bouton timeline
+  generateTimelineButton(record) {
+    if (!record.description && !record.historique_statuts) return '';
+    
+    // Compter les commentaires
+    const commentCount = record.description ? 
+      (record.description.match(/^\[.*\]$/gm) || []).length : 0;
+    
+    // Compter les changements de statut
+    let statusChangeCount = 0;
+    if (record.historique_statuts) {
+      try {
+        const history = JSON.parse(record.historique_statuts);
+        statusChangeCount = history.historique ? history.historique.length : 0;
+      } catch (e) {
+        statusChangeCount = 0;
+      }
+    }
+    
+    const totalEvents = commentCount + statusChangeCount;
+    if (totalEvents === 0) return '';
+    
+    return `<button class="btn-timeline" title="Voir la timeline (${totalEvents} événement${totalEvents > 1 ? 's' : ''})" data-task-id="${record.id}">
+      <i class="bi bi-clock-history"></i> ${totalEvents}
+    </button>`;
+  }
+
+  // NOUVEAU: Récupération des infos stratégie
+  getStrategyInfo(strategieId) {
+    if (!strategieId || !this.strategiesData) return null;
+    
+    return this.strategiesData.find(strategy => strategy.id === strategieId) || null;
+  }
+
+  // === CORRECTION 4: GESTION DE LA MODAL STRATÉGIE ===
+  populateSelectOptions() {
+    if (!this.gristOptions) return;
+    
+    const { urgence, impact, bureau, responsables, projet } = this.gristOptions;
+    
+    // Peupler les selects de base
+    populateSelect('popup-urgence', urgence || [], true);
+    populateSelect('popup-impact', impact || [], true);
+    populateSelect('popup-bureau', bureau || [], false);
+    populateSelect('popup-qui', responsables || [], false);
+    populateSelect('popup-projet', projet || [], true);
+    
+    // NOUVEAU: Peupler le select des stratégies depuis Grist
+    this.populateStrategySelect();
+  }
+
+  // NOUVEAU: Peuplement du select stratégies
+  populateStrategySelect() {
+    const strategySelect = document.getElementById('popup-strategie');
+    if (!strategySelect) return;
+    
+    strategySelect.innerHTML = '<option value="">-- Choisir une stratégie --</option>';
+    
+    this.strategiesData.forEach(strategy => {
+      const option = document.createElement('option');
+      option.value = strategy.id;
+      option.textContent = `${strategy.objectif} - ${strategy.action}`;
+      strategySelect.appendChild(option);
+    });
+    
+    // Écouteur pour afficher les détails de la stratégie
+    strategySelect.addEventListener('change', (e) => {
+      this.updateStrategyDetails(parseInt(e.target.value) || null);
+    });
+  }
+
+  // NOUVEAU: Mise à jour des détails de stratégie
+  updateStrategyDetails(strategyId) {
+    const strategy = strategyId ? this.getStrategyInfo(strategyId) : null;
+    
+    const objectifEl = document.getElementById('popup-strategie-objectif');
+    const sousObjectifEl = document.getElementById('popup-strategie-sous-objectif');
+    const actionEl = document.getElementById('popup-strategie-action');
+    
+    if (objectifEl) objectifEl.textContent = strategy?.objectif || '';
+    if (sousObjectifEl) sousObjectifEl.textContent = strategy?.sous_objectif || '';
+    if (actionEl) actionEl.textContent = strategy?.action || '';
+    
+    // Mettre à jour les champs cachés
+    setFieldValue('popup-strategie-objectif-hidden', strategy?.objectif || '');
+    setFieldValue('popup-strategie-sous-objectif-hidden', strategy?.sous_objectif || '');
+    setFieldValue('popup-strategie-action-hidden', strategy?.action || '');
+  }
+
+  // === RENDU DU KANBAN ===
+  refreshKanban() {
+    if (!this.kanbanContainer) return;
+    
+    const filteredRecords = this.filterRecords(this.currentRecords);
+    const statutsToShow = this.showTermine ? STATUTS : STATUTS.filter(s => s.id !== 'Terminé');
+    
+    this.sortableInstances.forEach(s => s.destroy());
+    this.sortableInstances = [];
+    
+    let kanbanHTML = '';
+    
+    statutsToShow.forEach(statut => {
+      const boardId = statut.classe;
+      const boardRecords = filteredRecords.filter(r => r.statut === statut.id);
+      
+      boardRecords.sort((a, b) => {
+        const prioA = this.calculerPriorite(a.urgence, a.impact);
+        const prioB = this.calculerPriorite(b.urgence, b.impact);
+        if (prioA !== prioB) return prioA - prioB;
+        return (a.id || 0) - (b.id || 0);
+      });
+
+      const itemsHTML = boardRecords.map(record => this.createTaskElementHTML(record)).join('');
+      const count = boardRecords.length;
+      const isHidden = (count === 0 && statut.id !== 'Terminé' && this.showTermine);
+      const hiddenClass = isHidden ? ' board-hidden' : '';
+
+      kanbanHTML += `
+        <div class="kanban-board${hiddenClass}" data-status-id="${statut.id}" data-board-class="${statut.classe}">
+          <div class="kanban-board-header entete-${statut.classe}">
+            <span>${statut.libelle}</span>
+            <span class="badge badge-secondary count-badge ml-2">${count}</span>
+          </div>
+          <div class="kanban-items-container" data-status-id="${statut.id}">
+            ${itemsHTML}
+          </div>
+        </div>
+      `;
+    });
+
+    this.kanbanContainer.innerHTML = kanbanHTML || '<div style="padding: 20px; color: grey;">Aucune tâche à afficher.</div>';
+    
+    // Initialiser Sortable
+    this.kanbanContainer.querySelectorAll('.kanban-items-container').forEach(container => {
+      const sortableInstance = Sortable.create(container, {
+        group: 'kanban-tasks',
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        dragClass: 'sortable-drag',
+        filter: '.ignore-drag',
+        preventOnFilter: true,
+        onEnd: (evt) => this.handleDragEnd(evt)
+      });
+      this.sortableInstances.push(sortableInstance);
+    });
+    
+    // Attacher les événements
+    this.attachCardEventListeners();
+  }
+
+  filterRecords(records) {
+    const { bureau, qui, projet, statut } = this.filters;
+    if (!bureau && !qui && !projet && !statut) return records;
+    
+    return records.filter(r => {
+      const matchBureau = !bureau || this.nettoyerListe(r.bureau).includes(bureau);
+      const matchQui = !qui || this.nettoyerListe(r.qui).includes(qui);
+      const matchProjet = !projet || r.projet === projet;
+      const matchStatut = !statut || r.statut === statut;
+      return matchBureau && matchQui && matchProjet && matchStatut;
+    });
+  }
+
+  nettoyerListe(v) {
+    if (Array.isArray(v) && v[0] === 'L') {
+      return v.slice(1).filter(i => i !== null && typeof i !== 'undefined').map(String);
+    }
+    if (Array.isArray(v)) {
+      return v.filter(i => i !== null && typeof i !== 'undefined').map(String);
+    }
+    if (typeof v === 'string' && v.trim() !== '') {
+      return v.split(',').map(s => s.trim()).filter(Boolean);
+    }
+    return [];
+  }
+
+  // === CORRECTION 5: EVENT LISTENERS AVEC TIMELINE ===
+  attachCardEventListeners() {
+    // Édition des tâches
+    this.kanbanContainer.querySelectorAll('.editable-zone').forEach(zone => {
+      zone.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        
+        const card = zone.closest('.kanban-item');
+        const taskId = parseInt(card.dataset.id, 10);
+        const task = this.currentRecords.find(r => r.id === taskId);
+        
+        if (task) this.openPopup(task);
+      });
+    });
+    
+    // NOUVEAU: Boutons timeline
+    this.kanbanContainer.querySelectorAll('.btn-timeline').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        
+        const taskId = parseInt(btn.dataset.taskId, 10);
+        this.openTimelineModal(taskId);
+      });
+    });
+  }
+
+  // === NOUVEAU: GESTION DE LA MODAL TIMELINE ===
+  openTimelineModal(taskId) {
+    const task = this.currentRecords.find(r => r.id === taskId);
+    if (!task) {
+      displayError('Tâche non trouvée');
+      return;
+    }
+
+    if (!this.timelineModal) {
+      displayError('Modal timeline non disponible');
+      return;
+    }
+
+    // Mettre à jour le titre
+    const modalTitle = document.getElementById('timeline-modal-label');
+    if (modalTitle) {
+      modalTitle.innerHTML = `
+        <i class="bi bi-clock-history me-2"></i>
+        Timeline - Tâche #${taskId}: ${task.titre}
+      `;
+    }
+
+    // Générer le contenu
+    this.renderTimelineContent(task);
+    
+    // Ouvrir la modal
+    this.timelineModal.show();
+  }
+
+  renderTimelineContent(task) {
+    const timelineContent = document.getElementById('timeline-content');
+    const timelineStats = document.getElementById('timeline-stats');
+    
+    if (!timelineContent || !timelineStats) return;
+
+    // Analyser les données
+    const timelineData = this.parseTimelineData(task);
+    
+    // Statistiques
+    timelineStats.innerHTML = `
+      <div class="row g-3">
+        <div class="col-md-3">
+          <div class="text-center">
+            <h4 class="text-primary">${timelineData.events.length}</h4>
+            <small class="text-muted">Événements total</small>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-center">
+            <h4 class="text-info">${timelineData.comments.length}</h4>
+            <small class="text-muted">Commentaires</small>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-center">
+            <h4 class="text-warning">${timelineData.statusChanges.length}</h4>
+            <small class="text-muted">Changements statut</small>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-center">
+            <h4 class="text-success">${task.statut}</h4>
+            <small class="text-muted">Statut actuel</small>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Timeline
+    let timelineHTML = '<div class="timeline">';
+    
+    timelineData.events.forEach((event, index) => {
+      const isLatest = index === 0;
+      const eventClass = isLatest ? 'timeline-event latest' : 'timeline-event';
+      
+      if (event.type === 'comment') {
+        timelineHTML += `
+          <div class="${eventClass}">
+            <div class="timeline-marker bg-info">
+              <i class="bi bi-chat-text text-white"></i>
+            </div>
+            <div class="timeline-content">
+              <div class="timeline-header">
+                <h6 class="mb-1">Commentaire ${isLatest ? '(Dernier)' : ''}</h6>
+                <small class="text-muted">${event.timestamp} par ${event.user}</small>
+              </div>
+              <div class="timeline-body">
+                <div class="comment-content bg-light p-3 rounded">${event.content}</div>
+                ${isLatest ? '' : '<small class="text-muted mt-2 d-block">✓ Commentaire validé</small>'}
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (event.type === 'status') {
+        timelineHTML += `
+          <div class="${eventClass}">
+            <div class="timeline-marker bg-warning">
+              <i class="bi bi-arrow-right text-white"></i>
+            </div>
+            <div class="timeline-content">
+              <div class="timeline-header">
+                <h6 class="mb-1">Changement de statut</h6>
+                <small class="text-muted">${event.timestamp} par ${event.user}</small>
+              </div>
+              <div class="timeline-body">
+                <span class="badge bg-primary">${event.status}</span>
+                ${event.duration ? `<span class="ms-2 text-muted">Durée: ${formatDuration(event.duration)}</span>` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    });
+    
+    timelineHTML += '</div>';
+    timelineContent.innerHTML = timelineHTML;
+  }
+
+  parseTimelineData(task) {
+    const events = [];
+    const comments = [];
+    const statusChanges = [];
+    
+    // Parser les commentaires depuis la description
+    if (task.description) {
+      const sections = task.description.split(/^---\s*$/gm);
+      
+      sections.forEach(section => {
+        const lines = section.trim().split('\n');
+        if (lines.length === 0) return;
+        
+        const timestampMatch = lines[0].match(/^\[(.+)\]$/);
+        if (timestampMatch) {
+          const content = lines.slice(1).join('\n').trim();
+          if (content) {
+            const comment = {
+              type: 'comment',
+              timestamp: timestampMatch[1],
+              content: content,
+              user: this.extractUserFromTimestamp(timestampMatch[1])
+            };
+            comments.push(comment);
+            events.push(comment);
+          }
+        }
+      });
+    }
+    
+    // Parser l'historique des statuts
+    if (task.historique_statuts) {
+      try {
+        const history = JSON.parse(task.historique_statuts);
+        if (history.historique) {
+          history.historique.forEach(entry => {
+            const statusChange = {
+              type: 'status',
+              timestamp: new Date(entry.date_entree).toLocaleString('fr-FR'),
+              status: entry.statut,
+              user: entry.utilisateur || 'Système',
+              duration: entry.duree_minutes
+            };
+            statusChanges.push(statusChange);
+            events.push(statusChange);
+          });
+        }
+      } catch (e) {
+        console.warn('Erreur parsing historique statuts:', e);
+      }
+    }
+    
+    // Trier les événements par date (plus récent en premier)
+    events.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    
+    return { events, comments, statusChanges };
+  }
+
+  extractUserFromTimestamp(timestamp) {
+    const match = timestamp.match(/\(([^)]+)\)$/);
+    return match ? match[1] : this.currentUser;
+  }
+
+  // === EVENT LISTENERS PRINCIPAUX ===
+  initEventListeners() {
+    // Bouton nouvelle tâche
+    const btnNewTask = document.getElementById('btn-nouvelle-tache');
+    if (btnNewTask) {
+      btnNewTask.addEventListener('click', () => this.openPopup());
+    }
+
+    // Bouton sauvegarder
+    const btnSave = document.getElementById('btn-save-task');
+    if (btnSave) {
+      btnSave.addEventListener('click', () => this.saveTask());
+    }
+
+    // NOUVEAU: Boutons de la modal timeline
+    const btnAddComment = document.getElementById('btn-add-comment');
+    if (btnAddComment) {
+      btnAddComment.addEventListener('click', () => this.addCommentToTask());
+    }
+
+    const btnExportTimeline = document.getElementById('btn-export-timeline');
+    if (btnExportTimeline) {
+      btnExportTimeline.addEventListener('click', () => this.exportTimeline());
+    }
+
+    // Raccourcis clavier
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'r' || e.key === 'R') {
+        if (!e.target.matches('input, textarea')) {
+          e.preventDefault();
+          this.refreshKanban();
+        }
+      }
+    });
+  }
+
+  // === GESTION DES MODALS ===
+  openPopup(tache = {}) {
+    if (!this.modal) {
+      displayError('Modal non disponible');
+      return;
+    }
+    
+    const isNewTask = !tache.id;
+    this.currentTaskId = tache.id || null;
+    
+    // Peupler les champs
+    setFieldValue('popup-titre', tache.titre || '');
+    setFieldValue('popup-description', this.getLatestDescription(tache.description || ''));
+    setFieldValue('popup-statut-text', tache.statut || (isNewTask ? 'Backlog' : ''));
+    setFieldValue('popup-projet', tache.projet || '');
+    setFieldValue('popup-urgence', tache.urgence || '');
+    setFieldValue('popup-impact', tache.impact || '');
+    
+    // NOUVEAU: Stratégie depuis Grist
+    setFieldValue('popup-strategie', tache.strategie_id || '');
+    this.updateStrategyDetails(tache.strategie_id);
+    
+    setSelectedOptions('popup-bureau', tache.bureau || ['L']);
+    setSelectedOptions('popup-qui', tache.qui || ['L']);
+    
+    toggleVisibility('btn-delete-task', !isNewTask, 'inline-block');
+    
+    this.modal.show();
+  }
+
+  async saveTask() {
+    try {
+      const titre = getFieldValue('popup-titre').trim();
+      if (!titre) {
+        displayError('Le titre est obligatoire');
+        return;
+      }
+
+      const description = getFieldValue('popup-description').trim();
+      const currentDescription = this.currentTaskId ? 
+        (this.currentRecords.find(r => r.id === this.currentTaskId)?.description || '') : '';
+      
+      const finalDescription = description ? 
+        this.addTimestampToDescription(currentDescription, description) : currentDescription;
+
+      const taskData = {
+        titre,
+        description: finalDescription,
+        statut: getFieldValue('popup-statut-text'),
+        projet: getFieldValue('popup-projet') || null,
+        urgence: getFieldValue('popup-urgence') || null,
+        impact: getFieldValue('popup-impact') || null,
+        strategie_id: parseInt(getFieldValue('popup-strategie')) || null, // NOUVEAU
+        bureau: getSelectedOptionsAsGristFormat('popup-bureau'),
+        qui: getSelectedOptionsAsGristFormat('popup-qui')
+      };
+
+      // Ajouter les champs stratégie dénormalisés pour la compatibilité
+      const strategy = this.getStrategyInfo(taskData.strategie_id);
+      if (strategy) {
+        taskData.strategie_objectif = strategy.objectif;
+        taskData.strategie_sous_objectif = strategy.sous_objectif;
+        taskData.strategie_action = strategy.action;
+      }
+
+      let result;
+      if (this.currentTaskId) {
+        result = await grist.docApi.applyUserActions([
+          ['UpdateRecord', TABLE_ID, this.currentTaskId, taskData]
+        ]);
+        displaySuccess('Tâche mise à jour avec succès');
+      } else {
+        result = await grist.docApi.applyUserActions([
+          ['AddRecord', TABLE_ID, null, taskData]
+        ]);
+        displaySuccess('Tâche créée avec succès');
+      }
+
+      this.modal.hide();
+      this.refreshKanban();
+
+    } catch (error) {
+      console.error('Erreur sauvegarde:', error);
+      displayError(`Erreur: ${error.message}`);
+    }
+  }
+
+  // === DRAG & DROP ===
+  async handleDragEnd(evt) {
+    const itemEl = evt.item;
+    const targetContainer = evt.to;
+    const taskId = parseInt(itemEl.dataset.id, 10);
+    const newStatus = targetContainer.dataset.statusId;
+
+    const record = this.currentRecords.find(r => r.id === taskId);
+    if (!record || record.statut === newStatus) return;
+
+    try {
+      await grist.docApi.applyUserActions([
+        ['UpdateRecord', TABLE_ID, taskId, { statut: newStatus }]
+      ]);
+
+      const recordIndex = this.currentRecords.findIndex(r => r.id === taskId);
+      if (recordIndex !== -1) {
+        this.currentRecords[recordIndex].statut = newStatus;
+      }
+
+      this.refreshKanban();
+
+    } catch (error) {
+      console.error('Erreur déplacement:', error);
+      displayError(`Erreur: ${error.message}`);
+      this.refreshKanban();
+    }
+  }
+
+  // === GESTION DES MISES À JOUR GRIST ===
+  handleGristUpdate(gristRecords, mappings = null) {
+    if (this.isUpdating) return;
+    
+    console.log('Mise à jour depuis Grist');
+    this.loadGristDataAndOptions().then(() => {
+      this.refreshKanban();
+      this.populateSelectOptions();
+    });
+  }
+
+  // === MÉTHODES UTILITAIRES ===
+  exportKanban() {
+    const csvData = this.exportToCSV();
+    const filename = `kanban_export_${new Date().toISOString().slice(0, 10)}.csv`;
+    this.downloadCSV(csvData, filename);
+    displaySuccess('Export réussi');
+  }
+
+  exportToCSV() {
+    const headers = [
+      'ID', 'Titre', 'Description', 'Statut', 'Projet', 'Urgence', 'Impact',
+      'Bureaux', 'Responsables', 'Date_Echeance', 'Stratégie'
+    ];
+
+    let csv = headers.join(',') + '\n';
+
+    this.currentRecords.forEach(record => {
+      const strategy = this.getStrategyInfo(record.strategie_id);
+      const bureaux = Array.isArray(record.bureau) ? record.bureau.slice(1).join(', ') : '';
+      const responsables = Array.isArray(record.qui) ? record.qui.slice(1).join(', ') : '';
+      
+      const row = [
+        record.id || '',
+        `"${(record.titre || '').replace(/"/g, '""')}"`,
+        `"${(this.getLatestDescription(record.description) || '').replace(/"/g, '""')}"`,
+        record.statut || '',
+        record.projet || '',
+        record.urgence || '',
+        record.impact || '',
+        `"${bureaux}"`,
+        `"${responsables}"`,
+        record.date_echeance || '',
+        `"${strategy ? `${strategy.objectif} - ${strategy.action}` : ''}"`
+      ];
+
+      csv += row.join(',') + '\n';
+    });
+
+    return csv;
+  }
+
+  downloadCSV(csvData, filename) {
+    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.style.display = 'none';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    window.URL.revokeObjectURL(url);
+  }
+}
+
+// === INITIALISATION ===
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('🚀 Initialisation Kanban avec corrections...');
+  window.kanbanManager = new KanbanManager();
+});
+
+// === STYLES CSS POUR LA TIMELINE (à ajouter dans le CSS) ===
+const timelineStyles = `
+<style>
+/* Styles Timeline Modal */
+.timeline {
+  position: relative;
+  padding-left: 2rem;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 1rem;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, #007bff, #28a745);
+}
+
+.timeline-event {
+  position: relative;
+  margin-bottom: 2rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  padding: 1rem;
+}
+
+.timeline-event.latest {
+  border: 2px solid #28a745;
+  background: linear-gradient(45deg, #f8fff9, #ffffff);
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -2.5rem;
+  top: 1rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.timeline-header h6 {
+  color: #495057;
+  font-weight: 600;
+}
+
+.timeline-body {
+  margin-top: 0.5rem;
+}
+
+.comment-content {
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.btn-timeline {
+  background: #e3f2fd;
+  color: #1976d2;
+  border: 1px solid #90caf9;
+  border-radius: 12px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-timeline:hover {
+  background: #bbdefb;
+  border-color: #64b5f6;
+  transform: translateY(-1px);
+}
+</style>
+`;
+
+// Ajouter les styles au document
+if (!document.getElementById('timeline-styles')) {
+  const styleElement = document.createElement('div');
+  styleElement.id = 'timeline-styles';
+  styleElement.innerHTML = timelineStyles;
+  document.head.appendChild(styleElement);
+}

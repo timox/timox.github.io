@@ -176,7 +176,7 @@ export class KanbanManager {
     try {
       console.log('KanbanManager: Chargement des stratégies depuis Grist...');
       
-      const strategiesTable = window.grist.getTable('ssir_strategie');
+      const strategiesTable = grist.getTable('ssir_strategie');
       const strategyRecords = await strategiesTable.getRecords();
       
       // Mapper les enregistrements de stratégie

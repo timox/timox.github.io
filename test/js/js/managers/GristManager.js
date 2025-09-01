@@ -44,18 +44,18 @@ export class GristManager {
   waitForGristReady() {
     return new Promise((resolve, reject) => {
       try {
-        window.grist.ready({ 
+        grist.ready({ 
           requiredAccess: 'full',
           onEditOptions: () => this.handleEditOptions()
         });
         
         // S'abonner aux changements de données
-        window.grist.onRecords((records, mappings) => {
+        grist.onRecords((records, mappings) => {
           this.handleRecordsUpdate(records, mappings);
         });
         
         // S'abonner aux changements d'options
-        window.grist.onOptions((options) => {
+        grist.onOptions((options) => {
           this.handleOptionsUpdate(options);
         });
         
@@ -74,7 +74,7 @@ export class GristManager {
       this.logger.debug('Chargement des données...');
       
       // Charger les enregistrements de la table principale
-      const records = await window.grist.docApi.fetchTable(TABLE_ID);
+      const records = await grist.docApi.fetchTable(TABLE_ID);
       
       if (records && typeof records === 'object') {
         // Détecter les colonnes disponibles
@@ -283,7 +283,7 @@ export class GristManager {
       if (recordId) {
         // Mise à jour
         this.logger.debug(`Mise à jour enregistrement ${recordId}`);
-        await window.grist.docApi.applyUserActions([
+        await grist.docApi.applyUserActions([
           ['UpdateRecord', TABLE_ID, recordId, gristData]
         ]);
         
@@ -294,7 +294,7 @@ export class GristManager {
       } else {
         // Création
         this.logger.debug('Création nouvel enregistrement');
-        const actionResult = await window.grist.docApi.applyUserActions([
+        const actionResult = await grist.docApi.applyUserActions([
           ['AddRecord', TABLE_ID, null, gristData]
         ]);
         
@@ -336,7 +336,7 @@ export class GristManager {
     try {
       this.logger.debug(`Suppression enregistrement ${recordId}`);
       
-      await window.grist.docApi.applyUserActions([
+      await grist.docApi.applyUserActions([
         ['RemoveRecord', TABLE_ID, recordId]
       ]);
       
@@ -541,7 +541,7 @@ export class GristManager {
    */
   async reloadData() {
     try {
-      const records = await window.grist.docApi.fetchTable(TABLE_ID);
+      const records = await grist.docApi.fetchTable(TABLE_ID);
       
       if (records) {
         this.currentRecords = this.mapGristRecords(records);
@@ -709,7 +709,7 @@ export class GristManager {
    */
   async getUserInfo() {
     try {
-      const docInfo = await window.grist.docApi.getDocInfo();
+      const docInfo = await grist.docApi.getDocInfo();
       return {
         user: docInfo.user || null,
         permissions: docInfo.permissions || {},

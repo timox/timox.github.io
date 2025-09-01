@@ -43,8 +43,8 @@ class HistoryAppManager {
       const checkGrist = () => {
         attempts++;
         
-        if (typeof grist !== 'undefined') {
-          grist.ready();
+        if (typeof window.grist !== 'undefined') {
+          window.grist.ready();
           resolve();
         } else if (attempts >= maxAttempts) {
           console.error('❌ API Grist non disponible après', maxAttempts, 'tentatives');
@@ -60,7 +60,7 @@ class HistoryAppManager {
 
   async loadTasks() {
     try {
-      const records = await grist.docApi.fetchTable(TABLE_ID);
+      const records = await window.grist.docApi.fetchTable(TABLE_ID);
       this.tasks = this.mapGristRecords(records);
       
       console.log(`✅ ${this.tasks.length} tâches chargées pour l'historique`);
@@ -459,8 +459,9 @@ class HistoryAppManager {
   }
 }
 
-// 🔧 CORRECTION: Réutiliser le HistoryManager du KanbanManager principal
+// Initialisation
 document.addEventListener('DOMContentLoaded', () => {
+
   // Attendre que le KanbanManager principal soit disponible
   if (window.kanbanManager && window.kanbanManager.historyManager) {
     console.log('♻️ Réutilisation du HistoryManager existant');
@@ -469,4 +470,5 @@ document.addEventListener('DOMContentLoaded', () => {
     console.warn('⚠️ KanbanManager non trouvé, création standalone');
     new HistoryAppManager();
   }
+
 });

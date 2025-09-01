@@ -1102,7 +1102,7 @@ export class ModalManager {
       if (this.isNewTask) {
         // Création
         const action = ['AddRecord', TABLE_ID, null, gristData];
-        result = await window.grist.docApi.applyUserActions([action]);
+        result = await grist.docApi.applyUserActions([action]);
         
         // Enregistrer l'action utilisateur pour la création
         const userActionManager = getUserActionManager();
@@ -1139,7 +1139,7 @@ export class ModalManager {
       } else {
         // Mise à jour
         const action = ['UpdateRecord', TABLE_ID, this.currentTaskId, gristData];
-        result = await window.grist.docApi.applyUserActions([action]);
+        result = await grist.docApi.applyUserActions([action]);
         
         // Enregistrer l'action utilisateur pour la mise à jour
         const userActionManager = getUserActionManager();
@@ -1478,7 +1478,7 @@ export class ModalManager {
         await userActionManager.deleteTaskAction(this.currentTaskId, task);
       }
       
-      await window.grist.docApi.applyUserActions([
+      await grist.docApi.applyUserActions([
         ['RemoveRecord', TABLE_ID, this.currentTaskId]
       ]);
       

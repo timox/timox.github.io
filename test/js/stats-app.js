@@ -43,8 +43,8 @@ class StatsAppManager {
       const checkGrist = () => {
         attempts++;
         
-        if (typeof grist !== 'undefined') {
-          grist.ready();
+        if (typeof window.grist !== 'undefined') {
+          window.grist.ready();
           resolve();
         } else if (attempts >= maxAttempts) {
           console.error('❌ API Grist non disponible après', maxAttempts, 'tentatives');
@@ -60,7 +60,7 @@ class StatsAppManager {
 
   async loadStrategies() {
     try {
-      const gristData = await grist.docApi.fetchTable('Ssir_strategie2');
+      const gristData = await window.grist.docApi.fetchTable('Ssir_strategie2');
       
       // Convertir le format Grist en tableau d'objets
       this.strategiesData = [];
@@ -86,7 +86,7 @@ class StatsAppManager {
   async loadTasks() {
     try {
       
-      const records = await grist.docApi.fetchTable(TABLE_ID);
+      const records = await window.grist.docApi.fetchTable(TABLE_ID);
       this.tasks = this.mapGristRecords(records);
       
       
@@ -127,7 +127,6 @@ class StatsAppManager {
     // Génération des affichages
     this.generateGlobalMetrics();
     this.generatePersonBureauStats();
-    this.generatePriorityStatusTable();
     this.generateActivityHeatmap();
     this.generateBureauObjectiveMatrix();
     this.generateTasksObjectivesTable();
@@ -207,6 +206,7 @@ class StatsAppManager {
     this.renderPersonBureauTable(personStats);
   }
 
+<<<<<<< HEAD
   generatePriorityStatusTable() {
     // Calculer la répartition priorité/statut
     const priorityStatusData = {};
@@ -282,6 +282,8 @@ class StatsAppManager {
     }).join('');
   }
 
+=======
+>>>>>>> e0ec5cb5aae55a77338600e5daa4f33c69fba3da
   renderPersonBureauTable(personStats) {
     const tbody = document.querySelector('#person-bureau-table tbody');
     
@@ -998,6 +1000,7 @@ class StatsAppManager {
   }
 }
 
+
 document.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('stats-container')) {
     new StatsAppManager();
@@ -1005,6 +1008,12 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Export pour utilisation par KanbanManager si nécessaire
-if (typeof window !== 'undefined') {
-  window.StatsAppManager = StatsAppManager;
-}
+// if (typeof window !== 'undefined') {
+//  window.StatsAppManager = StatsAppManager;
+//}
+//=======
+// Initialisation
+//document.addEventListener('DOMContentLoaded', () => {
+//  new StatsManager();
+//});
+//>>>>>>> e0ec5cb5aae55a77338600e5daa4f33c69fba3da
