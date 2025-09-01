@@ -340,12 +340,6 @@ export class KanbanAppInitializer {
     // Utiliser le parent direct du bouton comme conteneur
     const buttonsContainer = newTaskBtn.parentElement;
     
-      buttonsContainer: !!buttonsContainer,
-      newTaskBtn: !!newTaskBtn,
-      containerClass: buttonsContainer?.className,
-      newTaskBtnParent: newTaskBtn?.parentElement?.className
-    });
-    
     if (!buttonsContainer) {
       console.warn('Container des boutons non trouvé');
       return;
