@@ -743,7 +743,8 @@ export class KanbanAppInitializer {
       if (kanban && kanban.currentRecords && kanban.currentRecords.length <= 2) {
         
         // Essayer de recharger les données depuis Grist
-        if (kanban.gristManager?.isConnected && typeof grist !== 'undefined') {
+        const gristAvailable = typeof window !== 'undefined' && typeof window.grist !== 'undefined';
+        if (kanban.gristManager?.isConnected && gristAvailable) {
           console.log('🔄 Tentative de rechargement automatique...');
           kanban.gristManager.reloadData()
             .then(() => {
@@ -779,7 +780,9 @@ let appInitializer = null;
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     appInitializer = new KanbanAppInitializer();
-    
+
+    window.kanbanAppInitializer = appInitializer;
+
     await appInitializer.init();
   } catch (error) {
     console.error('❌ Échec de l\'initialisation de l\'application:', error);
@@ -789,4 +792,3 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Exposition globale
 window.KanbanAppInitializer = KanbanAppInitializer;
-window.kanbanAppInitializer = appInitializer;
