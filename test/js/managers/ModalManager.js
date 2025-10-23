@@ -98,17 +98,18 @@ export class ModalManager {
     }, 'modal');
     
     safeOn('#btn-delete-task', 'click', (e) => {
-      e.preventDefault(); 
+      e.preventDefault();
       e.stopPropagation();
-        this.logger.debug('Delete button clicked');
-        this.deleteTask();
-      })
-      .on('click.modal-events', '#btn-show-history', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.logger.debug('Show history button clicked');
-        this.showTaskHistory();
-      });
+      this.logger.debug('Delete button clicked');
+      this.deleteTask();
+    }, 'modal');
+
+    safeOn('#btn-show-history', 'click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.logger.debug('Show history button clicked');
+      this.showTaskHistory();
+    }, 'modal');
     
     // Bouton ajouter projet
     const btnAjoutProjet = document.getElementById('btn-ajout-projet');

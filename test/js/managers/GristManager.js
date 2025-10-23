@@ -44,21 +44,22 @@ export class GristManager {
   waitForGristReady() {
     return new Promise((resolve, reject) => {
       try {
-        // Éviter les appels multiples à grist.ready()
+        const gristApi = this.getGristApi();
+        // Éviter les appels multiples à window.grist.ready()
         if (!window._gristReadyInitialized) {
-          grist.ready({ 
+          gristApi.ready({
             requiredAccess: 'full',
             onEditOptions: () => this.handleEditOptions()
           });
-          
-          grist.onRecords((records, mappings) => {
+
+          gristApi.onRecords((records, mappings) => {
             this.handleRecordsUpdate(records, mappings);
           });
-          
-          grist.onOptions((options) => {
+
+          gristApi.onOptions((options) => {
             this.handleOptionsUpdate(options);
           });
-          
+
           window._gristReadyInitialized = true;
         }
         
@@ -75,9 +76,10 @@ export class GristManager {
   async loadInitialData() {
     try {
       this.logger.debug('Chargement des données...');
-      
+
       // Charger les enregistrements de la table principale
-      const records = await grist.docApi.fetchTable(TABLE_ID);
+      const gristApi = this.getGristApi();
+      const records = await gristApi.docApi.fetchTable(TABLE_ID);
       
       if (records && typeof records === 'object') {
         // Détecter les colonnes disponibles
@@ -275,25 +277,26 @@ export class GristManager {
     if (this.isUpdating) {
       throw new Error('Une sauvegarde est déjà en cours');
     }
-    
+
     this.isUpdating = true;
-    
+
     try {
       // Valider les données
       this.validateRecordData(recordData);
-      
+
       // Préparer les données pour Grist
       const gristData = this.prepareDataForGrist(recordData);
-      
+      const gristApi = this.getGristApi();
+
       let result;
-      
+
       if (recordId) {
         // Mise à jour
         this.logger.debug(`Mise à jour enregistrement ${recordId}`);
-        await grist.docApi.applyUserActions([
+        await gristApi.docApi.applyUserActions([
           ['UpdateRecord', TABLE_ID, recordId, gristData]
         ]);
-        
+
         // Mettre à jour localement
         this.updateLocalRecord(recordId, gristData);
         result = { id: recordId, ...gristData };
@@ -301,7 +304,7 @@ export class GristManager {
       } else {
         // Création
         this.logger.debug('Création nouvel enregistrement');
-        const actionResult = await grist.docApi.applyUserActions([
+        const actionResult = await gristApi.docApi.applyUserActions([
           ['AddRecord', TABLE_ID, null, gristData]
         ]);
         
@@ -337,13 +340,14 @@ export class GristManager {
     if (this.isUpdating) {
       throw new Error('Une opération est déjà en cours');
     }
-    
+
     this.isUpdating = true;
-    
+
     try {
       this.logger.debug(`Suppression enregistrement ${recordId}`);
-      
-      await grist.docApi.applyUserActions([
+      const gristApi = this.getGristApi();
+
+      await gristApi.docApi.applyUserActions([
         ['RemoveRecord', TABLE_ID, recordId]
       ]);
       
@@ -548,8 +552,9 @@ export class GristManager {
    */
   async reloadData() {
     try {
-      const records = await grist.docApi.fetchTable(TABLE_ID);
-      
+      const gristApi = this.getGristApi();
+      const records = await gristApi.docApi.fetchTable(TABLE_ID);
+
       if (records) {
         this.currentRecords = this.mapGristRecords(records);
         await this.loadGristOptions();
@@ -567,7 +572,14 @@ export class GristManager {
       throw error;
     }
   }
-  
+
+  getGristApi() {
+    if (typeof window === 'undefined' || typeof window.grist === 'undefined') {
+      throw new Error('API Grist non disponible');
+    }
+    return window.grist;
+  }
+
   /**
    * Recherche d'enregistrements avec critères
    * @param {object} criteria - Critères de recherche
@@ -707,7 +719,7 @@ export class GristManager {
    * @returns {boolean} True si connecté
    */
   isGristConnected() {
-    return this.isConnected && typeof grist !== 'undefined';
+    return this.isConnected && typeof window.grist !== 'undefined';
   }
   
   /**
@@ -716,7 +728,8 @@ export class GristManager {
    */
   async getUserInfo() {
     try {
-      const docInfo = await grist.docApi.getDocInfo();
+      const gristApi = this.getGristApi();
+      const docInfo = await gristApi.docApi.getDocInfo();
       return {
         user: docInfo.user || null,
         permissions: docInfo.permissions || {},
@@ -751,7 +764,8 @@ export class GristManager {
   async fetchTable(tableId) {
     try {
       this.logger.debug(`Chargement table ${tableId}...`);
-      const records = await grist.docApi.fetchTable(tableId);
+      const gristApi = this.getGristApi();
+      const records = await gristApi.docApi.fetchTable(tableId);
       this.logger.debug(`Table ${tableId} chargée: ${Object.keys(records.id || {}).length} enregistrements`);
       return records;
     } catch (error) {
