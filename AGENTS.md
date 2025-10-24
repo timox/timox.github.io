@@ -14,7 +14,7 @@ Améliorer le système Kanban existant avec :
 
 ## 📊 Modifications Grist (MANUEL - Utilisateur)
 
-### Nouvelles colonnes à créer
+### Nouvelles colonnes à créer -> fait
 
 | Colonne | Type | Options | Défaut |
 |---------|------|---------|--------|
@@ -23,9 +23,9 @@ Améliorer le système Kanban existant avec :
 | `est_dette_technique` | Toggle | - | No |
 | `temps_estime_heures` | Numeric | - | - |
 
-### Modifications
+### Modifications -> fait 
 - Ajouter statut : `En pause`
-- Vérifier existence : `date_debut`, `date_echeance`
+- Vérifier existence : `date_debut`, `date_echeance` : OK colonne date YYYY-MM-DD
 
 ---
 
