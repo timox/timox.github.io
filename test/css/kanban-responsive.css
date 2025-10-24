@@ -288,132 +288,130 @@
 }
 
 /* Small screens (phones) */
-@media (max-width: 767.98px) {
-  .kanban-container {
-    gap: 0.75rem;
-    padding: 0 0.25rem;
+  @media (max-width: 767.98px) {
+    .kanban-container {
+      gap: 0.75rem;
+      padding: 0 0.25rem;
+    }
+
+    .kanban-container > .kanban-board {
+      flex: 0 0 280px;
+      min-width: 280px;
+    }
+    .kanban-board {
+      min-height: auto;
+    }
+
+    .kanban-board-body {
+      padding: 0.5rem;
+      height: calc(100vh - 200px);
+      max-height: none;
+    }
+
+    .kanban-item {
+      padding: 0.75rem 0.5rem;
+      margin-bottom: 0.75rem;
+      min-height: auto;
+    }
+
+    .kanban-item-compact {
+      padding: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    /* Adjust header for mobile */
+    .kanban-header .row {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .kanban-header .col-auto {
+      align-self: stretch;
+    }
+
+    .kanban-header .col-auto .btn {
+      width: 100%;
+      margin-bottom: 0.25rem;
+    }
+
+    /* Hide keyboard shortcuts on mobile */
+    .keyboard-shortcuts {
+      display: none;
+    }
+
+    /* Adjust modal for mobile */
+    .modal-xl {
+      max-width: 98%;
+      margin: 0.5rem;
+    }
+
+    .modal-body {
+      padding: 1rem;
+    }
+
+    .modal-footer {
+      padding: 0.75rem 1rem;
+    }
+
+    /* Stack modal form elements */
+    .modal-body .col-md-4,
+    .modal-body .col-md-6 {
+      flex: 0 0 100%;
+      max-width: 100%;
+    }
+
+    /* Adjust strategy selects for mobile */
+    #strategie-objectif,
+    #strategie-sous-objectif,
+    #strategie-action {
+      min-width: 100% !important;
+      max-width: 100% !important;
+      min-height: 100px !important;
+    }
+
+    .input-group.flex-nowrap {
+      flex-direction: column !important;
+      gap: 0.5rem !important;
+    }
+
+    /* Adjust badges for mobile */
+    .bureau-badges {
+      gap: 0.15rem;
+    }
+
+    .bureau-badge {
+      font-size: 0.65rem;
+      padding: 0.15rem 0.4rem;
+    }
+
+    .priority-badge {
+      font-size: 0.8em;
+      padding: 0.2em 0.8em;
+    }
+
+    /* Focus mode adjustments for mobile */
+    .focus-container {
+      flex-direction: column;
+      height: auto;
+    }
+
+    .focus-navigation {
+      width: 100%;
+      flex-direction: row;
+      overflow-x: auto;
+      padding: 0.5rem;
+    }
+
+    .focus-navigation .btn {
+      flex-shrink: 0;
+      min-width: 120px;
+    }
+
+    .focus-column {
+      height: calc(100vh - 200px);
+      max-height: none;
+    }
   }
-  
-  .kanban-container > .kanban-board {
-    flex: 0 0 280px;
-    min-width: 280px;
-  }
-}
-  
-  .kanban-board {
-    min-height: auto;
-  }
-  
-  .kanban-board-body {
-    padding: 0.5rem;
-    height: calc(100vh - 200px);
-    max-height: none;
-  }
-  
-  .kanban-item {
-    padding: 0.75rem 0.5rem;
-    margin-bottom: 0.75rem;
-    min-height: auto;
-  }
-  
-  .kanban-item-compact {
-    padding: 0.5rem;
-    margin-bottom: 0.5rem;
-  }
-  
-  /* Adjust header for mobile */
-  .kanban-header .row {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .kanban-header .col-auto {
-    align-self: stretch;
-  }
-  
-  .kanban-header .col-auto .btn {
-    width: 100%;
-    margin-bottom: 0.25rem;
-  }
-  
-  /* Hide keyboard shortcuts on mobile */
-  .keyboard-shortcuts {
-    display: none;
-  }
-  
-  /* Adjust modal for mobile */
-  .modal-xl {
-    max-width: 98%;
-    margin: 0.5rem;
-  }
-  
-  .modal-body {
-    padding: 1rem;
-  }
-  
-  .modal-footer {
-    padding: 0.75rem 1rem;
-  }
-  
-  /* Stack modal form elements */
-  .modal-body .col-md-4,
-  .modal-body .col-md-6 {
-    flex: 0 0 100%;
-    max-width: 100%;
-  }
-  
-  /* Adjust strategy selects for mobile */
-  #strategie-objectif, 
-  #strategie-sous-objectif, 
-  #strategie-action {
-    min-width: 100% !important;
-    max-width: 100% !important;
-    min-height: 100px !important;
-  }
-  
-  .input-group.flex-nowrap {
-    flex-direction: column !important;
-    gap: 0.5rem !important;
-  }
-  
-  /* Adjust badges for mobile */
-  .bureau-badges {
-    gap: 0.15rem;
-  }
-  
-  .bureau-badge {
-    font-size: 0.65rem;
-    padding: 0.15rem 0.4rem;
-  }
-  
-  .priority-badge {
-    font-size: 0.8em;
-    padding: 0.2em 0.8em;
-  }
-  
-  /* Focus mode adjustments for mobile */
-  .focus-container {
-    flex-direction: column;
-    height: auto;
-  }
-  
-  .focus-navigation {
-    width: 100%;
-    flex-direction: row;
-    overflow-x: auto;
-    padding: 0.5rem;
-  }
-  
-  .focus-navigation .btn {
-    flex-shrink: 0;
-    min-width: 120px;
-  }
-  
-  .focus-column {
-    height: calc(100vh - 200px);
-    max-height: none;
-  }
-}
 
 /* Large desktops */
 @media (max-width: 1400px) {
@@ -552,7 +550,7 @@
 }
 
 /* High contrast mode support */
-@media (prefers-contrast: high) {
+@media (prefers-contrast: more), (forced-colors: active) {
   .kanban-item {
     border-width: 2px;
   }
@@ -582,13 +580,10 @@
     transition: none !important;
   }
   
-  @keyframes pulse-red,
-  @keyframes pulse-yellow,
-  @keyframes pulse-orange,
-  @keyframes pulse {
-    0%, 100% { 
-      /* Keep original background without animation */
-    }
+  .priority-badge,
+  .kanban-item,
+  .timeline-entry {
+    animation: none !important;
   }
 }
 
