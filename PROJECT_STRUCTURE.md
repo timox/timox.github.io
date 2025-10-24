@@ -131,6 +131,8 @@ test/
   équivalente aux vues statistiques.
 - **Pile focus verticalisée** : en mode focus les colonnes repliées s'empilent désormais dans un seul panneau vertical au-dessus
   de la colonne active au lieu de rester sur la même ligne.
+- **Pile latérale ancrée** : `ViewModeManager` installe la pile des colonnes repliées dans `.kanban-wrapper` et bascule la
+  grille sur deux colonnes (ou une seule en focus/responsive) pour que les colonnes réduites restent visibles et cliquables.
 - **Stratégies Grist réactives** : la modal rafraîchit l'accordéon dès que les données `Ssir_strategie2` sont chargées et évite
   d'afficher la bannière « Cause probable » lorsque la table répond.
 - **Stats embarquées** : la page `stats.html` expose un conteneur `#stats-container` et attend explicitement `grist.ready({

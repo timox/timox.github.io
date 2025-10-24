@@ -13,7 +13,9 @@ export class ViewModeManager {
     this.currentMode = VIEW_MODES.DETAILED;
     this.focusColumn = null;
     this.logger = createModuleLogger('ViewModeManager');
-    
+    this.wrapper = null;
+    this.stackHost = null;
+
     this.init();
   }
   
@@ -24,6 +26,7 @@ export class ViewModeManager {
     this.createViewModeControls();
     this.setupEventListeners();
     this.loadSavedViewMode();
+    this.wrapper = this.getKanbanWrapper();
     // État de repliage des colonnes
     this.collapsedColumns = new Set();
     this.collapsedStack = null; // Référence à la pile des colonnes repliées
@@ -117,7 +120,35 @@ export class ViewModeManager {
     
     // Navigation focus supprimée - le mode focus utilise maintenant le filtre statut directement
   }
-  
+
+  getKanbanWrapper() {
+    if (!this.kanban || !this.kanban.kanbanContainer) {
+      return this.wrapper;
+    }
+
+    const wrapper = this.kanban.kanbanContainer.closest('.kanban-wrapper');
+    if (wrapper) {
+      this.wrapper = wrapper;
+    }
+    return wrapper || this.wrapper;
+  }
+
+  syncWrapperLayout() {
+    const wrapper = this.getKanbanWrapper();
+    if (!wrapper) {
+      return;
+    }
+
+    wrapper.classList.toggle('is-focus-mode', this.currentMode === VIEW_MODES.FOCUS);
+    wrapper.classList.toggle('is-compact-mode', this.currentMode === VIEW_MODES.COMPACT);
+    wrapper.classList.toggle('is-detailed-mode', this.currentMode === VIEW_MODES.DETAILED);
+
+    const stackContent = this.collapsedStack?.querySelector('.stack-content');
+    const hasItems = Boolean(stackContent && stackContent.children.length > 0);
+    const shouldShowStack = hasItems && this.collapsedStack?.style.display !== 'none';
+    wrapper.classList.toggle('has-collapsed-stack', shouldShowStack);
+  }
+
   /**
    * Définit le mode de vue
    * @param {string} mode - Mode de vue
@@ -188,7 +219,9 @@ export class ViewModeManager {
       default:
         this.logger.error(`Mode de vue inconnu: ${mode}`);
     }
-    
+
+    this.syncWrapperLayout();
+
     // Rafraîchir le kanban avec le nouveau mode
     if (this.kanban.refreshKanban) {
       this.kanban.viewMode = mode;
@@ -819,11 +852,15 @@ export class ViewModeManager {
   createCollapsedStack(options = {}) {
     const { reset = false } = options;
     const container = this.kanban.kanbanContainer;
-    if (!container) return;
+    const wrapper = this.getKanbanWrapper();
+    const host = wrapper || container;
+    if (!host || !container) return;
 
     if (!this.collapsedStack) {
-      this.collapsedStack = document.createElement('div');
+      this.collapsedStack = document.createElement('aside');
       this.collapsedStack.className = 'collapsed-columns-stack';
+      this.collapsedStack.setAttribute('role', 'complementary');
+      this.collapsedStack.setAttribute('aria-label', 'Colonnes repliées');
       this.collapsedStack.innerHTML = `
         <div class="stack-header">
           <div class="stack-title">
@@ -834,8 +871,24 @@ export class ViewModeManager {
         </div>
         <div class="stack-content" role="list"></div>
       `;
+    }
 
-      container.insertBefore(this.collapsedStack, container.firstChild);
+    if (host === wrapper) {
+      if (this.collapsedStack.parentElement !== wrapper) {
+        wrapper.insertBefore(this.collapsedStack, container);
+      } else if (this.collapsedStack.nextSibling !== container) {
+        wrapper.insertBefore(this.collapsedStack, container);
+      }
+    } else if (this.collapsedStack.parentElement !== host) {
+      host.insertBefore(this.collapsedStack, host.firstChild);
+    }
+
+    this.stackHost = host;
+
+    if (wrapper) {
+      wrapper.classList.add('has-collapsed-stack');
+      wrapper.classList.toggle('is-focus-mode', this.currentMode === VIEW_MODES.FOCUS);
+      wrapper.classList.toggle('is-compact-mode', this.currentMode === VIEW_MODES.COMPACT);
     }
 
     if (reset && this.collapsedStack) {
@@ -844,6 +897,8 @@ export class ViewModeManager {
         stackContent.innerHTML = '';
       }
     }
+
+    this.syncWrapperLayout();
 
     this.updateCollapsedStackCounter();
   }
@@ -857,6 +912,16 @@ export class ViewModeManager {
     }
 
     this.collapsedStack.style.display = 'none';
+    if (this.collapsedStack.parentElement) {
+      this.collapsedStack.parentElement.removeChild(this.collapsedStack);
+    }
+    this.stackHost = null;
+
+    const wrapper = this.getKanbanWrapper();
+    if (wrapper) {
+      wrapper.classList.remove('has-collapsed-stack');
+    }
+
     this.updateCollapsedStackCounter();
   }
 
@@ -946,7 +1011,11 @@ export class ViewModeManager {
 
     // Calculer la largeur disponible (moins la pile si elle existe)
     let stackWidth = 0;
-    if (this.collapsedStack && this.collapsedStack.style.display !== 'none') {
+    if (
+      this.collapsedStack &&
+      this.collapsedStack.style.display !== 'none' &&
+      this.collapsedStack.parentElement === container
+    ) {
       const rect = this.collapsedStack.getBoundingClientRect();
       stackWidth = Math.ceil(rect.width + 16); // ajouter un espace de respiration
     }
@@ -972,6 +1041,7 @@ export class ViewModeManager {
     }
 
     this.collapsedStack.style.display = visibleItems > 0 ? 'flex' : 'none';
+    this.syncWrapperLayout();
   }
 
   restoreCollapsedColumns() {

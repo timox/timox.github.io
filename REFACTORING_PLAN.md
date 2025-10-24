@@ -138,6 +138,7 @@ if (typeof window.grist === 'undefined') {
   vue.
 - [x] Largeur de colonnes harmonisée (360 px détaillé, 620 px focus) pour supprimer l'effet "contenu entassé".
 - [x] Pile de colonnes repliées restituée en mode focus avec affichage vertical unique.
+- [x] Pile repliée ancrée dans `.kanban-wrapper` avec grille responsive pour garder les colonnes réduites visibles et cliquables.
 - [x] Rafraîchissement automatique des stratégies de la modal dès réception de `Ssir_strategie2`.
 - [x] Suppression du toast de succès initial et du bouton "Fenêtre" de l'historique pour éviter les erreurs runtime.
 - [x] Page de statistiques initialisée via `#stats-container` + `grist.ready({ requiredAccess: 'read table' })`.

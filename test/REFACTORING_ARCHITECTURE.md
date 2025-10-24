@@ -117,6 +117,8 @@ this.viewManager = new ViewManager(this);
   s'aligne dessus, ce qui garantit l'affichage des boutons de repliage et de la pile latérale sans action manuelle.
 - ✅ **Focus recentré** : `kanban-base.css` et `redistributeColumnWidths()` basculent le mode focus en pile verticale (stack au-dessus
   de la colonne active) pour éviter l'empilement horizontal.
+- ✅ **Pile ancrée** : `ViewModeManager.createCollapsedStack()` loge la pile dans `.kanban-wrapper` (grille 2 colonnes → 1 en focus)
+  afin que les colonnes repliées restent visibles à gauche et accessibles au clic.
 - ✅ **Stratégies dynamiques** : `ModalManager.handleStrategyDataLoaded()` re-render l'accordéon dès que `Ssir_strategie2` est
   disponible et restaure la sélection existante.
 - ✅ **UI épurée** : suppression du bouton "Fenêtre" sur le panneau historique et retrait du toast de succès initial pour éviter les
