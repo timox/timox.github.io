@@ -971,7 +971,7 @@ export class ViewModeManager {
       badge.classList.toggle('d-none', visibleItems === 0);
     }
 
-    this.collapsedStack.style.display = visibleItems > 0 ? 'block' : 'none';
+    this.collapsedStack.style.display = visibleItems > 0 ? 'flex' : 'none';
   }
 
   restoreCollapsedColumns() {

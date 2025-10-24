@@ -1,7 +1,17 @@
 // === managers/GristManager.js ===
 // Interface pour l'API Grist et la gestion des données
 
-import { TABLE_ID, REQUIRED_COLUMNS, OPTIONAL_COLUMNS, DEFAULT_BUREAUX, DEFAULT_RESPONSABLES } from '../config/constants.js';
+import {
+  TABLE_ID,
+  REQUIRED_COLUMNS,
+  OPTIONAL_COLUMNS,
+  DEFAULT_BUREAUX,
+  DEFAULT_RESPONSABLES,
+  DEFAULT_URGENCES,
+  DEFAULT_IMPACTS,
+  DEFAULT_PROJETS,
+  STATUTS
+} from '../config/constants.js';
 import { displayError } from '../utils/dom.js';
 import { normalizeDate } from '../utils/dates.js';
 import { createModuleLogger } from '../utils/LoggerManager.js';
@@ -219,17 +229,31 @@ export class GristManager {
       const extractedBureaux = this.extractUniqueValues('bureau', true);
       const extractedResponsables = this.extractUniqueValues('qui', true);
       
+      const sortText = (a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' });
+
+      const bureauList = [...new Set([...DEFAULT_BUREAUX, ...extractedBureaux])].filter(Boolean).sort(sortText);
+      const responsableList = [...new Set([...DEFAULT_RESPONSABLES, ...extractedResponsables])].filter(Boolean).sort(sortText);
+      const projetList = [...new Set([...DEFAULT_PROJETS, ...this.extractUniqueValues('projet', false)])].filter(Boolean).sort(sortText);
+      const statutDefaults = STATUTS.map(s => s.id);
+      const statutList = [...new Set([...statutDefaults, ...this.extractUniqueValues('statut', false)])].filter(Boolean).sort(sortText);
+      const urgenceList = [...new Set([...DEFAULT_URGENCES, ...this.extractUniqueValues('urgence', false)])].filter(Boolean).sort(sortText);
+      const impactList = [...new Set([...DEFAULT_IMPACTS, ...this.extractUniqueValues('impact', false)])].filter(Boolean).sort(sortText);
+
       this.gristOptions = {
-        // Combiner les bureaux par défaut avec ceux des données
-        bureaux: [...new Set([...DEFAULT_BUREAUX, ...extractedBureaux])].sort(),
-        // Combiner les responsables par défaut avec ceux des données
-        responsables: [...new Set([...DEFAULT_RESPONSABLES, ...extractedResponsables])].sort(),
-        projets: this.extractUniqueValues('projet', false),
-        statuts: this.extractUniqueValues('statut', false),
-        urgences: this.extractUniqueValues('urgence', false),
-        impacts: this.extractUniqueValues('impact', false)
+        bureau: bureauList,
+        bureaux: bureauList,
+        responsables: responsableList,
+        qui: responsableList,
+        projet: projetList,
+        projets: projetList,
+        statut: statutList,
+        statuts: statutList,
+        urgence: urgenceList,
+        urgences: urgenceList,
+        impact: impactList,
+        impacts: impactList
       };
-      
+
       this.logger.debug('Options extraites (avec défauts):', this.gristOptions);
       
     } catch (error) {
@@ -561,7 +585,7 @@ export class GristManager {
         
         // Notifier le KanbanManager
         if (this.kanban && typeof this.kanban.onDataReloaded === 'function') {
-          this.kanban.onDataReloaded(this.currentRecords, this.gristOptions);
+          await this.kanban.onDataReloaded(this.currentRecords, this.gristOptions);
         }
         
         this.logger.info(`${this.currentRecords.length} enregistrements rechargés`);

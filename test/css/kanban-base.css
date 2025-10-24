@@ -54,76 +54,17 @@ body {
   transition: var(--kanban-transition);
 }
 
-body.kanban-theme {
-  min-height: 100vh;
-  background: radial-gradient(circle at top, #f4f7fb 0%, #eef2f7 45%, #e5ebf4 100%);
-  display: flex;
-  flex-direction: column;
-}
-
-.kanban-shell {
-  flex: 1 1 auto;
-  display: flex;
-  justify-content: center;
-}
-
-.kanban-main {
+.view_data_pane_container.flexvbox.viewsection_type_custom {
   width: 100%;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  background: var(--kanban-bg);
 }
 
-.kanban-main > .kanban-header,
-.kanban-main > .kanban-controls,
-.kanban-main > .container-fluid,
-.kanban-main > #error-container,
-.kanban-main > .keyboard-shortcuts {
-  border-radius: calc(var(--kanban-border-radius) + 4px);
-}
-
-#error-container {
-  display: block;
-  padding: 1rem 1.25rem;
-  border-radius: calc(var(--kanban-border-radius) + 2px);
-  border-left: 4px solid #dc3545;
-  background: rgba(220, 53, 69, 0.1);
-  color: #721c24;
-  box-shadow: 0 8px 18px rgba(220, 53, 69, 0.12);
-}
-
-#error-container:empty {
-  display: none;
-}
-
-#error-container .alert {
-  margin-bottom: 0;
-}
-
-.loading-spinner {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 0.75rem;
-  padding: 1.5rem;
-  border-radius: calc(var(--kanban-border-radius) + 2px);
-  background: rgba(13, 110, 253, 0.08);
-  color: #0d3b8a;
-  box-shadow: 0 10px 25px rgba(13, 110, 253, 0.12);
-}
-
-.loading-spinner.is-visible {
-  display: flex !important;
-}
-
-.kanban-header,
-.kanban-controls,
-.kanban-wrapper,
-.keyboard-shortcuts {
-  background: var(--kanban-card-bg);
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
-  border: 1px solid rgba(15, 23, 42, 0.08);
+.kanban-page {
+  flex: 1 1 auto;
+  width: 100%;
 }
 
 /* === Header === */
@@ -420,53 +361,34 @@ body.kanban-theme {
 
 .btn-collapse-column {
   --column-accent: var(--kanban-text-muted);
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 0.85rem;
-  border: none;
-  background: linear-gradient(135deg,
-      color-mix(in srgb, var(--column-accent) 82%, #0f172a 18%) 0%,
-      color-mix(in srgb, var(--column-accent) 40%, #ffffff 60%) 100%);
-  color: #fff;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--column-accent);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-right: 0.75rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-  position: relative;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
-  isolation: isolate;
-}
-
-.btn-collapse-column::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  border: 1px solid color-mix(in srgb, var(--column-accent) 20%, rgba(255, 255, 255, 0.6) 80%);
-  opacity: 0.75;
-  pointer-events: none;
+  margin-right: 0.5rem;
+  transition: color 0.2s ease, transform 0.2s ease;
+  box-shadow: none;
+  cursor: pointer;
 }
 
 .btn-collapse-column i {
   font-size: 1.1rem;
   line-height: 1;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, color 0.2s ease;
 }
 
 .btn-collapse-column:hover {
-  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.25);
   transform: translateY(-1px);
-  background: linear-gradient(135deg,
-      color-mix(in srgb, var(--column-accent) 88%, #0b1220 12%) 0%,
-      color-mix(in srgb, var(--column-accent) 52%, #ffffff 48%) 100%);
+  color: color-mix(in srgb, var(--column-accent) 88%, #0f172a 12%);
 }
 
 .btn-collapse-column.is-collapsed {
-  background: linear-gradient(135deg,
-      color-mix(in srgb, var(--column-accent) 90%, #020617 10%) 0%,
-      color-mix(in srgb, var(--column-accent) 65%, #ffffff 35%) 100%);
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.22);
+  color: var(--column-accent);
 }
 
 .btn-collapse-column.is-collapsed i {
@@ -475,7 +397,7 @@ body.kanban-theme {
 
 .btn-collapse-column:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--column-accent) 45%, rgba(13, 110, 253, 0.55) 55%);
-  outline-offset: 3px;
+  outline-offset: 2px;
 }
 
 .collapsed-columns-stack {
@@ -490,6 +412,7 @@ body.kanban-theme {
   position: sticky;
   top: 6.5rem;
   display: none;
+  flex-direction: column;
   backdrop-filter: blur(6px);
 }
 
@@ -499,6 +422,7 @@ body.kanban-theme {
   position: static;
   order: -1;
   margin: 0 auto;
+  align-self: stretch;
 }
 
 .collapsed-columns-stack .stack-header {

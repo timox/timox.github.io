@@ -135,6 +135,14 @@ test/
   d'afficher la bannière « Cause probable » lorsque la table répond.
 - **Stats embarquées** : la page `stats.html` expose un conteneur `#stats-container` et attend explicitement `grist.ready({
   requiredAccess: 'read table' })` pour lever l'erreur d'initialisation.
+- **Gabarit Grist aligné** : `test/index.html` est encapsulé dans `view_data_pane_container flexvbox viewsection_type_custom`
+  pour occuper toute la largeur disponible comme la vue statistiques, tout en conservant les modales globales.
+- **Boutons de repliage minimalistes** : `kanban-base.css` supprime les fonds dégradés, garde les icônes `arrow-bar` et
+  applique directement la couleur de statut sur les contrôles de repliage et de pile.
+- **Filtres synchronisés** : `GristManager.loadGristOptions()` fusionne les valeurs Grist avec les listes par défaut (bureau,
+  responsable, projet, urgence, impact, statut) avant normalisation, éliminant l'option fantôme « L » et les sélecteurs vides.
+- **Stats consolidées** : `stats-app.js` restaure la table Priorité/Statut et nettoie les marqueurs de conflit qui provoquaient
+  le `SyntaxError: expected property name, got '<<'`.
 
 ### Synchronisation
 - **kanban/ → test/** (27/07/2025) : Synchronisation complète pour développement

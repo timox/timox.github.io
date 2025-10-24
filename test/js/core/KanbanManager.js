@@ -238,47 +238,55 @@ export class KanbanManager {
    * @returns {Array} Enregistrements mappés
    */
   mapStrategyRecords(records) {
-    if (!records || typeof records !== 'object') {
+    if (!records || !records.id) {
       return [];
     }
 
-    const idColumn = Array.isArray(records.id)
-      ? records.id
-      : Array.isArray(records.id_task)
-        ? records.id_task
-        : null;
-
-    if (!idColumn) {
-      console.warn('KanbanManager: Structure des stratégies inattendue - colonne id absente');
+    const normalizeColumn = (column) => {
+      if (Array.isArray(column)) {
+        return column;
+      }
+      if (column && typeof column === 'object') {
+        return Object.keys(column)
+          .sort((a, b) => Number(a) - Number(b))
+          .map(key => column[key]);
+      }
       return [];
-    }
+    };
+
+    const ids = normalizeColumn(records.id);
+    const objectifs = normalizeColumn(records.objectif);
+    const sousObjectifs = normalizeColumn(records.sous_objectif);
+    const actions = normalizeColumn(records.action);
+    const echeances = normalizeColumn(records.echeance);
+    const responsables = normalizeColumn(records.responsable);
+    const portees = normalizeColumn(records.portee);
 
     const mapped = [];
-    const total = idColumn.length;
 
-    for (let index = 0; index < total; index++) {
+    ids.forEach((id, index) => {
       try {
         const rawId = idColumn[index];
         const parsedId = parseInt(rawId, 10);
         const normalizedId = Number.isNaN(parsedId) ? rawId : parsedId;
 
         const strategy = {
-          id: normalizedId,
-          objectif: Array.isArray(records.objectif) ? records.objectif[index] || '' : '',
-          sous_objectif: Array.isArray(records.sous_objectif) ? records.sous_objectif[index] || '' : '',
-          action: Array.isArray(records.action) ? records.action[index] || '' : '',
-          echeance: Array.isArray(records.echeance) ? records.echeance[index] || '' : '',
-          responsable: Array.isArray(records.responsable) ? records.responsable[index] || '' : '',
-          portee: Array.isArray(records.portee) ? records.portee[index] || '' : ''
+          id,
+          objectif: objectifs[index] || '',
+          sous_objectif: sousObjectifs[index] || '',
+          action: actions[index] || '',
+          echeance: echeances[index] || '',
+          responsable: responsables[index] || '',
+          portee: portees[index] || ''
         };
 
-        if (strategy.objectif && strategy.sous_objectif && strategy.action) {
+        if (strategy.objectif && strategy.action) {
           mapped.push(strategy);
         }
       } catch (error) {
         console.warn('KanbanManager: Erreur mapping stratégie:', index, error);
       }
-    }
+    });
 
     return mapped;
   }
@@ -605,15 +613,21 @@ export class KanbanManager {
    * @param {Array} newRecords - Nouveaux enregistrements
    * @param {object} newOptions - Nouvelles options
    */
-  onDataReloaded(newRecords, newOptions) {
+  async onDataReloaded(newRecords, newOptions) {
     console.log('KanbanManager: Donn�es recharg�es depuis Grist');
-    
+
     this.currentRecords = newRecords || [];
     this.gristOptions = this.normalizeGristOptions(newOptions || {});
-    
+
     // Mettre � jour les options des formulaires
     this.populateFormOptions();
-    
+
+    try {
+      await this.loadStrategyData();
+    } catch (error) {
+      console.warn('KanbanManager: Impossible de recharger les strat�gies apr�s synchronisation:', error);
+    }
+
     // Rafra�chir l'affichage seulement si pas en cours de mise � jour
     if (!this.isUpdating) {
       this.refreshKanban();

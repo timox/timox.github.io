@@ -141,6 +141,13 @@ if (typeof window.grist === 'undefined') {
 - [x] Rafraîchissement automatique des stratégies de la modal dès réception de `Ssir_strategie2`.
 - [x] Suppression du toast de succès initial et du bouton "Fenêtre" de l'historique pour éviter les erreurs runtime.
 - [x] Page de statistiques initialisée via `#stats-container` + `grist.ready({ requiredAccess: 'read table' })`.
+- [x] Conteneur principal aligné sur la classe `view_data_pane_container flexvbox viewsection_type_custom` afin de restituer la
+  pleine largeur et l'intégration Grist.
+- [x] Boutons de repliage épurés (icône `arrow-bar`, sans fond dégradé) tout en conservant la couleur de statut et des focus
+  visibles.
+- [x] `GristManager.loadGristOptions()` fusionne désormais les valeurs Grist et les listes par défaut (bureau, responsable,
+  projet, urgence, impact, statut) avant normalisation pour éliminer l'entrée « L » et éviter les sélecteurs vides.
+- [x] `stats-app.js` rétablit la table Priorité/Statut et nettoie les marqueurs de conflit `<<` à l'origine du `SyntaxError`.
 
 ## ⚠️ Précautions
 

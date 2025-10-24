@@ -123,6 +123,10 @@ this.viewManager = new ViewManager(this);
   erreurs de clic et le message vert dans `#error-container`.
 - ✅ **Stats sécurisées** : `stats.html` expose désormais `#stats-container` et attend explicitement `grist.ready({ requiredAccess:
   'read table' })` pour lever les erreurs d'initialisation.
+- ✅ **Gabarit aligné** : `test/index.html` adopte `view_data_pane_container flexvbox viewsection_type_custom` pour retrouver la pleine largeur dans Grist tout en préservant les modales globales.
+- ✅ **Boutons minimalistes** : `kanban-base.css` retire les fonds dégradés des contrôles de repliage, conserve les icônes `arrow-bar` et applique la teinte de statut avec des focus visibles.
+- ✅ **Options consolidées** : `GristManager.loadGristOptions()` combine les valeurs Grist et les listes par défaut (bureau, responsable, projet, urgence, impact, statut) avant normalisation, supprimant le marqueur « L » et les sélecteurs vides.
+- ✅ **Stats consolidées** : `stats-app.js` réactive la table Priorité/Statut et supprime les marqueurs de conflit `<<` responsables du `SyntaxError`.
 
 ---
 
