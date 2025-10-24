@@ -21,6 +21,7 @@ Refactoriser proprement l'application Kanban sans tout détruire, en corrigeant 
 - `/kanban/` : Architecture moderne avec `kanban-app.js`
 - `/test/` : Ancienne architecture avec `/core/KanbanManager.js`
 - `index.html` différents (imports, scripts, versions)
+**Avancement 2025-09-02 :** L'environnement `/test` ne charge plus `kanban-app.js` et instancie uniquement `core/KanbanManager` via `app-initializer.js` pour éviter la double initialisation.
 
 #### 3. **Cache et Versioning**
 **Problème:** Paramètres `?v=20250728-DEDUP-MODAL` obsolètes
@@ -41,6 +42,7 @@ Refactoriser proprement l'application Kanban sans tout détruire, en corrigeant 
 - [x] Correction de toutes les références `grist` → `window.grist`
 - [x] Ajout de vérifications de disponibilité de l'API
 - [x] Tests de fonctionnement en environnement Grist
+- [x] 2025-09-02 : Centralisation des gardes `window.grist` dans `AppInitializer`, `GristManager` et `HistoryManager`
 
 ### Phase 2: Unification Architecturale
 #### 2.1 Définir l'Architecture de Référence

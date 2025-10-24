@@ -85,27 +85,30 @@ kanban/
 ```
 test/
 ├── index.html              # Version de test
-├── css/                    # CSS synchronisé avec production  
-├── js/                     # 🆕 JS avec corrections tracking statut (27/07/2025)
-│   ├── kanban-app.js       # ✅ Fix handleDragEnd() - capture oldStatus avant modification
+├── css/                    # CSS synchronisé avec production
+├── js/
+│   ├── app-initializer.js  # ✅ Point d'entrée ES module (instancie core/KanbanManager)
+│   ├── core/
+│   │   └── KanbanManager.js # ♻️ Orchestrateur principal aligné avec la prod
 │   ├── managers/
 │   │   ├── ModalManager.js # ✅ Fix tracking statut via modal avec UserActionManager
 │   │   ├── JalonManager.js # ✅ Dernières corrections édition/suppression jalons
 │   │   └── ...             # Autres managers synchronisés
-│   └── utils/
-│       ├── UserActionManager.js    # ✅ Système tracking actions utilisateur
-│       ├── NotesJsonMigrator.js    # ✅ Migration notes vers JSON
-│       └── ...                     # Autres utilitaires
+│   ├── utils/
+│   │   ├── UserActionManager.js    # ✅ Système tracking actions utilisateur
+│   │   ├── NotesJsonMigrator.js    # ✅ Migration notes vers JSON
+│   │   └── ...                     # Autres utilitaires
+│   └── kanban-app.js       # 💤 Version legacy conservée pour référence (non chargée)
 ├── 🔒 [IGNORÉ] Scripts avec identifiants # Scripts tests/API (exclus du git)
-├── fix-status-tracking.md  # 📋 Documentation corrections statut
 ├── ARCHITECTURE.md         # Documentation architecture complète
-├── CHANGELOG_2025-07-27.md # 🆕 Corrections tracking historique
-├── CHANGELOG_2025-07-20.md # Corrections critiques récentes
+├── ROADMAP.md              # Suivi des chantiers à venir
+├── REFACTORING_ARCHITECTURE.md # Centralisation des responsabilités de rendu
 └── schema.md               # Schéma base de données Grist
 ```
 
-### 🎯 Usage Actuel (Depuis 27/07/2025)
+### 🎯 Usage Actuel
 - **🔥 Environnement principal** pour développement et corrections
+- **✅ Initialisation unique** : seul `core/KanbanManager` est instancié (kanban-app.js legacy désactivé)
 - **✅ Tests automatisés** via scripts API Grist (readonly-test-suite.js)
 - **🔧 Corrections critiques** tracking historique des changements de statut
 - **📊 Analyse données** (67 tâches, 2 jalons, 0 changements statut trackés)
