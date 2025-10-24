@@ -483,6 +483,10 @@ export class KanbanManager {
           focusColumn: this.focusColumn,
           container: this.kanbanContainer
         });
+
+        if (this.viewModeManager && typeof this.viewModeManager.onKanbanRendered === 'function') {
+          this.viewModeManager.onKanbanRendered();
+        }
       }
       
     } catch (error) {

@@ -130,6 +130,7 @@ if (typeof window.grist === 'undefined') {
 
 ### 2025-09 - Stabilisation ergonomie (en cours)
 - [x] Boutons de repliage alignés sur la charte couleur par statut
+- [x] Pile latérale restaurée et persistante via `ViewModeManager.onKanbanRendered()` et `restoreCollapsedColumns()`
 - [x] Normalisation des listes Grist (suppression marqueur `L`, tri unique)
 - [x] Modal tâche compactée + historique latéral repliable
 - [ ] Tests manuels complets sur la nouvelle modale

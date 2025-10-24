@@ -103,6 +103,8 @@ this.viewManager = new ViewManager(this);
 - ✅ **Boutons de repliage harmonisés** : `ViewModeManager` et `BoardRenderer` propagent désormais la couleur d'accent de chaque
   statut jusqu'au bouton de repliage pour respecter les codes couleur de colonne. Le compteur de pile est recalculé lors de
   chaque repli afin de garder une lecture claire des colonnes cachées.
+- ✅ **Pile persistante** : `ViewModeManager.onKanbanRendered()` ré-applique `restoreCollapsedColumns()` après chaque rendu afin
+  de reconstruire la pile latérale et conserver l'état de repli même après un rafraîchissement ou un changement de vue.
 - ✅ **Normalisation des options Grist** : `KanbanManager.normalizeGristOptions()` supprime les marqueurs `"L"`, unifie les clés
   singulier/pluriel et fournit des listes triées aux filtres et à la modale. Les menus Bureau / Responsable ne remontent plus de
   valeurs fantômes.

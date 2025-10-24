@@ -117,6 +117,8 @@ test/
 ### 2025-09 – Mise à jour ergonomie /test/
 - **Repliage colorimétrique** : les boutons de collapse reprennent la couleur de colonne et mettent à jour le compteur de pile
   pour clarifier les colonnes masquées.
+- **Pile détaillée persistante** : le mode détaillé restaure automatiquement la pile latérale après chaque rafraîchissement et
+  conserve les colonnes repliées lors des changements de vue.
 - **Modal tâche repensée** : formulaire deux colonnes, panneau historique latéral repliable et chargement différé des
   commentaires.
 - **Normalisation options Grist** : listes Bureau / Responsable / Projet alimentées par `KanbanManager.normalizeGristOptions()`

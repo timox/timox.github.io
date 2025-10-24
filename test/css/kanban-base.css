@@ -419,20 +419,32 @@ body.kanban-theme {
 
 .btn-collapse-column {
   --column-accent: var(--kanban-text-muted);
-  width: 2.35rem;
-  height: 2.35rem;
-  border-radius: 50%;
-  border: 1px solid var(--column-accent);
-  background: rgba(255, 255, 255, 0.9);
-  background: color-mix(in srgb, var(--column-accent) 12%, #ffffff 88%);
-  color: var(--column-accent);
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.85rem;
+  border: none;
+  background: linear-gradient(135deg,
+      color-mix(in srgb, var(--column-accent) 82%, #0f172a 18%) 0%,
+      color-mix(in srgb, var(--column-accent) 40%, #ffffff 60%) 100%);
+  color: #fff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   margin-right: 0.75rem;
-  transition: var(--kanban-transition);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
   position: relative;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+  isolation: isolate;
+}
+
+.btn-collapse-column::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid color-mix(in srgb, var(--column-accent) 20%, rgba(255, 255, 255, 0.6) 80%);
+  opacity: 0.75;
+  pointer-events: none;
 }
 
 .btn-collapse-column i {
@@ -441,11 +453,19 @@ body.kanban-theme {
   transition: transform 0.2s ease;
 }
 
-.btn-collapse-column:hover,
+.btn-collapse-column:hover {
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.25);
+  transform: translateY(-1px);
+  background: linear-gradient(135deg,
+      color-mix(in srgb, var(--column-accent) 88%, #0b1220 12%) 0%,
+      color-mix(in srgb, var(--column-accent) 52%, #ffffff 48%) 100%);
+}
+
 .btn-collapse-column.is-collapsed {
-  background: var(--column-accent);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  background: linear-gradient(135deg,
+      color-mix(in srgb, var(--column-accent) 90%, #020617 10%) 0%,
+      color-mix(in srgb, var(--column-accent) 65%, #ffffff 35%) 100%);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.22);
 }
 
 .btn-collapse-column.is-collapsed i {
@@ -453,8 +473,8 @@ body.kanban-theme {
 }
 
 .btn-collapse-column:focus-visible {
-  outline: 3px solid rgba(0, 123, 255, 0.35);
-  outline-offset: 2px;
+  outline: 3px solid color-mix(in srgb, var(--column-accent) 45%, rgba(13, 110, 253, 0.55) 55%);
+  outline-offset: 3px;
 }
 
 .collapsed-columns-stack {

@@ -10,7 +10,7 @@ import { createModuleLogger } from '../utils/LoggerManager.js';
 export class ViewModeManager {
   constructor(kanbanManager) {
     this.kanban = kanbanManager;
-    this.currentMode = VIEW_MODES.COMPACT;
+    this.currentMode = VIEW_MODES.DETAILED;
     this.focusColumn = null;
     this.logger = createModuleLogger('ViewModeManager');
     
@@ -608,20 +608,27 @@ export class ViewModeManager {
   initColumnCollapse() {
     // Supprimer les anciens écouteurs
     this.removeColumnCollapseListeners();
-    
+
     // Ajouter les nouveaux écouteurs
     setTimeout(() => {
-      const collapseButtons = document.querySelectorAll('.btn-collapse-column');
+      const collapseButtons = Array.from(document.querySelectorAll('.btn-collapse-column'));
+
+      if (collapseButtons.length === 0) {
+        this.teardownCollapsedStack();
+        return;
+      }
+
+      this.createCollapsedStack({ reset: true });
+
       collapseButtons.forEach(btn => {
         btn.addEventListener('click', (e) => this.handleColumnCollapse(e));
         this.decorateCollapseButton(btn);
       });
-      
-      // Créer la pile des colonnes repliées si elle n'existe pas
-      this.createCollapsedStack();
-      
+
+      this.restoreCollapsedColumns();
+
       this.logger.info(`${collapseButtons.length} boutons de repliage initialisés`);
-    }, 100);
+    }, 60);
   }
 
   /**
@@ -706,32 +713,67 @@ export class ViewModeManager {
     return getStatusAccent(statusId);
   }
 
+  extractColumnSummary(statusId, column, button) {
+    if (!column) {
+      return {
+        title: statusId,
+        count: '0',
+        accent: getStatusAccent(statusId)
+      };
+    }
+
+    const title = column.querySelector('.board-title')?.textContent.trim() || statusId;
+    const count = column.querySelector('.board-count')?.textContent.trim() || '0';
+    const accent = this.resolveAccentColor(statusId, button, column);
+
+    return { title, count, accent };
+  }
+
+  findColumnByStatus(statusId) {
+    if (!statusId) return null;
+    const container = this.kanban.kanbanContainer;
+    if (!container) return null;
+    return container.querySelector(`.kanban-board[data-status="${statusId}"]`);
+  }
+
   /**
    * Replie une colonne
    * @param {string} statusId - ID du statut
    * @param {HTMLElement} column - Élément colonne
    * @param {HTMLElement} button - Bouton de repliage
   */
-  collapseColumn(statusId, column, button) {
-    this.collapsedColumns.add(statusId);
+  collapseColumn(statusId, column, button, options = {}) {
+    if (!column) {
+      this.logger.warn(`Impossible de replier la colonne ${statusId} (élément introuvable)`);
+      return;
+    }
 
+    const { skipAnimation = false } = options;
+
+    this.collapsedColumns.add(statusId);
     this.setCollapseButtonState(button, true);
 
-    // Animer la colonne vers la pile
-    column.classList.add('column-collapsing');
+    const summary = this.extractColumnSummary(statusId, column, button);
 
-    setTimeout(() => {
-      // Masquer la colonne originale
+    const finalizeCollapse = () => {
       column.style.display = 'none';
-      
-      // Ajouter à la pile
-      this.addToCollapsedStack(statusId, column);
-      
-      // Recalculer la largeur des colonnes restantes
-      this.redistributeColumnWidths();
-      
-    }, 300);
-    
+      column.classList.remove('column-collapsing', 'column-expanding');
+      this.addToCollapsedStack(statusId, summary);
+
+      const scheduler = (typeof window !== 'undefined' && window.requestAnimationFrame)
+        ? window.requestAnimationFrame.bind(window)
+        : (cb) => setTimeout(cb, 0);
+
+      scheduler(() => this.redistributeColumnWidths());
+    };
+
+    if (skipAnimation) {
+      finalizeCollapse();
+    } else {
+      column.classList.add('column-collapsing');
+      setTimeout(finalizeCollapse, 260);
+    }
+
     this.logger.info(`Colonne ${statusId} repliée`);
   }
 
@@ -741,25 +783,30 @@ export class ViewModeManager {
    * @param {HTMLElement} column - Élément colonne
    * @param {HTMLElement} button - Bouton de repliage
    */
-  expandColumn(statusId, column, button) {
+  expandColumn(statusId, column, button, options = {}) {
     this.collapsedColumns.delete(statusId);
 
     // Retirer de la pile
     this.removeFromCollapsedStack(statusId);
 
     // Réafficher la colonne
-    column.style.display = '';
-    column.classList.remove('column-collapsing');
-    column.classList.add('column-expanding');
+    if (column) {
+      column.style.display = '';
+      column.classList.remove('column-collapsing');
+      column.classList.add('column-expanding');
 
-    setTimeout(() => {
-      column.classList.remove('column-expanding');
-
-      // Recalculer la largeur des colonnes
+      setTimeout(() => {
+        column.classList.remove('column-expanding');
+        this.redistributeColumnWidths();
+      }, options.skipAnimation ? 0 : 260);
+    } else {
+      this.logger.warn(`Impossible de déplier la colonne ${statusId} (élément introuvable)`);
       this.redistributeColumnWidths();
-    }, 300);
+    }
 
-    this.setCollapseButtonState(button, false);
+    if (button) {
+      this.setCollapseButtonState(button, false);
+    }
 
     this.logger.info(`Colonne ${statusId} dépliée`);
   }
@@ -767,26 +814,47 @@ export class ViewModeManager {
   /**
    * Crée la pile des colonnes repliées
    */
-  createCollapsedStack() {
-    if (this.collapsedStack) return;
-    
+  createCollapsedStack(options = {}) {
+    const { reset = false } = options;
     const container = this.kanban.kanbanContainer;
-    
-    this.collapsedStack = document.createElement('div');
-    this.collapsedStack.className = 'collapsed-columns-stack';
-    this.collapsedStack.innerHTML = `
-      <div class="stack-header">
-        <div class="stack-title">
-          <i class="bi bi-layout-three-columns" aria-hidden="true"></i>
-          <span>Colonnes repliées</span>
-        </div>
-        <span class="collapsed-count badge rounded-pill bg-secondary d-none">0</span>
-      </div>
-      <div class="stack-content" role="list"></div>
-    `;
+    if (!container) return;
 
-    // Insérer au début du container
-    container.insertBefore(this.collapsedStack, container.firstChild);
+    if (!this.collapsedStack) {
+      this.collapsedStack = document.createElement('div');
+      this.collapsedStack.className = 'collapsed-columns-stack';
+      this.collapsedStack.innerHTML = `
+        <div class="stack-header">
+          <div class="stack-title">
+            <i class="bi bi-layout-three-columns" aria-hidden="true"></i>
+            <span>Colonnes repliées</span>
+          </div>
+          <span class="collapsed-count badge rounded-pill bg-secondary d-none">0</span>
+        </div>
+        <div class="stack-content" role="list"></div>
+      `;
+
+      container.insertBefore(this.collapsedStack, container.firstChild);
+    }
+
+    if (reset && this.collapsedStack) {
+      const stackContent = this.collapsedStack.querySelector('.stack-content');
+      if (stackContent) {
+        stackContent.innerHTML = '';
+      }
+    }
+
+    this.updateCollapsedStackCounter();
+  }
+
+  teardownCollapsedStack() {
+    if (!this.collapsedStack) return;
+
+    const stackContent = this.collapsedStack.querySelector('.stack-content');
+    if (stackContent) {
+      stackContent.innerHTML = '';
+    }
+
+    this.collapsedStack.style.display = 'none';
     this.updateCollapsedStackCounter();
   }
 
@@ -795,19 +863,18 @@ export class ViewModeManager {
    * @param {string} statusId - ID du statut
    * @param {HTMLElement} column - Élément colonne
    */
-  addToCollapsedStack(statusId, column) {
+  addToCollapsedStack(statusId, summary) {
     if (!this.collapsedStack) return;
-    
+
     const stackContent = this.collapsedStack.querySelector('.stack-content');
-    const title = column.querySelector('.board-title').textContent.trim();
-    const count = column.querySelector('.board-count').textContent.trim();
-    
+    if (!stackContent) return;
+
+    const { title, count, accent } = summary;
+
     const stackItem = document.createElement('div');
     stackItem.className = 'stack-item';
     stackItem.dataset.status = statusId;
     stackItem.setAttribute('role', 'listitem');
-
-    const accent = this.resolveAccentColor(statusId, column?.querySelector('.btn-collapse-column'), column);
     stackItem.dataset.accent = accent;
     stackItem.style.setProperty('--column-accent', accent);
 
@@ -822,18 +889,22 @@ export class ViewModeManager {
         <i class="bi bi-arrow-bar-right" aria-hidden="true"></i>
       </button>
     `;
-    
-    // Ajouter l'écouteur pour déplier depuis la pile
+
     stackItem.querySelector('.btn-expand-from-stack').addEventListener('click', (e) => {
       e.preventDefault();
-      const originalButton = column.querySelector('.btn-collapse-column');
-      this.expandColumn(statusId, column, originalButton);
-      this.updateCollapsedStackCounter();
+      const targetColumn = this.findColumnByStatus(statusId);
+      const originalButton = targetColumn?.querySelector('.btn-collapse-column');
+
+      if (targetColumn && originalButton) {
+        this.expandColumn(statusId, targetColumn, originalButton, { fromStack: true });
+      } else {
+        this.collapsedColumns.delete(statusId);
+        this.removeFromCollapsedStack(statusId);
+      }
     });
 
     stackContent.appendChild(stackItem);
 
-    // Afficher la pile si elle était cachée
     this.updateCollapsedStackCounter();
   }
 
@@ -892,6 +963,36 @@ export class ViewModeManager {
     this.collapsedStack.style.display = visibleItems > 0 ? 'block' : 'none';
   }
 
+  restoreCollapsedColumns() {
+    if (this.currentMode !== VIEW_MODES.DETAILED) {
+      this.showAllColumns();
+      this.teardownCollapsedStack();
+      return;
+    }
+
+    if (!this.collapsedColumns || this.collapsedColumns.size === 0) {
+      this.showAllColumns();
+      this.updateCollapsedStackCounter();
+      this.redistributeColumnWidths();
+      return;
+    }
+
+    const statuses = Array.from(this.collapsedColumns);
+    this.collapsedColumns.clear();
+
+    statuses.forEach(statusId => {
+      const column = this.findColumnByStatus(statusId);
+      const button = column?.querySelector('.btn-collapse-column');
+
+      if (column && button) {
+        this.collapseColumn(statusId, column, button, { skipAnimation: true });
+      }
+    });
+
+    this.updateCollapsedStackCounter();
+    this.redistributeColumnWidths();
+  }
+
   /**
    * Supprime les écouteurs de repliage de colonnes
    */
@@ -899,6 +1000,15 @@ export class ViewModeManager {
     document.querySelectorAll('.btn-collapse-column').forEach(btn => {
       btn.replaceWith(btn.cloneNode(true));
     });
+  }
+
+  onKanbanRendered() {
+    if (this.currentMode === VIEW_MODES.DETAILED) {
+      this.initColumnCollapse();
+    } else {
+      this.showAllColumns();
+      this.teardownCollapsedStack();
+    }
   }
 
   /**
