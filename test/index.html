@@ -19,8 +19,9 @@
   <link rel="stylesheet" href="css/kanban-responsive.css">
   <link rel="stylesheet" href="css/strategy-accordion.css">
 </head>
-<body>
-  <div class="container-fluid">
+<body class="kanban-theme">
+  <div class="kanban-shell container-fluid py-4">
+    <main class="kanban-main container-xxl px-2 px-md-3">
     <!-- Header -->
     <div class="kanban-header">
       <div class="container-fluid">
@@ -94,7 +95,7 @@
     <div id="error-container" role="alert" aria-live="polite"></div>
 
     <!-- Loading Spinner -->
-    <div class="loading-spinner" id="loading-spinner" style="display:none;">
+    <div class="loading-spinner" id="loading-spinner" aria-hidden="true">
       <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">Chargement...</span>
       </div>
@@ -130,6 +131,7 @@
       <div><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> Modes de vue</div>
       <div><kbd>R</kbd> Recharger</div>
     </div>
+    </main>
   </div>
 
 <!-- Modal Tâche corrigée avec stratégies et couleurs -->
