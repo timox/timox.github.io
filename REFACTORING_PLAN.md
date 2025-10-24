@@ -126,6 +126,28 @@ if (typeof window.grist === 'undefined') {
 2. **Documentation architecture unifiée**
 3. **Tests automatisés**
 
+### 2025-09 - Stabilisation ergonomie (en cours)
+- [x] Boutons de repliage alignés sur la charte couleur par statut
+- [x] Pile latérale restaurée et persistante via `ViewModeManager.onKanbanRendered()` et `restoreCollapsedColumns()`
+- [x] Normalisation des listes Grist (suppression marqueur `L`, tri unique)
+- [x] Modal tâche compactée + historique latéral repliable
+- [ ] Tests manuels complets sur la nouvelle modale
+- [x] Réactivation du mode détaillé au chargement pour retrouver les contrôles de repliage et la pile latérale dès la première
+  vue.
+- [x] Largeur de colonnes harmonisée (360 px détaillé, 620 px focus) pour supprimer l'effet "contenu entassé".
+- [x] Pile de colonnes repliées restituée en mode focus avec affichage vertical unique.
+- [x] Pile repliée ancrée dans `.kanban-wrapper` avec grille responsive pour garder les colonnes réduites visibles et cliquables.
+- [x] Rafraîchissement automatique des stratégies de la modal dès réception de `Ssir_strategie2`.
+- [x] Suppression du toast de succès initial et du bouton "Fenêtre" de l'historique pour éviter les erreurs runtime.
+- [x] Page de statistiques initialisée via `#stats-container` + `grist.ready({ requiredAccess: 'read table' })`.
+- [x] Conteneur principal aligné sur la classe `view_data_pane_container flexvbox viewsection_type_custom` afin de restituer la
+  pleine largeur et l'intégration Grist.
+- [x] Boutons de repliage épurés (icône `arrow-bar`, sans fond dégradé) tout en conservant la couleur de statut et des focus
+  visibles.
+- [x] `GristManager.loadGristOptions()` fusionne désormais les valeurs Grist et les listes par défaut (bureau, responsable,
+  projet, urgence, impact, statut) avant normalisation pour éliminer l'entrée « L » et éviter les sélecteurs vides.
+- [x] `stats-app.js` rétablit la table Priorité/Statut et nettoie les marqueurs de conflit `<<` à l'origine du `SyntaxError`.
+
 ## ⚠️ Précautions
 
 ### Ce qu'il NE faut PAS faire

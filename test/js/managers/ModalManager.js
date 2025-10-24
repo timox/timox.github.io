@@ -98,18 +98,19 @@ export class ModalManager {
     }, 'modal');
     
     safeOn('#btn-delete-task', 'click', (e) => {
-      e.preventDefault(); 
+      e.preventDefault();
       e.stopPropagation();
-        this.logger.debug('Delete button clicked');
-        this.deleteTask();
-      })
-      .on('click.modal-events', '#btn-show-history', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.logger.debug('Show history button clicked');
-        this.showTaskHistory();
-      });
-    
+      this.logger.debug('Delete button clicked');
+      this.deleteTask();
+    }, 'modal');
+
+    safeOn('#btn-toggle-history-panel', 'click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.logger.debug('Toggle history panel button clicked');
+      this.toggleHistoryPanel();
+    }, 'modal');
+
     // Bouton ajouter projet
     const btnAjoutProjet = document.getElementById('btn-ajout-projet');
     if (btnAjoutProjet) {
@@ -117,23 +118,25 @@ export class ModalManager {
         this.addNewProject();
       });
     }
-    
-    // Bouton toggle accordéon historique des commentaires (délégation d'événements)
-    document.addEventListener('click', (e) => {
-      if (e.target.matches('#btn-toggle-comment-history, #btn-toggle-comment-history *')) {
-        this.logger.debug('History toggle button clicked');
-        // Laisser Bootstrap gérer l'accordéon, mais charger les données
-        setTimeout(() => {
-          this.loadCommentHistoryInAccordion();
-        }, 100); // Petit délai pour laisser Bootstrap ouvrir l'accordéon
-      }
-    });
-    
+
     // Écouteur pour quand l'accordéon s'ouvre (événement Bootstrap)
     document.addEventListener('shown.bs.collapse', (e) => {
       if (e.target.id === 'comment-history-accordion') {
         this.logger.debug('History accordion opened');
         this.loadCommentHistoryInAccordion();
+        const panel = document.getElementById('task-history-panel');
+        if (panel) {
+          panel.classList.add('history-open');
+        }
+      }
+    });
+
+    document.addEventListener('hidden.bs.collapse', (e) => {
+      if (e.target.id === 'comment-history-accordion') {
+        const panel = document.getElementById('task-history-panel');
+        if (panel) {
+          panel.classList.remove('history-open');
+        }
       }
     });
     
@@ -220,7 +223,39 @@ export class ModalManager {
     // Configurer les événements pour la gestion multiple
     this.setupMultiStrategyEvents();
   }
-  
+
+  /**
+   * Actualise l'accordéon des stratégies lorsqu'elles sont chargées
+   * @param {Array} strategies - Données de stratégies depuis Grist
+   */
+  handleStrategyDataLoaded(strategies = []) {
+    const strategyBrowser = document.getElementById('strategy-browser');
+    if (!strategyBrowser) {
+      return;
+    }
+
+    if (!Array.isArray(strategies) || strategies.length === 0) {
+      this.selectedStrategies = [];
+      this.renderFallbackStrategyAccordion(strategyBrowser);
+      this.updateStrategyTags();
+      this.updateStrategyPreview();
+      this.updateStrategyIds();
+      return;
+    }
+
+    const previouslySelectedIds = new Set(
+      Array.isArray(this.selectedStrategies)
+        ? this.selectedStrategies.map(s => s.id)
+        : []
+    );
+
+    this.kanban.strategiesData = strategies;
+
+    this.renderStrategyAccordion(strategyBrowser);
+    this.setupMultiStrategyEvents();
+    this.restoreStrategySelections(previouslySelectedIds);
+  }
+
   /**
    * Génère l'interface accordéon depuis les données Grist
    */
@@ -341,20 +376,47 @@ export class ModalManager {
     `;
     
     // Event listener pour sélection
-    actionDiv.addEventListener('click', () => {
-      this.selectStrategy(strategy, objectif, sousObjectif, action);
+    actionDiv.addEventListener('click', (evt) => {
+      this.selectStrategy(strategy, objectif, sousObjectif, action, evt);
     });
     
     return actionDiv;
+  }
+
+  restoreStrategySelections(selectedIds) {
+    if (!(selectedIds instanceof Set) || selectedIds.size === 0) {
+      this.selectedStrategies = [];
+      this.updateStrategyPreview();
+      this.updateStrategyIds();
+      return;
+    }
+
+    const restored = this.kanban.strategiesData.filter(strategy => selectedIds.has(strategy.id));
+    this.selectedStrategies = restored;
+
+    restored.forEach(strategy => {
+      const actionCard = document.querySelector(`[data-strategy-id="${strategy.id}"]`);
+      if (actionCard) {
+        actionCard.classList.add('selected');
+        const indicator = actionCard.querySelector('.strategy-selected-indicator');
+        if (indicator) {
+          indicator.style.display = 'block';
+        }
+      }
+    });
+
+    this.updateStrategyTags();
+    this.updateStrategyPreview();
+    this.updateStrategyIds();
   }
   
   /**
    * Toggle une stratégie (ajout/suppression)
    */
-  selectStrategy(strategy, objectif, sousObjectif, action) {
-    if (!strategy) return;
-    
-    const actionCard = event.currentTarget;
+  selectStrategy(strategy, objectif, sousObjectif, action, evt) {
+    if (!strategy || !evt) return;
+
+    const actionCard = evt.currentTarget;
     const isCurrentlySelected = actionCard.classList.contains('selected');
     
     if (isCurrentlySelected) {
@@ -1038,67 +1100,88 @@ export class ModalManager {
   // === REMPLISSAGE DU FORMULAIRE CORRIGÉ ===
   populateTaskForm(tache, isNewTask) {
     this.logger.debug(`Populating task form: ${isNewTask ? 'new task' : 'edit mode'}`);
-    
-    // S'assurer que tache est un objet
-    if (!tache) {
-      tache = {};
+
+    const task = tache ? { ...tache } : {};
+    const resolvedId = task.id ?? task.id_task ?? null;
+
+    if (!this.isNewTask && resolvedId !== null && typeof task.id === 'undefined') {
+      task.id = resolvedId;
     }
-    
+
     // Utiliser le paramètre isNewTask s'il est fourni
     if (isNewTask !== undefined) {
       this.isNewTask = isNewTask;
-      this.currentTaskId = this.isNewTask ? null : (tache.id || null);
-      this.currentTask = this.isNewTask ? null : tache;
     }
-    
-    
+
+    this.currentTaskId = this.isNewTask ? null : resolvedId;
+    this.currentTask = this.isNewTask ? null : task;
+
     // Champs de base
-    setFieldValue('popup-titre', tache.titre || '');
+    setFieldValue('popup-titre', task.titre || '');
     
     // Description - TOUJOURS VIDE pour saisie de nouveaux commentaires
     // Les anciens commentaires sont visibles dans l'historique, pas dans la zone de saisie
     setFieldValue('popup-description', '');
-    
+
     // Réinitialiser l'accordéon historique
     this.resetCommentHistoryAccordion();
-    
+
     // Statut (lecture seule)
-    const statut = tache.statut || (isNewTask ? 'Backlog' : '');
+    const statut = task.statut || (this.isNewTask ? 'Backlog' : '');
     setFieldValue('popup-statut-text', statut);
-    
+    task.statut = statut;
+
+    this.prefillHistorySummaryFromTask(task);
+
     // Projet
-    setFieldValue('popup-projet', tache.projet || '');
+    setFieldValue('popup-projet', task.projet || '');
     
     // Urgence et Impact
-    setFieldValue('popup-urgence', tache.urgence || '');
-    setFieldValue('popup-impact', tache.impact || '');
+    setFieldValue('popup-urgence', task.urgence || '');
+    setFieldValue('popup-impact', task.impact || '');
     
     // Priorité calculée automatiquement
-    const prioriteCalculee = this.calculatePriorite(tache.urgence || '', tache.impact || '');
+    const prioriteCalculee = this.calculatePriorite(task.urgence || '', task.impact || '');
     setFieldValue('popup-priorite-calculee', prioriteCalculee);
     
     // Stratégies depuis Grist - gérer le format références multiples
-    if (tache.strategie_id) {
+    if (task.strategie_id) {
       // Le champ strategie_id contient maintenant les références multiples
-      this.populateStrategyFieldsFromGristReferences(tache.strategie_id);
+      this.populateStrategyFieldsFromGristReferences(task.strategie_id);
     } else {
       // Aucune stratégie - réinitialiser
       this.resetStrategySelection();
     }
-    
+
+    const ensureGristList = (values) => {
+      if (!Array.isArray(values)) {
+        return ['L'];
+      }
+
+      const normalized = values
+        .filter(value => typeof value === 'string' && value.trim() && value !== 'L')
+        .map(value => value.trim());
+
+      const unique = [...new Set(normalized)];
+      return ['L', ...unique];
+    };
+
     // Bureaux et responsables (selects multiples)
-    setSelectedOptions('popup-bureau', tache.bureau || ['L']);
-    setSelectedOptions('popup-qui', tache.qui || ['L']);
-    
+    const bureauList = ensureGristList(task.bureau);
+    const responsablesList = ensureGristList(task.qui);
+
+    setSelectedOptions('popup-bureau', bureauList);
+    setSelectedOptions('popup-qui', responsablesList);
+
     // Synchroniser avec les cases à cocher
     this.syncSelectToCheckbox('popup-bureau-checkboxes', 'popup-bureau');
     this.syncSelectToCheckbox('popup-qui-checkboxes', 'popup-qui');
     
     // Références et documentation (extraire depuis le champ notes)
     let referencesValue = '';
-    if (tache.notes) {
+    if (task.notes) {
       try {
-        const notesData = JSON.parse(tache.notes);
+        const notesData = JSON.parse(task.notes);
         referencesValue = notesData.references || '';
       } catch (e) {
         // Si les notes ne sont pas du JSON valide, ignorer
@@ -1114,11 +1197,15 @@ export class ModalManager {
     
     // Charger les jalons si disponibles
     if (this.kanban.jalonManager) {
-      this.logger.debug(`Processing jalons: ${typeof tache.jalons} - ${tache.jalons}`);
-      this.kanban.jalonManager.loadJalonsFromTask(tache);
+      this.logger.debug(`Processing jalons: ${typeof task.jalons} - ${task.jalons}`);
+      this.kanban.jalonManager.loadJalonsFromTask(task);
     }
-    
+
     this.logger.debug('Task form populated');
+
+    if (!this.isNewTask && (this.currentTaskId || this.currentTask)) {
+      this.loadCommentHistoryInAccordion({ previewOnly: true });
+    }
   }
 
 
@@ -1732,15 +1819,158 @@ export class ModalManager {
     displaySuccess(`Projet "${newProjectName}" ajouté`);
   }
 
+  toggleHistoryPanel() {
+    const panel = document.getElementById('task-history-panel');
+    if (!panel) return;
+
+    const collapseElement = panel.querySelector('#comment-history-accordion');
+    const collapseInstance = collapseElement
+      ? bootstrap.Collapse.getOrCreateInstance(collapseElement, { toggle: false })
+      : null;
+
+    const shouldOpen = !panel.classList.contains('history-open');
+    panel.classList.toggle('history-open', shouldOpen);
+
+    if (!collapseInstance) {
+      if (shouldOpen) {
+        this.loadCommentHistoryInAccordion();
+      }
+      return;
+    }
+
+    if (shouldOpen) {
+      collapseInstance.show();
+      setTimeout(() => {
+        this.loadCommentHistoryInAccordion();
+        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 150);
+    } else {
+      collapseInstance.hide();
+    }
+  }
+
+  updateHistorySummary(historyData) {
+    const lastUpdateElement = document.getElementById('history-last-update');
+    const ownersElement = document.getElementById('history-resume-owners');
+    const statusElement = document.getElementById('history-resume-status');
+
+    if (!lastUpdateElement && !ownersElement && !statusElement) {
+      return;
+    }
+
+    const { timeline = [], task = {} } = historyData;
+    const lastEntry = timeline[0];
+
+    if (lastUpdateElement) {
+      if (lastEntry?.timestamp) {
+        const date = new Date(lastEntry.timestamp);
+        lastUpdateElement.textContent = date.toLocaleString('fr-FR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } else {
+        lastUpdateElement.textContent = 'Aucune activité récente';
+      }
+    }
+
+    const formatList = (values) => {
+      if (!values) return '-';
+      if (Array.isArray(values)) {
+        const cleaned = values.filter(item => item && item !== 'L');
+        return cleaned.length ? cleaned.join(', ') : '-';
+      }
+      if (typeof values === 'string') {
+        return values && values !== 'L' ? values : '-';
+      }
+      return '-';
+    };
+
+    if (ownersElement) {
+      ownersElement.textContent = formatList(task.qui);
+    }
+
+    if (statusElement) {
+      const status = lastEntry?.statut || task.statut || '-';
+      statusElement.textContent = status;
+    }
+  }
+
+  /**
+   * Met à jour le badge comptant les entrées d'historique
+   * @param {number} totalEntries - Nombre d'entrées dans l'historique
+   */
+  updateHistoryCounter(totalEntries = 0) {
+    const commentCountBadge = document.getElementById('comment-count-badge');
+    if (!commentCountBadge) return;
+
+    const safeTotal = Number.isFinite(totalEntries) ? totalEntries : 0;
+    commentCountBadge.textContent = safeTotal;
+    commentCountBadge.className = safeTotal > 0 ? 'badge bg-info ms-2' : 'badge bg-secondary ms-2';
+  }
+
+  /**
+   * Pré-remplit le résumé historique à partir des données de la tâche
+   * @param {object} task - Données de la tâche courante
+   */
+  prefillHistorySummaryFromTask(task = {}) {
+    const ownersElement = document.getElementById('history-resume-owners');
+    const statusElement = document.getElementById('history-resume-status');
+    const lastUpdateElement = document.getElementById('history-last-update');
+
+    if (ownersElement) {
+      let owners = [];
+
+      if (Array.isArray(task.qui)) {
+        owners = task.qui.filter(value => value && value !== 'L');
+      } else if (typeof task.qui === 'string' && task.qui.trim()) {
+        owners = [task.qui.trim()];
+      }
+
+      ownersElement.textContent = owners.length > 0 ? owners.join(', ') : 'Non attribuée';
+    }
+
+    if (statusElement) {
+      statusElement.textContent = task.statut || 'Non défini';
+    }
+
+    if (lastUpdateElement) {
+      const dateCandidate = task.date_derniere_maj || task.date_modif || task.datenow || null;
+
+      if (dateCandidate) {
+        const parsedDate = new Date(dateCandidate);
+        if (!Number.isNaN(parsedDate.getTime())) {
+          lastUpdateElement.textContent = parsedDate.toLocaleString('fr-FR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        } else {
+          lastUpdateElement.textContent = 'Dernière mise à jour inconnue';
+        }
+      } else {
+        lastUpdateElement.textContent = this.isNewTask ? 'Nouvelle tâche' : 'Aucune activité récente';
+      }
+    }
+
+    this.updateHistoryCounter(0);
+  }
+
   /**
    * Charge l'historique des commentaires dans l'accordéon de la modale
    */
-  loadCommentHistoryInAccordion() {
-    this.logger.debug(`Loading comment history for task ${this.currentTaskId}`);
-    
-    // Afficher un message de chargement
+  loadCommentHistoryInAccordion(options = {}) {
+    const { previewOnly = false } = options;
+
+    this.logger.debug(`Loading comment history for task ${this.currentTaskId} (previewOnly=${previewOnly})`);
+
+    // Afficher un message de chargement uniquement si besoin
     const accordionContent = document.getElementById('comment-history-content');
-    if (accordionContent) {
+    if (!previewOnly && accordionContent) {
       accordionContent.innerHTML = `
         <div class="text-center text-muted py-3">
           <div class="spinner-border spinner-border-sm me-2"></div>
@@ -1784,9 +2014,16 @@ export class ModalManager {
       const historyData = this.kanban.historyManager.parseTaskHistory(taskToProcess);
       this.logger.debug(`History data loaded: ${historyData.comments?.length || 0} comments + ${historyData.history?.length || 0} history entries`);
       
+      if (previewOnly) {
+        const totalEntries = Array.isArray(historyData?.timeline) ? historyData.timeline.length : 0;
+        this.updateHistorySummary(historyData);
+        this.updateHistoryCounter(totalEntries);
+        return historyData;
+      }
+
       // Afficher les données dans l'accordéon
       this.renderCommentHistoryInAccordion(historyData);
-      
+
     } catch (error) {
       this.logger.error('Error parsing history:', error.message);
       this.showAccordionError('Erreur lors du chargement de l\'historique: ' + error.message);
@@ -1799,21 +2036,19 @@ export class ModalManager {
    */
   renderCommentHistoryInAccordion(historyData) {
     const accordionContent = document.getElementById('comment-history-content');
-    const commentCountBadge = document.getElementById('comment-count-badge');
-    
-    if (!accordionContent || !commentCountBadge) {
-      this.logger.error('Accordion elements not found');
+
+    if (!accordionContent) {
+      this.logger.error('Accordion content element not found');
       return;
     }
 
-    const { comments, timeline, history, task } = historyData;
-    
+    const { comments = [], timeline = [], history = [], task = {} } = historyData || {};
+
     // Utiliser la timeline complète qui contient TOUT (commentaires + changements de statut + modifications)
-    const totalEntries = timeline.length;
-    
-    // Mettre à jour le badge de comptage  
-    commentCountBadge.textContent = totalEntries;
-    commentCountBadge.className = totalEntries > 0 ? 'badge bg-info ms-2' : 'badge bg-secondary ms-2';
+    const totalEntries = Array.isArray(timeline) ? timeline.length : 0;
+
+    this.updateHistorySummary(historyData);
+    this.updateHistoryCounter(totalEntries);
 
     if (totalEntries === 0) {
       accordionContent.innerHTML = `
@@ -2156,16 +2391,35 @@ export class ModalManager {
     
     // Réinitialiser le badge
     if (commentCountBadge) {
-      commentCountBadge.textContent = '0';
-      commentCountBadge.className = 'badge bg-secondary ms-2';
+      this.updateHistoryCounter(0);
     }
-    
+
     // Fermer l'accordéon s'il est ouvert
     if (accordion && accordion.classList.contains('show')) {
       const bsCollapse = bootstrap.Collapse.getInstance(accordion);
       if (bsCollapse) {
         bsCollapse.hide();
       }
+    }
+
+    const panel = document.getElementById('task-history-panel');
+    if (panel) {
+      panel.classList.remove('history-open');
+    }
+
+    const lastUpdateElement = document.getElementById('history-last-update');
+    if (lastUpdateElement) {
+      lastUpdateElement.textContent = 'En attente de sélection';
+    }
+
+    const ownersElement = document.getElementById('history-resume-owners');
+    if (ownersElement) {
+      ownersElement.textContent = '-';
+    }
+
+    const statusElement = document.getElementById('history-resume-status');
+    if (statusElement) {
+      statusElement.textContent = '-';
     }
   }
 
@@ -2264,17 +2518,51 @@ export class ModalManager {
   populateSelectOptions() {
     if (!this.kanban.gristOptions) return;
     
-    const { urgence, impact, bureau, responsables, projet } = this.kanban.gristOptions;
-    
+    const {
+      urgence = [],
+      urgences = [],
+      impact = [],
+      impacts = [],
+      bureau = [],
+      bureaux = [],
+      responsables = [],
+      qui = [],
+      projet = [],
+      projets = []
+    } = this.kanban.gristOptions;
+
+    const sanitizeList = (values) => {
+      if (!Array.isArray(values)) return [];
+      return [...new Set(values
+        .filter(value => typeof value === 'string' && value.trim() && value !== 'L')
+        .map(value => value.trim())
+      )].sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
+    };
+
+    const urgenceOptions = sanitizeList(urgence.length ? urgence : urgences);
+    const impactOptions = sanitizeList(impact.length ? impact : impacts);
+    const bureauOptions = sanitizeList(bureau.length ? bureau : bureaux);
+    const responsableOptions = sanitizeList(responsables.length ? responsables : qui);
+    const projetOptions = sanitizeList(projet.length ? projet : projets);
+
+    // Mémoriser une copie normalisée pour les opérations locales (ajout projet, etc.)
+    this.gristOptions = {
+      bureau: bureauOptions,
+      responsables: responsableOptions,
+      projet: projetOptions,
+      urgence: urgenceOptions,
+      impact: impactOptions
+    };
+
     // Peupler les selects
-    populateSelect('popup-urgence', urgence || [], true);
-    populateSelect('popup-impact', impact || [], true);
-    populateSelect('popup-projet', projet || [], true);
-    
+    populateSelect('popup-urgence', urgenceOptions, true);
+    populateSelect('popup-impact', impactOptions, true);
+    populateSelect('popup-projet', projetOptions, true);
+
     // Peupler les cases à cocher
-    this.logger.debug(`Populating options: ${bureau?.length || 0} bureau, ${responsables?.length || 0} responsables`);
-    this.populateCheckboxOptions('popup-bureau-checkboxes', 'popup-bureau', bureau || []);
-    this.populateCheckboxOptions('popup-qui-checkboxes', 'popup-qui', responsables || []);
+    this.logger.debug(`Populating options: ${bureauOptions.length} bureau, ${responsableOptions.length} responsables`);
+    this.populateCheckboxOptions('popup-bureau-checkboxes', 'popup-bureau', ['L', ...bureauOptions]);
+    this.populateCheckboxOptions('popup-qui-checkboxes', 'popup-qui', ['L', ...responsableOptions]);
   }
   
   /**
@@ -2300,6 +2588,8 @@ export class ModalManager {
     const lOption = document.createElement('option');
     lOption.value = 'L';
     lOption.textContent = 'L';
+    lOption.hidden = true;
+    lOption.disabled = true;
     hiddenSelect.appendChild(lOption);
     
     options.forEach((option, index) => {
@@ -2338,16 +2628,10 @@ export class ModalManager {
     });
     
     
-    // Test immédiat - créer une case à cocher de test si aucune option
-    if (options.length <= 1) {
-      this.logger.warn(`No options found for ${containerId}`);
-      const testDiv = document.createElement('div');
-      testDiv.className = 'form-check';
-      testDiv.innerHTML = `
-        <input class="form-check-input" type="checkbox" id="${selectId}-test" value="Test">
-        <label class="form-check-label" for="${selectId}-test">Test Option</label>
-      `;
-      container.appendChild(testDiv);
+    // Journaliser si aucune option utile n'a été trouvée
+    const usableOptionsCount = options.filter(option => option && option !== 'L').length;
+    if (usableOptionsCount === 0) {
+      this.logger.warn(`No usable options found for ${containerId}`);
     }
   }
   

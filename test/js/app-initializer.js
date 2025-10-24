@@ -62,7 +62,7 @@ export class KanbanAppInitializer {
       await this.finalizeInitialization();
       
       this.isInitialized = true;
-      displaySuccess('Application Kanban chargée et prête à utiliser');
+      console.log('KanbanAppInitializer: initialisation terminée');
       
       return true;
       
@@ -165,22 +165,31 @@ export class KanbanAppInitializer {
    */
   async loadApplicationData() {
     const kanban = this.components.kanbanManager;
-    
+
+    // Attendre explicitement la connexion Grist pour éviter les faux positifs
+    if (kanban.gristManager) {
+      if (!kanban.gristManager.isConnected) {
+        await this.waitForComponent(
+          () => kanban.gristManager?.isConnected,
+          15000,
+          'GristManager.isConnected'
+        );
+      }
+    } else {
+      throw new Error('GristManager non initialisé');
+    }
+
     if (!kanban.currentRecords || kanban.currentRecords.length === 0) {
-      if (kanban.gristManager?.isConnected) {
-        try {
-          await kanban.gristManager.reloadData();
-        } catch (error) {
-          throw new Error('Impossible de charger les données depuis Grist: ' + error.message);
-        }
-      } else {
-        throw new Error('Grist non connecté - impossible de charger les données');
+      try {
+        await kanban.gristManager.reloadData();
+      } catch (error) {
+        throw new Error('Impossible de charger les données depuis Grist: ' + error.message);
       }
     }
-    
+
     // Valider la cohérence des données
     this.validateDataIntegrity();
-    
+
   }
   
   /**
