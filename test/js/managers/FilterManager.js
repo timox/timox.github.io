@@ -176,25 +176,30 @@ export class FilterManager {
       return;
     }
     
-    const { bureau, responsables, projet, statut } = this.kanban.gristOptions;
-    
+    const {
+      bureau = [],
+      responsables = [],
+      projet = [],
+      statut = []
+    } = this.kanban.gristOptions;
+
     // Peupler bureau
-    if (this.elements.filterBureau && bureau) {
+    if (this.elements.filterBureau) {
       this.populateSelect(this.elements.filterBureau, bureau, 'Tous les bureaux');
     }
-    
+
     // Peupler responsables
-    if (this.elements.filterQui && responsables) {
+    if (this.elements.filterQui) {
       this.populateSelect(this.elements.filterQui, responsables, 'Tous les responsables');
     }
-    
+
     // Peupler projets
-    if (this.elements.filterProjet && projet) {
+    if (this.elements.filterProjet) {
       this.populateSelect(this.elements.filterProjet, projet, 'Tous les projets');
     }
-    
+
     // Peupler statuts
-    if (this.elements.filterStatut && statut) {
+    if (this.elements.filterStatut) {
       this.populateSelect(this.elements.filterStatut, statut, 'Tous les statuts');
     }
     
@@ -222,7 +227,11 @@ export class FilterManager {
     }
     
     // Ajouter les options
-    options.forEach(option => {
+    const normalizedOptions = Array.isArray(options)
+      ? [...new Set(options.filter(option => option && option !== 'L'))]
+      : [];
+
+    normalizedOptions.forEach(option => {
       const optionElement = document.createElement('option');
       optionElement.value = option;
       optionElement.textContent = option;
