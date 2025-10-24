@@ -12,6 +12,17 @@ export const STATUTS = [
   { id: 'Terminé', libelle: 'Terminé', classe: 'termine', icone: '<i class="bi bi-check-circle text-success"></i>' }
 ];
 
+export const STATUS_ACCENTS = {
+  'Backlog': '#6c757d',
+  'À faire': '#0ea5e9',
+  'En cours': '#f97316',
+  'En attente': '#eab308',
+  'Bloqué': '#ef4444',
+  'Validation': '#8b5cf6',
+  'Terminé': '#22c55e',
+  'default': '#6c757d'
+};
+
 // === DONNÉES DE BASE ===
 export const DEFAULT_BUREAUX = [
   'Exploit', 'Réseau', 'BDD', 'Chef SSIR', 'SIG',
@@ -142,6 +153,7 @@ export const BUREAU_ICONS = {
 export const getStatutById = (id) => STATUTS.find(s => s.id === id);
 export const getStatutByClasse = (classe) => STATUTS.find(s => s.classe === classe);
 export const getDefaultStatuts = () => STATUTS.map(s => s.id);
+export const getStatusAccent = (id) => STATUS_ACCENTS[id] || STATUS_ACCENTS.default;
 
 
 // === CONFIGURATION LOGS ===

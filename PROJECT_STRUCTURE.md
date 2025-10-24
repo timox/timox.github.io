@@ -111,13 +111,18 @@ test/
 - **✅ Initialisation unique** : seul `core/KanbanManager` est instancié (kanban-app.js legacy désactivé)
 - **✅ Tests automatisés** via scripts API Grist (readonly-test-suite.js)
 - **🔧 Corrections critiques** tracking historique des changements de statut
+- **📊 Analyse données** (67 tâches, 2 jalons, 0 changements statut trackés)
 - **🛡️ Sécurité** - Scripts avec identifiants exclus du repository git
 
-### 🆕 Mise à jour 2025-09-02
-- Remplacement du script legacy `kanban-app.js` par `app-initializer.js` dans `index.html`
-- Exposition directe de `window.kanbanAppInitializer` pour le debug développeur
-- Vérifications renforcées `window.grist` lors des chargements automatiques
-- Documentation interne alignée sur la nouvelle arborescence (`ROADMAP.md`, `REFACTORING_ARCHITECTURE.md`)
+### 2025-09 – Mise à jour ergonomie /test/
+- **Repliage colorimétrique** : les boutons de collapse reprennent la couleur de colonne et mettent à jour le compteur de pile
+  pour clarifier les colonnes masquées.
+- **Modal tâche repensée** : formulaire deux colonnes, panneau historique latéral repliable et chargement différé des
+  commentaires.
+- **Normalisation options Grist** : listes Bureau / Responsable / Projet alimentées par `KanbanManager.normalizeGristOptions()`
+  (suppression du préfixe `L`, tri cohérent).
+- **Aide contextuelle à la demande** : la fenêtre des raccourcis clavier s'ouvre via le bouton `?` au lieu d'apparaître au
+  chargement.
 
 ### Synchronisation
 - **kanban/ → test/** (27/07/2025) : Synchronisation complète pour développement

@@ -413,6 +413,25 @@
     }
   }
 
+/* Large desktops */
+@media (max-width: 1400px) {
+  .collapsed-columns-stack {
+    top: 5.5rem;
+  }
+}
+
+/* Medium screens */
+@media (max-width: 1200px) {
+  .collapsed-columns-stack {
+    width: 100%;
+    flex: 0 0 auto;
+    position: static;
+    max-height: none;
+    order: -1;
+    margin-bottom: 1rem;
+  }
+}
+
 /* Extra small screens */
 @media (max-width: 575.98px) {
   .container-fluid {

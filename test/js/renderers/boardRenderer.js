@@ -1,7 +1,7 @@
 // === renderers/BoardRenderer.js ===
 // Gestionnaire pour le rendu des colonnes et modes de vue du Kanban
 
-import { STATUTS, VIEW_MODES } from '../config/constants.js';
+import { STATUTS, VIEW_MODES, getStatusAccent } from '../config/constants.js';
 
 /**
  * Gestionnaire pour le rendu des colonnes et modes de vue
@@ -174,20 +174,24 @@ export class BoardRenderer {
       statusClass,
       mode
     } = params;
-    
+
     // Icône du statut
     const statusIcon = this.getStatusIcon(statut.id);
-    
+
+    // Couleur d'accent pour la colonne
+    const accentColor = getStatusAccent(statut.id);
+
     // Indicateurs de performance
     const performanceIndicators = this.generatePerformanceIndicators(stats);
-    
+
     return `
-      <div id="board-${boardId}" 
-           class="kanban-board board-${boardId} ${statusClass}${hiddenClass}" 
+      <div id="board-${boardId}"
+           class="kanban-board board-${boardId} ${statusClass}${hiddenClass}"
+           style="--column-accent: ${accentColor};"
            data-status="${statut.id}"
            role="region"
            aria-label="Colonne ${statut.libelle}">
-        
+
         <!-- Header de la colonne -->
         <div class="kanban-board-header">
           <span class="board-title">
@@ -195,9 +199,9 @@ export class BoardRenderer {
             ${statut.libelle}
           </span>
           <div class="board-meta">
-            ${mode === VIEW_MODES.DETAILED ? this.generateCollapseButton(statut.id) : ''}
-            <button class="board-count" 
-                    data-status="${statut.id}" 
+            ${mode === VIEW_MODES.DETAILED ? this.generateCollapseButton(statut.id, accentColor) : ''}
+            <button class="board-count"
+                    data-status="${statut.id}"
                     title="Filtrer par ${statut.libelle} (${count} tâche${count !== 1 ? 's' : ''})"
                     aria-label="Filtrer par ${statut.libelle}">
               ${count}
@@ -268,8 +272,10 @@ export class BoardRenderer {
     const statusIcon = this.getStatusIcon(activeStatus?.id || '');
     const performanceIndicators = this.generatePerformanceIndicators(stats);
     
+    const accentColor = activeStatus ? getStatusAccent(activeStatus.id) : getStatusAccent();
+
     return `
-      <div class="focus-column" role="tabpanel" aria-label="Tâches ${activeStatus?.libelle}">
+      <div class="focus-column" role="tabpanel" aria-label="Tâches ${activeStatus?.libelle}" style="--column-accent: ${accentColor};">
         <div class="kanban-board-header">
           <span class="board-title">
             ${statusIcon}
@@ -373,13 +379,16 @@ export class BoardRenderer {
    * @param {string} statusId - ID du statut
    * @returns {string} HTML du bouton
    */
-  generateCollapseButton(statusId) {
+  generateCollapseButton(statusId, accentColor = getStatusAccent(statusId)) {
     return `
-      <button class="btn-collapse-column" 
-              data-status="${statusId}" 
+      <button class="btn-collapse-column"
+              data-status="${statusId}"
+              data-accent="${accentColor}"
+              style="--column-accent: ${accentColor};"
               title="Replier/Déplier la colonne"
               aria-label="Replier ou déplier la colonne">
-        <i class="bi bi-chevron-left"></i>
+        <i class="bi bi-chevron-left" aria-hidden="true"></i>
+        <span class="visually-hidden">Replier la colonne ${statusId}</span>
       </button>
     `;
   }

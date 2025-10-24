@@ -128,11 +128,11 @@ if (typeof window.grist === 'undefined') {
 2. **Documentation architecture unifiée**
 3. **Tests automatisés**
 
-## 📝 Suivi des Mises à Jour Récentes
-
-- **2025-09-02 — Désactivation du double orchestrateur** : `test/index.html` ne référence plus `kanban-app.js` ; les helpers console pointent vers `window.kanbanAppInitializer`.
-- **2025-09-02 — Vérifications Grist consolidées** : L'auto-reload et les managers rejettent proprement les appels lorsque `window.grist` est absent.
-- **2025-09-02 — Documentation alignée** : `PROJECT_STRUCTURE.md` et la documentation `/test/` reflètent la nouvelle arborescence `js/app-initializer.js` + `core/`.
+### 2025-09 - Stabilisation ergonomie (en cours)
+- [x] Boutons de repliage alignés sur la charte couleur par statut
+- [x] Normalisation des listes Grist (suppression marqueur `L`, tri unique)
+- [x] Modal tâche compactée + historique latéral repliable
+- [ ] Tests manuels complets sur la nouvelle modale
 
 ## ⚠️ Précautions
 
