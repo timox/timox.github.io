@@ -44,7 +44,7 @@ class StatsAppManager {
         attempts++;
         
         if (typeof window.grist !== 'undefined') {
-          window.grist.ready();
+          window.grist.ready({ requiredAccess: 'read table' });
           resolve();
         } else if (attempts >= maxAttempts) {
           console.error('❌ API Grist non disponible après', maxAttempts, 'tentatives');
@@ -127,6 +127,7 @@ class StatsAppManager {
     // Génération des affichages
     this.generateGlobalMetrics();
     this.generatePersonBureauStats();
+    this.generatePriorityStatusTable();
     this.generateActivityHeatmap();
     this.generateBureauObjectiveMatrix();
     this.generateTasksObjectivesTable();
@@ -206,11 +207,10 @@ class StatsAppManager {
     this.renderPersonBureauTable(personStats);
   }
 
-<<<<<<< HEAD
   generatePriorityStatusTable() {
     // Calculer la répartition priorité/statut
     const priorityStatusData = {};
-    
+
     // Initialiser la structure pour tous les statuts
     Object.values(STATUTS).forEach(statut => {
       priorityStatusData[statut] = {
@@ -281,9 +281,6 @@ class StatsAppManager {
       `;
     }).join('');
   }
-
-=======
->>>>>>> e0ec5cb5aae55a77338600e5daa4f33c69fba3da
   renderPersonBureauTable(personStats) {
     const tbody = document.querySelector('#person-bureau-table tbody');
     

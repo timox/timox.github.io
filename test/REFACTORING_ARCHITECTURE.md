@@ -98,6 +98,36 @@ this.boardRenderer = new BoardRenderer(this, this.cardRenderer);
 this.viewManager = new ViewManager(this);
 ```
 
+## 📆 Mises à jour 2025-09
+
+- ✅ **Boutons de repliage harmonisés** : `ViewModeManager` et `BoardRenderer` propagent désormais la couleur d'accent de chaque
+  statut jusqu'au bouton de repliage pour respecter les codes couleur de colonne. Le compteur de pile est recalculé lors de
+  chaque repli afin de garder une lecture claire des colonnes cachées.
+- ✅ **Pile persistante** : `ViewModeManager.onKanbanRendered()` ré-applique `restoreCollapsedColumns()` après chaque rendu afin
+  de reconstruire la pile latérale et conserver l'état de repli même après un rafraîchissement ou un changement de vue.
+- ✅ **Normalisation des options Grist** : `KanbanManager.normalizeGristOptions()` supprime les marqueurs `"L"`, unifie les clés
+  singulier/pluriel et fournit des listes triées aux filtres et à la modale. Les menus Bureau / Responsable ne remontent plus de
+  valeurs fantômes.
+- ✅ **Modal compactée** : la fiche tâche affiche un layout deux colonnes avec panneau historique latéral. Le résumé (dernière
+  mise à jour, responsables, statut) est pré-rempli dès l'ouverture, puis enrichi par un chargement différé de l'historique via
+  l'accordéon.
+- ✅ **Aide clavier sur demande** : la modale raccourcis ne s'affiche plus automatiquement ; elle est déclenchée via le bouton `?`
+  de l'en-tête pour éviter l'encombrement initial.
+- ✅ **Mode détaillé initial** : `ViewModeManager.initializeViewMode()` est exécuté dès l'instanciation et `KanbanManager.setupViewControls()`
+  s'aligne dessus, ce qui garantit l'affichage des boutons de repliage et de la pile latérale sans action manuelle.
+- ✅ **Focus recentré** : `kanban-base.css` et `redistributeColumnWidths()` basculent le mode focus en pile verticale (stack au-dessus
+  de la colonne active) pour éviter l'empilement horizontal.
+- ✅ **Stratégies dynamiques** : `ModalManager.handleStrategyDataLoaded()` re-render l'accordéon dès que `Ssir_strategie2` est
+  disponible et restaure la sélection existante.
+- ✅ **UI épurée** : suppression du bouton "Fenêtre" sur le panneau historique et retrait du toast de succès initial pour éviter les
+  erreurs de clic et le message vert dans `#error-container`.
+- ✅ **Stats sécurisées** : `stats.html` expose désormais `#stats-container` et attend explicitement `grist.ready({ requiredAccess:
+  'read table' })` pour lever les erreurs d'initialisation.
+- ✅ **Gabarit aligné** : `test/index.html` adopte `view_data_pane_container flexvbox viewsection_type_custom` pour retrouver la pleine largeur dans Grist tout en préservant les modales globales.
+- ✅ **Boutons minimalistes** : `kanban-base.css` retire les fonds dégradés des contrôles de repliage, conserve les icônes `arrow-bar` et applique la teinte de statut avec des focus visibles.
+- ✅ **Options consolidées** : `GristManager.loadGristOptions()` combine les valeurs Grist et les listes par défaut (bureau, responsable, projet, urgence, impact, statut) avant normalisation, supprimant le marqueur « L » et les sélecteurs vides.
+- ✅ **Stats consolidées** : `stats-app.js` réactive la table Priorité/Statut et supprime les marqueurs de conflit `<<` responsables du `SyntaxError`.
+
 ---
 
 ## Structure Finale
