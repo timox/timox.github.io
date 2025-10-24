@@ -2,7 +2,7 @@
 // Interface pour l'API Grist et la gestion des données
 
 import { TABLE_ID, REQUIRED_COLUMNS, OPTIONAL_COLUMNS, DEFAULT_BUREAUX, DEFAULT_RESPONSABLES } from '../config/constants.js';
-import { displayError, displaySuccess } from '../utils/dom.js';
+import { displayError } from '../utils/dom.js';
 import { normalizeDate } from '../utils/dates.js';
 import { createModuleLogger } from '../utils/LoggerManager.js';
 

@@ -44,7 +44,7 @@ class StatsAppManager {
         attempts++;
         
         if (typeof window.grist !== 'undefined') {
-          window.grist.ready();
+          window.grist.ready({ requiredAccess: 'read table' });
           resolve();
         } else if (attempts >= maxAttempts) {
           console.error('❌ API Grist non disponible après', maxAttempts, 'tentatives');

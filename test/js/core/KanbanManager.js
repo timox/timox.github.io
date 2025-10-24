@@ -2,7 +2,7 @@
 // Orchestrateur principal all�g� pour l'application Kanban
 
 import { VIEW_MODES } from '../config/constants.js';
-import { displayError, displaySuccess, toggleLoadingSpinner } from '../utils/dom.js';
+import { displayError, toggleLoadingSpinner } from '../utils/dom.js';
 import { getEventCentralizer } from './EventCentralizer.js';
 
 // Importation des managers
@@ -85,7 +85,6 @@ export class KanbanManager {
       this.setupEventCentralizer();
       
       this.isInitialized = true;
-      displaySuccess('Kanban initialis� avec succ�s');
       
     } catch (error) {
       console.error('KanbanManager: Erreur d\'initialisation:', error);
@@ -182,16 +181,11 @@ export class KanbanManager {
   async loadStrategyData() {
     try {
       const strategyRecords = await this.gristManager.fetchTable('Ssir_strategie2');
-      const mappedStrategies = this.mapStrategyRecords(strategyRecords);
-
-      if (mappedStrategies.length > 0) {
-        this.strategyData = mappedStrategies;
-        this.strategiesData = mappedStrategies; // Alias pour ModalManager
-        return;
+      this.strategyData = this.mapStrategyRecords(strategyRecords);
+      this.strategiesData = this.strategyData; // Alias pour ModalManager
+      if (this.modalManager && this.strategyData.length > 0) {
+        this.modalManager.handleStrategyDataLoaded(this.strategyData);
       }
-
-      console.warn('KanbanManager: Aucune stratégie reçue depuis Grist - activation du repli statique');
-      this.applyStrategyFallbackData('aucune donnée Grist');
     } catch (error) {
       console.warn('KanbanManager: Erreur lors du chargement des stratégies depuis Grist:', error);
       this.applyStrategyFallbackData(error?.message || 'erreur Grist');
@@ -207,39 +201,9 @@ export class KanbanManager {
       console.warn('KanbanManager: Aucune donnée stratégique de repli disponible');
       this.strategyData = [];
       this.strategiesData = [];
-      return;
-    }
-
-    const suffix = reason ? ` (${reason})` : '';
-    console.warn(`KanbanManager: Utilisation des données stratégiques intégrées${suffix}`);
-
-    this.strategyData = FALLBACK_STRATEGY_DATA
-      .map((entry) => {
-        const sourceId = entry.id ?? entry.id2 ?? null;
-        const parsedId = parseInt(sourceId, 10);
-        const normalizedId = Number.isNaN(parsedId) ? sourceId : parsedId;
-
-        return {
-          id: normalizedId,
-          objectif: entry.objectif || '',
-          sous_objectif: entry.sous_objectif || '',
-          action: entry.action || '',
-          echeance: entry.echeance || '',
-          responsable: entry.responsable || '',
-          portee: entry.portee || ''
-        };
-      })
-      .filter((strategy) =>
-        strategy.id !== null && typeof strategy.id !== 'undefined' &&
-        strategy.objectif && strategy.sous_objectif && strategy.action
-      );
-
-    this.strategiesData = this.strategyData;
-
-    if (this.strategyData.length > 0) {
-      console.log(`KanbanManager: ${this.strategyData.length} stratégies chargées depuis le repli statique`);
-    } else {
-      console.warn('KanbanManager: Données de repli présentes mais aucun enregistrement exploitable');
+      if (this.modalManager) {
+        this.modalManager.handleStrategyDataLoaded([]);
+      }
     }
   }
   
@@ -458,9 +422,17 @@ export class KanbanManager {
    * Configure les contr�les de vue
    */
   setupViewControls() {
-    // Les contr�les sont g�r�s par le FilterManager
-    // On s'assure juste que l'�tat initial est correct
-    this.viewMode = this.filterManager?.viewMode || VIEW_MODES.COMPACT;
+    // Aligner l'�tat interne sur le gestionnaire de vues (d�taill� par d�faut)
+    const managerMode = this.viewModeManager?.currentMode;
+    const fallbackMode = this.filterManager?.viewMode || this.viewMode || VIEW_MODES.COMPACT;
+    const resolvedMode = managerMode || fallbackMode;
+
+    this.viewMode = resolvedMode;
+
+    if (this.viewModeManager && managerMode !== resolvedMode) {
+      this.viewModeManager.currentMode = resolvedMode;
+      this.viewModeManager.updateViewModeButtons();
+    }
   }
   
   /**
@@ -982,8 +954,8 @@ export class KanbanManager {
       
       // Relancer l'initialisation
       await this.init();
-      
-      displaySuccess('Application red�marr�e avec succ�s');
+
+      console.log('KanbanManager: Application redémarrée');
       
     } catch (error) {
       console.error('KanbanManager: Erreur lors du red�marrage:', error);

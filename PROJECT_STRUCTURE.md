@@ -125,6 +125,16 @@ test/
   (suppression du préfixe `L`, tri cohérent).
 - **Aide contextuelle à la demande** : la fenêtre des raccourcis clavier s'ouvre via le bouton `?` au lieu d'apparaître au
   chargement.
+- **Mode détaillé rétabli par défaut** : `ViewModeManager` réapplique le mode détaillé dès l'initialisation et synchronise le
+  `KanbanManager`, ce qui redonne accès immédiat aux boutons de repliage et à la pile latérale.
+- **Largeur de colonnes alignée** : le gabarit détaillé passe à 360 px (focus 620 px) pour rétablir une lecture pleine largeur
+  équivalente aux vues statistiques.
+- **Pile focus verticalisée** : en mode focus les colonnes repliées s'empilent désormais dans un seul panneau vertical au-dessus
+  de la colonne active au lieu de rester sur la même ligne.
+- **Stratégies Grist réactives** : la modal rafraîchit l'accordéon dès que les données `Ssir_strategie2` sont chargées et évite
+  d'afficher la bannière « Cause probable » lorsque la table répond.
+- **Stats embarquées** : la page `stats.html` expose un conteneur `#stats-container` et attend explicitement `grist.ready({
+  requiredAccess: 'read table' })` pour lever l'erreur d'initialisation.
 
 ### Synchronisation
 - **kanban/ → test/** (27/07/2025) : Synchronisation complète pour développement

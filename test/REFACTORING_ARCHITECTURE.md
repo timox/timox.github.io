@@ -113,6 +113,16 @@ this.viewManager = new ViewManager(this);
   l'accordéon.
 - ✅ **Aide clavier sur demande** : la modale raccourcis ne s'affiche plus automatiquement ; elle est déclenchée via le bouton `?`
   de l'en-tête pour éviter l'encombrement initial.
+- ✅ **Mode détaillé initial** : `ViewModeManager.initializeViewMode()` est exécuté dès l'instanciation et `KanbanManager.setupViewControls()`
+  s'aligne dessus, ce qui garantit l'affichage des boutons de repliage et de la pile latérale sans action manuelle.
+- ✅ **Focus recentré** : `kanban-base.css` et `redistributeColumnWidths()` basculent le mode focus en pile verticale (stack au-dessus
+  de la colonne active) pour éviter l'empilement horizontal.
+- ✅ **Stratégies dynamiques** : `ModalManager.handleStrategyDataLoaded()` re-render l'accordéon dès que `Ssir_strategie2` est
+  disponible et restaure la sélection existante.
+- ✅ **UI épurée** : suppression du bouton "Fenêtre" sur le panneau historique et retrait du toast de succès initial pour éviter les
+  erreurs de clic et le message vert dans `#error-container`.
+- ✅ **Stats sécurisées** : `stats.html` expose désormais `#stats-container` et attend explicitement `grist.ready({ requiredAccess:
+  'read table' })` pour lever les erreurs d'initialisation.
 
 ---
 

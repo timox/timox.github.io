@@ -27,7 +27,10 @@ export class ViewModeManager {
     // État de repliage des colonnes
     this.collapsedColumns = new Set();
     this.collapsedStack = null; // Référence à la pile des colonnes repliées
-    
+
+    // Aligner immédiatement l'affichage sur le mode courant (détaillé par défaut)
+    this.initializeViewMode();
+
     this.logger.info('Gestionnaire de modes de vue initialisé');
   }
   
@@ -283,12 +286,11 @@ export class ViewModeManager {
     // Pas de refresh ici - sera fait par applyViewMode()
     this.logger.debug(`Focus mode configuré pour colonne: ${this.focusColumn}`);
     
-    // Ajuster la disposition - une seule colonne centrée
-    container.style.gridTemplateColumns = '1fr';
-    container.style.gap = '1rem';
-    container.style.height = 'calc(100vh - 250px)';
-    container.style.justifyContent = 'center';
-    
+    container.style.gridTemplateColumns = '';
+    container.style.gap = '';
+    container.style.height = '';
+    container.style.justifyContent = '';
+
     this.logger.info(`Mode focus simplifié appliqué - statut "${this.focusColumn}" filtré`);
   }
   
@@ -678,7 +680,7 @@ export class ViewModeManager {
       icon.setAttribute('aria-hidden', 'true');
       button.prepend(icon);
     }
-    icon.className = isCollapsed ? 'bi bi-chevron-right' : 'bi bi-chevron-left';
+    icon.className = isCollapsed ? 'bi bi-arrow-bar-right' : 'bi bi-arrow-bar-left';
     icon.setAttribute('aria-hidden', 'true');
 
     let hiddenLabel = button.querySelector('.visually-hidden');
@@ -929,9 +931,18 @@ export class ViewModeManager {
   redistributeColumnWidths() {
     const container = this.kanban.kanbanContainer;
     const visibleColumns = container.querySelectorAll('.kanban-board:not([style*="display: none"])');
-    const collapsedCount = this.collapsedColumns.size;
 
     if (visibleColumns.length === 0) return;
+
+    if (this.currentMode === VIEW_MODES.FOCUS) {
+      visibleColumns.forEach(column => {
+        column.style.flex = '0 0 auto';
+        column.style.width = 'min(100%, 620px)';
+        column.style.minWidth = 'min(100%, 620px)';
+        column.style.maxWidth = '620px';
+      });
+      return;
+    }
 
     // Calculer la largeur disponible (moins la pile si elle existe)
     let stackWidth = 0;
@@ -964,14 +975,18 @@ export class ViewModeManager {
   }
 
   restoreCollapsedColumns() {
-    if (this.currentMode !== VIEW_MODES.DETAILED) {
+    if (this.currentMode === VIEW_MODES.COMPACT) {
       this.showAllColumns();
       this.teardownCollapsedStack();
       return;
     }
 
     if (!this.collapsedColumns || this.collapsedColumns.size === 0) {
-      this.showAllColumns();
+      if (this.currentMode === VIEW_MODES.FOCUS) {
+        this.teardownCollapsedStack();
+      } else {
+        this.showAllColumns();
+      }
       this.updateCollapsedStackCounter();
       this.redistributeColumnWidths();
       return;
@@ -979,6 +994,10 @@ export class ViewModeManager {
 
     const statuses = Array.from(this.collapsedColumns);
     this.collapsedColumns.clear();
+
+    if (this.currentMode !== VIEW_MODES.DETAILED) {
+      this.createCollapsedStack({ reset: true });
+    }
 
     statuses.forEach(statusId => {
       const column = this.findColumnByStatus(statusId);

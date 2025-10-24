@@ -62,7 +62,7 @@ export class KanbanAppInitializer {
       await this.finalizeInitialization();
       
       this.isInitialized = true;
-      displaySuccess('Application Kanban chargée et prête à utiliser');
+      console.log('KanbanAppInitializer: initialisation terminée');
       
       return true;
       

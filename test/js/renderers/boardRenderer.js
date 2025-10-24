@@ -387,7 +387,7 @@ export class BoardRenderer {
               style="--column-accent: ${accentColor};"
               title="Replier/Déplier la colonne"
               aria-label="Replier ou déplier la colonne">
-        <i class="bi bi-chevron-left" aria-hidden="true"></i>
+        <i class="bi bi-arrow-bar-left" aria-hidden="true"></i>
         <span class="visually-hidden">Replier la colonne ${statusId}</span>
       </button>
     `;

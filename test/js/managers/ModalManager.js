@@ -111,13 +111,6 @@ export class ModalManager {
       this.toggleHistoryPanel();
     }, 'modal');
 
-    safeOn('#btn-open-history-modal', 'click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      this.logger.debug('Open history modal from panel');
-      this.showTaskHistory();
-    }, 'modal');
-    
     // Bouton ajouter projet
     const btnAjoutProjet = document.getElementById('btn-ajout-projet');
     if (btnAjoutProjet) {
@@ -230,7 +223,39 @@ export class ModalManager {
     // Configurer les événements pour la gestion multiple
     this.setupMultiStrategyEvents();
   }
-  
+
+  /**
+   * Actualise l'accordéon des stratégies lorsqu'elles sont chargées
+   * @param {Array} strategies - Données de stratégies depuis Grist
+   */
+  handleStrategyDataLoaded(strategies = []) {
+    const strategyBrowser = document.getElementById('strategy-browser');
+    if (!strategyBrowser) {
+      return;
+    }
+
+    if (!Array.isArray(strategies) || strategies.length === 0) {
+      this.selectedStrategies = [];
+      this.renderFallbackStrategyAccordion(strategyBrowser);
+      this.updateStrategyTags();
+      this.updateStrategyPreview();
+      this.updateStrategyIds();
+      return;
+    }
+
+    const previouslySelectedIds = new Set(
+      Array.isArray(this.selectedStrategies)
+        ? this.selectedStrategies.map(s => s.id)
+        : []
+    );
+
+    this.kanban.strategiesData = strategies;
+
+    this.renderStrategyAccordion(strategyBrowser);
+    this.setupMultiStrategyEvents();
+    this.restoreStrategySelections(previouslySelectedIds);
+  }
+
   /**
    * Génère l'interface accordéon depuis les données Grist
    */
@@ -351,20 +376,47 @@ export class ModalManager {
     `;
     
     // Event listener pour sélection
-    actionDiv.addEventListener('click', () => {
-      this.selectStrategy(strategy, objectif, sousObjectif, action);
+    actionDiv.addEventListener('click', (evt) => {
+      this.selectStrategy(strategy, objectif, sousObjectif, action, evt);
     });
     
     return actionDiv;
+  }
+
+  restoreStrategySelections(selectedIds) {
+    if (!(selectedIds instanceof Set) || selectedIds.size === 0) {
+      this.selectedStrategies = [];
+      this.updateStrategyPreview();
+      this.updateStrategyIds();
+      return;
+    }
+
+    const restored = this.kanban.strategiesData.filter(strategy => selectedIds.has(strategy.id));
+    this.selectedStrategies = restored;
+
+    restored.forEach(strategy => {
+      const actionCard = document.querySelector(`[data-strategy-id="${strategy.id}"]`);
+      if (actionCard) {
+        actionCard.classList.add('selected');
+        const indicator = actionCard.querySelector('.strategy-selected-indicator');
+        if (indicator) {
+          indicator.style.display = 'block';
+        }
+      }
+    });
+
+    this.updateStrategyTags();
+    this.updateStrategyPreview();
+    this.updateStrategyIds();
   }
   
   /**
    * Toggle une stratégie (ajout/suppression)
    */
-  selectStrategy(strategy, objectif, sousObjectif, action) {
-    if (!strategy) return;
-    
-    const actionCard = event.currentTarget;
+  selectStrategy(strategy, objectif, sousObjectif, action, evt) {
+    if (!strategy || !evt) return;
+
+    const actionCard = evt.currentTarget;
     const isCurrentlySelected = actionCard.classList.contains('selected');
     
     if (isCurrentlySelected) {
@@ -2536,6 +2588,8 @@ export class ModalManager {
     const lOption = document.createElement('option');
     lOption.value = 'L';
     lOption.textContent = 'L';
+    lOption.hidden = true;
+    lOption.disabled = true;
     hiddenSelect.appendChild(lOption);
     
     options.forEach((option, index) => {
