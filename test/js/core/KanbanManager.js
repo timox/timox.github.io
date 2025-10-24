@@ -18,6 +18,7 @@ import { BoardRenderer } from '../renderers/boardRenderer.js';
 
 // Importation du gestionnaire Grist
 import { GristManager } from '../managers/GristManager.js';
+import { STRATEGY_DATA as FALLBACK_STRATEGY_DATA } from '../config/strategyFallbackData.js';
 
 /**
  * Orchestrateur principal de l'application Kanban (version all�g�e)
@@ -103,7 +104,7 @@ export class KanbanManager {
     }
     
     // V�rifier la pr�sence de Grist
-    if (typeof grist === 'undefined') {
+    if (typeof window === 'undefined' || typeof window.grist === 'undefined') {
       throw new Error('API Grist non disponible');
     }
     
@@ -178,7 +179,6 @@ export class KanbanManager {
    * Charge les données stratégiques depuis Grist
    */
   async loadStrategyData() {
-    // Stratégies chargées uniquement si nécessaire (pas en temps réel)
     try {
       const strategyRecords = await this.gristManager.fetchTable('Ssir_strategie2');
       this.strategyData = this.mapStrategyRecords(strategyRecords);
@@ -187,7 +187,18 @@ export class KanbanManager {
         this.modalManager.handleStrategyDataLoaded(this.strategyData);
       }
     } catch (error) {
-      // Fonctionnement dégradé sans stratégies
+      console.warn('KanbanManager: Erreur lors du chargement des stratégies depuis Grist:', error);
+      this.applyStrategyFallbackData(error?.message || 'erreur Grist');
+    }
+  }
+
+  /**
+   * Applique les données stratégiques intégrées en cas d'indisponibilité Grist
+   * @param {string} [reason] - Raison affichée dans les logs
+   */
+  applyStrategyFallbackData(reason = '') {
+    if (!Array.isArray(FALLBACK_STRATEGY_DATA) || FALLBACK_STRATEGY_DATA.length === 0) {
+      console.warn('KanbanManager: Aucune donnée stratégique de repli disponible');
       this.strategyData = [];
       this.strategiesData = [];
       if (this.modalManager) {
@@ -255,6 +266,10 @@ export class KanbanManager {
 
     ids.forEach((id, index) => {
       try {
+        const rawId = idColumn[index];
+        const parsedId = parseInt(rawId, 10);
+        const normalizedId = Number.isNaN(parsedId) ? rawId : parsedId;
+
         const strategy = {
           id,
           objectif: objectifs[index] || '',
@@ -269,7 +284,7 @@ export class KanbanManager {
           mapped.push(strategy);
         }
       } catch (error) {
-        console.warn('KanbanManager: Erreur mapping stratégie:', id, error);
+        console.warn('KanbanManager: Erreur mapping stratégie:', index, error);
       }
     });
 
