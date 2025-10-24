@@ -144,7 +144,8 @@ export class HistoryManager {
     try {
       targetElement.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm"></div></div>';
       
-      const gristData = await grist.docApi.fetchTable(TABLE_ID);
+      const gristApi = this.getGristApi();
+      const gristData = await gristApi.docApi.fetchTable(TABLE_ID);
       const mappedRecords = this.kanban.mapGristRecords(gristData);
       const task = mappedRecords.find(r => r.id === taskId);
       
@@ -1956,7 +1957,8 @@ export class HistoryManager {
   async updateCommentInGrist(taskId, commentId, newContent) {
     try {
       // Récupérer la tâche actuelle depuis Grist
-      const gristData = await grist.docApi.fetchTable(TABLE_ID);
+      const gristApi = this.getGristApi();
+      const gristData = await gristApi.docApi.fetchTable(TABLE_ID);
       
       // Trouver l'enregistrement
       const index = gristData.id.findIndex(id => id === taskId);
@@ -2076,8 +2078,8 @@ export class HistoryManager {
       const updatedNotes = JSON.stringify(notesData);
       this.logger.debug('Sauvegarde des notes mises à jour:', updatedNotes.length > 100 ? 'Notes très longues...' : updatedNotes);
       
-      await grist.docApi.applyUserActions([
-        ['UpdateRecord', TABLE_ID, taskId, { 
+      await gristApi.docApi.applyUserActions([
+        ['UpdateRecord', TABLE_ID, taskId, {
           notes: updatedNotes,
           date_derniere_maj: new Date().toISOString()
         }]
@@ -2091,6 +2093,22 @@ export class HistoryManager {
     }
   }
   
+  /**
+   * Récupère l'API Grist disponible
+   * @returns {object}
+   */
+  getGristApi() {
+    if (this.kanban?.gristManager?.getGristApi) {
+      return this.kanban.gristManager.getGristApi();
+    }
+
+    if (typeof window !== 'undefined' && typeof window.grist !== 'undefined') {
+      return window.grist;
+    }
+
+    throw new Error('API Grist non disponible');
+  }
+
   /**
    * Récupère l'utilisateur actuel
    * @returns {Promise<string>}

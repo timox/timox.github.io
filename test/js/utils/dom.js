@@ -73,6 +73,8 @@ export function toggleLoadingSpinner(show, spinnerId = 'loading-spinner') {
   const $spinner = $(`#${spinnerId}`);
   if ($spinner.length) {
     $spinner.toggle(show);
+    $spinner.toggleClass('is-visible', !!show);
+    $spinner.attr('aria-hidden', show ? 'false' : 'true');
   }
 }
 

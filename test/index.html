@@ -19,8 +19,9 @@
   <link rel="stylesheet" href="css/kanban-responsive.css">
   <link rel="stylesheet" href="css/strategy-accordion.css">
 </head>
-<body>
-  <div class="container-fluid">
+<body class="kanban-theme">
+  <div class="kanban-shell container-fluid py-4">
+    <main class="kanban-main container-xxl px-2 px-md-3">
     <!-- Header -->
     <div class="kanban-header">
       <div class="container-fluid">
@@ -97,7 +98,7 @@
     <div id="error-container" role="alert" aria-live="polite"></div>
 
     <!-- Loading Spinner -->
-    <div class="loading-spinner" id="loading-spinner" style="display:none;">
+    <div class="loading-spinner" id="loading-spinner" aria-hidden="true">
       <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">Chargement...</span>
       </div>
@@ -530,9 +531,6 @@
   
   <!-- Gestionnaire de clics simple -->
   
-  <!-- Application Kanban modulaire -->
-  <script type="module" src="js/kanban-app.js"></script>
-  
   <!-- Initialisateur principal -->
   <script type="module" src="js/app-initializer.js"></script>
   
@@ -588,11 +586,11 @@
       console.log('  - utils/dates.js');
       console.log('  - utils/badges.js');
       console.log('  - utils/dom.js');
-      console.log('  - kanban-app.js');
+      console.log('  - core/KanbanManager.js');
       console.log('');
       console.log('🔧 Debug disponible:');
       console.log('  - window.kanbanManager : Instance principale');
-      console.log('  - window.KanbanApp : Utilitaires exposés');
+      console.log('  - window.kanbanAppInitializer : Initialiseur courant');
       console.log('  - logger.setLogLevel(\"INFO\") : Activer logs détaillés');
       console.log('');
       console.log('⌨️  Raccourcis:');
