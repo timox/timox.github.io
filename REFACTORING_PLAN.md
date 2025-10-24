@@ -126,6 +126,20 @@ if (typeof window.grist === 'undefined') {
 2. **Documentation architecture unifiée**
 3. **Tests automatisés**
 
+### 2025-09 - Stabilisation ergonomie (en cours)
+- [x] Boutons de repliage alignés sur la charte couleur par statut
+- [x] Pile latérale restaurée et persistante via `ViewModeManager.onKanbanRendered()` et `restoreCollapsedColumns()`
+- [x] Normalisation des listes Grist (suppression marqueur `L`, tri unique)
+- [x] Modal tâche compactée + historique latéral repliable
+- [ ] Tests manuels complets sur la nouvelle modale
+- [x] Réactivation du mode détaillé au chargement pour retrouver les contrôles de repliage et la pile latérale dès la première
+  vue.
+- [x] Largeur de colonnes harmonisée (360 px détaillé, 620 px focus) pour supprimer l'effet "contenu entassé".
+- [x] Pile de colonnes repliées restituée en mode focus avec affichage vertical unique.
+- [x] Rafraîchissement automatique des stratégies de la modal dès réception de `Ssir_strategie2`.
+- [x] Suppression du toast de succès initial et du bouton "Fenêtre" de l'historique pour éviter les erreurs runtime.
+- [x] Page de statistiques initialisée via `#stats-container` + `grist.ready({ requiredAccess: 'read table' })`.
+
 ## ⚠️ Précautions
 
 ### Ce qu'il NE faut PAS faire

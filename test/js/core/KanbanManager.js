@@ -2,7 +2,7 @@
 // Orchestrateur principal all�g� pour l'application Kanban
 
 import { VIEW_MODES } from '../config/constants.js';
-import { displayError, displaySuccess, toggleLoadingSpinner } from '../utils/dom.js';
+import { displayError, toggleLoadingSpinner } from '../utils/dom.js';
 import { getEventCentralizer } from './EventCentralizer.js';
 
 // Importation des managers
@@ -84,7 +84,6 @@ export class KanbanManager {
       this.setupEventCentralizer();
       
       this.isInitialized = true;
-      displaySuccess('Kanban initialis� avec succ�s');
       
     } catch (error) {
       console.error('KanbanManager: Erreur d\'initialisation:', error);
@@ -163,7 +162,7 @@ export class KanbanManager {
     // Les donn�es sont charg�es par le GristManager
     // On r�cup�re les r�f�rences
     this.currentRecords = this.gristManager.currentRecords || [];
-    this.gristOptions = this.gristManager.gristOptions || {};
+    this.gristOptions = this.normalizeGristOptions(this.gristManager.gristOptions || {});
     
     // Charger les données stratégiques depuis SSIR_strategie2
     await this.loadStrategyData();
@@ -184,10 +183,16 @@ export class KanbanManager {
       const strategyRecords = await this.gristManager.fetchTable('Ssir_strategie2');
       this.strategyData = this.mapStrategyRecords(strategyRecords);
       this.strategiesData = this.strategyData; // Alias pour ModalManager
+      if (this.modalManager && this.strategyData.length > 0) {
+        this.modalManager.handleStrategyDataLoaded(this.strategyData);
+      }
     } catch (error) {
       // Fonctionnement dégradé sans stratégies
       this.strategyData = [];
       this.strategiesData = [];
+      if (this.modalManager) {
+        this.modalManager.handleStrategyDataLoaded([]);
+      }
     }
   }
   
@@ -292,11 +297,61 @@ export class KanbanManager {
       // Le ModalManager se charge de peupler les options
       this.modalManager.populateFormOptions?.(this.gristOptions);
     }
-    
+
     if (this.filterManager) {
       // Le FilterManager se charge des options de filtres
       this.filterManager.populateFilterOptions?.(this.gristOptions);
     }
+  }
+
+  /**
+   * Normalise les options provenant de Grist pour assurer la compatibilité
+   * entre les différents gestionnaires (modal, filtres, etc.).
+   * @param {object} rawOptions - Options brutes retournées par le GristManager
+   * @returns {object} Options normalisées avec clés singulier/pluriel alignées
+   */
+  normalizeGristOptions(rawOptions = {}) {
+    const sanitizeList = (list) => {
+      if (!Array.isArray(list)) return [];
+
+      return [...new Set(
+        list
+          .filter(value => typeof value === 'string' && value.trim() && value !== 'L')
+          .map(value => value.trim())
+      )].sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
+    };
+
+    const normalized = { ...rawOptions };
+
+    const bureauList = sanitizeList(
+      rawOptions.bureau || rawOptions.bureaux || rawOptions.bureaus || []
+    );
+    normalized.bureau = bureauList;
+    normalized.bureaux = bureauList;
+
+    const responsablesList = sanitizeList(
+      rawOptions.responsables || rawOptions.responsable || rawOptions.qui || []
+    );
+    normalized.responsables = responsablesList;
+    normalized.qui = responsablesList;
+
+    const projetList = sanitizeList(rawOptions.projet || rawOptions.projets || []);
+    normalized.projet = projetList;
+    normalized.projets = projetList;
+
+    const statutList = sanitizeList(rawOptions.statut || rawOptions.statuts || rawOptions.status || []);
+    normalized.statut = statutList;
+    normalized.statuts = statutList;
+
+    const urgenceList = sanitizeList(rawOptions.urgence || rawOptions.urgences || []);
+    normalized.urgence = urgenceList;
+    normalized.urgences = urgenceList;
+
+    const impactList = sanitizeList(rawOptions.impact || rawOptions.impacts || []);
+    normalized.impact = impactList;
+    normalized.impacts = impactList;
+
+    return normalized;
   }
   
   /**
@@ -341,9 +396,17 @@ export class KanbanManager {
    * Configure les contr�les de vue
    */
   setupViewControls() {
-    // Les contr�les sont g�r�s par le FilterManager
-    // On s'assure juste que l'�tat initial est correct
-    this.viewMode = this.filterManager?.viewMode || VIEW_MODES.COMPACT;
+    // Aligner l'�tat interne sur le gestionnaire de vues (d�taill� par d�faut)
+    const managerMode = this.viewModeManager?.currentMode;
+    const fallbackMode = this.filterManager?.viewMode || this.viewMode || VIEW_MODES.COMPACT;
+    const resolvedMode = managerMode || fallbackMode;
+
+    this.viewMode = resolvedMode;
+
+    if (this.viewModeManager && managerMode !== resolvedMode) {
+      this.viewModeManager.currentMode = resolvedMode;
+      this.viewModeManager.updateViewModeButtons();
+    }
   }
   
   /**
@@ -366,6 +429,10 @@ export class KanbanManager {
           focusColumn: this.focusColumn,
           container: this.kanbanContainer
         });
+
+        if (this.viewModeManager && typeof this.viewModeManager.onKanbanRendered === 'function') {
+          this.viewModeManager.onKanbanRendered();
+        }
       }
       
     } catch (error) {
@@ -516,7 +583,7 @@ export class KanbanManager {
     console.log('KanbanManager: Donn�es recharg�es depuis Grist');
     
     this.currentRecords = newRecords || [];
-    this.gristOptions = newOptions || {};
+    this.gristOptions = this.normalizeGristOptions(newOptions || {});
     
     // Mettre � jour les options des formulaires
     this.populateFormOptions();
@@ -861,8 +928,8 @@ export class KanbanManager {
       
       // Relancer l'initialisation
       await this.init();
-      
-      displaySuccess('Application red�marr�e avec succ�s');
+
+      console.log('KanbanManager: Application redémarrée');
       
     } catch (error) {
       console.error('KanbanManager: Erreur lors du red�marrage:', error);
