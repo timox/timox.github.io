@@ -146,13 +146,13 @@ export class GristManager {
     }
     
     const keys = Object.keys(gristData);
-    if (!keys.includes('id_task') || !Array.isArray(gristData.id_task)) {
-      this.logger.warn('Structure de données Grist invalide - colonne id_task manquante');
+    if (!keys.includes('id') || !Array.isArray(gristData.id)) {
+      this.logger.warn('Structure de données Grist invalide - colonne id manquante');
       this.logger.debug('Colonnes disponibles:', keys.slice(0, 10));
       return [];
     }
-    
-    const recordCount = gristData.id_task.length;
+
+    const recordCount = gristData.id.length;
     
     for (let i = 0; i < recordCount; i++) {
       const record = {};
@@ -160,12 +160,12 @@ export class GristManager {
       
       // Mapper les colonnes requises
       for (const columnName of REQUIRED_COLUMNS) {
-        if (gristData.hasOwnProperty(columnName) && 
-            Array.isArray(gristData[columnName]) && 
+        if (gristData.hasOwnProperty(columnName) &&
+            Array.isArray(gristData[columnName]) &&
             gristData[columnName].length > i) {
-          
+
           const value = gristData[columnName][i];
-          
+
           // Traitement spécial pour les listes (bureau, qui)
           if ((columnName === 'bureau' || columnName === 'qui')) {
             if (Array.isArray(value) && value[0] === 'L') {
@@ -176,9 +176,9 @@ export class GristManager {
           } else {
             record[columnName] = value;
           }
-          
-        } else if (columnName === 'id_task') {
-          // L'id_task est absolument requis
+
+        } else if (columnName === 'id') {
+          // L'identifiant de ligne est absolument requis
           isValidRecord = false;
           break;
         } else {
@@ -207,12 +207,21 @@ export class GristManager {
       
       // Valider et ajouter l'enregistrement
       if (isValidRecord) {
-        // Utiliser id_task comme identifiant unique et créer un id pour compatibilité
-        record.id = parseInt(record.id_task, 10);
-        if (!isNaN(record.id) && record.id > 0) {
+        const parsedId = parseInt(record.id, 10);
+        if (!Number.isNaN(parsedId) && parsedId > 0) {
+          record.id = parsedId;
+
+          // Assurer un id_task numérique cohérent si disponible
+          if (record.id_task === null || record.id_task === undefined) {
+            record.id_task = parsedId;
+          } else if (typeof record.id_task === 'string') {
+            const parsedTaskId = parseInt(record.id_task, 10);
+            record.id_task = Number.isNaN(parsedTaskId) ? record.id_task : parsedTaskId;
+          }
+
           records.push(record);
         } else {
-          this.logger.warn(`Record invalide - id_task: ${record.id_task}`);
+          this.logger.warn(`Record invalide - id: ${record.id}`);
         }
       }
     }
