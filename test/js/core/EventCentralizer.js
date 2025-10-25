@@ -2,6 +2,7 @@
 // Centralisation de TOUS les événements via jQuery pour éviter les conflits
 
 import { safeOn, cleanNamespace } from '../utils/EventManager.js';
+import { VIEW_MODES } from '../config/constants.js';
 
 /**
  * Centralise tous les événements de l'application via jQuery
@@ -62,11 +63,11 @@ export class EventCentralizer {
     
     // === MODES D'AFFICHAGE ===
     safeOn('[data-mode]', 'click', (e) => {
-      const viewModeManager = this.managers.get('viewMode');
-      if (!viewModeManager) return;
-      
+      const viewManager = this.managers.get('viewMode');
+      if (!viewManager) return;
+
       const mode = e.currentTarget.dataset.mode;
-      viewModeManager.setViewMode(mode);
+      viewManager.setViewMode(mode);
     }, 'viewMode');
     
     // === JALONS ===
@@ -99,23 +100,23 @@ export class EventCentralizer {
    * Gestion centralisée des raccourcis clavier
    */
   handleKeyboardShortcuts(e) {
-    const viewModeManager = this.managers.get('viewMode');
+    const viewManager = this.managers.get('viewMode');
     const modalManager = this.managers.get('modal');
-    
+
     // Raccourcis modes d'affichage
-    if (viewModeManager) {
+    if (viewManager) {
       switch (e.key) {
         case '1':
           e.preventDefault();
-          viewModeManager.setViewMode('compact');
+          viewManager.setViewMode(VIEW_MODES.COMPACT);
           break;
         case '2':
           e.preventDefault();
-          viewModeManager.setViewMode('normal');
+          viewManager.setViewMode(VIEW_MODES.DETAILED);
           break;
         case '3':
           e.preventDefault();
-          viewModeManager.setViewMode('detailed');
+          viewManager.setViewMode(VIEW_MODES.FOCUS);
           break;
       }
     }

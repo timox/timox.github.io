@@ -53,7 +53,7 @@ import {
 
 // NOUVEAU: Import des managers
 import { FilterManager } from './managers/FilterManager.js';
-import { ViewModeManager } from './managers/ViewModeManager.js';
+import { ViewManager } from './managers/ViewManager.js';
 import { ModalManager } from './managers/ModalManager.js';
 import { HistoryManager } from './managers/HistoryManager.js';
 import { DatePickerManager } from './managers/DatePickerManager.js';
@@ -112,7 +112,7 @@ class KanbanManager {
     
     // NOUVEAU: Managers
     this.filterManager = null;
-    this.viewModeManager = null;
+    this.viewManager = null;
     this.modalManager = null;
     this.historyManager = null;
     this.datePickerManager = null;
@@ -185,7 +185,7 @@ class KanbanManager {
     this.filterManager = new FilterManager(this);
     
     // Manager des modes de vue 
-    this.viewModeManager = new ViewModeManager(this);
+    this.viewManager = new ViewManager(this);
     
     // Manager des modales
     this.modalManager = new ModalManager(this);
@@ -1271,7 +1271,7 @@ class KanbanManager {
 
   // EVENT LISTENERS
   attachCardEventListeners() {
-    // Seuls les boutons timeline - les autres événements sont gérés par CardRenderer
+    // Seuls les boutons timeline - les autres événements sont gérés par ViewManager
     // Le nettoyage se fait automatiquement via innerHTML dans refreshKanban
     
     // Supprimer tous les anciens listeners en utilisant la délégation d'événements

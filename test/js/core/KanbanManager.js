@@ -10,11 +10,7 @@ import { DatePickerManager } from '../managers/DatePickerManager.js';
 import { ModalManager } from '../managers/ModalManager.js';
 import { HistoryManager } from '../managers/HistoryManager.js';
 import { FilterManager } from '../managers/FilterManager.js';
-import { ViewModeManager } from '../managers/ViewModeManager.js';
-
-// Importation des renderers
-import { CardRenderer } from '../renderers/CardRenderer.js';
-import { BoardRenderer } from '../renderers/boardRenderer.js';
+import { ViewManager } from '../managers/ViewManager.js';
 
 // Importation du gestionnaire Grist
 import { GristManager } from '../managers/GristManager.js';
@@ -38,9 +34,7 @@ export class KanbanManager {
     this.modalManager = null;
     this.historyManager = null;
     this.filterManager = null;
-    this.viewModeManager = null;
-    this.cardRenderer = null;
-    this.boardRenderer = null;
+    this.viewManager = null;
     
     // �tat des donn�es
     this.currentRecords = [];
@@ -128,30 +122,26 @@ export class KanbanManager {
    * Initialise tous les gestionnaires sp�cialis�s
    */
   async initializeManagers() {
-    
-    // 1. Gestionnaire Grist (donn�es)
+
+    // 1. Gestionnaire Grist (données)
     this.gristManager = new GristManager(this);
-    
-    // 2. Renderers (interface)
-    this.cardRenderer = new CardRenderer(this);
-    this.boardRenderer = new BoardRenderer(this, this.cardRenderer);
-    
-    // 3. Gestionnaire de dates
+
+    // 2. Gestionnaire de dates
     this.datePickerManager = new DatePickerManager(this);
-    
-    // 4. Gestionnaire de modals
+
+    // 3. Gestionnaire de modals
     this.modalManager = new ModalManager(this);
-    
-    // 5. Gestionnaire d'historique
+
+    // 4. Gestionnaire d'historique
     this.historyManager = new HistoryManager(this);
-    
-    // 6. Gestionnaire de filtres
+
+    // 5. Gestionnaire de filtres
     this.filterManager = new FilterManager(this);
-    
-    // 7. Gestionnaire de modes de vue (en dernier)
-    this.viewModeManager = new ViewModeManager(this);
-    
-    console.log('KanbanManager: Gestionnaires initialis�s');
+
+    // 6. Gestionnaire de vues et de rendu
+    this.viewManager = new ViewManager(this);
+
+    console.log('KanbanManager: Gestionnaires initialisés');
   }
   
   /**
@@ -430,16 +420,16 @@ export class KanbanManager {
    * Configure les contr�les de vue
    */
   setupViewControls() {
-    // Aligner l'�tat interne sur le gestionnaire de vues (d�taill� par d�faut)
-    const managerMode = this.viewModeManager?.currentMode;
+    // Aligner l'état interne sur le gestionnaire de vues (détaillé par défaut)
+    const managerMode = this.viewManager?.currentMode;
     const fallbackMode = this.filterManager?.viewMode || this.viewMode || VIEW_MODES.COMPACT;
     const resolvedMode = managerMode || fallbackMode;
 
     this.viewMode = resolvedMode;
 
-    if (this.viewModeManager && managerMode !== resolvedMode) {
-      this.viewModeManager.currentMode = resolvedMode;
-      this.viewModeManager.updateViewModeButtons();
+    if (this.viewManager && managerMode !== resolvedMode) {
+      this.viewManager.currentMode = resolvedMode;
+      this.viewManager.updateViewModeButtons();
     }
   }
   
@@ -456,16 +446,16 @@ export class KanbanManager {
       // R�cup�rer les donn�es filtr�es
       const filteredRecords = this.getFilteredRecords();
       
-      // D�l�guer le rendu au BoardRenderer
-      if (this.boardRenderer) {
-        this.boardRenderer.renderKanban(this.viewMode, filteredRecords, {
+      // Déléguer le rendu au ViewManager
+      if (this.viewManager) {
+        this.viewManager.renderKanban(this.viewMode, filteredRecords, {
           showTermine: this.showTermine,
           focusColumn: this.focusColumn,
           container: this.kanbanContainer
         });
 
-        if (this.viewModeManager && typeof this.viewModeManager.onKanbanRendered === 'function') {
-          this.viewModeManager.onKanbanRendered();
+        if (typeof this.viewManager.onKanbanRendered === 'function') {
+          this.viewManager.onKanbanRendered();
         }
       }
       
@@ -846,8 +836,8 @@ export class KanbanManager {
    * @returns {number} Priorit� (1-4)
    */
   calculateSimplePriority(record) {
-    if (this.cardRenderer && typeof this.cardRenderer.calculatePriority === 'function') {
-      return this.cardRenderer.calculatePriority(record.urgence, record.impact);
+    if (this.viewManager && typeof this.viewManager.calculatePriority === 'function') {
+      return this.viewManager.calculatePriority(record.urgence, record.impact);
     }
     
     // Fallback simple
@@ -926,11 +916,8 @@ export class KanbanManager {
         modal: !!this.modalManager,
         history: !!this.historyManager,
         filter: !!this.filterManager,
-        datePicker: !!this.datePickerManager
-      },
-      renderers: {
-        card: !!this.cardRenderer,
-        board: !!this.boardRenderer
+        datePicker: !!this.datePickerManager,
+        view: !!this.viewManager
       }
     };
   }
@@ -1009,9 +996,9 @@ export class KanbanManager {
       this.datePickerManager = null;
     }
     
-    if (this.boardRenderer) {
-      this.boardRenderer.destroy();
-      this.boardRenderer = null;
+    if (this.viewManager) {
+      this.viewManager.destroy();
+      this.viewManager = null;
     }
     
     // Nettoyer le container
@@ -1036,7 +1023,7 @@ export class KanbanManager {
     
     // Enregistrer tous les managers pour délégation
     eventCentralizer.registerManager('history', this.historyManager);
-    eventCentralizer.registerManager('viewMode', this.viewModeManager);
+    eventCentralizer.registerManager('viewMode', this.viewManager);
     eventCentralizer.registerManager('modal', this.modalManager);
     eventCentralizer.registerManager('jalon', this.jalonManager);
     eventCentralizer.registerManager('filter', this.filterManager);

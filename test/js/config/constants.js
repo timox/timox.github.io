@@ -165,7 +165,7 @@ export const LOG_CONFIG = {
     'kanban-app': 'DEBUG',
     'KanbanManager': 'DEBUG', 
     'GristManager': 'DEBUG',
-    'ViewModeManager': 'DEBUG',
+    'ViewManager': 'DEBUG',
     'FilterManager': 'DEBUG',
     'ModalManager': 'DEBUG'
   }

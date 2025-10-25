@@ -1,20 +1,28 @@
-// === managers/ViewModeManager.js ===
-// Gestionnaire pour les modes de vue du Kanban (Compact, Détaillé, Focus)
+// === managers/ViewManager.js ===
+// Gestionnaire centralisé pour les modes de vue et le rendu du Kanban
 
-import { VIEW_MODES, getStatusAccent } from '../config/constants.js';
+import { STATUTS, VIEW_MODES, getStatusAccent } from '../config/constants.js';
+import {
+  generateBureauBadges,
+  generatePriorityBadge,
+  generateProjectBadge,
+  generateResponsablesBadges
+} from '../utils/badges.js';
+import { generateDatesContainer } from '../utils/dates.js';
 import { createModuleLogger } from '../utils/LoggerManager.js';
 
 /**
  * Gestionnaire pour les modes de vue du Kanban
  */
-export class ViewModeManager {
+export class ViewManager {
   constructor(kanbanManager) {
     this.kanban = kanbanManager;
     this.currentMode = VIEW_MODES.DETAILED;
     this.focusColumn = null;
-    this.logger = createModuleLogger('ViewModeManager');
+    this.logger = createModuleLogger('ViewManager');
     this.wrapper = null;
     this.stackHost = null;
+    this.sortableInstances = [];
 
     this.init();
   }
@@ -1101,22 +1109,928 @@ export class ViewModeManager {
   }
 
   /**
+   * Calcule la priorité d'une tâche
+   * @param {string} urgence - Niveau d'urgence
+   * @param {string} impact - Niveau d'impact
+   * @returns {number} Priorité (1-4)
+   */
+  calculatePriority(urgence, impact) {
+    const imp = String(impact || '').trim().toLowerCase();
+    const urg = String(urgence || '').trim().toLowerCase();
+
+    if (imp === 'critique') return 1;
+    if (imp === 'important') return (urg === 'immédiate' || urg === 'courte') ? 1 : 2;
+    if (imp === 'modéré') return (urg === 'immédiate') ? 2 : 3;
+    if (imp === 'mineur') return 4;
+    return 3;
+  }
+
+  /**
+   * Obtient les informations des stratégies multiples
+   * @param {string} strategieId - IDs des stratégies (séparés par virgules)
+   * @returns {Array} Informations des stratégies
+   */
+  getMultipleStrategiesInfo(strategieId) {
+    if (!strategieId || !this.kanban.strategyData) return [];
+
+    const ids = String(strategieId)
+      .split(',')
+      .map(id => parseInt(id.trim(), 10))
+      .filter(id => !isNaN(id));
+
+    return ids
+      .map(id => this.kanban.strategyData.find(s => s.id === id))
+      .filter(Boolean);
+  }
+
+  /**
+   * Génère le bouton timeline
+   * @param {object} record - Données de la tâche
+   * @returns {string} HTML du bouton timeline
+   */
+  generateTimelineButton(record) {
+    let notesEventCount = 0;
+    if (record?.notes) {
+      try {
+        const notesData = JSON.parse(record.notes);
+        if (notesData && Array.isArray(notesData.history)) {
+          notesEventCount = notesData.history.length;
+        }
+      } catch {
+        notesEventCount = 0;
+      }
+    }
+
+    if (!notesEventCount) {
+      return `<button class="btn btn-sm timeline-btn"
+                      data-task-id="${record.id}"
+                      title="Aucun événement"
+                      style="border: none; background: none; color: #6c757d;">
+                <i class="bi bi-clock-history"></i>
+              </button>`;
+    }
+
+    return `<button class="btn btn-sm timeline-btn"
+                    data-task-id="${record.id}"
+                    title="${notesEventCount} événement${notesEventCount > 1 ? 's' : ''}"
+                    style="border: none; background: none; color: #0dcaf0;">
+              <i class="bi bi-clock-history"></i>
+            </button>`;
+  }
+
+  /**
+   * Rend une carte de tâche
+   * @param {object} record - Données de la tâche
+   * @param {string} viewMode - Mode de vue (compact, detailed, focus)
+   * @returns {string} HTML de la carte
+   */
+  renderTaskCard(record, viewMode = VIEW_MODES.COMPACT) {
+    if (!record?.id) {
+      this.logger.warn('Tentative de rendu de carte sans identifiant', record);
+      return '';
+    }
+
+    const priority = this.calculatePriority(record.urgence, record.impact);
+    const priorityBadge = generatePriorityBadge(priority);
+    const strategiesInfo = this.getMultipleStrategiesInfo(record.strategie_id);
+    const hasStrategy = strategiesInfo.length > 0 ||
+      record.strategie_objectif ||
+      record.strategie_sous_objectif ||
+      record.strategie_action;
+
+    const strategiesText = strategiesInfo.length > 0
+      ? strategiesInfo.map(s => `• ${s.objectif}`).join('\\n')
+      : '';
+    const strategyTooltip = strategiesText
+      ? `title="${strategiesInfo.length} stratégie${strategiesInfo.length > 1 ? 's' : ''} liée${strategiesInfo.length > 1 ? 's' : ''}"`
+      : (hasStrategy ? 'title="Stratégie associée"' : '');
+    const strategyIcon = hasStrategy
+      ? `<i class="bi bi-crosshair strategie-icon" ${strategyTooltip} style="font-size: 1.1em; color: #28a745;"></i>`
+      : '';
+
+    const projectBadge = record.projet
+      ? generateProjectBadge({
+          projet: record.projet,
+          strategie_objectif: strategiesInfo[0]?.objectif,
+          strategie_sous_objectif: strategiesInfo[0]?.sous_objectif,
+          strategie_action: strategiesInfo[0]?.action
+        })
+      : '';
+
+    let resumeDesc = '';
+    if (record.notes) {
+      try {
+        const notesData = JSON.parse(record.notes);
+        if (notesData?.content) {
+          const content = notesData.content.substring(0, 80);
+          resumeDesc = `<div class="desc-resume">${content}${notesData.content.length > 80 ? '…' : ''}</div>`;
+        }
+      } catch {
+        // Ignorer les erreurs de parsing
+      }
+    }
+
+    const datesElement = generateDatesContainer({
+      date_debut: record.date_debut,
+      date_echeance: record.date_echeance
+    }, viewMode === VIEW_MODES.COMPACT);
+
+    const bureauBadges = generateBureauBadges(record.bureau, viewMode === VIEW_MODES.COMPACT);
+    const responsablesBadges = generateResponsablesBadges(record.qui);
+    const timelineButton = this.generateTimelineButton(record);
+
+    const hasEcheanceClass = record.date_echeance ? 'has-echeance' : '';
+    const hasDateDebutClass = record.date_debut ? 'has-debut' : '';
+    const cardClass = viewMode === VIEW_MODES.COMPACT ? 'kanban-item-compact' : 'kanban-item';
+
+    return `<div class="kanban-item ${cardClass} ${hasEcheanceClass} ${hasDateDebutClass}" data-id="${record.id}">
+      <div class="drag-handle">
+        <i class="bi bi-grip-vertical"></i>
+      </div>
+
+      ${bureauBadges}
+
+      <div class="kanban-item-header">
+        <div class="priority-section">
+          ${priorityBadge}
+          ${strategyIcon}
+          ${this.generateReferenceIcon(record, viewMode)}
+          ${this.generateJalonIcon(record, viewMode)}
+        </div>
+        <div class="item-badges">
+          ${projectBadge}
+          ${timelineButton}
+        </div>
+      </div>
+
+      <div class="item-title editable-zone">${record.titre || 'Sans titre'}</div>
+
+      ${this.generateExpandedContent(record, viewMode)}
+
+      ${resumeDesc}
+
+      ${datesElement}
+
+      ${viewMode !== VIEW_MODES.COMPACT ? responsablesBadges : ''}
+    </div>`;
+  }
+
+  generateReferenceIcon(record, viewMode) {
+    if (viewMode === VIEW_MODES.COMPACT) return '';
+
+    const hasReference = record?.notes && (
+      record.notes.includes('\\\\') ||
+      record.notes.includes('http') ||
+      record.notes.includes('file://') ||
+      record.notes.includes('C:') ||
+      record.notes.includes('D:')
+    );
+
+    if (!hasReference) return '';
+
+    const tooltip = viewMode === VIEW_MODES.FOCUS
+      ? 'title="Contient des références - cliquer pour voir le détail"'
+      : 'title="Contient des références"';
+
+    return `<i class="bi bi-link-45deg reference-icon" ${tooltip} style="font-size: 1.1em; color: #6f42c1;"></i>`;
+  }
+
+  generateJalonIcon(record, viewMode) {
+    if (viewMode === VIEW_MODES.COMPACT) return '';
+
+    const hasJalons = record?.jalons && record.jalons !== '[]' && record.jalons.trim() !== '';
+    if (!hasJalons) return '';
+
+    let jalonCount = 0;
+    try {
+      const jalons = JSON.parse(record.jalons);
+      jalonCount = Array.isArray(jalons) ? jalons.length : 0;
+    } catch {
+      jalonCount = 1;
+    }
+
+    const tooltip = viewMode === VIEW_MODES.FOCUS
+      ? `title="${jalonCount} jalon${jalonCount > 1 ? 's' : ''} planifié${jalonCount > 1 ? 's' : ''} - cliquer pour voir"`
+      : `title="${jalonCount} jalon${jalonCount > 1 ? 's' : ''}"`;
+
+    return `<i class="bi bi-calendar-event jalon-icon" ${tooltip} style="font-size: 1.1em; color: #fd7e14;"></i>`;
+  }
+
+  generateExpandedContent(record, viewMode) {
+    if (viewMode !== VIEW_MODES.FOCUS) return '';
+
+    let expandedContent = '';
+    const strategiesInfo = this.getMultipleStrategiesInfo(record.strategie_id);
+    if (strategiesInfo.length > 0) {
+      expandedContent += `
+        <div class="expanded-strategies">
+          <h6><i class="bi bi-crosshair me-1"></i>Stratégies:</h6>
+          <ul class="list-unstyled ms-3">
+            ${strategiesInfo.map(s => `<li>• ${s.objectif} → ${s.action}</li>`).join('')}
+          </ul>
+        </div>`;
+    }
+
+    if (record?.jalons && record.jalons !== '[]') {
+      try {
+        const jalons = JSON.parse(record.jalons);
+        if (Array.isArray(jalons) && jalons.length > 0) {
+          expandedContent += `
+            <div class="expanded-jalons">
+              <h6><i class="bi bi-calendar-event me-1"></i>Jalons:</h6>
+              <ul class="list-unstyled ms-3">
+                ${jalons.map(j => `<li>• ${j.titre} (${j.date})</li>`).join('')}
+              </ul>
+            </div>`;
+        }
+      } catch {
+        // Ignorer les erreurs de parsing
+      }
+    }
+
+    if (record?.notes && (record.notes.includes('\\\\') || record.notes.includes('http'))) {
+      const references = this.extractReferences(record.notes);
+      if (references.length > 0) {
+        expandedContent += `
+          <div class="expanded-references">
+            <h6><i class="bi bi-link-45deg me-1"></i>Références:</h6>
+            <ul class="list-unstyled ms-3">
+              ${references.map(ref => `<li>• <code>${ref}</code></li>`).join('')}
+            </ul>
+          </div>`;
+      }
+    }
+
+    return expandedContent;
+  }
+
+  extractReferences(text) {
+    const references = [];
+    const networkPaths = text.match(/\\\\[^\s]+/g) || [];
+    references.push(...networkPaths);
+    const urls = text.match(/https?:\/\/[^\s]+/g) || [];
+    references.push(...urls);
+    const localPaths = text.match(/[A-Z]:[^\s]+/g) || [];
+    references.push(...localPaths);
+    return [...new Set(references)];
+  }
+
+  attachCardEventListeners(container) {
+    container.querySelectorAll('.editable-zone').forEach(zone => {
+      zone.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+
+        const card = zone.closest('.kanban-item');
+        const taskId = parseInt(card?.dataset.id, 10);
+
+        if (!isNaN(taskId) && this.kanban.modalManager) {
+          const task = this.kanban.currentRecords?.find(r => r.id === taskId);
+          if (task) {
+            this.kanban.modalManager.openTaskModal(task);
+          }
+        }
+      });
+    });
+
+    container.querySelectorAll('.timeline-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+
+        const taskId = parseInt(btn.dataset.taskId, 10);
+        if (!isNaN(taskId)) {
+          window.open(`timeline.html?task=${taskId}`, '_blank');
+        }
+      });
+    });
+
+    container.querySelectorAll('.kanban-item').forEach(card => {
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          const editableZone = card.querySelector('.editable-zone');
+          editableZone?.click();
+        }
+      });
+    });
+  }
+
+  renderKanban(viewMode, records = [], options = {}) {
+    const {
+      showTermine = true,
+      focusColumn = null,
+      container = null
+    } = options;
+
+    const kanbanContainer = container || this.kanban.kanbanContainer;
+    if (!kanbanContainer) {
+      this.logger.error('Impossible de rendre le Kanban: container introuvable');
+      return;
+    }
+
+    this.destroySortableInstances();
+
+    const statutsToShow = showTermine ? STATUTS : STATUTS.filter(s => s.id !== 'Terminé');
+
+    switch (viewMode) {
+      case VIEW_MODES.FOCUS:
+        this.renderFocusMode(kanbanContainer, statutsToShow, records, focusColumn || this.focusColumn);
+        break;
+      case VIEW_MODES.DETAILED:
+        this.renderColumnMode(kanbanContainer, statutsToShow, records, VIEW_MODES.DETAILED);
+        break;
+      case VIEW_MODES.COMPACT:
+      default:
+        this.renderColumnMode(kanbanContainer, statutsToShow, records, VIEW_MODES.COMPACT);
+        break;
+    }
+
+    this.attachEventListeners(kanbanContainer);
+    this.initializeScrollArrows();
+  }
+
+  renderColumnMode(container, statuts, records, mode) {
+    const modeClass = mode === VIEW_MODES.COMPACT ? 'kanban-compact' : 'kanban-detailed';
+    container.className = `kanban-container ${modeClass}`;
+
+    let kanbanHTML = '';
+
+    statuts.forEach(statut => {
+      const boardId = statut.classe;
+      const boardRecords = this.filterRecordsByStatus(records, statut.id);
+
+      this.sortRecords(boardRecords);
+
+      const itemsHTML = boardRecords
+        .map(record => this.renderTaskCard(record, mode))
+        .join('');
+
+      const stats = this.calculateColumnStats(boardRecords);
+      const count = boardRecords.length;
+      const isHidden = count === 0;
+      const hiddenClass = isHidden ? ' board-hidden' : '';
+      const statusClass = this.getStatusClass(statut.id);
+
+      kanbanHTML += this.generateColumnHTML({
+        boardId,
+        statut,
+        count,
+        stats,
+        itemsHTML,
+        hiddenClass,
+        statusClass,
+        mode
+      });
+    });
+
+    container.innerHTML = kanbanHTML;
+    this.initializeSortable(statuts, mode);
+  }
+
+  renderFocusMode(container, statuts, records, focusColumn) {
+    const activeColumn = focusColumn || statuts[0]?.id || 'Backlog';
+    this.focusColumn = activeColumn;
+
+    const navigationHTML = this.generateFocusNavigation(statuts, records, activeColumn);
+    const activeStatus = statuts.find(s => s.id === activeColumn);
+    const boardRecords = this.filterRecordsByStatus(records, activeColumn);
+
+    this.sortRecords(boardRecords);
+
+    const itemsHTML = boardRecords
+      .map(record => this.renderTaskCard(record, VIEW_MODES.FOCUS))
+      .join('');
+
+    const stats = this.calculateColumnStats(boardRecords);
+    const columnHTML = this.generateFocusColumnHTML({
+      activeStatus,
+      boardRecords,
+      itemsHTML,
+      stats,
+      activeColumn
+    });
+
+    container.className = 'kanban-container kanban-focus';
+    container.innerHTML = navigationHTML + columnHTML;
+    this.initializeFocusSortable(activeColumn);
+  }
+
+  generateColumnHTML({ boardId, statut, count, stats, itemsHTML, hiddenClass, statusClass, mode }) {
+    const statusIcon = this.getStatusIcon(statut.id);
+    const accentColor = getStatusAccent(statut.id);
+    const performanceIndicators = this.generatePerformanceIndicators(stats);
+
+    return `
+      <div id="board-${boardId}"
+           class="kanban-board board-${boardId} ${statusClass}${hiddenClass}"
+           style="--column-accent: ${accentColor};"
+           data-status="${statut.id}"
+           role="region"
+           aria-label="Colonne ${statut.libelle}">
+
+        <div class="kanban-board-header">
+          <span class="board-title">
+            ${statusIcon}
+            ${statut.libelle}
+          </span>
+          <div class="board-meta">
+            ${mode === VIEW_MODES.DETAILED ? this.generateCollapseButton(statut.id, accentColor) : ''}
+            <button class="board-count"
+                    data-status="${statut.id}"
+                    title="Filtrer par ${statut.libelle} (${count} tâche${count !== 1 ? 's' : ''})"
+                    aria-label="Filtrer par ${statut.libelle}">
+              ${count}
+            </button>
+            ${performanceIndicators}
+          </div>
+        </div>
+
+        <div class="kanban-board-body"
+             id="items-${boardId}"
+             data-status="${statut.id}"
+             role="list"
+             aria-label="Liste des tâches ${statut.libelle}">
+          ${itemsHTML}
+          ${count === 0 ? this.generateEmptyDropZone(statut) : ''}
+        </div>
+
+        ${this.generateColumnFooter(stats, mode)}
+      </div>
+    `;
+  }
+
+  generateFocusNavigation(statuts, records, activeColumn) {
+    const navItems = statuts.map(statut => {
+      const count = this.filterRecordsByStatus(records, statut.id).length;
+      const isActive = activeColumn === statut.id;
+      const icon = this.getStatusIcon(statut.id);
+
+      return `
+        <button class="btn btn-outline-secondary ${isActive ? 'active' : ''}"
+                data-status="${statut.id}"
+                title="Voir les tâches ${statut.libelle}"
+                aria-pressed="${isActive}">
+          ${icon}
+          ${statut.libelle}
+          <span class="badge bg-secondary">${count}</span>
+        </button>
+      `;
+    }).join('');
+
+    return `
+      <div class="focus-navigation" role="tablist" aria-label="Navigation des statuts">
+        ${navItems}
+      </div>
+    `;
+  }
+
+  generateFocusColumnHTML({ activeStatus, boardRecords, itemsHTML, stats, activeColumn }) {
+    const statusIcon = this.getStatusIcon(activeStatus?.id || '');
+    const performanceIndicators = this.generatePerformanceIndicators(stats);
+    const accentColor = activeStatus ? getStatusAccent(activeStatus.id) : getStatusAccent();
+
+    return `
+      <div class="focus-column" role="tabpanel" aria-label="Tâches ${activeStatus?.libelle || ''}" style="--column-accent: ${accentColor};">
+        <div class="kanban-board-header">
+          <span class="board-title">
+            ${statusIcon}
+            ${activeStatus?.libelle || 'Statut inconnu'}
+          </span>
+          <div class="board-meta">
+            <span class="board-count">${boardRecords.length}</span>
+            ${performanceIndicators}
+          </div>
+        </div>
+
+        <div class="kanban-board-body"
+             id="items-focus"
+             data-status="${activeColumn}"
+             role="list"
+             aria-label="Liste des tâches">
+          ${itemsHTML}
+          ${boardRecords.length === 0 ? this.generateEmptyDropZone(activeStatus) : ''}
+        </div>
+
+        ${this.generateColumnFooter(stats, VIEW_MODES.FOCUS)}
+      </div>
+    `;
+  }
+
+  generateEmptyDropZone(statut) {
+    const encouragementText = this.getEncouragementText(statut?.id);
+
+    return `
+      <div class="empty-drop-zone" role="region" aria-label="Zone de dépôt vide">
+        <div class="empty-zone-content">
+          <i class="bi bi-plus-circle-dotted text-muted"></i>
+          <p class="text-muted small mt-2">${encouragementText}</p>
+        </div>
+      </div>
+    `;
+  }
+
+  generateColumnFooter(stats, mode) {
+    if (mode === VIEW_MODES.COMPACT || !stats.totalTasks) {
+      return '';
+    }
+
+    const priorityDistribution = this.generatePriorityDistribution(stats);
+    return `
+      <div class="kanban-board-footer">
+        ${priorityDistribution}
+      </div>
+    `;
+  }
+
+  generatePerformanceIndicators(stats) {
+    const indicators = [];
+
+    if (stats.urgentTasks > 0) {
+      indicators.push(`
+        <span class="indicator urgent" title="${stats.urgentTasks} tâche${stats.urgentTasks > 1 ? 's' : ''} urgente${stats.urgentTasks > 1 ? 's' : ''}">
+          <i class="bi bi-exclamation-triangle text-danger"></i>
+          ${stats.urgentTasks}
+        </span>
+      `);
+    }
+
+    if (stats.overdueTasks > 0) {
+      indicators.push(`
+        <span class="indicator overdue" title="${stats.overdueTasks} tâche${stats.overdueTasks > 1 ? 's' : ''} en retard">
+          <i class="bi bi-clock text-warning"></i>
+          ${stats.overdueTasks}
+        </span>
+      `);
+    }
+
+    return indicators.length > 0 ? `<div class="performance-indicators">${indicators.join('')}</div>` : '';
+  }
+
+  generateCollapseButton(statusId, accentColor = getStatusAccent(statusId)) {
+    return `
+      <button class="btn-collapse-column"
+              data-status="${statusId}"
+              data-accent="${accentColor}"
+              style="--column-accent: ${accentColor};"
+              title="Replier/Déplier la colonne"
+              aria-label="Replier ou déplier la colonne">
+        <i class="bi bi-arrow-bar-left" aria-hidden="true"></i>
+        <span class="visually-hidden">Replier la colonne ${statusId}</span>
+      </button>
+    `;
+  }
+
+  generatePriorityDistribution(stats) {
+    if (!stats.priorityDistribution) return '';
+
+    const { priorityDistribution } = stats;
+    const total = stats.totalTasks;
+
+    const priorityBars = [1, 2, 3, 4].map(priority => {
+      const count = priorityDistribution[priority] || 0;
+      const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
+      if (!count) return '';
+
+      return `
+        <div class="priority-bar priority-${priority}"
+             style="width: ${percentage}%"
+             title="P${priority}: ${count} tâche${count > 1 ? 's' : ''} (${percentage}%)">
+        </div>
+      `;
+    }).filter(Boolean);
+
+    if (priorityBars.length === 0) return '';
+
+    return `
+      <div class="priority-distribution" title="Distribution des priorités">
+        ${priorityBars.join('')}
+      </div>
+    `;
+  }
+
+  filterRecordsByStatus(records, statusId) {
+    return records.filter(record => record.statut === statusId);
+  }
+
+  sortRecords(records) {
+    records.sort((a, b) => {
+      const prioA = this.calculatePriority(a.urgence, a.impact);
+      const prioB = this.calculatePriority(b.urgence, b.impact);
+
+      if (prioA !== prioB) {
+        return prioA - prioB;
+      }
+
+      if (a.date_echeance && b.date_echeance) {
+        return new Date(a.date_echeance) - new Date(b.date_echeance);
+      }
+
+      if (a.date_echeance && !b.date_echeance) return -1;
+      if (!a.date_echeance && b.date_echeance) return 1;
+
+      return b.id - a.id;
+    });
+  }
+
+  calculateColumnStats(records) {
+    const stats = {
+      totalTasks: records.length,
+      urgentTasks: 0,
+      overdueTasks: 0,
+      highPriorityTasks: 0,
+      priorityDistribution: { 1: 0, 2: 0, 3: 0, 4: 0 },
+      averagePriority: 0
+    };
+
+    if (records.length === 0) {
+      return stats;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let totalPriority = 0;
+
+    records.forEach(record => {
+      const priority = this.calculatePriority(record.urgence, record.impact);
+      stats.priorityDistribution[priority]++;
+      totalPriority += priority;
+
+      if (priority <= 2) {
+        stats.highPriorityTasks++;
+      }
+
+      if (record.date_echeance) {
+        const echeance = new Date(record.date_echeance);
+        echeance.setHours(0, 0, 0, 0);
+
+        if (echeance < today) {
+          stats.overdueTasks++;
+        }
+
+        const diffDays = Math.ceil((echeance - today) / (1000 * 60 * 60 * 24));
+        if (diffDays >= 0 && diffDays <= 3) {
+          stats.urgentTasks++;
+        }
+      }
+    });
+
+    stats.averagePriority = Math.round(totalPriority / records.length * 10) / 10;
+    return stats;
+  }
+
+  getStatusIcon(statusId) {
+    const icons = {
+      'Backlog': '<i class="bi bi-list-ul"></i>',
+      'À faire': '<i class="bi bi-calendar-plus"></i>',
+      'En cours': '<i class="bi bi-play-circle"></i>',
+      'En attente': '<i class="bi bi-pause-circle"></i>',
+      'Bloqué': '<i class="bi bi-x-octagon"></i>',
+      'Validation': '<i class="bi bi-check-circle"></i>',
+      'Terminé': '<i class="bi bi-check-circle-fill"></i>'
+    };
+
+    return icons[statusId] || '<i class="bi bi-circle"></i>';
+  }
+
+  getStatusClass(statusId) {
+    const classes = {
+      'Backlog': 'status-backlog',
+      'À faire': 'status-todo',
+      'En cours': 'status-progress',
+      'En attente': 'status-waiting',
+      'Bloqué': 'status-blocked',
+      'Validation': 'status-validation',
+      'Terminé': 'status-done'
+    };
+
+    return classes[statusId] || 'status-unknown';
+  }
+
+  getEncouragementText(statusId) {
+    const messages = {
+      'Backlog': 'Glissez des tâches ici pour les planifier',
+      'À faire': 'Prêt à démarrer de nouvelles tâches ?',
+      'En cours': 'Aucune tâche en cours pour le moment',
+      'En attente': 'Pas de tâches en attente actuellement',
+      'Bloqué': 'Heureusement, rien n\'est bloqué !',
+      'Validation': 'Rien à valider pour l\'instant',
+      'Terminé': 'Aucune tâche terminée récemment'
+    };
+
+    return messages[statusId] || 'Glissez des tâches ici';
+  }
+
+  initializeSortable(statuts, mode) {
+    statuts.forEach(statut => {
+      const boardId = statut.classe;
+      const element = document.getElementById(`items-${boardId}`);
+
+      if (element) {
+        const sortable = new Sortable(element, {
+          group: 'kanban',
+          animation: 150,
+          handle: '.drag-handle',
+          ghostClass: 'sortable-ghost',
+          chosenClass: 'sortable-chosen',
+          dragClass: 'sortable-drag',
+          onEnd: (evt) => this.handleDragEnd(evt, statut.id),
+          onStart: (evt) => this.handleDragStart(evt),
+          onMove: (evt) => this.handleDragMove(evt)
+        });
+
+        this.sortableInstances.push(sortable);
+      }
+    });
+  }
+
+  initializeFocusSortable(activeColumn) {
+    const element = document.getElementById('items-focus');
+
+    if (element) {
+      const sortable = new Sortable(element, {
+        group: 'kanban-focus',
+        animation: 150,
+        handle: '.drag-handle',
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        dragClass: 'sortable-drag',
+        onEnd: (evt) => this.handleDragEnd(evt, activeColumn),
+        onStart: (evt) => this.handleDragStart(evt)
+      });
+
+      this.sortableInstances.push(sortable);
+    }
+  }
+
+  handleDragStart(evt) {
+    if (evt.item) {
+      evt.item.classList.add('dragging');
+      document.querySelectorAll('.kanban-board-body').forEach(zone => {
+        zone.classList.add('drop-zone-active');
+      });
+    }
+  }
+
+  handleDragMove(evt) {
+    const fromStatus = evt.from?.dataset?.status;
+    const toStatus = evt.to?.dataset?.status;
+
+    if (fromStatus === 'Terminé' && toStatus !== 'Terminé') {
+      return true;
+    }
+
+    return true;
+  }
+
+  handleDragEnd(evt, targetStatus) {
+    if (evt.item) {
+      evt.item.classList.remove('dragging');
+    }
+
+    document.querySelectorAll('.kanban-board-body').forEach(zone => {
+      zone.classList.remove('drop-zone-active');
+    });
+
+    if (typeof this.kanban.handleDragEnd === 'function') {
+      this.kanban.handleDragEnd(evt, targetStatus);
+    }
+  }
+
+  initializeScrollArrows() {
+    const leftArrow = document.getElementById('scroll-left');
+    const rightArrow = document.getElementById('scroll-right');
+    const kanbanContainer = this.kanban.kanbanContainer;
+
+    if (!leftArrow || !rightArrow || !kanbanContainer) return;
+
+    const updateArrows = () => {
+      const scrollLeft = kanbanContainer.scrollLeft;
+      const scrollWidth = kanbanContainer.scrollWidth;
+      const clientWidth = kanbanContainer.clientWidth;
+
+      if (scrollLeft <= 0) {
+        leftArrow.classList.add('hidden');
+      } else {
+        leftArrow.classList.remove('hidden');
+      }
+
+      if (scrollLeft >= scrollWidth - clientWidth - 10) {
+        rightArrow.classList.add('hidden');
+      } else {
+        rightArrow.classList.remove('hidden');
+      }
+    };
+
+    kanbanContainer.addEventListener('scroll', updateArrows);
+
+    leftArrow.addEventListener('click', () => {
+      kanbanContainer.scrollBy({ left: -300, behavior: 'smooth' });
+    });
+
+    rightArrow.addEventListener('click', () => {
+      kanbanContainer.scrollBy({ left: 300, behavior: 'smooth' });
+    });
+
+    const resizeObserver = new ResizeObserver(updateArrows);
+    resizeObserver.observe(kanbanContainer);
+
+    setTimeout(updateArrows, 100);
+  }
+
+  attachEventListeners(container) {
+    this.attachCardEventListeners(container);
+
+    container.querySelectorAll('.board-count').forEach(badge => {
+      badge.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const statut = e.currentTarget.dataset.status;
+
+        if (this.kanban.filterManager) {
+          const currentStatut = this.kanban.filterManager.filters.statut;
+          const newStatut = currentStatut === statut ? '' : statut;
+
+          this.kanban.filterManager.setFilter('statut', newStatut);
+          this.updateBadgeStates(container, newStatut);
+        }
+      });
+    });
+
+    container.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        this.handleKeyboardNavigation(e);
+      }
+    });
+  }
+
+  updateBadgeStates(container, activeStatut) {
+    container.querySelectorAll('.board-count').forEach(badge => {
+      const statut = badge.dataset.status;
+      if (activeStatut && statut === activeStatut) {
+        badge.classList.add('active');
+      } else {
+        badge.classList.remove('active');
+      }
+    });
+  }
+
+  handleKeyboardNavigation(e) {
+    const focusedElement = document.activeElement;
+    const currentColumn = focusedElement?.closest('.kanban-board');
+
+    if (!currentColumn) return;
+
+    const allColumns = Array.from(document.querySelectorAll('.kanban-board:not(.board-hidden)'));
+    const currentIndex = allColumns.indexOf(currentColumn);
+
+    let nextIndex;
+    if (e.key === 'ArrowLeft') {
+      nextIndex = currentIndex > 0 ? currentIndex - 1 : allColumns.length - 1;
+    } else {
+      nextIndex = currentIndex < allColumns.length - 1 ? currentIndex + 1 : 0;
+    }
+
+    const nextColumn = allColumns[nextIndex];
+    if (nextColumn) {
+      const firstCard = nextColumn.querySelector('.kanban-item');
+      if (firstCard) {
+        firstCard.focus();
+      } else {
+        nextColumn.querySelector('.kanban-board-body')?.focus();
+      }
+    }
+  }
+
+  destroySortableInstances() {
+    this.sortableInstances.forEach(instance => {
+      if (instance && typeof instance.destroy === 'function') {
+        instance.destroy();
+      }
+    });
+    this.sortableInstances = [];
+  }
+
+  /**
    * Nettoie les ressources
    */
   destroy() {
     this.hideFocusNavigation();
     this.removeColumnCollapseListeners();
-    
+    this.destroySortableInstances();
+
     if (this.collapsedStack) {
       this.collapsedStack.remove();
       this.collapsedStack = null;
     }
-    
+
     const viewModeControls = document.getElementById('view-mode-controls');
     if (viewModeControls) {
       viewModeControls.remove();
     }
-    
-    this.logger.debug('ViewModeManager resources cleaned up');
+
+    this.logger.debug('ViewManager resources cleaned up');
   }
 }

@@ -130,9 +130,9 @@ Le système Kanban dispose de **3 modes de vue** distincts, chacun optimisé pou
 - `.kanban-focus` : Mode 3
 
 ### Gestionnaires
-- **ViewModeManager** : Orchestration des modes
+- **ViewManager** : Orchestration unifiée des modes et du rendu
 - **FilterManager** : Gestion des filtres
-- **CardRenderer** : Rendu adaptatif des cartes
+- **ViewManager (ex-CardRenderer)** : Rendu adaptatif des cartes
 
 ### Persistance
 - Mode actuel sauvé dans `localStorage`
