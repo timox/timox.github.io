@@ -23,12 +23,14 @@
 ### ⚠️ **Problèmes identifiés :**
 1. **ViewModeManager** gère le CSS ET la logique métier des colonnes
 2. **BoardRenderer** connaît les modes de vue mais ne les applique pas
-3. **CardRenderer** adapte le rendu selon le mode mais ne le gère pas
+3. **CardRenderer** (ancien) adaptait le rendu selon le mode mais ne le gérait pas
 4. Navigation focus dispersée entre 2 managers
 
 ---
 
 ## Architecture Cible - Principe de Responsabilité Unique
+
+> ✅ **État actuel** : La fusion est désormais réalisée dans la version de test. `ViewManager` remplace les anciens `ViewModeManager`, `BoardRenderer` et `CardRenderer` en regroupant l'intégralité de la logique de rendu et de gestion des modes.
 
 ### 📐 **ViewManager** (fusionné & centralisé)
 **Responsabilité unique :** Gestion complète des modes de vue
@@ -94,7 +96,7 @@ this.viewModeManager = new ViewModeManager(this);
 this.cardRenderer = new CardRenderer(this);
 this.boardRenderer = new BoardRenderer(this, this.cardRenderer);
 
-// APRÈS
+// APRÈS (implémenté)
 this.viewManager = new ViewManager(this);
 ```
 

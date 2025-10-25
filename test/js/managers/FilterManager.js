@@ -138,9 +138,9 @@ export class FilterManager {
         this.filters.statut = e.target.value || '';
         this.logger.debug(`Statut filter changed: ${this.filters.statut}`);
         
-        // CORRIGÉ: Synchroniser avec ViewModeManager en mode focus
-        if (this.kanban.viewMode === 'focus' && this.kanban.viewModeManager) {
-          this.kanban.viewModeManager.focusColumn = this.filters.statut;
+        // CORRIGÉ: Synchroniser avec ViewManager en mode focus
+        if (this.kanban.viewMode === 'focus' && this.kanban.viewManager) {
+          this.kanban.viewManager.focusColumn = this.filters.statut;
         }
         
         this.applyFilters();
@@ -217,7 +217,7 @@ export class FilterManager {
     
     // Option "Tous" - désactiver en mode focus pour le filtre statut
     const isStatusSelect = selectElement.id === 'filter-statut';
-    const isFocusMode = this.kanban.viewModeManager && this.kanban.viewModeManager.currentMode === 'focus';
+    const isFocusMode = this.kanban.viewManager && this.kanban.viewManager.currentMode === 'focus';
     
     if (!isStatusSelect || !isFocusMode) {
       const allOption = document.createElement('option');
@@ -547,10 +547,10 @@ export class FilterManager {
       this.populateFilterOptions();
       
       // En mode focus, s'assurer qu'un statut est sélectionné
-      const isFocusMode = this.kanban.viewModeManager && this.kanban.viewModeManager.currentMode === 'focus';
+      const isFocusMode = this.kanban.viewManager && this.kanban.viewManager.currentMode === 'focus';
       if (isFocusMode && !this.filters.statut) {
         // Choisir le premier statut disponible ou celui du focus
-        const focusColumn = this.kanban.viewModeManager.focusColumn || 'À faire';
+        const focusColumn = this.kanban.viewManager.focusColumn || 'À faire';
         this.setFilter('statut', focusColumn);
       }
     }

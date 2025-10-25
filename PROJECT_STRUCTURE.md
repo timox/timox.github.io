@@ -36,14 +36,13 @@ kanban/
 │   │   └── strategyData.js # Données stratégiques
 │   ├── managers/           # Gestionnaires métier
 │   │   ├── FilterManager.js     # Filtres et recherche
-│   │   ├── ViewModeManager.js   # Modes de vue (compact/détaillé/focus)
+│   │   ├── ViewManager.js       # Modes de vue + rendu centralisé
 │   │   ├── ModalManager.js      # Gestion modales
 │   │   ├── HistoryManager.js    # Historique et timeline
 │   │   ├── DatePickerManager.js # Sélecteur de dates
 │   │   └── GristManager.js      # Interface Grist
-│   ├── renderers/          # Moteurs de rendu
-│   │   ├── CardRenderer.js      # Rendu des cartes tâches
-│   │   └── boardRenderer.js     # Rendu des colonnes kanban
+│   ├── renderers/          # Moteurs de rendu (legacy prod)
+│   │   └── boardRenderer.js     # Rendu des colonnes kanban (fusionné dans ViewManager côté test)
 │   └── utils/              # Utilitaires
 │       ├── LoggerManager.js     # Système de logs
 │       ├── UserActionManager.js # Actions utilisateur
@@ -125,13 +124,13 @@ test/
   (suppression du préfixe `L`, tri cohérent).
 - **Aide contextuelle à la demande** : la fenêtre des raccourcis clavier s'ouvre via le bouton `?` au lieu d'apparaître au
   chargement.
-- **Mode détaillé rétabli par défaut** : `ViewModeManager` réapplique le mode détaillé dès l'initialisation et synchronise le
+- **Mode détaillé rétabli par défaut** : `ViewManager` réapplique le mode détaillé dès l'initialisation et synchronise le
   `KanbanManager`, ce qui redonne accès immédiat aux boutons de repliage et à la pile latérale.
 - **Largeur de colonnes alignée** : le gabarit détaillé passe à 360 px (focus 620 px) pour rétablir une lecture pleine largeur
   équivalente aux vues statistiques.
 - **Pile focus verticalisée** : en mode focus les colonnes repliées s'empilent désormais dans un seul panneau vertical au-dessus
   de la colonne active au lieu de rester sur la même ligne.
-- **Pile latérale ancrée** : `ViewModeManager` installe la pile des colonnes repliées dans `.kanban-wrapper` et bascule la
+- **Pile latérale ancrée** : `ViewManager` installe la pile des colonnes repliées dans `.kanban-wrapper` et bascule la
   grille sur deux colonnes (ou une seule en focus/responsive) pour que les colonnes réduites restent visibles et cliquables.
 - **Stratégies Grist réactives** : la modal rafraîchit l'accordéon dès que les données `Ssir_strategie2` sont chargées et évite
   d'afficher la bannière « Cause probable » lorsque la table répond.

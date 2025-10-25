@@ -1,7 +1,7 @@
 // === js/app-initializer.js ===
 // Script d'initialisation et de configuration globale de l'application Kanban
 
-// ViewModeManager sera créé par KanbanManager
+// ViewManager sera créé par KanbanManager
 // Données de stratégie chargées directement depuis Grist
 import { displayError, displaySuccess } from './utils/dom.js';
 import { initLogger } from './utils/LoggerManager.js';
@@ -22,7 +22,7 @@ export class KanbanAppInitializer {
     // Composants de l'application
     this.components = {
       kanbanManager: null,
-      viewModeManager: null,
+      viewManager: null,
       strategicData: null
     };
     
@@ -129,9 +129,9 @@ export class KanbanAppInitializer {
       throw error; // Ne pas masquer l'erreur
     }
     
-    // ViewModeManager est maintenant géré directement par KanbanManager
+    // ViewManager est maintenant géré directement par KanbanManager
     // (évite les doublons de managers comme en prod)
-    this.components.viewModeManager = this.components.kanbanManager.viewModeManager;
+    this.components.viewManager = this.components.kanbanManager.viewManager;
     
     // Les données stratégiques sont chargées par KanbanManager depuis Grist
     
@@ -156,7 +156,7 @@ export class KanbanAppInitializer {
     }
     
     // Initialiser le mode de vue préféré
-    this.components.viewModeManager.initializeViewMode();
+    this.components.viewManager.initializeViewMode();
     
   }
   
@@ -448,7 +448,7 @@ export class KanbanAppInitializer {
     window.KanbanAPI = {
       // Accès aux composants
       getKanbanManager: () => this.components.kanbanManager,
-      getViewModeManager: () => this.components.viewModeManager,
+      getViewManager: () => this.components.viewManager,
       
       // Actions rapides
       refresh: () => this.reloadApplication(),
