@@ -266,12 +266,11 @@ export class KanbanManager {
 
     ids.forEach((id, index) => {
       try {
-        const rawId = idColumn[index];
-        const parsedId = parseInt(rawId, 10);
-        const normalizedId = Number.isNaN(parsedId) ? rawId : parsedId;
+        const parsedId = typeof id === 'number' ? id : parseInt(id, 10);
+        const normalizedId = Number.isNaN(parsedId) ? id : parsedId;
 
         const strategy = {
-          id,
+          id: normalizedId,
           objectif: objectifs[index] || '',
           sous_objectif: sousObjectifs[index] || '',
           action: actions[index] || '',
