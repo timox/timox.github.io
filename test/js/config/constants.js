@@ -44,9 +44,8 @@ export const TABLE_ID = "Ssir_principale_task";
 
 // === COLONNES REQUISES ET OPTIONNELLES ===
 export const REQUIRED_COLUMNS = [
-  'id_task', 'titre', 'description', 'statut', 'bureau', 'qui', 'urgence', 'impact',
+  'id', 'id_task', 'titre', 'description', 'statut', 'bureau', 'qui', 'urgence', 'impact',
   'projet', 'strategie_id', 'notes', 'date_derniere_maj', 'statut_precedent'
-  // Note: id_task est l'identifiant unique (pas 'id')
   // Note: reference et jalons sont maintenant dans OPTIONAL_COLUMNS (comme en prod)
 ];
 

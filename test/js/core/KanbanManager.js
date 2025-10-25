@@ -194,6 +194,25 @@ export class KanbanManager {
       if (this.modalManager) {
         this.modalManager.handleStrategyDataLoaded([]);
       }
+      return;
+    }
+
+    console.warn(`KanbanManager: utilisation des données stratégiques de secours (${reason})`);
+    const fallbackStrategies = FALLBACK_STRATEGY_DATA.map(strategy => ({
+      id: strategy.id,
+      objectif: strategy.objectif || '',
+      sous_objectif: strategy.sous_objectif || '',
+      action: strategy.action || '',
+      echeance: strategy.echeance || '',
+      responsable: strategy.responsable || '',
+      portee: strategy.portee || ''
+    }));
+
+    this.strategyData = fallbackStrategies;
+    this.strategiesData = fallbackStrategies;
+
+    if (this.modalManager) {
+      this.modalManager.handleStrategyDataLoaded(fallbackStrategies);
     }
   }
   
