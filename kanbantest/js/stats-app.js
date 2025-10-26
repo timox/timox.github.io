@@ -5,13 +5,12 @@ import {
   STATUTS, 
   DEFAULT_BUREAUX, 
   DEFAULT_RESPONSABLES, 
-  TABLE_ID,
-  STRATEGY_DATA
+  TABLE_ID
 } from './config/constants.js';
 
 import { generateSingleBureauBadge } from './utils/badges.js';
 
-class StatsManager {
+class StatsAppManager {
   constructor() {
     this.tasks = [];
     this.strategiesData = [];
@@ -45,7 +44,7 @@ class StatsManager {
         attempts++;
         
         if (typeof window.grist !== 'undefined') {
-          window.grist.ready();
+          window.grist.ready({ requiredAccess: 'read table' });
           resolve();
         } else if (attempts >= maxAttempts) {
           console.error('❌ API Grist non disponible après', maxAttempts, 'tentatives');
@@ -77,11 +76,6 @@ class StatsManager {
         }
       }
       
-      console.log(`✅ ${this.strategiesData.length} stratégies chargées`);
-      // Afficher quelques exemples de stratégies
-      if (this.strategiesData.length > 0) {
-        console.log('Exemples de stratégies:', this.strategiesData.slice(0, 3));
-      }
     } catch (error) {
       console.error('❌ Erreur chargement stratégies:', error);
       // Ne pas faire échouer si les stratégies ne sont pas disponibles
@@ -95,7 +89,6 @@ class StatsManager {
       const records = await window.grist.docApi.fetchTable(TABLE_ID);
       this.tasks = this.mapGristRecords(records);
       
-      console.log(`✅ ${this.tasks.length} tâches chargées - DEBUG activé`);
       
       
     } catch (error) {
@@ -134,6 +127,7 @@ class StatsManager {
     // Génération des affichages
     this.generateGlobalMetrics();
     this.generatePersonBureauStats();
+    this.generatePriorityStatusTable();
     this.generateActivityHeatmap();
     this.generateBureauObjectiveMatrix();
     this.generateTasksObjectivesTable();
@@ -141,7 +135,6 @@ class StatsManager {
   }
 
   generateGlobalMetrics() {
-    console.log('📊 Génération metrics globales...');
     const total = this.tasks.length;
     const completed = this.tasks.filter(t => t.statut === 'Terminé').length;
     const inProgress = this.tasks.filter(t => ['En cours', 'À faire'].includes(t.statut)).length;
@@ -214,6 +207,80 @@ class StatsManager {
     this.renderPersonBureauTable(personStats);
   }
 
+  generatePriorityStatusTable() {
+    // Calculer la répartition priorité/statut
+    const priorityStatusData = {};
+
+    // Initialiser la structure pour tous les statuts
+    Object.values(STATUTS).forEach(statut => {
+      priorityStatusData[statut] = {
+        p1: 0,
+        p2: 0,
+        p3plus: 0,
+        total: 0
+      };
+    });
+    
+    // Analyser chaque tâche
+    this.tasks.forEach(task => {
+      const statut = task.statut || 'Sans statut';
+      
+      if (!priorityStatusData[statut]) {
+        priorityStatusData[statut] = { p1: 0, p2: 0, p3plus: 0, total: 0 };
+      }
+      
+      const stats = priorityStatusData[statut];
+      stats.total++;
+      
+      // Priorité basée sur le champ priority de Grist
+      if (task.priority === 1) {
+        stats.p1++;
+      } else if (task.priority === 2) {
+        stats.p2++;
+      } else {
+        stats.p3plus++;
+      }
+    });
+    
+    // Générer le tableau HTML
+    this.renderPriorityStatusTable(priorityStatusData);
+  }
+
+  renderPriorityStatusTable(priorityStatusData) {
+    const tbody = document.querySelector('#priority-status-table tbody');
+    
+    // Trier par total décroissant
+    const sortedStatuts = Object.entries(priorityStatusData)
+      .sort(([,a], [,b]) => b.total - a.total)
+      .filter(([statut, data]) => data.total > 0); // Exclure les statuts vides
+    
+    tbody.innerHTML = sortedStatuts.map(([statut, data]) => {
+      const p1Percent = data.total > 0 ? Math.round((data.p1 / data.total) * 100) : 0;
+      const p2Percent = data.total > 0 ? Math.round((data.p2 / data.total) * 100) : 0;
+      const p3Percent = data.total > 0 ? Math.round((data.p3plus / data.total) * 100) : 0;
+      
+      return `
+        <tr>
+          <td><strong>${statut}</strong></td>
+          <td class="text-center">
+            <span class="badge bg-danger">${data.p1}</span>
+            <small class="text-muted d-block">${p1Percent}%</small>
+          </td>
+          <td class="text-center">
+            <span class="badge bg-warning">${data.p2}</span>
+            <small class="text-muted d-block">${p2Percent}%</small>
+          </td>
+          <td class="text-center">
+            <span class="badge bg-secondary">${data.p3plus}</span>
+            <small class="text-muted d-block">${p3Percent}%</small>
+          </td>
+          <td class="text-center">
+            <strong>${data.total}</strong>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
   renderPersonBureauTable(personStats) {
     const tbody = document.querySelector('#person-bureau-table tbody');
     
@@ -242,8 +309,6 @@ class StatsManager {
   }
 
   generateActivityHeatmap() {
-    console.log('🔥 Génération heatmap des activités...');
-    
     const bureaux = Object.keys(this.tasksByBureau).sort();
     const objectifs = ['Fonctionnement', 'Sécurité', 'Métier', 'Transition', 'Sans Stratégie'];
     
@@ -369,8 +434,6 @@ class StatsManager {
   }
 
   generateTasksObjectivesTable() {
-    console.log('📋 Génération tableau tâches × objectifs regroupé...');
-    
     const tbody = document.querySelector('#tasks-objectives-table tbody');
     const objectifsGroups = {};
     
@@ -431,9 +494,6 @@ class StatsManager {
     });
     
     tbody.innerHTML = htmlRows.join('');
-    
-    const totalEntries = Object.values(objectifsGroups).reduce((sum, tasks) => sum + tasks.length, 0);
-    console.log(`✅ ${totalEntries} tâches regroupées en ${sortedObjectifs.length} objectifs`);
   }
 
   generateTaskRow(task, includeObjectif = true) {
@@ -507,8 +567,6 @@ class StatsManager {
   }
 
   generateBureauObjectiveMatrix() {
-    console.log('🏢 Génération matrice bureau × objectif...');
-    
     const bureaux = Object.keys(this.tasksByBureau).sort();
     const objectifs = ['Fonctionnement', 'Sécurité', 'Métier', 'Transition', 'Sans Stratégie'];
     
@@ -543,29 +601,6 @@ class StatsManager {
       });
     });
 
-    // DEBUG: Afficher le résultat final de la matrice
-    console.log('📊 MATRICE FINALE:', matrix);
-    
-    // Compter le total de tâches pour vérification
-    let totalTasksInMatrix = 0;
-    let tasksWithMultipleBureaux = 0;
-    this.tasks.forEach(task => {
-      const bureaux = this.parseMultipleValues(task.bureau);
-      if (bureaux.length > 1) {
-        tasksWithMultipleBureaux++;
-      }
-    });
-    
-    Object.values(matrix).forEach(bureauStats => {
-      totalTasksInMatrix += bureauStats['Total'];
-    });
-    
-    console.log(`🔢 Comptage final:`);
-    console.log(`   - Total entrées dans matrice: ${totalTasksInMatrix}`);
-    console.log(`   - Total tâches réelles: ${this.tasks.length}`);
-    console.log(`   - Tâches multi-bureaux: ${tasksWithMultipleBureaux}`);
-    console.log(`   ℹ️  Différence normale car les tâches multi-bureaux comptent pour chaque bureau concerné`);
-    
     this.renderBureauObjectiveMatrix(matrix);
   }
 
@@ -885,8 +920,6 @@ class StatsManager {
   getTaskObjectives(task) {
     const objectifs = [];
     
-    console.log('🔍 getTaskObjectives pour task', task.id, '- strategie_id:', task.strategie_id, '- strategiesData.length:', this.strategiesData.length);
-    
     // Méthode 1: Via strategie_ids
     if (task.strategie_ids) {
       try {
@@ -899,30 +932,22 @@ class StatsManager {
             const strategy = this.strategiesData.find(s => s.id == id);
             if (strategy && !objectifs.includes(strategy.objectif)) {
               objectifs.push(strategy.objectif);
-              console.log('✅ Objectif trouvé via strategie_ids:', strategy.objectif);
             }
           });
         }
       } catch (e) {
-        console.warn('Erreur parsing strategie_ids:', e);
+        // Ignore parsing errors
       }
     }
     
     // Méthode 2: Via strategie_id (traiter comme un tableau Grist)
     if (objectifs.length === 0 && task.strategie_id) {
       const strategieIds = this.parseStrategyIds(task.strategie_id);
-      console.log('🔍 IDs stratégies parsés pour task', task.id, ':', strategieIds);
       
       strategieIds.forEach(id => {
         const strategy = this.strategiesData.find(s => s.id == id);
         if (strategy && !objectifs.includes(strategy.objectif)) {
           objectifs.push(strategy.objectif);
-          console.log('✅ Objectif trouvé via strategie_id:', strategy.objectif);
-        } else if (!strategy) {
-          console.log('❌ Stratégie non trouvée pour ID:', id, 'dans', this.strategiesData.length, 'stratégies');
-          if (this.strategiesData.length > 0) {
-            console.log('Exemples d\'IDs disponibles:', this.strategiesData.slice(0, 3).map(s => s.id));
-          }
         }
       });
     }
@@ -937,7 +962,6 @@ class StatsManager {
       objectifs.push(task.strategie_objectif);
     }
     
-    console.log('🎯 Objectifs finaux pour task', task.id, ':', objectifs);
     return objectifs;
   }
 
@@ -952,9 +976,7 @@ class StatsManager {
       'Assurer la transition vers les systèmes d\'information de demain': 'Transition'
     };
     
-    const result = mapping[cleanObjectif] || cleanObjectif;
-    console.log('🔍 shortenObjectifName - Input:', JSON.stringify(objectif), '- Cleaned:', JSON.stringify(cleanObjectif), '- Output:', result);
-    return result;
+    return mapping[cleanObjectif] || cleanObjectif;
   }
 
 
@@ -975,7 +997,20 @@ class StatsManager {
   }
 }
 
-// Initialisation
+
 document.addEventListener('DOMContentLoaded', () => {
-  new StatsManager();
+  if (document.getElementById('stats-container')) {
+    new StatsAppManager();
+  }
 });
+
+// Export pour utilisation par KanbanManager si nécessaire
+// if (typeof window !== 'undefined') {
+//  window.StatsAppManager = StatsAppManager;
+//}
+//=======
+// Initialisation
+//document.addEventListener('DOMContentLoaded', () => {
+//  new StatsManager();
+//});
+//>>>>>>> e0ec5cb5aae55a77338600e5daa4f33c69fba3da
