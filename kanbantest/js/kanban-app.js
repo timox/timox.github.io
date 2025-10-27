@@ -2,17 +2,17 @@
 // Point d'entrée principal avec filtres, vues multiples et commentaires séparés
 
 // === IMPORTS DES MODULES ===
-import {
-  STATUTS,
-  DEFAULT_BUREAUX,
-  DEFAULT_RESPONSABLES,
+import { 
+  STATUTS, 
+  DEFAULT_BUREAUX, 
+  DEFAULT_RESPONSABLES, 
   TABLE_ID,
   REQUIRED_COLUMNS,
   OPTIONAL_COLUMNS,
   VIEW_MODES,
-  getDefaultStatuts
+  getDefaultStatuts,
+  STRATEGY_DATA
 } from './config/constants.js';
-import { STRATEGY_DATA as FALLBACK_STRATEGY_DATA } from './config/strategyFallbackData.js';
 
 import {
   normalizeDate,
@@ -54,7 +54,7 @@ import {
 
 // NOUVEAU: Import des managers
 import { FilterManager } from './managers/FilterManager.js';
-import { ViewManager } from './managers/ViewManager.js';
+import { ViewModeManager } from './managers/ViewModeManager.js';
 import { ModalManager } from './managers/ModalManager.js';
 import { HistoryManager } from './managers/HistoryManager.js';
 import { DatePickerManager } from './managers/DatePickerManager.js';
@@ -113,7 +113,7 @@ class KanbanManager {
     
     // NOUVEAU: Managers
     this.filterManager = null;
-    this.viewManager = null;
+    this.viewModeManager = null;
     this.modalManager = null;
     this.historyManager = null;
     this.datePickerManager = null;
@@ -186,7 +186,7 @@ class KanbanManager {
     this.filterManager = new FilterManager(this);
     
     // Manager des modes de vue 
-    this.viewManager = new ViewManager(this);
+    this.viewModeManager = new ViewModeManager(this);
     
     // Manager des modales
     this.modalManager = new ModalManager(this);
@@ -218,6 +218,12 @@ class KanbanManager {
       }
       
       try {
+        if (!window.grist) {
+          console.error("window.grist is undefined - API not loaded");
+          resolve();
+          return;
+        }
+        
         window.grist.ready({ requiredAccess: 'full' });
         window.grist.onRecords(this.handleGristUpdate.bind(this));
         this.logger.info("Listener onRecords attaché.");
@@ -379,89 +385,34 @@ class KanbanManager {
     }
   }
 
-  // Chargement des stratégies directement depuis Grist
+  // Chargement des stratégies depuis les données intégrées
   async loadStrategiesFromGrist() {
-    console.log('Chargement des stratégies depuis Grist...');
-
-    if (!window.grist || !window.grist.docApi || typeof window.grist.docApi.fetchTable !== 'function') {
-      console.warn('API Grist indisponible pour les stratégies - utilisation du jeu de données embarqué');
-      this.useFallbackStrategyData('API Grist indisponible');
-      return;
-    }
-
     try {
-      const strategyRecords = await window.grist.docApi.fetchTable('Ssir_strategie2');
-      const mapped = this.mapStrategyRecords(strategyRecords);
-
-      if (!mapped.length) {
-        console.warn('Aucune stratégie active depuis Grist - utilisation du jeu de données embarqué');
-        this.useFallbackStrategyData('Aucune donnée Grist');
-        return;
+      console.log('Chargement des stratégies depuis les données intégrées...');
+      
+      if (STRATEGY_DATA && STRATEGY_DATA.length > 0) {
+        // Utiliser les données intégrées depuis constants.js
+        this.strategiesData = STRATEGY_DATA.map(strategy => ({
+          id: strategy.id,
+          id2: strategy.id, // Fallback pour compatibilité
+          objectif: strategy.objectif,
+          sous_objectif: strategy.sous_objectif,
+          action: strategy.action,
+          responsable: strategy.responsable,
+          echeance: strategy.echeance,
+          portee: strategy.portee
+        })).sort((a, b) => a.id - b.id);
+        
+        console.log(`✅ ${this.strategiesData.length} stratégies chargées depuis données intégrées`);
+        console.log('Aperçu des stratégies:', this.strategiesData.slice(0, 3));
+      } else {
+        console.warn('STRATEGY_DATA non disponible ou vide');
+        this.strategiesData = [];
       }
-
-      this.strategiesData = mapped;
-
-      console.log(`✅ ${this.strategiesData.length} stratégies chargées depuis Grist`);
-      console.log('Aperçu des stratégies:', this.strategiesData.slice(0, 3));
     } catch (stratError) {
-      console.error('Erreur chargement stratégies depuis Grist:', stratError);
-      this.useFallbackStrategyData(stratError?.message || 'erreur inconnue');
-    }
-  }
-
-  useFallbackStrategyData(reason = 'non spécifiée') {
-    if (!Array.isArray(FALLBACK_STRATEGY_DATA) || FALLBACK_STRATEGY_DATA.length === 0) {
-      console.warn('Aucune donnée stratégique de repli disponible');
+      console.error('Erreur chargement stratégies intégrées:', stratError);
       this.strategiesData = [];
-      return;
     }
-
-    this.strategiesData = FALLBACK_STRATEGY_DATA.map(strategy => ({
-      id: strategy.id,
-      objectif: strategy.objectif || '',
-      sous_objectif: strategy.sous_objectif || '',
-      action: strategy.action || '',
-      echeance: strategy.echeance || '',
-      responsable: strategy.responsable || '',
-      portee: strategy.portee || ''
-    }));
-
-    console.info(`✅ Données stratégiques de repli chargées (${this.strategiesData.length} entrées, raison: ${reason})`);
-  }
-
-  mapStrategyRecords(records) {
-    const mapped = [];
-
-    if (!records || !records.id) {
-      return mapped;
-    }
-
-    // Les clés sont les IDs des enregistrements
-    const ids = Object.keys(records.id || {});
-    
-    ids.forEach(id => {
-      try {
-        const strategy = {
-          id: records.id[id],
-          objectif: records.objectif?.[id] || '',
-          sous_objectif: records.sous_objectif?.[id] || '',
-          action: records.action?.[id] || '',
-          echeance: records.echeance?.[id] || '',
-          responsable: records.responsable?.[id] || '',
-          portee: records.portee?.[id] || ''
-        };
-        
-        // Ne garder que les stratégies complètes
-        if (strategy.objectif && strategy.sous_objectif && strategy.action) {
-          mapped.push(strategy);
-        }
-        
-      } catch (error) {
-        console.warn('Erreur mapping stratégie:', id, error);
-      }
-    });
-    
-    return mapped;
   }
 
   mapGristRecords(gristData) {
@@ -1310,7 +1261,7 @@ class KanbanManager {
 
   // EVENT LISTENERS
   attachCardEventListeners() {
-    // Seuls les boutons timeline - les autres événements sont gérés par ViewManager
+    // Seuls les boutons timeline - les autres événements sont gérés par CardRenderer
     // Le nettoyage se fait automatiquement via innerHTML dans refreshKanban
     
     // Supprimer tous les anciens listeners en utilisant la délégation d'événements
@@ -2056,14 +2007,5 @@ window.KanbanApp = {
   generateAllTaskBadges,
   STATUTS,
   VIEW_MODES,
-  TABLE_ID,
-  // Utilitaire pour changer le niveau de log depuis la console
-  setLogLevel: (level) => {
-    if (window.kanbanManager && window.kanbanManager.logger) {
-      window.kanbanManager.logger.setLogLevel(level);
-      console.log(`✅ Niveau de log changé vers: ${level}`);
-    } else {
-      console.warn('❌ KanbanManager non disponible');
-    }
-  }
+  TABLE_ID
 };

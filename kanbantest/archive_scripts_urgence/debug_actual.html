@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Real Data</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug-section { border: 1px solid #ccc; padding: 15px; margin: 10px 0; }
+        .debug-section h3 { margin-top: 0; color: #333; }
+        .log { background: #f5f5f5; padding: 10px; margin: 5px 0; border-left: 3px solid #007bff; }
+        .error { background: #f8d7da; border-left: 3px solid #dc3545; }
+    </style>
+</head>
+<body>
+    <h1>Debug Real Kanban Data</h1>
+    
+    <div class="debug-section">
+        <h3>Console Logs</h3>
+        <div id="console-output"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h3>Kanban Manager State</h3>
+        <div id="kanban-state"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h3>Task 76 Analysis</h3>
+        <div id="task-76-analysis"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h3>Modal Backdrop Analysis</h3>
+        <div id="backdrop-analysis"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h3>Bootstrap Modal State</h3>
+        <div id="modal-state"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h3>Emergency Actions</h3>
+        <button onclick="forceCleanBackdrops()" style="background: red; color: white; padding: 10px; margin: 5px;">🚨 FORCE CLEAN BACKDROPS</button>
+        <button onclick="testHistoryModal()" style="background: blue; color: white; padding: 10px; margin: 5px;">🧪 TEST HISTORY MODAL</button>
+        <button onclick="testStrategyModal()" style="background: green; color: white; padding: 10px; margin: 5px;">🎯 TEST STRATEGY MODAL</button>
+        <div id="action-results"></div>
+    </div>
+
+    <script>
+        // Capture console.log
+        const originalLog = console.log;
+        const originalError = console.error;
+        const consoleOutput = document.getElementById('console-output');
+        const logs = [];
+        
+        console.log = function(...args) {
+            logs.push({type: 'log', args: args, time: new Date().toLocaleTimeString()});
+            updateConsoleOutput();
+            originalLog.apply(console, args);
+        };
+        
+        console.error = function(...args) {
+            logs.push({type: 'error', args: args, time: new Date().toLocaleTimeString()});
+            updateConsoleOutput();
+            originalError.apply(console, args);
+        };
+        
+        function updateConsoleOutput() {
+            const html = logs.slice(-20).map(log => {
+                const className = log.type === 'error' ? 'log error' : 'log';
+                const argsStr = log.args.map(arg => 
+                    typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                ).join(' ');
+                return `<div class="${className}">[${log.time}] ${argsStr}</div>`;
+            }).join('');
+            consoleOutput.innerHTML = html;
+        }
+        
+        // Check Kanban state every 2 seconds
+        setInterval(() => {
+            const kanbanState = document.getElementById('kanban-state');
+            const task76Analysis = document.getElementById('task-76-analysis');
+            const backdropAnalysis = document.getElementById('backdrop-analysis');
+            const modalState = document.getElementById('modal-state');
+            
+            // Analyze modal backdrops
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            const body = document.body;
+            backdropAnalysis.innerHTML = `
+                <div class="log">🎭 Modal backdrops found: ${backdrops.length}</div>
+                <div class="log">🌐 Body classes: ${body.className}</div>
+                <div class="log">📏 Body style: ${body.style.cssText}</div>
+                ${backdrops.length > 0 ? `<div class="log error">⚠️ PROBLÈME: Backdrops orphelins détectés!</div>` : ''}
+            `;
+            
+            // Analyze Bootstrap modal instances
+            const modals = document.querySelectorAll('.modal');
+            const modalInfo = Array.from(modals).map(modal => {
+                const instance = bootstrap.Modal.getInstance(modal);
+                return {
+                    id: modal.id,
+                    displayed: modal.style.display,
+                    hasInstance: !!instance,
+                    isShown: instance ? instance._isShown : false
+                };
+            });
+            modalState.innerHTML = `
+                <div class="log">🎯 Modals found: ${modals.length}</div>
+                ${modalInfo.map(info => `
+                    <div class="log">📋 Modal ${info.id}: display=${info.displayed}, instance=${info.hasInstance}, shown=${info.isShown}</div>
+                `).join('')}
+            `;
+            
+            if (window.kanbanManager) {
+                kanbanState.innerHTML = `
+                    <div class="log">✅ KanbanManager found</div>
+                    <div class="log">📊 Current records: ${window.kanbanManager.currentRecords?.length || 0}</div>
+                    <div class="log">🎯 Strategies data: ${window.kanbanManager.strategiesData?.length || 0}</div>
+                    <div class="log">🔄 View mode: ${window.kanbanManager.viewMode || 'unknown'}</div>
+                    <div class="log">🧹 Clean function available: ${typeof window.kanbanManager.cleanOrphanBackdrops === 'function'}</div>
+                `;
+                
+                // Analyze task 76 specifically
+                const task76 = window.kanbanManager.currentRecords?.find(r => r.id === 76);
+                if (task76) {
+                    const strategiesInfo = window.kanbanManager.getMultipleStrategiesInfo(task76.strategie_id);
+                    task76Analysis.innerHTML = `
+                        <div class="log">✅ Task 76 found</div>
+                        <div class="log">📝 Title: ${task76.titre}</div>
+                        <div class="log">🎯 Strategy ID: ${JSON.stringify(task76.strategie_id)}</div>
+                        <div class="log">📋 Strategies found: ${strategiesInfo.length}</div>
+                        <div class="log">📋 Strategy details: ${JSON.stringify(strategiesInfo, null, 2)}</div>
+                        <div class="log">🎨 Icon would show: ${strategiesInfo.length > 0 ? 'YES' : 'NO'}</div>
+                    `;
+                } else {
+                    task76Analysis.innerHTML = `<div class="log error">❌ Task 76 not found in current records</div>`;
+                }
+            } else {
+                kanbanState.innerHTML = `<div class="log error">❌ KanbanManager not found</div>`;
+                task76Analysis.innerHTML = `<div class="log error">❌ Cannot analyze task 76 without KanbanManager</div>`;
+            }
+        }, 2000);
+        
+        // Emergency action functions
+        function forceCleanBackdrops() {
+            const results = document.getElementById('action-results');
+            console.log('🚨 FORCE CLEAN BACKDROPS - Emergency action triggered');
+            
+            try {
+                // Direct cleanup
+                const backdrops = document.querySelectorAll('.modal-backdrop');
+                console.log(`Found ${backdrops.length} backdrops to remove`);
+                
+                backdrops.forEach((backdrop, index) => {
+                    console.log(`Removing backdrop ${index + 1}`);
+                    backdrop.remove();
+                });
+                
+                // Reset body
+                const body = document.body;
+                body.classList.remove('modal-open');
+                body.style.overflow = '';
+                body.style.paddingRight = '';
+                body.removeAttribute('data-bs-overflow');
+                body.removeAttribute('data-bs-padding-right');
+                
+                // Use kanban method if available
+                if (window.kanbanManager && window.kanbanManager.cleanOrphanBackdrops) {
+                    window.kanbanManager.cleanOrphanBackdrops();
+                }
+                
+                results.innerHTML = `<div class="log">✅ Force cleanup completed - removed ${backdrops.length} backdrops</div>`;
+            } catch (error) {
+                console.error('Force cleanup failed:', error);
+                results.innerHTML = `<div class="log error">❌ Force cleanup failed: ${error.message}</div>`;
+            }
+        }
+        
+        function testHistoryModal() {
+            const results = document.getElementById('action-results');
+            console.log('🧪 TEST HISTORY MODAL - Testing modal opening');
+            
+            try {
+                if (window.kanbanManager && window.kanbanManager.currentRecords) {
+                    const firstTask = window.kanbanManager.currentRecords[0];
+                    if (firstTask) {
+                        console.log(`Testing history modal for task ${firstTask.id}`);
+                        window.kanbanManager.openTaskHistory(firstTask.id);
+                        results.innerHTML = `<div class="log">🧪 Testing history modal for task ${firstTask.id}</div>`;
+                    } else {
+                        results.innerHTML = `<div class="log error">❌ No tasks found to test</div>`;
+                    }
+                } else {
+                    results.innerHTML = `<div class="log error">❌ KanbanManager not available</div>`;
+                }
+            } catch (error) {
+                console.error('History modal test failed:', error);
+                results.innerHTML = `<div class="log error">❌ History modal test failed: ${error.message}</div>`;
+            }
+        }
+        
+        function testStrategyModal() {
+            const results = document.getElementById('action-results');
+            console.log('🎯 TEST STRATEGY MODAL - Testing strategy modal opening');
+            
+            try {
+                if (window.kanbanManager && window.kanbanManager.currentRecords) {
+                    const taskWithStrategy = window.kanbanManager.currentRecords.find(r => r.strategie_id);
+                    if (taskWithStrategy) {
+                        console.log(`Testing strategy modal for task ${taskWithStrategy.id}`);
+                        window.kanbanManager.openStrategyMiniModal(taskWithStrategy.id);
+                        results.innerHTML = `<div class="log">🎯 Testing strategy modal for task ${taskWithStrategy.id}</div>`;
+                    } else {
+                        results.innerHTML = `<div class="log error">❌ No tasks with strategy found to test</div>`;
+                    }
+                } else {
+                    results.innerHTML = `<div class="log error">❌ KanbanManager not available</div>`;
+                }
+            } catch (error) {
+                console.error('Strategy modal test failed:', error);
+                results.innerHTML = `<div class="log error">❌ Strategy modal test failed: ${error.message}</div>`;
+            }
+        }
+        
+        console.log('🔧 Debug script started - monitoring kanban state...');
+    </script>
+</body>
+</html>
