@@ -138,9 +138,9 @@ export class FilterManager {
         this.filters.statut = e.target.value || '';
         this.logger.debug(`Statut filter changed: ${this.filters.statut}`);
         
-        // CORRIGÉ: Synchroniser avec ViewModeManager en mode focus
-        if (this.kanban.viewMode === 'focus' && this.kanban.viewModeManager) {
-          this.kanban.viewModeManager.focusColumn = this.filters.statut;
+        // CORRIGÉ: Synchroniser avec ViewManager en mode focus
+        if (this.kanban.viewMode === 'focus' && this.kanban.viewManager) {
+          this.kanban.viewManager.focusColumn = this.filters.statut;
         }
         
         this.applyFilters();
@@ -176,25 +176,30 @@ export class FilterManager {
       return;
     }
     
-    const { bureau, responsables, projet, statut } = this.kanban.gristOptions;
-    
+    const {
+      bureau = [],
+      responsables = [],
+      projet = [],
+      statut = []
+    } = this.kanban.gristOptions;
+
     // Peupler bureau
-    if (this.elements.filterBureau && bureau) {
+    if (this.elements.filterBureau) {
       this.populateSelect(this.elements.filterBureau, bureau, 'Tous les bureaux');
     }
-    
+
     // Peupler responsables
-    if (this.elements.filterQui && responsables) {
+    if (this.elements.filterQui) {
       this.populateSelect(this.elements.filterQui, responsables, 'Tous les responsables');
     }
-    
+
     // Peupler projets
-    if (this.elements.filterProjet && projet) {
+    if (this.elements.filterProjet) {
       this.populateSelect(this.elements.filterProjet, projet, 'Tous les projets');
     }
-    
+
     // Peupler statuts
-    if (this.elements.filterStatut && statut) {
+    if (this.elements.filterStatut) {
       this.populateSelect(this.elements.filterStatut, statut, 'Tous les statuts');
     }
     
@@ -212,7 +217,7 @@ export class FilterManager {
     
     // Option "Tous" - désactiver en mode focus pour le filtre statut
     const isStatusSelect = selectElement.id === 'filter-statut';
-    const isFocusMode = this.kanban.viewModeManager && this.kanban.viewModeManager.currentMode === 'focus';
+    const isFocusMode = this.kanban.viewManager && this.kanban.viewManager.currentMode === 'focus';
     
     if (!isStatusSelect || !isFocusMode) {
       const allOption = document.createElement('option');
@@ -222,7 +227,11 @@ export class FilterManager {
     }
     
     // Ajouter les options
-    options.forEach(option => {
+    const normalizedOptions = Array.isArray(options)
+      ? [...new Set(options.filter(option => option && option !== 'L'))]
+      : [];
+
+    normalizedOptions.forEach(option => {
       const optionElement = document.createElement('option');
       optionElement.value = option;
       optionElement.textContent = option;
@@ -274,6 +283,10 @@ export class FilterManager {
     if (!Array.isArray(records)) return [];
     
     return records.filter(record => {
+      // Masquer les tâches temporaires
+      if (record.titre && record.titre.includes('__TEMP_USER_RECORD__')) {
+        return false;
+      }
       // Filtre bureau - Vérifier explicitement que la valeur n'est pas vide
       if (this.filters.bureau && this.filters.bureau.trim() !== '' && Array.isArray(record.bureau)) {
         const bureaux = record.bureau.slice(1); // Enlever le 'L' de Grist
@@ -534,10 +547,10 @@ export class FilterManager {
       this.populateFilterOptions();
       
       // En mode focus, s'assurer qu'un statut est sélectionné
-      const isFocusMode = this.kanban.viewModeManager && this.kanban.viewModeManager.currentMode === 'focus';
+      const isFocusMode = this.kanban.viewManager && this.kanban.viewManager.currentMode === 'focus';
       if (isFocusMode && !this.filters.statut) {
         // Choisir le premier statut disponible ou celui du focus
-        const focusColumn = this.kanban.viewModeManager.focusColumn || 'À faire';
+        const focusColumn = this.kanban.viewManager.focusColumn || 'À faire';
         this.setFilter('statut', focusColumn);
       }
     }

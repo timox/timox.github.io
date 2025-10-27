@@ -1,18 +1,16 @@
 // === core/KanbanManager.js ===
 // Orchestrateur principal all�g� pour l'application Kanban
 
-import { VIEW_MODES, STATUTS, convertToGristFormat } from '../config/constants.js';
-import { displayError, displaySuccess, toggleLoadingSpinner } from '../utils/dom.js';
+import { VIEW_MODES } from '../config/constants.js';
+import { displayError, toggleLoadingSpinner } from '../utils/dom.js';
+import { getEventCentralizer } from './EventCentralizer.js';
 
 // Importation des managers
 import { DatePickerManager } from '../managers/DatePickerManager.js';
 import { ModalManager } from '../managers/ModalManager.js';
 import { HistoryManager } from '../managers/HistoryManager.js';
 import { FilterManager } from '../managers/FilterManager.js';
-
-// Importation des renderers
-import { CardRenderer } from '../renderers/CardRenderer.js';
-import { BoardRenderer } from '../renderers/BoardRenderer.js';
+import { ViewManager } from '../managers/ViewManager.js';
 
 // Importation du gestionnaire Grist
 import { GristManager } from '../managers/GristManager.js';
@@ -35,8 +33,7 @@ export class KanbanManager {
     this.modalManager = null;
     this.historyManager = null;
     this.filterManager = null;
-    this.cardRenderer = null;
-    this.boardRenderer = null;
+    this.viewManager = null;
     
     // �tat des donn�es
     this.currentRecords = [];
@@ -60,7 +57,6 @@ export class KanbanManager {
    */
   async init() {
     try {
-      console.log('KanbanManager: Initialisation...');
       toggleLoadingSpinner(true);
       
       // V�rifier les pr�requis
@@ -78,9 +74,10 @@ export class KanbanManager {
       // Premier rendu
       this.refreshKanban();
       
+      // Initialiser la centralisation des événements
+      this.setupEventCentralizer();
+      
       this.isInitialized = true;
-      console.log('KanbanManager: Initialisation termin�e avec succ�s');
-      displaySuccess('Kanban initialis� avec succ�s');
       
     } catch (error) {
       console.error('KanbanManager: Erreur d\'initialisation:', error);
@@ -100,7 +97,7 @@ export class KanbanManager {
     }
     
     // V�rifier la pr�sence de Grist
-    if (typeof grist === 'undefined') {
+    if (typeof window === 'undefined' || typeof window.grist === 'undefined') {
       throw new Error('API Grist non disponible');
     }
     
@@ -124,28 +121,26 @@ export class KanbanManager {
    * Initialise tous les gestionnaires sp�cialis�s
    */
   async initializeManagers() {
-    console.log('KanbanManager: Initialisation des gestionnaires...');
-    
-    // 1. Gestionnaire Grist (donn�es)
+
+    // 1. Gestionnaire Grist (données)
     this.gristManager = new GristManager(this);
-    
-    // 2. Renderers (interface)
-    this.cardRenderer = new CardRenderer(this);
-    this.boardRenderer = new BoardRenderer(this, this.cardRenderer);
-    
-    // 3. Gestionnaire de dates
+
+    // 2. Gestionnaire de dates
     this.datePickerManager = new DatePickerManager(this);
-    
-    // 4. Gestionnaire de modals
+
+    // 3. Gestionnaire de modals
     this.modalManager = new ModalManager(this);
-    
-    // 5. Gestionnaire d'historique
+
+    // 4. Gestionnaire d'historique
     this.historyManager = new HistoryManager(this);
-    
-    // 6. Gestionnaire de filtres (en dernier car il d�pend des autres)
+
+    // 5. Gestionnaire de filtres
     this.filterManager = new FilterManager(this);
-    
-    console.log('KanbanManager: Gestionnaires initialis�s');
+
+    // 6. Gestionnaire de vues et de rendu
+    this.viewManager = new ViewManager(this);
+
+    console.log('KanbanManager: Gestionnaires initialisés');
   }
   
   /**
@@ -157,7 +152,7 @@ export class KanbanManager {
     // Les donn�es sont charg�es par le GristManager
     // On r�cup�re les r�f�rences
     this.currentRecords = this.gristManager.currentRecords || [];
-    this.gristOptions = this.gristManager.gristOptions || {};
+    this.gristOptions = this.normalizeGristOptions(this.gristManager.gristOptions || {});
     
     // Charger les données stratégiques depuis SSIR_strategie2
     await this.loadStrategyData();
@@ -170,58 +165,107 @@ export class KanbanManager {
   }
   
   /**
-   * Charge les données stratégiques (version intégrée)
+   * Charge les données stratégiques depuis Grist
    */
   async loadStrategyData() {
     try {
-      console.log('KanbanManager: Chargement des stratégies depuis Grist...');
-      
-      const strategiesTable = window.grist.getTable('ssir_strategie');
-      const strategyRecords = await strategiesTable.getRecords();
-      
-      // Mapper les enregistrements de stratégie
+      const strategyRecords = await this.gristManager.fetchTable('Ssir_strategie2');
       this.strategyData = this.mapStrategyRecords(strategyRecords);
-      console.log(`KanbanManager: ${this.strategyData.length} stratégies chargées depuis Grist`);
-      
+      this.strategiesData = this.strategyData; // Alias pour ModalManager
+      if (this.modalManager && this.strategyData.length > 0) {
+        this.modalManager.handleStrategyDataLoaded(this.strategyData);
+      }
     } catch (error) {
-      console.warn('KanbanManager: Erreur chargement stratégies depuis Grist:', error);
+      console.error('KanbanManager: Erreur lors du chargement des stratégies depuis Grist:', error);
       this.strategyData = [];
+      this.strategiesData = [];
+      if (this.modalManager) {
+        this.modalManager.handleStrategyDataLoaded([]);
+      }
+      throw new Error(`Chargement des stratégies impossible: ${error?.message || 'erreur inconnue'}`);
     }
   }
   
+  /**
+   * Affiche une erreur de connexion à l'utilisateur
+   */
+  displayConnectionError() {
+    const container = document.getElementById('kanban-container');
+    if (container) {
+      container.innerHTML = `
+        <div class="alert alert-danger m-4">
+          <h4><i class="bi bi-exclamation-triangle me-2"></i>Erreur de connexion Grist</h4>
+          <p>L'application ne peut pas se connecter à la base de données Grist.</p>
+          <p><strong>Causes possibles :</strong></p>
+          <ul>
+            <li>Table "Ssir_strategie2" inexistante ou inaccessible</li>
+            <li>Permissions insuffisantes sur le document Grist</li>
+            <li>Connexion réseau interrompue</li>
+            <li>Document Grist non partagé avec cette application</li>
+          </ul>
+          <button class="btn btn-primary" onclick="window.location.reload()">
+            <i class="bi bi-arrow-clockwise me-1"></i>Recharger la page
+          </button>
+        </div>
+      `;
+    }
+  }
+
   /**
    * Mappe les enregistrements de stratégie depuis Grist
    * @param {object} records - Enregistrements bruts de Grist
    * @returns {Array} Enregistrements mappés
    */
   mapStrategyRecords(records) {
+    if (!records || !records.id) {
+      return [];
+    }
+
+    const normalizeColumn = (column) => {
+      if (Array.isArray(column)) {
+        return column;
+      }
+      if (column && typeof column === 'object') {
+        return Object.keys(column)
+          .sort((a, b) => Number(a) - Number(b))
+          .map(key => column[key]);
+      }
+      return [];
+    };
+
+    const ids = normalizeColumn(records.id);
+    const objectifs = normalizeColumn(records.objectif);
+    const sousObjectifs = normalizeColumn(records.sous_objectif);
+    const actions = normalizeColumn(records.action);
+    const echeances = normalizeColumn(records.echeance);
+    const responsables = normalizeColumn(records.responsable);
+    const portees = normalizeColumn(records.portee);
+
     const mapped = [];
-    
-    // Les clés sont les IDs des enregistrements
-    const ids = Object.keys(records.id || {});
-    
-    ids.forEach(id => {
+
+    ids.forEach((id, index) => {
       try {
+        const parsedId = typeof id === 'number' ? id : parseInt(id, 10);
+        const normalizedId = Number.isNaN(parsedId) ? id : parsedId;
+
         const strategy = {
-          id: records.id[id],
-          objectif: records.objectif?.[id] || '',
-          sous_objectif: records.sous_objectif?.[id] || '',
-          action: records.action?.[id] || '',
-          echeance: records.echeance?.[id] || '',
-          responsable: records.responsable?.[id] || '',
-          portee: records.portee?.[id] || ''
+          id: normalizedId,
+          objectif: objectifs[index] || '',
+          sous_objectif: sousObjectifs[index] || '',
+          action: actions[index] || '',
+          echeance: echeances[index] || '',
+          responsable: responsables[index] || '',
+          portee: portees[index] || ''
         };
-        
-        // Ne garder que les stratégies complètes
-        if (strategy.objectif && strategy.sous_objectif && strategy.action) {
+
+        if (strategy.objectif && strategy.action) {
           mapped.push(strategy);
         }
-        
       } catch (error) {
-        console.warn('KanbanManager: Erreur mapping stratégie:', id, error);
+        console.warn('KanbanManager: Erreur mapping stratégie:', index, error);
       }
     });
-    
+
     return mapped;
   }
   
@@ -246,7 +290,6 @@ export class KanbanManager {
    * Initialise l'interface utilisateur
    */
   initializeInterface() {
-    console.log('KanbanManager: Initialisation de l\'interface...');
     
     // Initialiser les options des formulaires
     this.populateFormOptions();
@@ -266,17 +309,71 @@ export class KanbanManager {
       // Le ModalManager se charge de peupler les options
       this.modalManager.populateFormOptions?.(this.gristOptions);
     }
-    
+
     if (this.filterManager) {
       // Le FilterManager se charge des options de filtres
       this.filterManager.populateFilterOptions?.(this.gristOptions);
     }
   }
+
+  /**
+   * Normalise les options provenant de Grist pour assurer la compatibilité
+   * entre les différents gestionnaires (modal, filtres, etc.).
+   * @param {object} rawOptions - Options brutes retournées par le GristManager
+   * @returns {object} Options normalisées avec clés singulier/pluriel alignées
+   */
+  normalizeGristOptions(rawOptions = {}) {
+    const sanitizeList = (list) => {
+      if (!Array.isArray(list)) return [];
+
+      return [...new Set(
+        list
+          .filter(value => typeof value === 'string' && value.trim() && value !== 'L')
+          .map(value => value.trim())
+      )].sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
+    };
+
+    const normalized = { ...rawOptions };
+
+    const bureauList = sanitizeList(
+      rawOptions.bureau || rawOptions.bureaux || rawOptions.bureaus || []
+    );
+    normalized.bureau = bureauList;
+    normalized.bureaux = bureauList;
+
+    const responsablesList = sanitizeList(
+      rawOptions.responsables || rawOptions.responsable || rawOptions.qui || []
+    );
+    normalized.responsables = responsablesList;
+    normalized.qui = responsablesList;
+
+    const projetList = sanitizeList(rawOptions.projet || rawOptions.projets || []);
+    normalized.projet = projetList;
+    normalized.projets = projetList;
+
+    const statutList = sanitizeList(rawOptions.statut || rawOptions.statuts || rawOptions.status || []);
+    normalized.statut = statutList;
+    normalized.statuts = statutList;
+
+    const urgenceList = sanitizeList(rawOptions.urgence || rawOptions.urgences || []);
+    normalized.urgence = urgenceList;
+    normalized.urgences = urgenceList;
+
+    const impactList = sanitizeList(rawOptions.impact || rawOptions.impacts || []);
+    normalized.impact = impactList;
+    normalized.impacts = impactList;
+
+    return normalized;
+  }
   
   /**
    * Configure les raccourcis clavier globaux
+   * Note: Désactivé temporairement pour éviter les conflits avec jQuery
    */
   setupGlobalKeyboardShortcuts() {
+    // DÉSACTIVÉ: Event listeners gérés centralement via jQuery dans kanban-app.js
+    
+    /*
     document.addEventListener('keydown', (e) => {
       // Ignorer si on est dans un champ de saisie
       if (e.target.matches('input, textarea, select')) return;
@@ -304,15 +401,24 @@ export class KanbanManager {
           break;
       }
     });
+    */
   }
   
   /**
    * Configure les contr�les de vue
    */
   setupViewControls() {
-    // Les contr�les sont g�r�s par le FilterManager
-    // On s'assure juste que l'�tat initial est correct
-    this.viewMode = this.filterManager?.viewMode || VIEW_MODES.COMPACT;
+    // Aligner l'état interne sur le gestionnaire de vues (détaillé par défaut)
+    const managerMode = this.viewManager?.currentMode;
+    const fallbackMode = this.filterManager?.viewMode || this.viewMode || VIEW_MODES.COMPACT;
+    const resolvedMode = managerMode || fallbackMode;
+
+    this.viewMode = resolvedMode;
+
+    if (this.viewManager && managerMode !== resolvedMode) {
+      this.viewManager.currentMode = resolvedMode;
+      this.viewManager.updateViewModeButtons();
+    }
   }
   
   /**
@@ -328,13 +434,17 @@ export class KanbanManager {
       // R�cup�rer les donn�es filtr�es
       const filteredRecords = this.getFilteredRecords();
       
-      // D�l�guer le rendu au BoardRenderer
-      if (this.boardRenderer) {
-        this.boardRenderer.renderKanban(this.viewMode, filteredRecords, {
+      // Déléguer le rendu au ViewManager
+      if (this.viewManager) {
+        this.viewManager.renderKanban(this.viewMode, filteredRecords, {
           showTermine: this.showTermine,
           focusColumn: this.focusColumn,
           container: this.kanbanContainer
         });
+
+        if (typeof this.viewManager.onKanbanRendered === 'function') {
+          this.viewManager.onKanbanRendered();
+        }
       }
       
     } catch (error) {
@@ -481,17 +591,27 @@ export class KanbanManager {
    * @param {Array} newRecords - Nouveaux enregistrements
    * @param {object} newOptions - Nouvelles options
    */
-  onDataReloaded(newRecords, newOptions) {
+  async onDataReloaded(newRecords, newOptions) {
     console.log('KanbanManager: Donn�es recharg�es depuis Grist');
-    
+
     this.currentRecords = newRecords || [];
-    this.gristOptions = newOptions || {};
-    
+    this.gristOptions = this.normalizeGristOptions(newOptions || {});
+
     // Mettre � jour les options des formulaires
     this.populateFormOptions();
-    
-    // Rafra�chir l'affichage
-    this.refreshKanban();
+
+    try {
+      await this.loadStrategyData();
+    } catch (error) {
+      console.warn('KanbanManager: Impossible de recharger les strat�gies apr�s synchronisation:', error);
+    }
+
+    // Rafra�chir l'affichage seulement si pas en cours de mise � jour
+    if (!this.isUpdating) {
+      this.refreshKanban();
+    } else {
+      console.log('KanbanManager: Refresh ignor� car mise � jour en cours');
+    }
   }
   
   /**
@@ -704,8 +824,8 @@ export class KanbanManager {
    * @returns {number} Priorit� (1-4)
    */
   calculateSimplePriority(record) {
-    if (this.cardRenderer && typeof this.cardRenderer.calculatePriority === 'function') {
-      return this.cardRenderer.calculatePriority(record.urgence, record.impact);
+    if (this.viewManager && typeof this.viewManager.calculatePriority === 'function') {
+      return this.viewManager.calculatePriority(record.urgence, record.impact);
     }
     
     // Fallback simple
@@ -784,11 +904,8 @@ export class KanbanManager {
         modal: !!this.modalManager,
         history: !!this.historyManager,
         filter: !!this.filterManager,
-        datePicker: !!this.datePickerManager
-      },
-      renderers: {
-        card: !!this.cardRenderer,
-        board: !!this.boardRenderer
+        datePicker: !!this.datePickerManager,
+        view: !!this.viewManager
       }
     };
   }
@@ -826,8 +943,8 @@ export class KanbanManager {
       
       // Relancer l'initialisation
       await this.init();
-      
-      displaySuccess('Application red�marr�e avec succ�s');
+
+      console.log('KanbanManager: Application redémarrée');
       
     } catch (error) {
       console.error('KanbanManager: Erreur lors du red�marrage:', error);
@@ -867,9 +984,9 @@ export class KanbanManager {
       this.datePickerManager = null;
     }
     
-    if (this.boardRenderer) {
-      this.boardRenderer.destroy();
-      this.boardRenderer = null;
+    if (this.viewManager) {
+      this.viewManager.destroy();
+      this.viewManager = null;
     }
     
     // Nettoyer le container
@@ -884,5 +1001,21 @@ export class KanbanManager {
     this.strategyData = [];
     
     console.log('KanbanManager: Ressources nettoy�es');
+  }
+  
+  /**
+   * Configure la centralisation des événements
+   */
+  setupEventCentralizer() {
+    const eventCentralizer = getEventCentralizer();
+    
+    // Enregistrer tous les managers pour délégation
+    eventCentralizer.registerManager('history', this.historyManager);
+    eventCentralizer.registerManager('viewMode', this.viewManager);
+    eventCentralizer.registerManager('modal', this.modalManager);
+    eventCentralizer.registerManager('jalon', this.jalonManager);
+    eventCentralizer.registerManager('filter', this.filterManager);
+    
+    this.eventCentralizer = eventCentralizer;
   }
 }

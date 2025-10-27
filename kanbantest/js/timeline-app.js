@@ -8,7 +8,7 @@ import {
 
 import { generateSingleBureauBadge } from './utils/badges.js';
 
-class TimelineManager {
+class TimelineAppManager {
   constructor() {
     this.tasks = [];
     this.selectedTask = null;
@@ -981,5 +981,10 @@ class TimelineManager {
 
 // Initialisation
 document.addEventListener('DOMContentLoaded', () => {
-  new TimelineManager();
+
+  // Vérifier si on est sur la page timeline (pas sur index.html)
+  if (document.getElementById('timeline-container')) {
+    console.log('📅 Initialisation TimelineManager (page dédiée)');
+    new TimelineAppManager();
+  }
 });

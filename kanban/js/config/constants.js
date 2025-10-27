@@ -12,6 +12,17 @@ export const STATUTS = [
   { id: 'Terminé', libelle: 'Terminé', classe: 'termine', icone: '<i class="bi bi-check-circle text-success"></i>' }
 ];
 
+export const STATUS_ACCENTS = {
+  'Backlog': '#6c757d',
+  'À faire': '#0ea5e9',
+  'En cours': '#f97316',
+  'En attente': '#eab308',
+  'Bloqué': '#ef4444',
+  'Validation': '#8b5cf6',
+  'Terminé': '#22c55e',
+  'default': '#6c757d'
+};
+
 // === DONNÉES DE BASE ===
 export const DEFAULT_BUREAUX = [
   'Exploit', 'Réseau', 'BDD', 'Chef SSIR', 'SIG',
@@ -35,11 +46,16 @@ export const TABLE_ID = "Ssir_principale_task";
 export const REQUIRED_COLUMNS = [
   'id', 'id_task', 'titre', 'description', 'statut', 'bureau', 'qui', 'urgence', 'impact',
   'projet', 'strategie_id', 'notes', 'date_derniere_maj', 'statut_precedent'
-  // Removed: strategie_objectif, strategie_sous_objectif, strategie_action (auto-computed)
-  // Removed: historique_statuts (Date field, not JSON)
+  // Note: reference et jalons sont maintenant dans OPTIONAL_COLUMNS (comme en prod)
 ];
 
-export const OPTIONAL_COLUMNS = ['date_debut', 'date_echeance', 'jalons'];
+export const OPTIONAL_COLUMNS = [
+  'date_debut', 'date_echeance', 'jalons', 'reference',
+  // Colonnes de prod actives
+  'type_tache_id', 'priorite', 'historique_statuts', 'datenow',
+  'str_statut', 'str_urgence', 'str_qui', 'str_bureau', 'str_impact',
+  'date_creation', 'date_modif', 'Créé par'
+];
 
 // === CONSTANTES DE L'INTERFACE ===
 export const VIEW_MODES = {
@@ -95,50 +111,10 @@ export const TIME_THRESHOLDS = {
   ANIMATION_DURATION: 150
 };
 
-// === MESSAGES ET TEXTES ===
-export const MESSAGES = {
-  ERRORS: {
-    SAVE_FAILED: 'Erreur lors de la sauvegarde',
-    LOAD_FAILED: 'Erreur lors du chargement des données',
-    DELETE_FAILED: 'Erreur lors de la suppression',
-    DRAG_FAILED: 'Erreur lors du déplacement'
-  },
-  CONFIRM: {
-    DELETE_TASK: 'Êtes-vous sûr de vouloir supprimer cette tâche ?',
-    CLEAR_DATES: 'Supprimer toutes les dates butoir de toutes les tâches ?'
-  },
-  PLACEHOLDER: {
-    SEARCH: 'Rechercher...',
-    DATE_PICKER: 'Cliquer pour choisir une date...',
-    DESCRIPTION: 'Décrivez la tâche, les blocages, les actions réalisées...'
-  }
-};
-
-// === ICÔNES PAR BUREAU ===
-export const BUREAU_ICONS = {
-  'exploit': 'bi-server',
-  'réseau': 'bi-router',
-  'reseau': 'bi-router',
-  'bdd': 'bi-database',
-  'chef': 'bi-person-badge',
-  'ssir': 'bi-person-badge',
-  'sig': 'bi-geo-alt',
-  'nexsis': 'bi-broadcast',
-  'rrf': 'bi-broadcast',
-  'comsic': 'bi-shield-check',
-  'rssi': 'bi-shield-lock',
-  'dpo': 'bi-file-earmark-person',
-  'cgssi': 'bi-shield-check',
-  'default': 'bi-building'
-};
-
-// === UTILITAIRES ===
-export const getStatutById = (id) => STATUTS.find(s => s.id === id);
-export const getStatutByClasse = (classe) => STATUTS.find(s => s.classe === classe);
-export const getDefaultStatuts = () => STATUTS.map(s => s.id);
-
-// === DONNÉES STRATÉGIQUES INTÉGRÉES (depuis CSV SSIR_strategie2) ===
-// Import automatique depuis debug/kanban_SSIR_TEST-Ssir_strategie2.csv
+// === DONNÉES STRATÉGIQUES INTÉGRÉES ===
+// Ces données sont synchronisées avec la table Grist `Ssir_strategie2`
+// et permettent d'initialiser immédiatement l'application avec les
+// mêmes références que la production.
 export const STRATEGY_DATA = [
   {
     "id": 1,
@@ -261,301 +237,200 @@ export const STRATEGY_DATA = [
     "id": 14,
     "objectif": "Assurer le fonctionnement des systèmes d'information",
     "sous_objectif": "Mettre à jour le schéma directeur informatique du SDIS",
-    "action": "Rédaction d'une charte spécifique pour les administrateurs système et les correspondants",
-    "responsable": "GSSI",
-    "echeance": "2025",
+    "action": "Définition et mise en œuvre d'une politique de sauvegarde et PRA",
+    "responsable": "Réseaux",
+    "echeance": "2024-2025",
     "portee": "Générale"
   },
   {
     "id": 15,
     "objectif": "Assurer le fonctionnement des systèmes d'information",
     "sous_objectif": "Mettre à jour le schéma directeur informatique du SDIS",
-    "action": "Élaboration d'un plan de sauvegarde des données",
-    "responsable": "GSSI",
-    "echeance": "2025",
+    "action": "Réalisation d'un inventaire SI et cartographie applicative",
+    "responsable": "CGSSI",
+    "echeance": "2024-2026",
     "portee": "Générale"
   },
   {
     "id": 16,
-    "objectif": "Garantir la sécurité des systèmes d'information",
-    "sous_objectif": "Établir la PSSI",
-    "action": "Réalisation d'un audit sécurité : conformité à NIS2",
-    "responsable": "ISI+RSSI+CGSSI",
-    "echeance": "2025",
+    "objectif": "Assurer le fonctionnement des systèmes d'information",
+    "sous_objectif": "Mettre à jour le schéma directeur informatique du SDIS",
+    "action": "Mise en place d'une gestion de configuration",
+    "responsable": "Exploitation",
+    "echeance": "2024-2026",
     "portee": "Générale"
   },
   {
     "id": 17,
-    "objectif": "Garantir la sécurité des systèmes d'information",
-    "sous_objectif": "Établir la PSSI",
-    "action": "Rédaction d'une PSSI prenant en compte la réglementation NIS2 et sa transposition.",
-    "responsable": "ISI+RSSI+CGSSI",
-    "echeance": "2025",
+    "objectif": "Assurer le fonctionnement des systèmes d'information",
+    "sous_objectif": "Mettre à jour le schéma directeur informatique du SDIS",
+    "action": "Mise en place d'une gouvernance SI (comité de pilotage, comités métiers, comité technique)",
+    "responsable": "CGSSI",
+    "echeance": "2024-2025",
     "portee": "Générale"
   },
   {
     "id": 18,
-    "objectif": "Garantir la sécurité des systèmes d'information",
-    "sous_objectif": "Appliquer la PSSI",
-    "action": "Mise en place de procédures et actions prenant en compte la PSSI",
-    "responsable": "GSSI+SDIS",
-    "echeance": "2025-2030",
+    "objectif": "Assurer le fonctionnement des systèmes d'information",
+    "sous_objectif": "Mettre à jour le schéma directeur informatique du SDIS",
+    "action": "Nommer un RSSI à temps plein",
+    "responsable": "Direction",
+    "echeance": "2024",
     "portee": "Générale"
   },
   {
     "id": 19,
-    "objectif": "Garantir la sécurité des systèmes d'information",
-    "sous_objectif": "Surveiller les activités informatiques",
-    "action": "Amélioration des outils de supervision",
-    "responsable": "RSSI+ISI",
-    "echeance": "2024-2026",
+    "objectif": "Assurer le fonctionnement des systèmes d'information",
+    "sous_objectif": "Mettre à jour le schéma directeur informatique du SDIS",
+    "action": "Mettre en place une gestion des risques et un registre de sécurité",
+    "responsable": "RSSI",
+    "echeance": "2024-2025",
     "portee": "Générale"
   },
   {
     "id": 20,
-    "objectif": "Garantir la sécurité des systèmes d'information",
-    "sous_objectif": "Surveiller les activités informatiques",
-    "action": "Mise en conformité de la logique d'exposition sur internet",
-    "responsable": "RSSI+ISI",
-    "echeance": "2024-2026",
+    "objectif": "Assurer le fonctionnement des systèmes d'information",
+    "sous_objectif": "Mettre à jour le schéma directeur informatique du SDIS",
+    "action": "Définir une politique de développement interne",
+    "responsable": "CGSSI",
+    "echeance": "2024-2025",
     "portee": "Générale"
   },
   {
     "id": 21,
-    "objectif": "Garantir la sécurité des systèmes d'information",
-    "sous_objectif": "Indicateurs de sécurité",
-    "action": "Mise en place et partage d'indicateurs de sécurité",
-    "responsable": "RSSI + CGSSI",
-    "echeance": "2025",
+    "objectif": "Assurer le fonctionnement des systèmes d'information",
+    "sous_objectif": "Mettre à jour le schéma directeur informatique du SDIS",
+    "action": "Mettre en place des indicateurs de performance et de qualité du SI",
+    "responsable": "CGSSI",
+    "echeance": "2024-2025",
     "portee": "Générale"
   },
   {
     "id": 22,
-    "objectif": "Garantir la sécurité des systèmes d'information",
-    "sous_objectif": "Indicateurs de sécurité",
-    "action": "Sensibilisation/formation à partir de ces indicateurs.",
-    "responsable": "RSSI + CGSSI",
-    "echeance": "2025",
+    "objectif": "Assurer le fonctionnement des systèmes d'information",
+    "sous_objectif": "Mettre à jour le schéma directeur informatique du SDIS",
+    "action": "Mettre en place une politique de veille technologique",
+    "responsable": "CGSSI",
+    "echeance": "2024-2025",
     "portee": "Générale"
   },
   {
     "id": 23,
-    "objectif": "Répondre aux demandes des métiers",
-    "sous_objectif": "Pérenniser les outils à destination des métiers et utilisateurs",
-    "action": "Transmission des connaissances d'exploitation et développement d'intranet",
-    "responsable": "ISI",
-    "echeance": "2024-",
+    "objectif": "Assurer le fonctionnement des systèmes d'information",
+    "sous_objectif": "Mettre à jour le schéma directeur informatique du SDIS",
+    "action": "Mettre en place une politique de gestion de la connaissance",
+    "responsable": "CGSSI",
+    "echeance": "2024-2025",
     "portee": "Générale"
   },
   {
     "id": 24,
-    "objectif": "Répondre aux demandes des métiers",
-    "sous_objectif": "Pérenniser les outils à destination des métiers et utilisateurs",
-    "action": "Aide à la maitrise d'ouvrage pour la continuité des outils et le support avec les fournisseurs de logiciels",
-    "responsable": "ISI",
-    "echeance": "2024-",
+    "objectif": "Sécuriser les systèmes d'information",
+    "sous_objectif": "Renforcer la sécurité des accès physiques et logiques",
+    "action": "Mettre en place un contrôle d'accès physique aux salles informatiques",
+    "responsable": "CGSSI",
+    "echeance": "2024-2025",
     "portee": "Générale"
   },
   {
     "id": 25,
-    "objectif": "Répondre aux demandes des métiers",
-    "sous_objectif": "Pérenniser les outils à destination des métiers et utilisateurs",
-    "action": "Mise en œuvre d'un outil de déploiement automatisé",
-    "responsable": "ISI",
-    "echeance": "2024-",
+    "objectif": "Sécuriser les systèmes d'information",
+    "sous_objectif": "Renforcer la sécurité des accès physiques et logiques",
+    "action": "Mettre en place une gestion centralisée des comptes et des droits",
+    "responsable": "Exploitation",
+    "echeance": "2024-2025",
     "portee": "Générale"
   },
   {
     "id": 26,
-    "objectif": "Répondre aux demandes des métiers",
-    "sous_objectif": "Préciser les démarches de qualification et validation du GSSI (AMO)",
-    "action": "Document cadre (schéma directeur)",
-    "responsable": "ISI+CGSSI",
-    "echeance": "2024",
+    "objectif": "Sécuriser les systèmes d'information",
+    "sous_objectif": "Renforcer la sécurité des accès physiques et logiques",
+    "action": "Mettre en place une solution MFA pour l'ensemble des accès sensibles",
+    "responsable": "RSSI",
+    "echeance": "2024-2026",
     "portee": "Générale"
   },
   {
     "id": 27,
-    "objectif": "Répondre aux demandes des métiers",
-    "sous_objectif": "Préciser les démarches de qualification et validation du GSSI (AMO)",
-    "action": "Réunions avec chefs de groupements",
-    "responsable": "CGSSI",
-    "echeance": "2024-",
+    "objectif": "Sécuriser les systèmes d'information",
+    "sous_objectif": "Renforcer la sécurité des accès physiques et logiques",
+    "action": "Mettre en place un système de détection et prévention des intrusions",
+    "responsable": "RSSI",
+    "echeance": "2024-2026",
     "portee": "Générale"
   },
   {
     "id": 28,
-    "objectif": "Répondre aux demandes des métiers",
-    "sous_objectif": "Organiser les modalités de saisines et le suivi des réponses du service aux sollicitations",
-    "action": "Simplification et optimisation du traitement des demandes avec guichet unique (pour l'instant GLPI et intranet)",
-    "responsable": "RSSI+exploitation",
-    "echeance": "2024-",
+    "objectif": "Sécuriser les systèmes d'information",
+    "sous_objectif": "Renforcer la sécurité des accès physiques et logiques",
+    "action": "Mettre en place une surveillance des journaux et une SIEM",
+    "responsable": "RSSI",
+    "echeance": "2024-2026",
     "portee": "Générale"
   },
   {
     "id": 29,
-    "objectif": "Répondre aux demandes des métiers",
-    "sous_objectif": "Organiser les modalités de saisines et le suivi des réponses du service aux sollicitations",
-    "action": "Mise en place d'un inventaire automatisé en lien avec un outil de déploiement des matériels",
-    "responsable": "RSSI+exploitation",
-    "echeance": "2024-",
-    "portee": "Générale"
-  },
-  {
-    "id": 30,
-    "objectif": "Répondre aux demandes des métiers",
-    "sous_objectif": "Organiser les modalités de saisines et le suivi des réponses du service aux sollicitations",
-    "action": "Mise en place d'un inventaire automatisé en lien avec un outil de déploiement des matériels",
-    "responsable": "Exploitation",
+    "objectif": "Sécuriser les systèmes d'information",
+    "sous_objectif": "Renforcer la sécurité des accès physiques et logiques",
+    "action": "Mettre en place une politique de mots de passe renforcée",
+    "responsable": "RSSI",
     "echeance": "2024",
     "portee": "Générale"
   },
   {
-    "id": 31,
-    "objectif": "Répondre aux demandes des métiers",
-    "sous_objectif": "Mettre en place les solutions NexSIS-RRF",
-    "action": "Évaluer le retroplanning avec les grandes actions",
-    "responsable": "Équipe projet",
-    "echeance": "2024-2030",
-    "portee": "Générale"
-  },
-  {
-    "id": 32,
-    "objectif": "Répondre aux demandes des métiers",
-    "sous_objectif": "Mettre en place les solutions NexSIS-RRF",
-    "action": "Définir les budgets et échéances financières",
-    "responsable": "Équipe projet",
-    "echeance": "2024-2030",
-    "portee": "Générale"
-  },
-  {
-    "id": 33,
-    "objectif": "Répondre aux demandes des métiers",
-    "sous_objectif": "Mettre en place les solutions NexSIS-RRF",
-    "action": "Prévoir et accompagner les évolutions techniques",
-    "responsable": "Équipe projet",
-    "echeance": "2024-2030",
-    "portee": "Générale"
-  },
-  {
-    "id": 34,
-    "objectif": "Répondre aux demandes des métiers",
-    "sous_objectif": "Mettre en place les solutions NexSIS-RRF",
-    "action": "Former et tenir au fait les utilisateurs",
-    "responsable": "Équipe projet",
-    "echeance": "2024-2030",
-    "portee": "Générale"
-  },
-  {
-    "id": 35,
-    "objectif": "Assurer la transition vers les systèmes d'information de demain",
-    "sous_objectif": "Bâtir les systèmes d'information de demain",
-    "action": "Évaluer l'existant : intranet, extranet, GED, GEC, SAE, logiciels, intégration",
-    "responsable": "Groupe de travail",
-    "echeance": "2024-2030",
-    "portee": "Générale"
-  },
-  {
-    "id": 36,
-    "objectif": "Assurer la transition vers les systèmes d'information de demain",
-    "sous_objectif": "Bâtir les systèmes d'information de demain",
-    "action": "Benchmark dans les autres SIS",
-    "responsable": "Groupe de travail",
-    "echeance": "2024-2030",
-    "portee": "Générale"
-  },
-  {
-    "id": 37,
-    "objectif": "Assurer la transition vers les systèmes d'information de demain",
-    "sous_objectif": "Bâtir les systèmes d'information de demain",
-    "action": "Proposer les outils de demain (informatique = cloud, outils de communication modernes, téléphonie)",
-    "responsable": "Groupe de travail",
-    "echeance": "2024-2030",
-    "portee": "Générale"
-  },
-  {
-    "id": 38,
-    "objectif": "Assurer la transition vers les systèmes d'information de demain",
-    "sous_objectif": "Bâtir les systèmes d'information de demain",
-    "action": "Mettre en place les outils de demain (nouvel intranet, workflows, tableaux de bord, outils de pilotage, circulation de l'information…)",
-    "responsable": "Groupe de travail",
-    "echeance": "2024-2030",
-    "portee": "Générale"
-  },
-  {
-    "id": 39,
-    "objectif": "Assurer la transition vers les systèmes d'information de demain",
-    "sous_objectif": "Bâtir les systèmes d'information de demain",
-    "action": "Prendre en compte le PCA (Cloud, infrastructures réseau, communication, etc.)",
-    "responsable": "Groupe de travail",
-    "echeance": "2024-2030",
-    "portee": "Générale"
-  },
-  {
-    "id": 40,
-    "objectif": "Assurer la transition vers les systèmes d'information de demain",
-    "sous_objectif": "Mettre à jour le schéma directeur informatique",
-    "action": "Prendre en compte les évolutions validées suite aux travaux des groupes",
-    "responsable": "GSSI",
-    "echeance": "2024-2030",
-    "portee": "Générale"
-  },
-  {
-    "id": 41,
-    "objectif": "Assurer la transition vers les systèmes d'information de demain",
-    "sous_objectif": "Mettre à jour le schéma directeur informatique",
-    "action": "Produire les plans de continuité et/ou de reprise de l'activité",
-    "responsable": "GSSI",
-    "echeance": "2024-2030",
-    "portee": "Générale"
-  },
-  {
-    "id": 42,
-    "objectif": "Assurer la transition vers les systèmes d'information de demain",
-    "sous_objectif": "Mettre à jour le schéma directeur informatique",
-    "action": "Veiller à la cohérence du système, aux opérations de nettoyage et de documentation",
-    "responsable": "GSSI",
-    "echeance": "2024-2030",
-    "portee": "Générale"
-  },
-  {
-    "id": 43,
-    "objectif": "Assurer la transition vers les systèmes d'information de demain",
-    "sous_objectif": "Mettre à jour le schéma directeur informatique",
-    "action": "Inclure les nouveaux outils, les solutions émergentes",
-    "responsable": "GSSI",
-    "echeance": "2024-2030",
+    "id": 30,
+    "objectif": "Sécuriser les systèmes d'information",
+    "sous_objectif": "Renforcer la sécurité des accès physiques et logiques",
+    "action": "Mettre en place une gestion des habilitations basée sur les rôles",
+    "responsable": "Exploitation",
+    "echeance": "2024-2026",
     "portee": "Générale"
   }
 ];
 
-/**
- * Convertit les données stratégiques au format Grist
- */
-export function convertToGristFormat(data) {
-  const gristFormat = {
-    id: {},
-    objectif: {},
-    sous_objectif: {},
-    action: {},
-    responsable: {},
-    echeance: {},
-    portee: {}
-  };
-  
-  data.forEach((item, index) => {
-    const key = index.toString();
-    gristFormat.id[key] = item.id;
-    gristFormat.objectif[key] = item.objectif;
-    gristFormat.sous_objectif[key] = item.sous_objectif;
-    gristFormat.action[key] = item.action;
-    gristFormat.responsable[key] = item.responsable;
-    gristFormat.echeance[key] = item.echeance;
-    gristFormat.portee[key] = item.portee;
-  });
-  
-  return gristFormat;
-}
+// === MESSAGES ET TEXTES ===
+export const MESSAGES = {
+  ERRORS: {
+    SAVE_FAILED: 'Erreur lors de la sauvegarde',
+    LOAD_FAILED: 'Erreur lors du chargement des données',
+    DELETE_FAILED: 'Erreur lors de la suppression',
+    DRAG_FAILED: 'Erreur lors du déplacement'
+  },
+  CONFIRM: {
+    DELETE_TASK: 'Êtes-vous sûr de vouloir supprimer cette tâche ?',
+    CLEAR_DATES: 'Supprimer toutes les dates butoir de toutes les tâches ?'
+  },
+  PLACEHOLDER: {
+    SEARCH: 'Rechercher...',
+    DATE_PICKER: 'Cliquer pour choisir une date...',
+    DESCRIPTION: 'Décrivez la tâche, les blocages, les actions réalisées...'
+  }
+};
+
+// === ICÔNES PAR BUREAU ===
+export const BUREAU_ICONS = {
+  'exploit': 'bi-gear-wide-connected',  // Admins système - engrenages connectés
+  'réseau': 'bi-diagram-3',             // Réseau - diagramme de réseau plus visible
+  'reseau': 'bi-diagram-3',             // Réseau - diagramme de réseau plus visible  
+  'bdd': 'bi-database',                 // DBA + applications - base de données
+  'chef': 'bi-person-badge-fill',       // Chef SSIR - badge rempli pour + d'autorité
+  'ssir': 'bi-person-badge-fill',       // Chef SSIR - badge rempli pour + d'autorité
+  'sig': 'bi-map',                      // SIG - carte géographique
+  'nexsis': 'bi-broadcast-pin',         // Service parallèle - diffusion localisée
+  'rrf': 'bi-broadcast-pin',            // Service parallèle - diffusion localisée
+  'comsic': 'bi-router',                // Responsable opérationnel communications
+  'rssi': 'bi-shield-lock-fill',        // Responsable sécurité - bouclier rempli
+  'dpo': 'bi-file-earmark-person',      // DPO - fichier personne
+  'cgssi': 'bi-stars',                  // Chef de groupement - étoiles pour grade
+  'default': 'bi-building'
+};
+
+// === UTILITAIRES ===
+export const getStatutById = (id) => STATUTS.find(s => s.id === id);
+export const getStatutByClasse = (classe) => STATUTS.find(s => s.classe === classe);
+export const getDefaultStatuts = () => STATUTS.map(s => s.id);
+export const getStatusAccent = (id) => STATUS_ACCENTS[id] || STATUS_ACCENTS.default;
+
 
 // === CONFIGURATION LOGS ===
 export const LOG_CONFIG = {
@@ -566,7 +441,7 @@ export const LOG_CONFIG = {
     'kanban-app': 'DEBUG',
     'KanbanManager': 'DEBUG', 
     'GristManager': 'DEBUG',
-    'ViewModeManager': 'DEBUG',
+    'ViewManager': 'DEBUG',
     'FilterManager': 'DEBUG',
     'ModalManager': 'DEBUG'
   }

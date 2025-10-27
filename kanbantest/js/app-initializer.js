@@ -1,14 +1,10 @@
 // === js/app-initializer.js ===
 // Script d'initialisation et de configuration globale de l'application Kanban
 
-import { ViewModeManager } from './managers/ViewModeManager.js';
-import { 
-  getObjectivesByPriority, 
-  getSubObjectives, 
-  getActions,
-  searchStrategyData 
-} from './config/strategyData.js';
+// ViewManager sera créé par KanbanManager
+// Données de stratégie chargées directement depuis Grist
 import { displayError, displaySuccess } from './utils/dom.js';
+import { initLogger } from './utils/LoggerManager.js';
 
 /**
  * Classe d'initialisation de l'application Kanban
@@ -20,10 +16,13 @@ export class KanbanAppInitializer {
     this.retryCount = 0;
     this.maxRetries = 3;
     
+    // Initialiser le système de logging centralisé
+    initLogger();
+    
     // Composants de l'application
     this.components = {
       kanbanManager: null,
-      viewModeManager: null,
+      viewManager: null,
       strategicData: null
     };
     
@@ -56,37 +55,14 @@ export class KanbanAppInitializer {
    */
   async _performInitialization() {
     try {
-      console.log('🚀 Démarrage de l\'initialisation Kanban...');
-      
-      // Étape 1: Vérifier les prérequis
-      console.log('🔍 Étape 1: Vérification des prérequis...');
       await this.checkPrerequisites();
-      console.log('✅ Étape 1 terminée');
-      
-      // Étape 2: Initialiser les composants de base
-      console.log('⚙️ Étape 2: Initialisation des composants de base...');
       await this.initializeBaseComponents();
-      console.log('✅ Étape 2 terminée');
-      
-      // Étape 3: Configurer l'interface utilisateur
-      console.log('🎨 Étape 3: Configuration de l\'interface utilisateur...');
       await this.setupUserInterface();
-      console.log('✅ Étape 3 terminée');
-      
-      // Étape 4: Charger les données
-      console.log('📊 Étape 4: Chargement des données...');
       await this.loadApplicationData();
-      console.log('✅ Étape 4 terminée');
-      
-      // Étape 5: Finaliser l'initialisation
-      console.log('🏁 Étape 5: Finalisation de l\'initialisation...');
       await this.finalizeInitialization();
-      console.log('✅ Étape 5 terminée');
       
       this.isInitialized = true;
-      
-      console.log('✅ Application Kanban initialisée avec succès');
-      displaySuccess('Application Kanban chargée et prête à utiliser');
+      console.log('KanbanAppInitializer: initialisation terminée');
       
       return true;
       
@@ -101,7 +77,6 @@ export class KanbanAppInitializer {
    * Vérifie les prérequis de l'application
    */
   async checkPrerequisites() {
-    console.log('🔍 Vérification des prérequis...');
     
     // Vérifier la présence des éléments DOM requis
     const requiredElements = [
@@ -125,7 +100,6 @@ export class KanbanAppInitializer {
       throw new Error(`APIs manquantes: ${missingAPIs.join(', ')}`);
     }
     
-    console.log('✅ Prérequis vérifiés');
   }
   
   /**
@@ -134,20 +108,16 @@ export class KanbanAppInitializer {
   async initializeBaseComponents() {
     
     try {
-      // Créer KanbanManager si nécessaire (puisque l'auto-init est désactivée)
-      if (!window.kanbanManager) {
-        const { KanbanManager } = await import('./kanban-app.js');
+      // Une seule instance de KanbanManager (singleton pattern)
+      if (!window.kanbanManager || !window.kanbanManager.isInitialized) {
+        const { KanbanManager } = await import('./core/KanbanManager.js');
         window.kanbanManager = new KanbanManager();
-        this.components.kanbanManager = window.kanbanManager;
-      } else {
-        this.components.kanbanManager = window.kanbanManager;
       }
       
+      this.components.kanbanManager = window.kanbanManager;
       
-      // Si déjà initialisé, passer directement
-      if (this.components.kanbanManager.isInitialized) {
-      } else {
-        // Attendre que le KanbanManager soit prêt
+      // Attendre l'initialisation si nécessaire
+      if (!this.components.kanbanManager.isInitialized) {
         await this.waitForComponent(
           () => this.components.kanbanManager && this.components.kanbanManager.isInitialized,
           15000,
@@ -156,33 +126,21 @@ export class KanbanAppInitializer {
       }
     } catch (error) {
       console.error('❌ Erreur initialisation composants de base:', error);
-      // Essayer de continuer même en cas d'erreur
-      if (!this.components.kanbanManager) {
-        const { KanbanManager } = await import('./kanban-app.js');
-        this.components.kanbanManager = new KanbanManager();
-        window.kanbanManager = this.components.kanbanManager;
-      }
+      throw error; // Ne pas masquer l'erreur
     }
     
-    // Initialiser le ViewModeManager
-    this.components.viewModeManager = new ViewModeManager(this.components.kanbanManager);
-    this.components.kanbanManager.viewModeManager = this.components.viewModeManager;
+    // ViewManager est maintenant géré directement par KanbanManager
+    // (évite les doublons de managers comme en prod)
+    this.components.viewManager = this.components.kanbanManager.viewManager;
     
-    // Charger les données stratégiques
-    this.components.strategicData = {
-      objectives: getObjectivesByPriority(),
-      searchFunction: searchStrategyData
-    };
+    // Les données stratégiques sont chargées par KanbanManager depuis Grist
     
-    console.log('✅ Composants de base initialisés');
   }
   
   /**
    * Configure l'interface utilisateur
    */
   async setupUserInterface() {
-    console.log('🎨 Configuration de l\'interface utilisateur...');
-    
     // Initialiser les tooltips Bootstrap
     this.initializeTooltips();
     
@@ -198,38 +156,46 @@ export class KanbanAppInitializer {
     }
     
     // Initialiser le mode de vue préféré
-    this.components.viewModeManager.initializeViewMode();
+    this.components.viewManager.initializeViewMode();
     
-    console.log('✅ Interface utilisateur configurée');
   }
   
   /**
    * Charge les données de l'application
    */
   async loadApplicationData() {
-    console.log('📊 Chargement des données...');
-    
-    // Les données sont déjà chargées par le KanbanManager
-    // Ici on peut ajouter des validations ou transformations supplémentaires
-    
     const kanban = this.components.kanbanManager;
-    
-    if (!kanban.currentRecords || kanban.currentRecords.length === 0) {
-      console.warn('⚠️ Aucune donnée trouvée - utilisation du mode démo');
-      await this.loadDemoData();
+
+    // Attendre explicitement la connexion Grist pour éviter les faux positifs
+    if (kanban.gristManager) {
+      if (!kanban.gristManager.isConnected) {
+        await this.waitForComponent(
+          () => kanban.gristManager?.isConnected,
+          15000,
+          'GristManager.isConnected'
+        );
+      }
+    } else {
+      throw new Error('GristManager non initialisé');
     }
-    
+
+    if (!kanban.currentRecords || kanban.currentRecords.length === 0) {
+      try {
+        await kanban.gristManager.reloadData();
+      } catch (error) {
+        throw new Error('Impossible de charger les données depuis Grist: ' + error.message);
+      }
+    }
+
     // Valider la cohérence des données
     this.validateDataIntegrity();
-    
-    console.log(`✅ ${kanban.currentRecords.length} tâches chargées`);
+
   }
   
   /**
    * Finalise l'initialisation
    */
   async finalizeInitialization() {
-    console.log('🎯 Finalisation de l\'initialisation...');
     
     // Démarrer les services en arrière-plan
     this.startBackgroundServices();
@@ -239,6 +205,8 @@ export class KanbanAppInitializer {
     
     // Exposer les APIs publiques
     this.exposePublicAPIs();
+    
+    // Mode test : pas de monitoring automatique (données Grist fiables)
     
     // Marquer l'application comme prête
     document.body.classList.add('kanban-ready');
@@ -252,44 +220,8 @@ export class KanbanAppInitializer {
       }
     }));
     
-    console.log('✅ Initialisation finalisée');
   }
   
-  /**
-   * Charge des données de démonstration
-   */
-  async loadDemoData() {
-    const demoTasks = [
-      {
-        id: 1,
-        titre: 'Mise en place du monitoring',
-        description: 'Déploiement de la solution de monitoring des serveurs',
-        statut: 'En cours',
-        bureau: ['L', 'Exploit'],
-        qui: ['L', 'Alex'],
-        urgence: 'Courte',
-        impact: 'Important',
-        projet: 'Infrastructure 2024',
-        strategie_objectif: 'Performance Optimisée',
-        date_echeance: '2024-03-15'
-      },
-      {
-        id: 2,
-        titre: 'Audit sécurité réseau',
-        description: 'Audit complet de la sécurité du réseau interne',
-        statut: 'À faire',
-        bureau: ['L', 'Réseau', 'RSSI'],
-        qui: ['L', 'Timothée', 'Isabelle'],
-        urgence: 'Immédiate',
-        impact: 'Critique',
-        projet: 'Sécurité 2024',
-        strategie_objectif: 'Sécurité Renforcée'
-      }
-    ];
-    
-    this.components.kanbanManager.currentRecords = demoTasks;
-    console.log('📝 Données de démonstration chargées');
-  }
   
   /**
    * Valide l'intégrité des données
@@ -322,7 +254,6 @@ export class KanbanAppInitializer {
     if (issuesFound > 0) {
       console.warn(`⚠️ ${issuesFound} problème(s) de données corrigé(s)`);
     } else {
-      console.log('✅ Intégrité des données validée');
     }
   }
   
@@ -348,7 +279,6 @@ export class KanbanAppInitializer {
       });
     });
     
-    console.log(`💡 ${tooltipList.length} tooltips initialisés`);
   }
   
   /**
@@ -384,64 +314,44 @@ export class KanbanAppInitializer {
       'f1': () => this.showHelp()
     };
     
-    // Éviter les listeners en double
-    if (!this.globalKeyboardListenerAdded) {
-      this.globalKeyboardListenerAdded = true;
-      document.addEventListener('keydown', (e) => {
-        const key = (e.ctrlKey ? 'ctrl+' : '') + 
-                    (e.shiftKey ? 'shift+' : '') + 
-                    (e.altKey ? 'alt+' : '') + 
-                    e.key.toLowerCase();
-        
-        if (shortcuts[key] && !e.target.matches('input, textarea, select')) {
-          e.preventDefault();
-          shortcuts[key]();
-        }
-      });
-    }
+    document.addEventListener('keydown', (e) => {
+      const key = (e.ctrlKey ? 'ctrl+' : '') + 
+                  (e.shiftKey ? 'shift+' : '') + 
+                  (e.altKey ? 'alt+' : '') + 
+                  e.key.toLowerCase();
+      
+      if (shortcuts[key] && !e.target.matches('input, textarea, select')) {
+        e.preventDefault();
+        shortcuts[key]();
+      }
+    });
     
-    console.log('⌨️ Raccourcis clavier configurés');
   }
   
   /**
    * Crée les boutons d'actions rapides
    */
   createQuickActionButtons() {
-    console.log('🔘 Création des boutons d\'actions rapides...');
     
     // Vérifier s'ils existent déjà (dans le header)
     if (document.querySelector('.quick-actions')) {
-      console.log('✅ Boutons d\'actions rapides déjà présents');
       return;
     }
     
-    // Chercher le conteneur des boutons dans le header
-    const buttonsContainer = document.querySelector('.kanban-header .d-flex.gap-2');
+    // Chercher le bouton nouvelle tâche d'abord
     const newTaskBtn = document.querySelector('#btn-nouvelle-tache');
     
-    console.log('🔍 Debug insertBefore:', {
-      buttonsContainer: !!buttonsContainer,
-      newTaskBtn: !!newTaskBtn,
-      containerHTML: buttonsContainer?.outerHTML.substring(0, 100),
-      newTaskBtnParent: newTaskBtn?.parentElement?.className,
-      areRelated: buttonsContainer?.contains(newTaskBtn)
-    });
-    
-    if (!buttonsContainer || !newTaskBtn) {
-      console.warn('Container des boutons ou bouton Nouvelle Tâche non trouvé');
-      console.warn('buttonsContainer:', buttonsContainer);
-      console.warn('newTaskBtn:', newTaskBtn);
+    if (!newTaskBtn) {
+      console.warn('Bouton Nouvelle Tâche non trouvé');
       return;
     }
     
-    // Vérifier que newTaskBtn est bien un enfant de buttonsContainer
-    if (!buttonsContainer.contains(newTaskBtn)) {
-      console.error('❌ Le bouton Nouvelle Tâche n\'est pas un enfant du conteneur trouvé');
-      console.error('Container:', buttonsContainer);
-      console.error('NewTaskBtn parent:', newTaskBtn.parentElement);
-      // Utiliser le parent direct du bouton comme conteneur de fallback
-      buttonsContainer = newTaskBtn.parentElement;
-      console.log('🔄 Utilisation du parent direct comme conteneur');
+    // Utiliser le parent direct du bouton comme conteneur
+    const buttonsContainer = newTaskBtn.parentElement;
+    
+    if (!buttonsContainer) {
+      console.warn('Container des boutons non trouvé');
+      return;
     }
     
     const quickActionsDiv = document.createElement('div');
@@ -458,30 +368,18 @@ export class KanbanAppInitializer {
     `;
     
     try {
-      // Vérifier une dernière fois avant l'insertion
-      if (buttonsContainer.contains(newTaskBtn)) {
-        buttonsContainer.insertBefore(quickActionsDiv, newTaskBtn);
-        console.log('✅ insertBefore réussi');
-      } else {
-        throw new Error('Bouton pas dans le conteneur au moment de l\'insertion');
-      }
+      // Insérer avant le bouton "Nouvelle Tâche" dans le même conteneur
+      buttonsContainer.insertBefore(quickActionsDiv, newTaskBtn);
     } catch (error) {
       console.error('❌ Erreur insertBefore:', error);
-      // Fallback : ajouter à la fin du parent direct du bouton
-      const directParent = newTaskBtn.parentElement;
-      if (directParent) {
-        directParent.appendChild(quickActionsDiv);
-        console.log('✅ Fallback appendChild au parent direct réussi');
-      } else {
-        console.error('❌ Impossible d\'ajouter les boutons d\'action rapide');
-      }
+      // Fallback : ajouter à la fin
+      buttonsContainer.appendChild(quickActionsDiv);
     }
     
     // Attacher les événements
     document.getElementById('btn-export')?.addEventListener('click', () => this.exportData());
     document.getElementById('btn-help')?.addEventListener('click', () => this.showHelp());
     
-    console.log('✅ Boutons d\'actions rapides créés et événements attachés');
   }
   
   /**
@@ -528,7 +426,6 @@ export class KanbanAppInitializer {
       this.performHousekeeping();
     }, 300000); // 5 minutes
     
-    console.log('🔄 Services en arrière-plan démarrés');
   }
   
   /**
@@ -540,7 +437,6 @@ export class KanbanAppInitializer {
         this.autoSave();
       }, this.config.autoSaveInterval);
       
-      console.log(`💾 Sauvegarde automatique configurée (${this.config.autoSaveInterval}ms)`);
     }
   }
   
@@ -552,7 +448,7 @@ export class KanbanAppInitializer {
     window.KanbanAPI = {
       // Accès aux composants
       getKanbanManager: () => this.components.kanbanManager,
-      getViewModeManager: () => this.components.viewModeManager,
+      getViewManager: () => this.components.viewManager,
       
       // Actions rapides
       refresh: () => this.reloadApplication(),
@@ -572,7 +468,6 @@ export class KanbanAppInitializer {
       cleanTooltips: () => this.forceCleanTooltips()
     };
     
-    console.log('🔌 APIs publiques exposées');
   }
   
   /**
@@ -624,7 +519,6 @@ export class KanbanAppInitializer {
     // Supprimer tous les backdrops de tooltips
     document.querySelectorAll('.tooltip-backdrop').forEach(backdrop => backdrop.remove());
     
-    console.log('🧹 Tooltips forcés nettoyés');
   }
   
   /**
@@ -801,7 +695,6 @@ export class KanbanAppInitializer {
       throw new Error(`Timeout waiting for ${description}`);
     }
     
-    console.log(`✅ ${description} prêt après ${Math.round((Date.now() - start)/1000)}s`);
   }
   
   saveCurrentState() {
@@ -838,8 +731,55 @@ export class KanbanAppInitializer {
       config: this.config,
       components: Object.keys(this.components),
       isInitialized: this.isInitialized,
-      retryCount: this.retryCount
+      retryCount: this.retryCount,
+      taskCount: this.components.kanbanManager?.currentRecords?.length || 0,
+      gristConnected: this.components.kanbanManager?.gristManager?.isConnected || false
     };
+  }
+  
+  /**
+   * Démarre le monitoring automatique des données
+   */
+  startDataMonitoring() {
+    let checkCount = 0;
+    const maxChecks = 10;
+    
+    const monitor = setInterval(() => {
+      checkCount++;
+      const kanban = this.components.kanbanManager;
+      
+      // Vérifier si on a trop peu de tâches (probablement en mode démo)
+      if (kanban && kanban.currentRecords && kanban.currentRecords.length <= 2) {
+        
+        // Essayer de recharger les données depuis Grist
+        const gristAvailable = typeof window !== 'undefined' && typeof window.grist !== 'undefined';
+        if (kanban.gristManager?.isConnected && gristAvailable) {
+          console.log('🔄 Tentative de rechargement automatique...');
+          kanban.gristManager.reloadData()
+            .then(() => {
+              const newCount = kanban.currentRecords?.length || 0;
+              if (newCount > 2) {
+                displaySuccess(`Données récupérées: ${newCount} tâches`);
+                clearInterval(monitor);
+                kanban.refreshKanban();
+              }
+            })
+            .catch(err => {
+              console.warn('Échec rechargement auto:', err);
+            });
+        }
+      } else if (kanban && kanban.currentRecords && kanban.currentRecords.length > 2) {
+        clearInterval(monitor);
+      }
+      
+      // Arrêter après un certain nombre de tentatives
+      if (checkCount >= maxChecks) {
+        console.log('⏰ Monitoring automatique terminé');
+        clearInterval(monitor);
+      }
+    }, 5000); // Vérifier toutes les 5 secondes
+    
+    console.log('👁️ Monitoring automatique des données démarré');
   }
 }
 
@@ -849,7 +789,9 @@ let appInitializer = null;
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     appInitializer = new KanbanAppInitializer();
-    
+
+    window.kanbanAppInitializer = appInitializer;
+
     await appInitializer.init();
   } catch (error) {
     console.error('❌ Échec de l\'initialisation de l\'application:', error);
@@ -859,4 +801,3 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Exposition globale
 window.KanbanAppInitializer = KanbanAppInitializer;
-window.kanbanAppInitializer = appInitializer;

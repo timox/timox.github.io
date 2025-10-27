@@ -103,9 +103,10 @@ export class UserActionManager {
    * @param {string} oldValue - Ancienne valeur
    * @param {string} newValue - Nouvelle valeur
    * @param {string} status - Statut actuel
+   * @param {string} customTimestamp - Timestamp personnalisé (optionnel)
    * @returns {Promise<void>}
    */
-  async addHistoryEntry(taskId, action, details, oldValue = '', newValue = '', status = '') {
+  async addHistoryEntry(taskId, action, details, oldValue = '', newValue = '', status = '', customTimestamp = null) {
     try {
       // Récupérer l'enregistrement actuel depuis les données Grist
       const gristData = await this.grist.docApi.fetchTable(TABLE_ID);
@@ -142,7 +143,8 @@ export class UserActionManager {
         details: details,
         oldValue: oldValue,
         newValue: newValue,
-        status: status || record.statut
+        status: status || record.statut,
+        timestamp: customTimestamp || new Date().toISOString() // Utiliser timestamp personnalisé si fourni
       };
 
       // Ajouter l'entrée via le migrator
@@ -287,7 +289,6 @@ export class UserActionManager {
   async statusChangeAction(taskId, oldStatus, newStatus) {
     // Ne pas enregistrer si le statut n'a pas vraiment changé
     if (oldStatus === newStatus) {
-      this.logger.debug(`Pas de changement de statut pour tâche ${taskId}: ${oldStatus} -> ${newStatus}`);
       return;
     }
     
@@ -326,7 +327,7 @@ export class UserActionManager {
    */
   extractChanges(oldData, newData) {
     const relevantFields = [
-      'statut', 'titre', 'bureau', 'qui', 'urgence', 'impact', 'projet',
+      'statut', 'titre', 'description', 'bureau', 'qui', 'urgence', 'impact', 'projet',
       'strategie_objectif', 'strategie_sous_objectif', 'strategie_action',
       'date_debut', 'date_echeance'
     ];
@@ -370,11 +371,10 @@ export class UserActionManager {
     return {
       hasChanges: changes.length > 0,
       oldValue: changes.length > 0 ? changes.join(', ') : 'No changes detected',
-      newValue: changes.length > 0 ? 'Field changes' : 'No changes',
+      newValue: changes.length > 0 ? 'Updated' : 'No changes',
       detailedChanges
     };
   }
-
 
   /**
    * Récupère l'historique d'une tâche

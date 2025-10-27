@@ -10,9 +10,9 @@ import {
   REQUIRED_COLUMNS,
   OPTIONAL_COLUMNS,
   VIEW_MODES,
-  getDefaultStatuts
+  getDefaultStatuts,
+  STRATEGY_DATA
 } from './config/constants.js';
-import { STRATEGY_DATA as FALLBACK_STRATEGY_DATA } from './config/strategyFallbackData.js';
 
 import {
   normalizeDate,
@@ -338,7 +338,7 @@ class KanbanManager {
     return sorted;
   }
 
-  // === CHARGEMENT DIRECT EN FALLBACK ===
+  // === CHARGEMENT DIRECT DES DONNÉES ===
   async loadGristDataDirect() {
     try {
       // Charger les tâches principales
@@ -366,7 +366,7 @@ class KanbanManager {
       const projets = this.getUniqueValuesFromData('projet');
       this.gristOptions.projet = [...new Set([...projets, ...projetsDynamiques])].sort();
       
-      console.log('✅ Données chargées (fallback):', {
+      console.log('✅ Données chargées depuis Grist:', {
         taches: this.currentRecords.length,
         bureaux: this.gristOptions.bureau.length,
         responsables: this.gristOptions.responsables.length,
@@ -379,54 +379,29 @@ class KanbanManager {
     }
   }
 
-  // Chargement des stratégies directement depuis Grist
+  // Chargement des stratégies depuis les données intégrées
   async loadStrategiesFromGrist() {
-    console.log('Chargement des stratégies depuis Grist...');
+    console.log('Chargement des stratégies depuis les données intégrées...');
 
-    if (!window.grist || !window.grist.docApi || typeof window.grist.docApi.fetchTable !== 'function') {
-      console.warn('API Grist indisponible pour les stratégies - utilisation du jeu de données embarqué');
-      this.useFallbackStrategyData('API Grist indisponible');
-      return;
-    }
+    if (Array.isArray(STRATEGY_DATA) && STRATEGY_DATA.length > 0) {
+      this.strategiesData = STRATEGY_DATA.map(strategy => ({
+        id: strategy.id,
+        id2: strategy.id,
+        objectif: strategy.objectif || '',
+        sous_objectif: strategy.sous_objectif || '',
+        action: strategy.action || '',
+        echeance: strategy.echeance || '',
+        responsable: strategy.responsable || '',
+        portee: strategy.portee || ''
+      })).sort((a, b) => a.id - b.id);
 
-    try {
-      const strategyRecords = await window.grist.docApi.fetchTable('Ssir_strategie2');
-      const mapped = this.mapStrategyRecords(strategyRecords);
-
-      if (!mapped.length) {
-        console.warn('Aucune stratégie active depuis Grist - utilisation du jeu de données embarqué');
-        this.useFallbackStrategyData('Aucune donnée Grist');
-        return;
-      }
-
-      this.strategiesData = mapped;
-
-      console.log(`✅ ${this.strategiesData.length} stratégies chargées depuis Grist`);
+      console.log(`✅ ${this.strategiesData.length} stratégies chargées depuis les constantes intégrées`);
       console.log('Aperçu des stratégies:', this.strategiesData.slice(0, 3));
-    } catch (stratError) {
-      console.error('Erreur chargement stratégies depuis Grist:', stratError);
-      this.useFallbackStrategyData(stratError?.message || 'erreur inconnue');
-    }
-  }
-
-  useFallbackStrategyData(reason = 'non spécifiée') {
-    if (!Array.isArray(FALLBACK_STRATEGY_DATA) || FALLBACK_STRATEGY_DATA.length === 0) {
-      console.warn('Aucune donnée stratégique de repli disponible');
-      this.strategiesData = [];
       return;
     }
 
-    this.strategiesData = FALLBACK_STRATEGY_DATA.map(strategy => ({
-      id: strategy.id,
-      objectif: strategy.objectif || '',
-      sous_objectif: strategy.sous_objectif || '',
-      action: strategy.action || '',
-      echeance: strategy.echeance || '',
-      responsable: strategy.responsable || '',
-      portee: strategy.portee || ''
-    }));
-
-    console.info(`✅ Données stratégiques de repli chargées (${this.strategiesData.length} entrées, raison: ${reason})`);
+    console.error('❌ STRATEGY_DATA indisponible : aucune stratégie ne pourra être affichée.');
+    this.strategiesData = [];
   }
 
   mapStrategyRecords(records) {

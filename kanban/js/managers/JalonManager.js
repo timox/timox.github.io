@@ -221,6 +221,8 @@ export class JalonManager {
       // Ajouter à l'historique avec détails
       if (taskId && this.kanban.userActionManager) {
         const details = this.getJalonModificationDetails(oldJalon, jalonData);
+        
+        // 1. Action de modification
         await this.kanban.userActionManager.addHistoryEntry(
           taskId,
           'jalon_modifie',
@@ -229,6 +231,11 @@ export class JalonManager {
           JSON.stringify(jalonData), // newValue
           ''
         );
+        
+        // 2. Jalon lui-même dans la timeline (si date changée)
+        if (oldJalon.date !== jalonData.date) {
+          await this.addJalonToTimeline(taskId, jalonData);
+        }
       }
     } else {
       // Mode création
@@ -236,6 +243,7 @@ export class JalonManager {
       
       // Ajouter à l'historique
       if (taskId && this.kanban.userActionManager) {
+        // 1. Action d'ajout
         await this.kanban.userActionManager.addHistoryEntry(
           taskId,
           'jalon_ajoute',
@@ -244,6 +252,9 @@ export class JalonManager {
           JSON.stringify(jalonData), // newValue
           ''
         );
+        
+        // 2. Jalon lui-même dans la timeline
+        await this.addJalonToTimeline(taskId, jalonData);
       }
     }
 
@@ -373,76 +384,80 @@ export class JalonManager {
       return;
     }
     
+    
     this.logger.debug('Tentative suppression jalon ID:', id);
     this.logger.debug('Jalons actuels:', this.jalons.map(j => ({ id: j.id, titre: j.titre })));
     this.logger.debug('CurrentTaskId:', this.currentTaskId);
     
-    const index = this.jalons.findIndex(j => j.id === id);
+    let index = this.jalons.findIndex(j => j.id === id);
     
-    if (index !== -1) {
-      const jalonData = this.jalons[index];
-      const taskId = this.getCurrentTaskId();
-      
-      this.logger.debug('Suppression du jalon:', jalonData.titre);
-      
-      try {
-        // Supprimer du tableau
-        this.jalons.splice(index, 1);
-        
-        // ❌ CACHE SUPPRIMÉ - Approche stateless: pas de mise à jour de cache
-        
-        // Mettre à jour l'affichage
-        this.updateJalonsDisplay();
-        this.saveJalonsToForm();
-        
-        // Ajouter à l'historique
-        if (taskId && this.kanban.userActionManager) {
-          await this.kanban.userActionManager.addHistoryEntry(
-            taskId,
-            'jalon_supprime',
-            `Jalon supprimé: ${jalonData.titre} (${jalonData.date}) - Type: ${this.getJalonTypeLabel(jalonData.type)}`,
-            JSON.stringify(jalonData), // oldValue
-            '', // newValue
-            ''
-          );
-        }
-        
-        this.logger.debug('Jalon supprimé avec succès:', id);
-        
-      } catch (error) {
-        this.logger.error('Erreur lors de la suppression du jalon:', error);
-        throw error;
+    // Si pas trouvé avec correspondance exacte, essayer avec conversion de type
+    if (index === -1) {
+      index = this.jalons.findIndex(j => String(j.id) === String(id));
+      if (index !== -1) {
+        this.logger.debug(`🗑️ Jalon trouvé avec conversion de type: ${id}`);
       }
-    } else {
-      this.logger.warn('Jalon non trouvé pour suppression. ID:', id);
-      this.logger.debug('IDs disponibles:', this.jalons.map(j => j.id));
-      this.logger.debug('Types des IDs:', this.jalons.map(j => typeof j.id));
-      this.logger.debug('ID recherché type:', typeof id);
+    }
+    
+    if (index === -1) {
+      this.logger.warn(`❌ Jalon ${id} non trouvé pour suppression`);
+      this.logger.debug(`   IDs disponibles:`, this.jalons.map(j => `${j.id} (${typeof j.id})`));
+      this.logger.debug(`   ID recherché: ${id} (${typeof id})`);
+      return;
+    }
+    
+    // Jalon trouvé - procéder à la suppression
+    const jalonData = this.jalons[index];
+    const taskId = this.getCurrentTaskId();
+    
+    this.logger.info(`🗑️ Suppression du jalon: "${jalonData.titre}" (index: ${index})`);
+    
+    try {
+      // Supprimer du tableau
+      this.logger.debug(`🗑️ AVANT splice - this.jalons.length: ${this.jalons.length}`);
+      this.logger.debug(`   this.jalons:`, this.jalons);
+      this.logger.debug(`   Index à supprimer: ${index}`);
       
-      // Essayer de trouver avec conversion de type
-      const altIndex = this.jalons.findIndex(j => String(j.id) === String(id));
-      if (altIndex !== -1) {
-        this.logger.warn('Jalon trouvé avec conversion de type, suppression...');
-        const jalonData = this.jalons[altIndex];
-        this.jalons.splice(altIndex, 1);
+      this.jalons.splice(index, 1);
+      
+      this.logger.debug(`🗑️ APRÈS splice - this.jalons.length: ${this.jalons.length}`);
+      this.logger.debug(`   this.jalons:`, this.jalons);
+      this.logger.debug(`   Array.isArray(this.jalons):`, Array.isArray(this.jalons));
+      
+      // Mettre à jour l'affichage avec nettoyage agressif
+      this.updateJalonsDisplay();
+      this.saveJalonsToForm();
+      
+      // CORRECTIF: Nettoyage agressif supplémentaire pour éviter les éléments fantômes
+      setTimeout(() => {
+        this.logger.debug(`🧹 Nettoyage supplémentaire après suppression`);
         this.updateJalonsDisplay();
-        this.saveJalonsToForm();
-        this.logger.debug('✅ Jalon supprimé avec conversion de type');
-        return;
+      }, 50);
+      
+      this.logger.debug(`📊 Après suppression - Jalons restants: ${this.jalons.length}`);
+      this.logger.debug(`   Jalons:`, this.jalons);
+      
+      // Ajouter à l'historique
+      if (taskId && this.kanban.userActionManager) {
+        // 1. Action de suppression
+        await this.kanban.userActionManager.addHistoryEntry(
+          taskId,
+          'jalon_supprime',
+          `Jalon supprimé: ${jalonData.titre} (${jalonData.date}) - Type: ${this.getJalonTypeLabel(jalonData.type)}`,
+          JSON.stringify(jalonData), // oldValue
+          '', // newValue
+          ''
+        );
+        
+        // 2. Supprimer de la timeline
+        await this.removeJalonFromTimeline(taskId, jalonData);
       }
       
-      // Debug exhaustif si toujours pas trouvé
-      this.logger.error('Échec suppression jalon, debug complet:');
-      this.logger.error('ID recherché:', id, typeof id);
-      this.logger.error('Jalons disponibles:');
-      this.jalons.forEach((j, index) => {
-        this.logger.error(`  [${index}] ID: "${j.id}" (${typeof j.id}) - Titre: "${j.titre}"`);
-        this.logger.error(`      String match: ${String(j.id) === String(id)}`);
-        this.logger.error(`      == match: ${j.id == id}`);
-        this.logger.error(`      === match: ${j.id === id}`);
-      });
-      this.logger.error('CurrentTaskId:', this.currentTaskId);
-      this.logger.error('Nombre total jalons:', this.jalons.length);
+      this.logger.info(`✅ Jalon supprimé avec succès: ${id}`);
+      
+    } catch (error) {
+      this.logger.error(`❌ Erreur lors de la suppression du jalon:`, error);
+      throw error;
     }
   }
 
@@ -450,6 +465,8 @@ export class JalonManager {
    * Met à jour l'affichage des jalons dans la timeline
    */
   updateJalonsDisplay() {
+    this.logger.debug(`🔄 updateJalonsDisplay: ${this.jalons.length} jalons à afficher`);
+    
     const timeline = document.getElementById('jalons-timeline');
     const emptyState = document.getElementById('jalons-empty');
     const countBadge = document.getElementById('jalons-count');
@@ -462,28 +479,45 @@ export class JalonManager {
 
     // Mettre à jour le compteur
     countBadge.textContent = this.jalons.length;
+    this.logger.debug(`📊 Compteur mis à jour: ${this.jalons.length}`);
+
+    // NETTOYAGE AGRESSIF: Vider le timeline et tous les éléments jalons
+    timeline.innerHTML = '';
+    
+    // Nettoyage supplémentaire des éléments jalons orphelins
+    const orphanJalons = timeline.querySelectorAll('.jalon-item, [data-jalon-id]');
+    orphanJalons.forEach(el => el.remove());
+    
+    this.logger.debug(`🧹 Timeline vidée et éléments orphelins supprimés`);
 
     if (this.jalons.length === 0) {
       // Afficher l'état vide si l'élément existe
       if (emptyState) {
         emptyState.style.display = 'block';
+        this.logger.debug(`📭 État vide affiché`);
       }
+      this.logger.debug(`✅ Affichage vide terminé`);
       return;
     }
 
     // Masquer l'état vide si l'élément existe
     if (emptyState) {
       emptyState.style.display = 'none';
+      this.logger.debug(`📭 État vide masqué`);
     }
 
     // Trier les jalons par date
     const sortedJalons = [...this.jalons].sort((a, b) => new Date(a.date) - new Date(b.date));
+    this.logger.debug(`🔄 Jalons triés: ${sortedJalons.length}`);
 
     // Générer le HTML des jalons
-    timeline.innerHTML = sortedJalons.map(jalon => this.renderJalonItem(jalon)).join('');
+    const html = sortedJalons.map(jalon => this.renderJalonItem(jalon)).join('');
+    timeline.innerHTML = html;
+    this.logger.debug(`🎨 HTML généré et injecté: ${html.length} caractères`);
 
     // Ajouter les événements
     this.bindJalonEvents();
+    this.logger.debug(`✅ Affichage jalons terminé`);
   }
 
   /**
@@ -766,11 +800,19 @@ export class JalonManager {
    * Sauvegarde les jalons dans le champ caché du formulaire
    */
   saveJalonsToForm() {
+    this.logger.debug(`🔄 saveJalonsToForm: ${this.jalons.length} jalons à sauvegarder`);
+    this.logger.debug(`   Jalons actuels:`, this.jalons.map(j => ({ id: j.id, titre: j.titre })));
+    
     // Ne sauvegarder que si on a des jalons ou si c'est explicite
     if (this.jalons.length === 0) {
-      // Éviter de sauvegarder un JSON vide inutile
-      setFieldValue('popup-jalons', '');
-      this.logger.debug('Aucun jalon à sauvegarder - champ vidé');
+      // IMPORTANT: Sauvegarder la structure vide pour bien effacer en base
+      const emptyData = {
+        jalons: [],
+        lastModified: new Date().toISOString()
+      };
+      const emptyJsonString = JSON.stringify(emptyData);
+      setFieldValue('popup-jalons', emptyJsonString);
+      this.logger.debug(`🗑️ Aucun jalon - sauvegarde structure vide:`, emptyJsonString);
       return;
     }
     
@@ -780,7 +822,7 @@ export class JalonManager {
     };
     const jsonString = JSON.stringify(jalonsData);
     
-    this.logger.debug(`Sauvegarde de ${this.jalons.length} jalons dans le formulaire`);
+    this.logger.debug(`💾 Sauvegarde de ${this.jalons.length} jalons:`, jsonString.substring(0, 100) + '...');
     
     setFieldValue('popup-jalons', jsonString);
     
@@ -790,22 +832,22 @@ export class JalonManager {
    * Récupère les jalons depuis le formulaire pour sauvegarde
    */
   getJalonsForSave() {
-    // Si pas de jalons, retourner null pour éviter de polluer la DB
-    if (!this.jalons || this.jalons.length === 0) {
-      this.logger.debug('JalonManager.getJalonsForSave() - Aucun jalon à sauvegarder');
-      return null;
-    }
+    this.logger.debug(`🔍 getJalonsForSave: ${this.jalons?.length || 0} jalons en mémoire`);
+    this.logger.debug(`   Jalons:`, this.jalons?.map(j => ({ id: j.id, titre: j.titre })) || []);
+    this.logger.debug(`   this.jalons complet:`, this.jalons);
+    this.logger.debug(`   Array.isArray(this.jalons):`, Array.isArray(this.jalons));
     
-    // Utiliser directement les jalons en mémoire qui sont à jour
+    // IMPORTANT: Même si pas de jalons, retourner la structure vide pour bien nettoyer la DB
     const jalonsData = {
-      jalons: this.jalons,
-      lastModified: new Date().toISOString() // Format ISO plus lisible
+      jalons: this.jalons || [],
+      lastModified: new Date().toISOString()
     };
     
-    this.logger.debug('JalonManager.getJalonsForSave() - Jalons actuels:', this.jalons.length);
+    const jsonString = JSON.stringify(jalonsData);
+    this.logger.debug(`💾 getJalonsForSave - Retour:`, jsonString);
     
     // Retourner la string JSON directement pour Grist
-    return JSON.stringify(jalonsData);
+    return jsonString;
   }
 
   // === UTILITAIRES ===
@@ -866,6 +908,95 @@ export class JalonManager {
   showValidationError(message) {
     // Afficher une alerte ou un toast
     alert(message); // Temporaire, à remplacer par un système de toast
+  }
+
+  /**
+   * Ajoute un jalon dans la timeline historique (en tant qu'événement futur)
+   */
+  async addJalonToTimeline(taskId, jalonData) {
+    if (!this.kanban.userActionManager) {
+      this.logger.warn('UserActionManager non disponible pour ajout jalon timeline');
+      return;
+    }
+
+    // Créer une entrée d'historique avec la date du jalon (pas maintenant)
+    const jalonDate = new Date(jalonData.date);
+    const typeIcon = this.getJalonTypeIcon(jalonData.type);
+    const typeLabel = this.getJalonTypeLabel(jalonData.type);
+    
+    let details = `${typeIcon} ${typeLabel}: ${jalonData.titre}`;
+    
+    // Ajouter des détails spécifiques selon le type
+    switch (jalonData.type) {
+      case 'reunion':
+        if (jalonData.participants && jalonData.participants.length > 0) {
+          details += ` (${jalonData.participants.join(', ')})`;
+        }
+        if (jalonData.lieu) {
+          details += ` - ${jalonData.lieu}`;
+        }
+        break;
+      case 'echeance':
+        if (jalonData.criticite && jalonData.criticite !== 'normale') {
+          details += ` - Criticité: ${jalonData.criticite}`;
+        }
+        break;
+      case 'validation':
+        if (jalonData.valideurs && jalonData.valideurs.length > 0) {
+          details += ` (Valideurs: ${jalonData.valideurs.join(', ')})`;
+        }
+        break;
+      case 'livrable':
+        if (jalonData.format) {
+          details += ` - Format: ${jalonData.format}`;
+        }
+        if (jalonData.destinataire) {
+          details += ` → ${jalonData.destinataire}`;
+        }
+        break;
+    }
+    
+    if (jalonData.commentaire) {
+      details += ` - ${jalonData.commentaire}`;
+    }
+
+    // Ajouter l'entrée avec timestamp du jalon
+    await this.kanban.userActionManager.addHistoryEntry(
+      taskId,
+      'jalon_timeline',
+      details,
+      '', // oldValue
+      JSON.stringify(jalonData), // newValue
+      '',
+      jalonDate.toISOString() // Utiliser la date du jalon comme timestamp
+    );
+    
+    this.logger.info(`📅 Jalon ajouté à la timeline: ${jalonData.titre} (${jalonData.date})`);
+  }
+
+  /**
+   * Supprime un jalon de la timeline historique
+   */
+  async removeJalonFromTimeline(taskId, jalonData) {
+    if (!this.kanban.userActionManager) {
+      this.logger.warn('UserActionManager non disponible pour suppression jalon timeline');
+      return;
+    }
+
+    // Marquer le jalon comme supprimé dans l'historique
+    const typeIcon = this.getJalonTypeIcon(jalonData.type);
+    const typeLabel = this.getJalonTypeLabel(jalonData.type);
+    
+    await this.kanban.userActionManager.addHistoryEntry(
+      taskId,
+      'jalon_timeline_removed',
+      `❌ ${typeIcon} ${typeLabel} supprimé: ${jalonData.titre}`,
+      JSON.stringify(jalonData), // oldValue
+      '', // newValue
+      ''
+    );
+    
+    this.logger.info(`📅 Jalon supprimé de la timeline: ${jalonData.titre}`);
   }
 
   /**
