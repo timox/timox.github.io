@@ -1019,12 +1019,16 @@ export class ModalManager {
     // Liste des champs à vérifier
     const fieldIds = [
       'popup-titre',
-      'popup-description', 
+      'popup-description',
       'popup-urgence',
       'popup-impact',
+      'popup-previsibilite',
+      'popup-type-tache',
+      'popup-temps-estime',
       'popup-date-debut',
       'popup-date-echeance',
-      'popup-projet'
+      'popup-projet',
+      'popup-dette-technique'
     ];
     
     fieldIds.forEach(fieldId => {
