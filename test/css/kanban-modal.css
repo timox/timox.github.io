@@ -98,6 +98,45 @@
   gap: 1.1rem;
 }
 
+.task-meta-grid.taxonomy-grid .task-meta-item {
+  min-height: 100%;
+}
+
+.task-meta-grid.taxonomy-grid .form-text {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.task-meta-item.dette-technique-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.task-meta-item.dette-technique-item .form-check {
+  padding-left: 2.5rem;
+}
+
+.task-meta-item.dette-technique-item .form-check-input {
+  width: 3rem;
+  height: 1.5rem;
+}
+
+.task-meta-item.dette-technique-item .form-check-label {
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .task-meta-item.dette-technique-item {
+    align-items: flex-start;
+  }
+
+  .task-meta-item.dette-technique-item .form-check {
+    padding-left: 2rem;
+  }
+}
+
 .task-meta-item .input-group > .form-select,
 .task-meta-item .input-group > .form-control {
   font-size: 0.95rem;

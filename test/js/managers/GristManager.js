@@ -314,11 +314,19 @@ export class GristManager {
     this.isUpdating = true;
 
     try {
+      const existingRecord = recordId
+        ? this.currentRecords.find(r => r.id === recordId) || null
+        : null;
+
+      if (recordId && !existingRecord) {
+        this.logger.warn(`Enregistrement ${recordId} introuvable dans le cache local - utilisation des données fournies uniquement`);
+      }
+
       // Valider les données
-      this.validateRecordData(recordData);
+      this.validateRecordData(recordData, recordId);
 
       // Préparer les données pour Grist
-      const gristData = this.prepareDataForGrist(recordData);
+      const gristData = this.prepareDataForGrist(recordData, existingRecord);
       const gristApi = this.getGristApi();
 
       let result;
@@ -401,20 +409,30 @@ export class GristManager {
    * Valide les données d'un enregistrement
    * @param {object} recordData - Données à valider
    */
-  validateRecordData(recordData) {
+  validateRecordData(recordData, recordId = null) {
     if (!recordData || typeof recordData !== 'object') {
       throw new Error('Données d\'enregistrement invalides');
     }
-    
+
+    const existingRecord = recordId ? this.currentRecords.find(r => r.id === recordId) : null;
+
+    const titreToValidate = recordData.titre !== undefined
+      ? recordData.titre
+      : existingRecord?.titre;
+
+    const statutToValidate = recordData.statut !== undefined
+      ? recordData.statut
+      : existingRecord?.statut;
+
     // Vérifier les champs requis
-    if (!recordData.titre || !recordData.titre.trim()) {
+    if (!titreToValidate || !titreToValidate.trim()) {
       throw new Error('Le titre est obligatoire');
     }
-    
-    if (!recordData.statut || !recordData.statut.trim()) {
+
+    if (!statutToValidate || !statutToValidate.trim()) {
       throw new Error('Le statut est obligatoire');
     }
-    
+
     // Valider le format des listes
     if (recordData.bureau && !Array.isArray(recordData.bureau)) {
       throw new Error('Le format du champ bureau est invalide');
@@ -436,30 +454,133 @@ export class GristManager {
   
   /**
    * Prépare les données pour l'envoi à Grist
-   * @param {object} recordData - Données source
+   * @param {object} recordData - Données source à appliquer
+   * @param {object|null} existingRecord - Enregistrement existant (pour les mises à jour partielles)
    * @returns {object} Données formatées pour Grist
    */
-  prepareDataForGrist(recordData) {
+  prepareDataForGrist(recordData, existingRecord = null) {
     const gristData = {};
-    
+
     // Copier les champs simples
-    const simpleFields = ['titre', 'description', 'statut', 'projet', 'urgence', 'impact', 'notes'];
-    
+    const simpleFields = [
+      'titre',
+      'description',
+      'statut',
+      'projet',
+      'urgence',
+      'impact',
+      'notes',
+      'reference',
+      'statut_precedent'
+    ];
+
+    const alwaysIncludedFields = new Set(['titre', 'description', 'statut', 'projet', 'urgence', 'impact', 'notes']);
+
     simpleFields.forEach(field => {
-      if (recordData.hasOwnProperty(field)) {
-        gristData[field] = recordData[field] || null;
+      const hasValue = Object.prototype.hasOwnProperty.call(recordData, field);
+      const shouldFallback = !hasValue && alwaysIncludedFields.has(field) && existingRecord;
+
+      if (!hasValue && !shouldFallback) {
+        return;
       }
+
+      const sourceValue = hasValue
+        ? recordData[field]
+        : existingRecord[field];
+
+      if (!alwaysIncludedFields.has(field) && !this.availableColumns.has(field)) {
+        return;
+      }
+
+      gristData[field] = sourceValue || null;
     });
-    
+
     // Traiter les listes (bureau, qui)
-    if (recordData.bureau) {
-      gristData.bureau = Array.isArray(recordData.bureau) ? recordData.bureau : ['L'];
+    const formatListField = (value) => {
+      if (!value) {
+        return ['L'];
+      }
+      if (Array.isArray(value)) {
+        const normalized = value.filter(Boolean);
+        if (normalized.length === 0) {
+          return ['L'];
+        }
+        if (normalized[0] === 'L') {
+          return ['L', ...normalized.slice(1)];
+        }
+        return ['L', ...normalized];
+      }
+      return ['L'];
+    };
+
+    const bureauValue = Object.prototype.hasOwnProperty.call(recordData, 'bureau')
+      ? recordData.bureau
+      : existingRecord?.bureau;
+    if (typeof bureauValue !== 'undefined') {
+      gristData.bureau = formatListField(bureauValue);
     }
-    
-    if (recordData.qui) {
-      gristData.qui = Array.isArray(recordData.qui) ? recordData.qui : ['L'];
+
+    const quiValue = Object.prototype.hasOwnProperty.call(recordData, 'qui')
+      ? recordData.qui
+      : existingRecord?.qui;
+    if (typeof quiValue !== 'undefined') {
+      gristData.qui = formatListField(quiValue);
     }
-    
+
+    // Champs JSON/texte optionnels
+    if (recordData.hasOwnProperty('historique_statuts') && this.availableColumns.has('historique_statuts')) {
+      gristData.historique_statuts = recordData.historique_statuts || null;
+    }
+
+    if (recordData.hasOwnProperty('jalons') && this.availableColumns.has('jalons')) {
+      const jalonsValue = recordData.jalons;
+      if (jalonsValue === null) {
+        gristData.jalons = null;
+      } else if (typeof jalonsValue === 'string') {
+        gristData.jalons = jalonsValue;
+      } else {
+        const normalized = jalonsValue || { jalons: [] };
+        gristData.jalons = JSON.stringify(normalized);
+      }
+    }
+
+    // Champs de taxonomie optionnels
+    if (recordData.hasOwnProperty('previsibilite') && this.availableColumns.has('previsibilite')) {
+      gristData.previsibilite = recordData.previsibilite || null;
+    }
+
+    if (recordData.hasOwnProperty('type_tache') && this.availableColumns.has('type_tache')) {
+      gristData.type_tache = recordData.type_tache || null;
+    }
+
+    if (recordData.hasOwnProperty('temps_estime_heures') && this.availableColumns.has('temps_estime_heures')) {
+      const estimatedValue = recordData.temps_estime_heures;
+      if (estimatedValue === null || (typeof estimatedValue === 'string' && estimatedValue.trim() === '')) {
+        gristData.temps_estime_heures = null;
+      } else {
+        const numericValue = Number(estimatedValue);
+        gristData.temps_estime_heures = Number.isFinite(numericValue) ? numericValue : null;
+      }
+    }
+
+    if (recordData.hasOwnProperty('est_dette_technique') && this.availableColumns.has('est_dette_technique')) {
+      const detteValue = recordData.est_dette_technique;
+      if (detteValue === null || typeof detteValue === 'undefined') {
+        gristData.est_dette_technique = null;
+      } else if (typeof detteValue === 'string') {
+        const normalized = detteValue.trim().toLowerCase();
+        if (!normalized) {
+          gristData.est_dette_technique = null;
+        } else {
+          gristData.est_dette_technique = ['1', 'true', 'oui', 'yes'].includes(normalized);
+        }
+      } else if (typeof detteValue === 'number') {
+        gristData.est_dette_technique = detteValue !== 0;
+      } else {
+        gristData.est_dette_technique = Boolean(detteValue);
+      }
+    }
+
     // 🔧 CORRECTION: Traiter strategie_id selon le schema Grist (Reference)
     if (recordData.strategie_id) {
       // Si c'est déjà au format Grist ["L", ID], conserver tel quel
@@ -486,10 +607,12 @@ export class GristManager {
     }
     
     // Ajouter les métadonnées si les colonnes existent
-    if (this.availableColumns.has('date_derniere_maj')) {
+    if (recordData.hasOwnProperty('date_derniere_maj')) {
+      gristData.date_derniere_maj = recordData.date_derniere_maj;
+    } else if (this.availableColumns.has('date_derniere_maj')) {
       gristData.date_derniere_maj = new Date().toISOString();
     }
-    
+
     return gristData;
   }
   
