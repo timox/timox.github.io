@@ -39,6 +39,24 @@ export const DEFAULT_URGENCES = ['Immédiate', 'Courte', 'Moyenne', 'Longue'];
 export const DEFAULT_IMPACTS = ['Critique', 'Important', 'Modéré', 'Mineur'];
 export const DEFAULT_PROJETS = [];
 
+// === TAXONOMIE NOUVELLE GÉNÉRATION ===
+export const PREVISIBILITE = [
+  { id: 'Imprévisible', libelle: 'Imprévisible', emoji: '⚡', couleur: '#ef4444', classe: 'previsibilite-imprevisible' },
+  { id: 'Prévisible', libelle: 'Prévisible', emoji: '🧭', couleur: '#0ea5e9', classe: 'previsibilite-previsible' }
+];
+
+export const DEFAULT_PREVISIBILITE = PREVISIBILITE.map(option => option.id);
+
+export const TYPE_TACHES = [
+  { id: 'Incident', libelle: 'Incident', emoji: '🚨', couleur: '#dc2626', classe: 'type-tache-incident' },
+  { id: 'Support', libelle: 'Support', emoji: '🛠️', couleur: '#2563eb', classe: 'type-tache-support' },
+  { id: 'MCO', libelle: 'MCO', emoji: '🔁', couleur: '#9333ea', classe: 'type-tache-mco' },
+  { id: 'Projet', libelle: 'Projet', emoji: '🚀', couleur: '#10b981', classe: 'type-tache-projet' },
+  { id: 'Overhead', libelle: 'Overhead', emoji: '📚', couleur: '#f59e0b', classe: 'type-tache-overhead' }
+];
+
+export const DEFAULT_TYPES_TACHES = TYPE_TACHES.map(option => option.id);
+
 // === CONFIGURATION GRIST ===
 export const TABLE_ID = "Ssir_principale_task";
 
@@ -51,6 +69,7 @@ export const REQUIRED_COLUMNS = [
 
 export const OPTIONAL_COLUMNS = [
   'date_debut', 'date_echeance', 'jalons', 'reference',
+  'previsibilite', 'type_tache', 'temps_estime_heures', 'est_dette_technique',
   // Colonnes de prod actives
   'type_tache_id', 'priorite', 'historique_statuts', 'datenow',
   'str_statut', 'str_urgence', 'str_qui', 'str_bureau', 'str_impact',
