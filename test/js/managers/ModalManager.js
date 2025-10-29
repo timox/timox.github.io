@@ -1612,7 +1612,7 @@ export class ModalManager {
       bureau: getSelectedOptionsAsGristFormat('popup-bureau'),
       qui: getSelectedOptionsAsGristFormat('popup-qui'),
       strategie_id: this.collectStrategyData(), // Collecte spécialisée stratégies
-      jalons: this.kanban.jalonManager ? this.kanban.jalonManager.getJalonsForSave() : null,
+      jalons: null,
       previsibilite: null,
       type_tache: null,
       temps_estime_heures: null,
@@ -1620,6 +1620,10 @@ export class ModalManager {
     };
 
     this.logger.debug(`Collecting form data: ${data.titre || 'untitled'} (${data.statut})`);
+
+    const jalonsFromManager = this.kanban.jalonManager ? this.kanban.jalonManager.getJalonsForSave() : null;
+    const jalonsFromField = getFieldValue('popup-jalons');
+    data.jalons = jalonsFromManager !== null ? jalonsFromManager : (jalonsFromField || null);
 
     data.previsibilite = this.normalizeChoiceValue(getFieldValue('popup-previsibilite'));
 
