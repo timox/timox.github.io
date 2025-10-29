@@ -314,11 +314,19 @@ export class GristManager {
     this.isUpdating = true;
 
     try {
+      const existingRecord = recordId
+        ? this.currentRecords.find(r => r.id === recordId) || null
+        : null;
+
+      if (recordId && !existingRecord) {
+        this.logger.warn(`Enregistrement ${recordId} introuvable dans le cache local - utilisation des données fournies uniquement`);
+      }
+
       // Valider les données
       this.validateRecordData(recordData, recordId);
 
       // Préparer les données pour Grist
-      const gristData = this.prepareDataForGrist(recordData);
+      const gristData = this.prepareDataForGrist(recordData, existingRecord);
       const gristApi = this.getGristApi();
 
       let result;
@@ -446,10 +454,11 @@ export class GristManager {
   
   /**
    * Prépare les données pour l'envoi à Grist
-   * @param {object} recordData - Données source
+   * @param {object} recordData - Données source à appliquer
+   * @param {object|null} existingRecord - Enregistrement existant (pour les mises à jour partielles)
    * @returns {object} Données formatées pour Grist
    */
-  prepareDataForGrist(recordData) {
+  prepareDataForGrist(recordData, existingRecord = null) {
     const gristData = {};
 
     // Copier les champs simples
@@ -468,24 +477,54 @@ export class GristManager {
     const alwaysIncludedFields = new Set(['titre', 'description', 'statut', 'projet', 'urgence', 'impact', 'notes']);
 
     simpleFields.forEach(field => {
-      if (!recordData.hasOwnProperty(field)) {
+      const hasValue = Object.prototype.hasOwnProperty.call(recordData, field);
+      const shouldFallback = !hasValue && alwaysIncludedFields.has(field) && existingRecord;
+
+      if (!hasValue && !shouldFallback) {
         return;
       }
+
+      const sourceValue = hasValue
+        ? recordData[field]
+        : existingRecord[field];
 
       if (!alwaysIncludedFields.has(field) && !this.availableColumns.has(field)) {
         return;
       }
 
-      gristData[field] = recordData[field] || null;
+      gristData[field] = sourceValue || null;
     });
 
     // Traiter les listes (bureau, qui)
-    if (recordData.bureau) {
-      gristData.bureau = Array.isArray(recordData.bureau) ? recordData.bureau : ['L'];
+    const formatListField = (value) => {
+      if (!value) {
+        return ['L'];
+      }
+      if (Array.isArray(value)) {
+        const normalized = value.filter(Boolean);
+        if (normalized.length === 0) {
+          return ['L'];
+        }
+        if (normalized[0] === 'L') {
+          return ['L', ...normalized.slice(1)];
+        }
+        return ['L', ...normalized];
+      }
+      return ['L'];
+    };
+
+    const bureauValue = Object.prototype.hasOwnProperty.call(recordData, 'bureau')
+      ? recordData.bureau
+      : existingRecord?.bureau;
+    if (typeof bureauValue !== 'undefined') {
+      gristData.bureau = formatListField(bureauValue);
     }
-    
-    if (recordData.qui) {
-      gristData.qui = Array.isArray(recordData.qui) ? recordData.qui : ['L'];
+
+    const quiValue = Object.prototype.hasOwnProperty.call(recordData, 'qui')
+      ? recordData.qui
+      : existingRecord?.qui;
+    if (typeof quiValue !== 'undefined') {
+      gristData.qui = formatListField(quiValue);
     }
 
     // Champs JSON/texte optionnels
@@ -494,11 +533,14 @@ export class GristManager {
     }
 
     if (recordData.hasOwnProperty('jalons') && this.availableColumns.has('jalons')) {
-      if (typeof recordData.jalons === 'string') {
-        gristData.jalons = recordData.jalons;
+      const jalonsValue = recordData.jalons;
+      if (jalonsValue === null) {
+        gristData.jalons = null;
+      } else if (typeof jalonsValue === 'string') {
+        gristData.jalons = jalonsValue;
       } else {
-        const jalonsValue = recordData.jalons || { jalons: [] };
-        gristData.jalons = JSON.stringify(jalonsValue);
+        const normalized = jalonsValue || { jalons: [] };
+        gristData.jalons = JSON.stringify(normalized);
       }
     }
 
@@ -512,12 +554,31 @@ export class GristManager {
     }
 
     if (recordData.hasOwnProperty('temps_estime_heures') && this.availableColumns.has('temps_estime_heures')) {
-      const numericValue = Number(recordData.temps_estime_heures);
-      gristData.temps_estime_heures = Number.isFinite(numericValue) ? numericValue : null;
+      const estimatedValue = recordData.temps_estime_heures;
+      if (estimatedValue === null || (typeof estimatedValue === 'string' && estimatedValue.trim() === '')) {
+        gristData.temps_estime_heures = null;
+      } else {
+        const numericValue = Number(estimatedValue);
+        gristData.temps_estime_heures = Number.isFinite(numericValue) ? numericValue : null;
+      }
     }
 
     if (recordData.hasOwnProperty('est_dette_technique') && this.availableColumns.has('est_dette_technique')) {
-      gristData.est_dette_technique = Boolean(recordData.est_dette_technique);
+      const detteValue = recordData.est_dette_technique;
+      if (detteValue === null || typeof detteValue === 'undefined') {
+        gristData.est_dette_technique = null;
+      } else if (typeof detteValue === 'string') {
+        const normalized = detteValue.trim().toLowerCase();
+        if (!normalized) {
+          gristData.est_dette_technique = null;
+        } else {
+          gristData.est_dette_technique = ['1', 'true', 'oui', 'yes'].includes(normalized);
+        }
+      } else if (typeof detteValue === 'number') {
+        gristData.est_dette_technique = detteValue !== 0;
+      } else {
+        gristData.est_dette_technique = Boolean(detteValue);
+      }
     }
 
     // 🔧 CORRECTION: Traiter strategie_id selon le schema Grist (Reference)
