@@ -15,7 +15,7 @@ import {
   confirmAction
 } from '../utils/dom.js';
 
-import { TABLE_ID } from '../config/constants.js';
+import { TABLE_ID, PREVISIBILITE, TYPE_TACHES, DEFAULT_PREVISIBILITE, DEFAULT_TYPES_TACHES } from '../config/constants.js';
 import { getUserActionManager } from '../utils/UserActionManager.js';
 import { createModuleLogger } from '../utils/LoggerManager.js';
 import { referenceManager } from '../utils/ReferenceManager.js';
@@ -1019,12 +1019,16 @@ export class ModalManager {
     // Liste des champs à vérifier
     const fieldIds = [
       'popup-titre',
-      'popup-description', 
+      'popup-description',
       'popup-urgence',
       'popup-impact',
+      'popup-previsibilite',
+      'popup-type-tache',
+      'popup-temps-estime',
       'popup-date-debut',
       'popup-date-echeance',
-      'popup-projet'
+      'popup-projet',
+      'popup-dette-technique'
     ];
     
     fieldIds.forEach(fieldId => {
@@ -1139,7 +1143,25 @@ export class ModalManager {
     // Urgence et Impact
     setFieldValue('popup-urgence', task.urgence || '');
     setFieldValue('popup-impact', task.impact || '');
-    
+
+    const resolvedPrevisibilite = this.resolvePrevisibiliteValue(task.previsibilite, this.isNewTask);
+    setFieldValue('popup-previsibilite', resolvedPrevisibilite);
+
+    const resolvedTypeTache = this.resolveTypeTacheValue(task.type_tache, this.isNewTask);
+    setFieldValue('popup-type-tache', resolvedTypeTache);
+
+    const normalizedHours = this.normalizeEstimatedHoursValue(task.temps_estime_heures);
+    const estimatedInput = document.getElementById('popup-temps-estime');
+    if (estimatedInput) {
+      estimatedInput.value = this.formatEstimatedHoursForInput(normalizedHours);
+    }
+
+    const debtCheckbox = document.getElementById('popup-dette-technique');
+    if (debtCheckbox) {
+      const normalizedDebt = this.normalizeTechnicalDebtValue(task.est_dette_technique);
+      debtCheckbox.checked = normalizedDebt === true;
+    }
+
     // Priorité calculée automatiquement
     const prioriteCalculee = this.calculatePriorite(task.urgence || '', task.impact || '');
     setFieldValue('popup-priorite-calculee', prioriteCalculee);
@@ -1466,6 +1488,120 @@ export class ModalManager {
     return gristFormat;
   }
 
+  getPrevisibiliteOptions() {
+    const options = this.kanban?.gristOptions?.previsibilite || this.kanban?.gristOptions?.previsibilites;
+    if (Array.isArray(options) && options.length > 0) {
+      return options.slice();
+    }
+    return DEFAULT_PREVISIBILITE.slice();
+  }
+
+  getTypeTacheOptions() {
+    const options = this.kanban?.gristOptions?.type_tache || this.kanban?.gristOptions?.type_taches || this.kanban?.gristOptions?.types;
+    if (Array.isArray(options) && options.length > 0) {
+      return options.slice();
+    }
+    return DEFAULT_TYPES_TACHES.slice();
+  }
+
+  resolvePrevisibiliteValue(currentValue, shouldDefault = false) {
+    if (typeof currentValue === 'string' && currentValue.trim()) {
+      return currentValue.trim();
+    }
+    if (!shouldDefault) {
+      return '';
+    }
+    const options = this.getPrevisibiliteOptions();
+    return options.length > 0 ? options[0] : '';
+  }
+
+  resolveTypeTacheValue(currentValue, shouldDefault = false) {
+    if (typeof currentValue === 'string' && currentValue.trim()) {
+      return currentValue.trim();
+    }
+    if (!shouldDefault) {
+      return '';
+    }
+    const options = this.getTypeTacheOptions();
+    return options.length > 0 ? options[0] : '';
+  }
+
+  normalizeChoiceValue(value) {
+    if (value === null || typeof value === 'undefined') {
+      return null;
+    }
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed.length > 0 ? trimmed : null;
+    }
+    return String(value).trim() || null;
+  }
+
+  normalizeTechnicalDebtValue(value) {
+    if (value === null || typeof value === 'undefined') {
+      return null;
+    }
+    if (typeof value === 'boolean') {
+      return value;
+    }
+    if (typeof value === 'number') {
+      return value !== 0;
+    }
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (!normalized) {
+        return null;
+      }
+      if (['true', '1', 'oui', 'yes', 'on', 'vrai'].includes(normalized)) {
+        return true;
+      }
+      if (['false', '0', 'non', 'no', 'off', 'faux'].includes(normalized)) {
+        return false;
+      }
+    }
+    return Boolean(value);
+  }
+
+  normalizeEstimatedHoursValue(value) {
+    if (value === null || typeof value === 'undefined') {
+      return null;
+    }
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? Math.round(value * 100) / 100 : null;
+    }
+    if (typeof value === 'string') {
+      return this.parseEstimatedHours(value);
+    }
+    return null;
+  }
+
+  parseEstimatedHours(rawValue) {
+    if (typeof rawValue !== 'string') {
+      return null;
+    }
+    const normalized = rawValue.replace(',', '.').trim();
+    if (!normalized) {
+      return null;
+    }
+    const numeric = Number(normalized);
+    if (!Number.isFinite(numeric)) {
+      return NaN;
+    }
+    return Math.round(numeric * 100) / 100;
+  }
+
+  formatEstimatedHoursForInput(value) {
+    if (typeof value !== 'number' || Number.isNaN(value)) {
+      return '';
+    }
+    return String(value);
+  }
+
+  getEstimatedHoursInputValue() {
+    const input = document.getElementById('popup-temps-estime');
+    return input ? input.value || '' : '';
+  }
+
   collectFormData() {
     const data = {
       titre: getFieldValue('popup-titre').trim(),
@@ -1476,22 +1612,37 @@ export class ModalManager {
       bureau: getSelectedOptionsAsGristFormat('popup-bureau'),
       qui: getSelectedOptionsAsGristFormat('popup-qui'),
       strategie_id: this.collectStrategyData(), // Collecte spécialisée stratégies
-      jalons: this.kanban.jalonManager ? this.kanban.jalonManager.getJalonsForSave() : null
+      jalons: this.kanban.jalonManager ? this.kanban.jalonManager.getJalonsForSave() : null,
+      previsibilite: null,
+      type_tache: null,
+      temps_estime_heures: null,
+      est_dette_technique: false
     };
-    
+
     this.logger.debug(`Collecting form data: ${data.titre || 'untitled'} (${data.statut})`);
-    
+
+    data.previsibilite = this.normalizeChoiceValue(getFieldValue('popup-previsibilite'));
+
+    data.type_tache = this.normalizeChoiceValue(getFieldValue('popup-type-tache'));
+
+    const estimatedRaw = this.getEstimatedHoursInputValue();
+    const parsedHours = this.parseEstimatedHours(estimatedRaw);
+    data.temps_estime_heures = Number.isNaN(parsedHours) ? null : parsedHours;
+
+    const detteCheckbox = document.getElementById('popup-dette-technique');
+    data.est_dette_technique = detteCheckbox ? Boolean(detteCheckbox.checked) : false;
+
     // CHAMP DESCRIPTION SUPPRIMÉ - Tous les commentaires sont maintenant dans notes.history
     // Le champ de saisie popup-description sert uniquement pour les nouveaux commentaires
-    
+
     // Date d'échéance
     if (this.kanban.datePickerManager) {
       data.date_echeance = this.kanban.datePickerManager.getDateForGrist();
     }
-    
+
     return data;
   }
-  
+
   /**
    * Prépare les données pour l'envoi à Grist
    * @param {object} taskData - Données de la tâche
@@ -1514,7 +1665,23 @@ export class ModalManager {
     if (!gristData.statut) {
       gristData.statut = 'Backlog';
     }
-    
+
+    if (Object.prototype.hasOwnProperty.call(gristData, 'previsibilite')) {
+      gristData.previsibilite = this.normalizeChoiceValue(gristData.previsibilite);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(gristData, 'type_tache')) {
+      gristData.type_tache = this.normalizeChoiceValue(gristData.type_tache);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(gristData, 'temps_estime_heures')) {
+      gristData.temps_estime_heures = this.normalizeEstimatedHoursValue(gristData.temps_estime_heures);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(gristData, 'est_dette_technique')) {
+      gristData.est_dette_technique = this.normalizeTechnicalDebtValue(gristData.est_dette_technique);
+    }
+
     // Assurer que les listes sont dans le bon format - SEULEMENT si elles sont vides ou invalides
     if (!Array.isArray(gristData.bureau)) {
       gristData.bureau = ['L'];
@@ -2528,7 +2695,12 @@ export class ModalManager {
       responsables = [],
       qui = [],
       projet = [],
-      projets = []
+      projets = [],
+      previsibilite = [],
+      previsibilites = [],
+      type_tache = [],
+      type_taches = [],
+      types = []
     } = this.kanban.gristOptions;
 
     const sanitizeList = (values) => {
@@ -2545,19 +2717,33 @@ export class ModalManager {
     const responsableOptions = sanitizeList(responsables.length ? responsables : qui);
     const projetOptions = sanitizeList(projet.length ? projet : projets);
 
+    let previsibiliteOptions = sanitizeList(previsibilite.length ? previsibilite : previsibilites);
+    if (previsibiliteOptions.length === 0) {
+      previsibiliteOptions = this.getPrevisibiliteOptions();
+    }
+
+    let typeTacheOptions = sanitizeList(type_tache.length ? type_tache : (type_taches.length ? type_taches : types));
+    if (typeTacheOptions.length === 0) {
+      typeTacheOptions = this.getTypeTacheOptions();
+    }
+
     // Mémoriser une copie normalisée pour les opérations locales (ajout projet, etc.)
     this.gristOptions = {
       bureau: bureauOptions,
       responsables: responsableOptions,
       projet: projetOptions,
       urgence: urgenceOptions,
-      impact: impactOptions
+      impact: impactOptions,
+      previsibilite: previsibiliteOptions.slice(),
+      type_tache: typeTacheOptions.slice()
     };
 
     // Peupler les selects
     populateSelect('popup-urgence', urgenceOptions, true);
     populateSelect('popup-impact', impactOptions, true);
     populateSelect('popup-projet', projetOptions, true);
+    populateSelect('popup-previsibilite', previsibiliteOptions, true, '-- Prévisibilité --');
+    populateSelect('popup-type-tache', typeTacheOptions, true, '-- Type de tâche --');
 
     // Peupler les cases à cocher
     this.logger.debug(`Populating options: ${bureauOptions.length} bureau, ${responsableOptions.length} responsables`);
@@ -2690,7 +2876,11 @@ export class ModalManager {
     // Reset selects multiples
     $('#popup-bureau').val(['L']);
     $('#popup-qui').val(['L']);
-    
+    $('#popup-previsibilite').val('');
+    $('#popup-type-tache').val('');
+    $('#popup-temps-estime').val('');
+    $('#popup-dette-technique').prop('checked', false);
+
     // Reset checkboxes
     $('#popup-bureau-checkboxes input, #popup-qui-checkboxes input').prop('checked', false);
     
@@ -2751,7 +2941,18 @@ export class ModalManager {
       displayError('Veuillez sélectionner au moins un bureau');
       return false;
     }
-    
+
+    const estimatedRaw = this.getEstimatedHoursInputValue();
+    const parsedHours = this.parseEstimatedHours(estimatedRaw);
+    if (Number.isNaN(parsedHours)) {
+      displayError('Le temps estimé doit être un nombre valide');
+      return false;
+    }
+    if (parsedHours !== null && parsedHours < 0) {
+      displayError('Le temps estimé ne peut pas être négatif');
+      return false;
+    }
+
     return true;
   }
   
@@ -2816,11 +3017,25 @@ export class ModalManager {
     // Comparer avec les données originales
     const currentData = this.collectFormData();
     
+    const currentPrevisibilite = this.normalizeChoiceValue(currentData.previsibilite);
+    const currentTypeTache = this.normalizeChoiceValue(currentData.type_tache);
+    const currentEstimatedHours = this.normalizeEstimatedHoursValue(currentData.temps_estime_heures);
+    const currentDebt = this.normalizeTechnicalDebtValue(currentData.est_dette_technique);
+
+    const originalPrevisibilite = this.normalizeChoiceValue(this.currentTask?.previsibilite);
+    const originalTypeTache = this.normalizeChoiceValue(this.currentTask?.type_tache);
+    const originalEstimatedHours = this.normalizeEstimatedHoursValue(this.currentTask?.temps_estime_heures);
+    const originalDebt = this.normalizeTechnicalDebtValue(this.currentTask?.est_dette_technique);
+
     return (
       currentData.titre !== (this.currentTask.titre || '') ||
       currentData.projet !== (this.currentTask.projet || '') ||
       currentData.urgence !== (this.currentTask.urgence || '') ||
-      currentData.impact !== (this.currentTask.impact || '')
+      currentData.impact !== (this.currentTask.impact || '') ||
+      currentPrevisibilite !== originalPrevisibilite ||
+      currentTypeTache !== originalTypeTache ||
+      currentEstimatedHours !== originalEstimatedHours ||
+      currentDebt !== originalDebt
       // Ajouter d'autres comparaisons selon les besoins
     );
   }
@@ -2914,10 +3129,10 @@ export class ModalManager {
     if (!oldData || !newData) return false;
     
     const relevantFields = [
-      'titre', 'statut', 'projet', 'urgence', 'impact', 'bureau', 'qui', 
-      'strategie_id', 'date_debut', 'date_echeance', 'jalons'
-    ];
-    
+      'titre', 'statut', 'projet', 'urgence', 'impact', 'bureau', 'qui',
+      'strategie_id', 'date_debut', 'date_echeance', 'jalons',
+      'previsibilite', 'type_tache', 'temps_estime_heures', 'est_dette_technique'
+    ];    
     // Filtrer les champs exclus
     const fieldsToCheck = relevantFields.filter(field => !excludeFields.includes(field));
     
@@ -2930,6 +3145,30 @@ export class ModalManager {
         const oldJalonsStr = typeof oldValue === 'string' ? oldValue : JSON.stringify(oldValue || []);
         const newJalonsStr = typeof newValue === 'string' ? newValue : JSON.stringify(newValue || []);
         if (oldJalonsStr !== newJalonsStr) {
+          return true;
+        }
+      }
+      // Comparaison spéciale pour les champs de choix simples
+      else if (field === 'previsibilite' || field === 'type_tache') {
+        const normalizedOld = this.normalizeChoiceValue(oldValue);
+        const normalizedNew = this.normalizeChoiceValue(newValue);
+        if (normalizedOld !== normalizedNew) {
+          return true;
+        }
+      }
+      // Comparaison spéciale pour les heures estimées
+      else if (field === 'temps_estime_heures') {
+        const normalizedOld = this.normalizeEstimatedHoursValue(oldValue);
+        const normalizedNew = this.normalizeEstimatedHoursValue(newValue);
+        if (normalizedOld !== normalizedNew) {
+          return true;
+        }
+      }
+      // Comparaison spéciale pour la dette technique
+      else if (field === 'est_dette_technique') {
+        const normalizedOld = this.normalizeTechnicalDebtValue(oldValue);
+        const normalizedNew = this.normalizeTechnicalDebtValue(newValue);
+        if (normalizedOld !== normalizedNew) {
           return true;
         }
       }
