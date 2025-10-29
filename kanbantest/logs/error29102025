@@ -1,0 +1,97 @@
+08:01:21,719 [INFO:FilterManager] Filtered results: 92/92 tasks displayed LoggerManager.js:146:15
+08:01:25,538 Error in parsing value for ‘will-change’.  Declaration dropped. 2 index.html:1:1
+08:01:33,052 [INFO:FilterManager] Filtered results: 92/92 tasks displayed 2 LoggerManager.js:146:15
+08:01:37,915    Extracted strategy IDs: 
+Array [ 33, 24 ]
+ModalManager.js:784:13
+08:01:37,915    strategyIds.length: 2 ModalManager.js:785:13
+08:01:37,915    Available strategies data: 43 ModalManager.js:795:13
+08:01:37,915    Processing strategy ID: 33 number ModalManager.js:800:17
+08:01:37,915    Found strategy: 33 - Répondre aux demandes des métiers ModalManager.js:808:17
+08:01:37,916    Processing strategy ID: 24 number ModalManager.js:800:17
+08:01:37,916    Found strategy: 24 - Répondre aux demandes des métiers ModalManager.js:808:17
+08:01:37,917 [INFO:ModalManager] Strategies loaded from Grist: 2 items LoggerManager.js:146:15
+08:01:38,085 GET
+data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e
+
+08:01:38,087 GET
+data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23212529' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M2 5L8 11L14 5'/%3e%3c/svg%3e
+
+08:01:53,908    mapping strategy: 
+Object { id: 33, objectif: "Répondre aux demandes des métiers", sous_objectif: "Mettre en place les solutions NexSIS-RRF", action: "Prévoir et accompagner les évolutions techniques", echeance: "2024-2030", responsable: "Équipe projet", portee: "Générale" }
+ModalManager.js:1461:15
+08:01:53,909    mapping strategy: 
+Object { id: 24, objectif: "Répondre aux demandes des métiers", sous_objectif: "Pérenniser les outils à destination des métiers et utilisateurs", action: "Aide à la maitrise d'ouvrage pour la continuité des outils et le support avec les fournisseurs de logiciels", echeance: "2024-", responsable: "ISI", portee: "Générale" }
+ModalManager.js:1461:15
+08:01:53,909 🎯 Strategies saved: 2 items 
+Array(3) [ "L", 33, 24 ]
+ModalManager.js:1465:13
+08:01:53,909 ✅ 2 stratégies validées: 
+Array [ 33, 24 ]
+ModalManager.js:1574:19
+08:01:53,910    Type: object ModalManager.js:1627:13
+08:01:53,910    Valeur brute: null ModalManager.js:1628:13
+08:01:53,910 ❌ Jalons null/undefined, valeur par défaut ModalManager.js:1637:15
+08:01:53,910 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.applyUserActions#19: RPC_CALLING grist-plugin-api.ts:408:15
+08:01:53,910 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristDocAPI.applyUserActions#19 grist-plugin-api.ts:408:15
+08:01:53,911 Rpc for GristDocAPI.applyUserActions#19: RPC_ONCALL sentry.min.js:3:44522
+08:01:53,911 Comm request #23 applyUserActions 
+Array(3) [ 0, (1) […], {…} ]
+main.bundle.js:2:22342
+08:01:53,913 GristWSConnection.send[true] {"reqId":23,"method":"applyUserActions","args":[0,[["UpdateRecord","Ssir_principale_task",155,{"titre":"mise à jour de pastell","statut":"Backlog","projet":"Évolution applicative","urgence":"Courte","impact":"Important","bureau":["L","BDD","Chef SSIR"],"qui":["L","Chloé","Timothée","Yvon"],"strategie_id":["L",33,24],"jalons":"{\"jalons\":[],\"lastModified\":0}","date_echeance":null,"date_derniere_maj":"2025-10-29T07:01:53.910Z","notes":"{\"content\":\"Voici le planning proposé par libriciel \\n--------------------------------------\\nBonjour,\\n\\nVeuillez trouver ci-dessous une proposition de planning concernant l'outil pastell :\\n\\n    Réunion de validation des pré-requis techniques à l’installation de la version 4.1 de pastell sur les serveurs de la personne publique, et rédaction du compte-rendu : le 03/11 à 14h00 (à distance) avec M. TOMAS\\n    Migration (avec reprise des données) de 1 instance Pastell de test en version 4.1 : le 19/11 à 09h00 (à distance) avec M. SUBIAS\\n    Formation aux nouveautés fonctionnelles des versions 4.0 et4.1 de Pastell : le 25/11 de 09h00 à 12h00 et de 14h00 à 17h00 (soit 1j à distance) avec M. BOUKARI\\n    Migration (avec reprise des données) de 1 instance Pastell de production en version 4.1 : le 03/12 à 09h00 (à distance) avec M. SUBIAS\\n\\n\\nJe vous transmets en p/j les prérequis d'installation, ainsi que la fiche d'informations à compléter. (1 par instance)\\n\\nAttention, les prérequis ont changés, si votre système d'exploitation n'est plus supporté, de nouveaux serveurs conformes aux prérequis devront être provisionnés.\\n\\nL'intervention nécessite une interruption de service de l'outil.\\n\\nDans l'attente de votre retour,\\n\\nBien cordialement,\",\"history\":[{\"timestamp\":\"2025-10-27T13:48:46.752Z\",\"user\":\"timothee.foucart\",\"action\":\"comment\",\"details\":\"Commentaire initial: Voici le planning proposé par libriciel \\n--------------------------------------\\nBonjour,\\n\\nVeuillez trouver ci-dessous une proposition de planning concernant l'outil pastell :\\n\\n    Réunion de validation des pré-requis techniques à l’installation de la version 4.1 de pastell sur les serveurs de la personne publique, et rédaction du compte-rendu : le 03/11 à 14h00 (à distance) avec M. TOMAS\\n    Migration (avec reprise des données) de 1 instance Pastell de test en version 4.1 : le 19/11 à 09h00 (à distance) avec M. SUBIAS\\n    Formation aux nouveautés fonctionnelles des versions 4.0 et4.1 de Pastell : le 25/11 de 09h00 à 12h00 et de 14h00 à 17h00 (soit 1j à distance) avec M. BOUKARI\\n    Migration (avec reprise des données) de 1 instance Pastell de production en version 4.1 : le 03/12 à 09h00 (à distance) avec M. SUBIAS\\n\\n\\nJe vous transmets en p/j les prérequis d'installation, ainsi que la fiche d'informations à compléter. (1 par instance)\\n\\nAttention, les prérequis ont changés, si votre système d'exploitation n'est plus supporté, de nouveaux serveurs conformes aux prérequis devront être provisionnés.\\n\\nL'intervention nécessite une interruption de service de l'outil.\\n\\nDans l'attente de votre retour,\\n\\nBien cordialement,\",\"status\":\"Backlog\",\"newValue\":\"Voici le planning proposé par libriciel \\n--------------------------------------\\nBonjour,\\n\\nVeuillez trouver ci-dessous une proposition de planning concernant l'outil pastell :\\n\\n    Réunion de validation des pré-requis techniques à l’installation de la version 4.1 de pastell sur les serveurs de la personne publique, et rédaction du compte-rendu : le 03/11 à 14h00 (à distance) avec M. TOMAS\\n    Migration (avec reprise des données) de 1 instance Pastell de test en version 4.1 : le 19/11 à 09h00 (à distance) avec M. SUBIAS\\n    Formation aux nouveautés fonctionnelles des versions 4.0 et4.1 de Pastell : le 25/11 de 09h00 à 12h00 et de 14h00 à 17h00 (soit 1j à distance) avec M. BOUKARI\\n    Migration (avec reprise des données) de 1 instance Pastell de production en version 4.1 : le 03/12 à 09h00 (à distance) avec M. SUBIAS\\n\\n\\nJe vous transmets en p/j les prérequis d'installation, ainsi que la fiche d'informations à compléter. (1 par instance)\\n\\nAttention, les prérequis ont changés, si votre système d'exploitation n'est plus supporté, de nouveaux serveurs conformes aux prérequis devront être provisionnés.\\n\\nL'intervention nécessite une interruption de service de l'outil.\\n\\nDans l'attente de votre retour,\\n\\nBien cordialement,\"}],\"references\":\"\"}"}]],{}]} sentry.min.js:3:44522
+08:01:54,002 GristWSConnection: onmessage (1232 bytes) sentry.min.js:3:44522
+08:01:54,003 Comm: Triggering event docUserAction main.bundle.js:2:23997
+08:01:54,003 GristDoc.onDocUserAction 
+Object { type: "docUserAction", data: {…}, docFD: 0, fromSelf: true, seqId: 31 }
+sentry.min.js:3:44522
+08:01:54,003 GristDoc applying #0 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 155, {…} ]
+sentry.min.js:3:44522
+08:01:54,004 GristDoc applying #1 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 155, {…} ]
+sentry.min.js:3:44522
+08:01:54,005 GristDoc applying #2 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 155, {…} ]
+sentry.min.js:3:44522
+08:01:54,006 GristWSConnection: onmessage (170 bytes) sentry.min.js:3:44522
+08:01:54,006 Comm response #23 applyUserActions OK main.bundle.js:2:23711
+08:01:54,006 Rpc for GristDocAPI.applyUserActions#19: RPC_ONCALL_OK sentry.min.js:3:44522
+08:01:54,006 Rpc sending RpcRespData sentry.min.js:3:44522
+08:01:54,006 Rpc sending Custom sentry.min.js:3:44522
+08:01:54,007 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.applyUserActions#19: RPC_RESULT_OK grist-plugin-api.ts:408:15
+08:01:54,022 PLUGIN VIEW /kanban/index.html: Rpc for GristView.fetchSelectedTable#20: RPC_CALLING grist-plugin-api.ts:408:15
+08:01:54,022 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristView.fetchSelectedTable#20 grist-plugin-api.ts:408:15
+08:01:54,023 Rpc for GristView.fetchSelectedTable#20: RPC_ONCALL sentry.min.js:3:44522
+08:01:54,025 Rpc for GristView.fetchSelectedTable#20: RPC_ONCALL_OK sentry.min.js:3:44522
+08:01:54,025 Rpc sending RpcRespData sentry.min.js:3:44522
+08:01:54,033 PLUGIN VIEW /kanban/index.html: Rpc for GristView.fetchSelectedTable#20: RPC_RESULT_OK grist-plugin-api.ts:408:15
+08:01:54,036 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#21: RPC_CALLING grist-plugin-api.ts:408:15
+08:01:54,036 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristDocAPI.fetchTable#21 grist-plugin-api.ts:408:15
+08:01:54,037 Rpc for GristDocAPI.fetchTable#21: RPC_ONCALL sentry.min.js:3:44522
+08:01:54,037 Comm request #24 fetchTable 
+Array [ 0, "Ssir_principale_task" ]
+main.bundle.js:2:22342
+08:01:54,037 GristWSConnection.send[true] {"reqId":24,"method":"fetchTable","args":[0,"Ssir_principale_task"]} sentry.min.js:3:44522
+08:01:54,174 [INFO:HistoryManager] 1 backdrop(s) orphelin(s) nettoyé(s) LoggerManager.js:146:15
+08:01:54,704 GristWSConnection: onmessage (459577 bytes) sentry.min.js:3:44522
+08:01:54,706 Comm response #24 fetchTable OK main.bundle.js:2:23711
+08:01:54,706 Rpc for GristDocAPI.fetchTable#21: RPC_ONCALL_OK sentry.min.js:3:44522
+08:01:54,707 Rpc sending RpcRespData sentry.min.js:3:44522
+08:01:54,715 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#21: RPC_RESULT_OK grist-plugin-api.ts:408:15
+08:01:54,717 KanbanManager: Donn�es recharg�es depuis Grist KanbanManager.js:595:13
+08:01:54,718 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#22: RPC_CALLING grist-plugin-api.ts:408:15
+08:01:54,718 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristDocAPI.fetchTable#22 grist-plugin-api.ts:408:15
+08:01:54,719 Rpc for GristDocAPI.fetchTable#22: RPC_ONCALL sentry.min.js:3:44522
+08:01:54,719 Comm request #25 fetchTable 
+Array [ 0, "Ssir_strategie2" ]
+main.bundle.js:2:22342
+08:01:54,719 GristWSConnection.send[true] {"reqId":25,"method":"fetchTable","args":[0,"Ssir_strategie2"]} sentry.min.js:3:44522
+08:01:54,789 GristWSConnection: onmessage (11599 bytes) sentry.min.js:3:44522
+08:01:54,789 Comm response #25 fetchTable OK main.bundle.js:2:23711
+08:01:54,789 Rpc for GristDocAPI.fetchTable#22: RPC_ONCALL_OK sentry.min.js:3:44522
+08:01:54,789 Rpc sending RpcRespData sentry.min.js:3:44522
+08:01:54,790 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#22: RPC_RESULT_OK grist-plugin-api.ts:408:15
+08:01:54,817 [INFO:GristManager] 92 enregistrements rechargés LoggerManager.js:146:15
+08:02:30,949 GristWSConnection: onmessage (382 bytes) sentry.min.js:3:44522
+08:02:30,949 Comm: Triggering event docUsage main.bundle.js:2:23997
+08:03:16,100 GristWSConnection.send[true] {"beat":"alive","url":"https://grist.numerique.gouv.fr/o/sdis25-gssi/3JvD44PeeTbL/kanban/p/27","docId":"3JvD44PeeTbL8ZK83BxNLA"} 3 sentry.min.js:3:44522

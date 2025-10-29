@@ -472,6 +472,13 @@ Sinon → ok
 4. **Performance** : Si >500 tâches, envisager filtrage/pagination Timeline
 5. **Synchronisation** : Éviter conflits entre mises à jour Kanban et Timeline
 
+
+## remarques sur les fonctionnalités attendues
+
+1. possibilité de fusionner des tâches ou de les lier ?
+2. possibiliter d'archiver des tâches, da
+3. destion des utilisateurs : possibilité de modifier les équipes et leur composition
+
 ---
 
 ## 🎯 Résultat attendu
