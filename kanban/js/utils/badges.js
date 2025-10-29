@@ -72,6 +72,14 @@ export function generateBureauBadges(bureauList, isCompact = false) {
     return '';
   }
   
+  // En mode compact, limiter l'affichage
+  if (isCompact && bureaux.length > 2) {
+    return `<div class="bureau-badges compact">
+      ${generateSingleBureauBadge(bureaux[0])}
+      <span class="badge badge-secondary">+${bureaux.length - 1}</span>
+    </div>`;
+  }
+  
   // Classe du container selon le nombre de bureaux
   const containerClass = bureaux.length > 1 ? 'bureau-badges multiple-bureaux' : 'bureau-badges';
   
@@ -116,25 +124,8 @@ export function generateProjectBadge(projectData) {
   
   if (!projet) return '';
   
-  let tooltip = projet;
-  
-  // Support des stratégies multiples (nouveau format)
-  if (strategiesInfo && Array.isArray(strategiesInfo) && strategiesInfo.length > 0) {
-    const strategiesText = strategiesInfo.map(s => `${s.objectif} → ${s.action}`).join(' | ');
-    tooltip = `${projet}\nStratégies: ${strategiesText}`;
-  }
-  // Support de l'ancien format (single stratégie)
-  else if (strategie_objectif || strategie_sous_objectif || strategie_action) {
-    const tooltipParts = [
-      strategie_objectif ? `Objectif: ${strategie_objectif}` : '',
-      strategie_sous_objectif ? `Sous-objectif: ${strategie_sous_objectif}` : '',
-      strategie_action ? `Action: ${strategie_action}` : ''
-    ].filter(Boolean);
-    
-    if (tooltipParts.length > 0) {
-      tooltip = `${projet}\n${tooltipParts.join('\n')}`;
-    }
-  }
+  // Tooltip simple avec juste le nom du projet (pas les stratégies)
+  const tooltip = projet;
   
   return `<span class="badge bg-info text-dark" title="${tooltip.replace(/"/g, '&quot;')}">${projet}</span>`;
 }
@@ -147,25 +138,15 @@ export function generateProjectBadge(projectData) {
 export function generateStrategyBadge(record) {
   const { strategiesInfo, strategie_objectif, strategie_id } = record;
   
-  // DEBUG: Log pour comprendre les données
-  if (record.id && (strategiesInfo || strategie_objectif || strategie_id)) {
-    console.log(`🎯 DEBUG Strategy Badge - Task ${record.id}:`, {
-      strategiesInfo,
-      strategie_objectif, 
-      strategie_id: Array.isArray(strategie_id) ? strategie_id : typeof strategie_id,
-      strategie_id_length: Array.isArray(strategie_id) ? strategie_id.length : 'not array'
-    });
-  }
   
   // Support stratégies multiples (nouveau format)
   if (strategiesInfo && Array.isArray(strategiesInfo) && strategiesInfo.length > 0) {
     const count = strategiesInfo.length;
     const tooltip = strategiesInfo.map(s => `• ${s.objectif} → ${s.action}`).join('\n');
     
-    console.log(`✅ Strategy badge multi: ${count} stratégies pour task ${record.id}`);
     return `
       <span class="badge strategy-badge" title="${tooltip.replace(/"/g, '&quot;')}">
-        <i class="bi bi-bullseye"></i>
+        <i class="bi bi-crosshair"></i>
         <span class="strategy-count">${count}</span>
       </span>`;
   }
@@ -176,10 +157,9 @@ export function generateStrategyBadge(record) {
     const strategyCount = strategie_id.length - 1; // -1 pour enlever le 'L'
     const title = `${strategyCount} stratégie${strategyCount > 1 ? 's' : ''} liée${strategyCount > 1 ? 's' : ''}`;
     
-    console.log(`✅ Strategy badge Grist: ${strategyCount} stratégies pour task ${record.id}`);
     return `
       <span class="badge strategy-badge" title="${title}">
-        <i class="bi bi-bullseye"></i>
+        <i class="bi bi-crosshair"></i>
         <span class="strategy-count">${strategyCount}</span>
       </span>`;
   }
@@ -187,10 +167,9 @@ export function generateStrategyBadge(record) {
   // Support ancien format (single stratégie)  
   if (strategie_objectif) {
     const title = `Stratégie: ${strategie_objectif}`;
-    console.log(`✅ Strategy badge single: ${strategie_objectif} pour task ${record.id}`);
     return `
       <span class="badge strategy-badge strategy-single" title="${title.replace(/"/g, '&quot;')}">
-        <i class="bi bi-bullseye"></i>
+        <i class="bi bi-crosshair"></i>
       </span>`;
   }
   

@@ -14,7 +14,6 @@ import { ViewManager } from '../managers/ViewManager.js';
 
 // Importation du gestionnaire Grist
 import { GristManager } from '../managers/GristManager.js';
-import { STRATEGY_DATA as FALLBACK_STRATEGY_DATA } from '../config/strategyFallbackData.js';
 
 /**
  * Orchestrateur principal de l'application Kanban (version all�g�e)
@@ -177,42 +176,13 @@ export class KanbanManager {
         this.modalManager.handleStrategyDataLoaded(this.strategyData);
       }
     } catch (error) {
-      console.warn('KanbanManager: Erreur lors du chargement des stratégies depuis Grist:', error);
-      this.applyStrategyFallbackData(error?.message || 'erreur Grist');
-    }
-  }
-
-  /**
-   * Applique les données stratégiques intégrées en cas d'indisponibilité Grist
-   * @param {string} [reason] - Raison affichée dans les logs
-   */
-  applyStrategyFallbackData(reason = '') {
-    if (!Array.isArray(FALLBACK_STRATEGY_DATA) || FALLBACK_STRATEGY_DATA.length === 0) {
-      console.warn('KanbanManager: Aucune donnée stratégique de repli disponible');
+      console.error('KanbanManager: Erreur lors du chargement des stratégies depuis Grist:', error);
       this.strategyData = [];
       this.strategiesData = [];
       if (this.modalManager) {
         this.modalManager.handleStrategyDataLoaded([]);
       }
-      return;
-    }
-
-    console.warn(`KanbanManager: utilisation des données stratégiques de secours (${reason})`);
-    const fallbackStrategies = FALLBACK_STRATEGY_DATA.map(strategy => ({
-      id: strategy.id,
-      objectif: strategy.objectif || '',
-      sous_objectif: strategy.sous_objectif || '',
-      action: strategy.action || '',
-      echeance: strategy.echeance || '',
-      responsable: strategy.responsable || '',
-      portee: strategy.portee || ''
-    }));
-
-    this.strategyData = fallbackStrategies;
-    this.strategiesData = fallbackStrategies;
-
-    if (this.modalManager) {
-      this.modalManager.handleStrategyDataLoaded(fallbackStrategies);
+      throw new Error(`Chargement des stratégies impossible: ${error?.message || 'erreur inconnue'}`);
     }
   }
   

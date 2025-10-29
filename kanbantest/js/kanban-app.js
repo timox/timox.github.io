@@ -2,15 +2,16 @@
 // Point d'entrée principal avec filtres, vues multiples et commentaires séparés
 
 // === IMPORTS DES MODULES ===
-import { 
-  STATUTS, 
-  DEFAULT_BUREAUX, 
-  DEFAULT_RESPONSABLES, 
+import {
+  STATUTS,
+  DEFAULT_BUREAUX,
+  DEFAULT_RESPONSABLES,
   TABLE_ID,
   REQUIRED_COLUMNS,
   OPTIONAL_COLUMNS,
   VIEW_MODES,
-  getDefaultStatuts
+  getDefaultStatuts,
+  STRATEGY_DATA
 } from './config/constants.js';
 
 import {
@@ -337,7 +338,7 @@ class KanbanManager {
     return sorted;
   }
 
-  // === CHARGEMENT DIRECT EN FALLBACK ===
+  // === CHARGEMENT DIRECT DES DONNÉES ===
   async loadGristDataDirect() {
     try {
       // Charger les tâches principales
@@ -365,7 +366,7 @@ class KanbanManager {
       const projets = this.getUniqueValuesFromData('projet');
       this.gristOptions.projet = [...new Set([...projets, ...projetsDynamiques])].sort();
       
-      console.log('✅ Données chargées (fallback):', {
+      console.log('✅ Données chargées depuis Grist:', {
         taches: this.currentRecords.length,
         bureaux: this.gristOptions.bureau.length,
         responsables: this.gristOptions.responsables.length,
@@ -378,25 +379,38 @@ class KanbanManager {
     }
   }
 
-  // Chargement des stratégies directement depuis Grist
+  // Chargement des stratégies depuis les données intégrées
   async loadStrategiesFromGrist() {
-    try {
-      console.log('Chargement des stratégies depuis Grist...');
-      
-      const strategyRecords = await window.grist.docApi.fetchTable('Ssir_strategie2');
-      this.strategiesData = this.mapStrategyRecords(strategyRecords);
-      
-      console.log(`✅ ${this.strategiesData.length} stratégies chargées depuis Grist`);
+    console.log('Chargement des stratégies depuis les données intégrées...');
+
+    if (Array.isArray(STRATEGY_DATA) && STRATEGY_DATA.length > 0) {
+      this.strategiesData = STRATEGY_DATA.map(strategy => ({
+        id: strategy.id,
+        id2: strategy.id,
+        objectif: strategy.objectif || '',
+        sous_objectif: strategy.sous_objectif || '',
+        action: strategy.action || '',
+        echeance: strategy.echeance || '',
+        responsable: strategy.responsable || '',
+        portee: strategy.portee || ''
+      })).sort((a, b) => a.id - b.id);
+
+      console.log(`✅ ${this.strategiesData.length} stratégies chargées depuis les constantes intégrées`);
       console.log('Aperçu des stratégies:', this.strategiesData.slice(0, 3));
-    } catch (stratError) {
-      console.error('Erreur chargement stratégies depuis Grist:', stratError);
-      this.strategiesData = [];
+      return;
     }
+
+    console.error('❌ STRATEGY_DATA indisponible : aucune stratégie ne pourra être affichée.');
+    this.strategiesData = [];
   }
 
   mapStrategyRecords(records) {
     const mapped = [];
-    
+
+    if (!records || !records.id) {
+      return mapped;
+    }
+
     // Les clés sont les IDs des enregistrements
     const ids = Object.keys(records.id || {});
     
