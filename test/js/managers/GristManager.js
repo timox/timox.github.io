@@ -315,7 +315,7 @@ export class GristManager {
 
     try {
       // Valider les données
-      this.validateRecordData(recordData);
+      this.validateRecordData(recordData, recordId);
 
       // Préparer les données pour Grist
       const gristData = this.prepareDataForGrist(recordData);
@@ -401,20 +401,30 @@ export class GristManager {
    * Valide les données d'un enregistrement
    * @param {object} recordData - Données à valider
    */
-  validateRecordData(recordData) {
+  validateRecordData(recordData, recordId = null) {
     if (!recordData || typeof recordData !== 'object') {
       throw new Error('Données d\'enregistrement invalides');
     }
-    
+
+    const existingRecord = recordId ? this.currentRecords.find(r => r.id === recordId) : null;
+
+    const titreToValidate = recordData.titre !== undefined
+      ? recordData.titre
+      : existingRecord?.titre;
+
+    const statutToValidate = recordData.statut !== undefined
+      ? recordData.statut
+      : existingRecord?.statut;
+
     // Vérifier les champs requis
-    if (!recordData.titre || !recordData.titre.trim()) {
+    if (!titreToValidate || !titreToValidate.trim()) {
       throw new Error('Le titre est obligatoire');
     }
-    
-    if (!recordData.statut || !recordData.statut.trim()) {
+
+    if (!statutToValidate || !statutToValidate.trim()) {
       throw new Error('Le statut est obligatoire');
     }
-    
+
     // Valider le format des listes
     if (recordData.bureau && !Array.isArray(recordData.bureau)) {
       throw new Error('Le format du champ bureau est invalide');
@@ -441,16 +451,34 @@ export class GristManager {
    */
   prepareDataForGrist(recordData) {
     const gristData = {};
-    
+
     // Copier les champs simples
-    const simpleFields = ['titre', 'description', 'statut', 'projet', 'urgence', 'impact', 'notes'];
-    
+    const simpleFields = [
+      'titre',
+      'description',
+      'statut',
+      'projet',
+      'urgence',
+      'impact',
+      'notes',
+      'reference',
+      'statut_precedent'
+    ];
+
+    const alwaysIncludedFields = new Set(['titre', 'description', 'statut', 'projet', 'urgence', 'impact', 'notes']);
+
     simpleFields.forEach(field => {
-      if (recordData.hasOwnProperty(field)) {
-        gristData[field] = recordData[field] || null;
+      if (!recordData.hasOwnProperty(field)) {
+        return;
       }
+
+      if (!alwaysIncludedFields.has(field) && !this.availableColumns.has(field)) {
+        return;
+      }
+
+      gristData[field] = recordData[field] || null;
     });
-    
+
     // Traiter les listes (bureau, qui)
     if (recordData.bureau) {
       gristData.bureau = Array.isArray(recordData.bureau) ? recordData.bureau : ['L'];
@@ -459,7 +487,39 @@ export class GristManager {
     if (recordData.qui) {
       gristData.qui = Array.isArray(recordData.qui) ? recordData.qui : ['L'];
     }
-    
+
+    // Champs JSON/texte optionnels
+    if (recordData.hasOwnProperty('historique_statuts') && this.availableColumns.has('historique_statuts')) {
+      gristData.historique_statuts = recordData.historique_statuts || null;
+    }
+
+    if (recordData.hasOwnProperty('jalons') && this.availableColumns.has('jalons')) {
+      if (typeof recordData.jalons === 'string') {
+        gristData.jalons = recordData.jalons;
+      } else {
+        const jalonsValue = recordData.jalons || { jalons: [] };
+        gristData.jalons = JSON.stringify(jalonsValue);
+      }
+    }
+
+    // Champs de taxonomie optionnels
+    if (recordData.hasOwnProperty('previsibilite') && this.availableColumns.has('previsibilite')) {
+      gristData.previsibilite = recordData.previsibilite || null;
+    }
+
+    if (recordData.hasOwnProperty('type_tache') && this.availableColumns.has('type_tache')) {
+      gristData.type_tache = recordData.type_tache || null;
+    }
+
+    if (recordData.hasOwnProperty('temps_estime_heures') && this.availableColumns.has('temps_estime_heures')) {
+      const numericValue = Number(recordData.temps_estime_heures);
+      gristData.temps_estime_heures = Number.isFinite(numericValue) ? numericValue : null;
+    }
+
+    if (recordData.hasOwnProperty('est_dette_technique') && this.availableColumns.has('est_dette_technique')) {
+      gristData.est_dette_technique = Boolean(recordData.est_dette_technique);
+    }
+
     // 🔧 CORRECTION: Traiter strategie_id selon le schema Grist (Reference)
     if (recordData.strategie_id) {
       // Si c'est déjà au format Grist ["L", ID], conserver tel quel
@@ -486,10 +546,12 @@ export class GristManager {
     }
     
     // Ajouter les métadonnées si les colonnes existent
-    if (this.availableColumns.has('date_derniere_maj')) {
+    if (recordData.hasOwnProperty('date_derniere_maj')) {
+      gristData.date_derniere_maj = recordData.date_derniere_maj;
+    } else if (this.availableColumns.has('date_derniere_maj')) {
       gristData.date_derniere_maj = new Date().toISOString();
     }
-    
+
     return gristData;
   }
   
