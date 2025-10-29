@@ -224,20 +224,21 @@
   .kanban-container {
     gap: 1.5rem;
   }
-  
+
   .kanban-container > .kanban-board {
-    flex: 0 0 320px;
-    min-width: 320px;
+    flex: 0 0 340px;
+    min-width: 340px;
   }
-  
+
   .kanban-container.kanban-compact > .kanban-board {
     flex: 0 0 250px;
     min-width: 250px;
   }
-  
+
   .kanban-container.kanban-detailed > .kanban-board {
-    flex: 0 0 280px;
-    min-width: 280px;
+    flex: 0 0 360px;
+    min-width: 360px;
+    max-width: 360px;
   }
 }
 
@@ -249,8 +250,14 @@
   }
   
   .kanban-container > .kanban-board {
-    flex: 0 0 280px;
-    min-width: 280px;
+    flex: 0 0 320px;
+    min-width: 320px;
+  }
+
+  .kanban-container.kanban-detailed > .kanban-board {
+    flex: 0 0 340px;
+    min-width: 340px;
+    max-width: 340px;
   }
   
   .kanban-container.kanban-compact {
@@ -288,19 +295,26 @@
 }
 
 /* Small screens (phones) */
-  @media (max-width: 767.98px) {
-    .kanban-container {
-      gap: 0.75rem;
-      padding: 0 0.25rem;
-    }
+@media (max-width: 767.98px) {
+  .kanban-container {
+    gap: 0.75rem;
+    padding: 0 0.25rem;
+  }
 
-    .kanban-container > .kanban-board {
-      flex: 0 0 280px;
-      min-width: 280px;
-    }
-    .kanban-board {
-      min-height: auto;
-    }
+  .kanban-container > .kanban-board {
+    flex: 0 0 320px;
+    min-width: 320px;
+  }
+
+  .kanban-container.kanban-detailed > .kanban-board {
+    flex: 0 0 340px;
+    min-width: 340px;
+    max-width: 340px;
+  }
+
+  .kanban-board {
+    min-height: auto;
+  }
 
     .kanban-board-body {
       padding: 0.5rem;

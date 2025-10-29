@@ -597,8 +597,14 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 0 1 auto;
+  max-width: 100%;
+  min-width: 0;
   padding: 0.375rem 0.5rem;
-  line-height: 1;
+  line-height: 1.1;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .item-badges .badge.bg-info:hover {
