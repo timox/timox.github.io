@@ -1295,19 +1295,50 @@ export class ViewManager {
     return `<i class="bi bi-link-45deg reference-icon" ${tooltip} style="font-size: 1.1em; color: #6f42c1;"></i>`;
   }
 
+  normalizeJalonsData(rawJalons) {
+    if (!rawJalons) {
+      return [];
+    }
+
+    let parsed = rawJalons;
+
+    if (typeof parsed === 'string') {
+      const trimmed = parsed.trim();
+      if (!trimmed || trimmed === '[]' || trimmed.toLowerCase() === 'null') {
+        return [];
+      }
+
+      try {
+        parsed = JSON.parse(trimmed);
+      } catch (error) {
+        this.logger?.warn('Impossible de parser les jalons:', error?.message || error);
+        return [];
+      }
+    }
+
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+
+    if (parsed && typeof parsed === 'object') {
+      if (Array.isArray(parsed.jalons)) {
+        return parsed.jalons;
+      }
+
+      if (Array.isArray(parsed.items)) {
+        return parsed.items;
+      }
+    }
+
+    return [];
+  }
+
   generateJalonIcon(record, viewMode) {
     if (viewMode === VIEW_MODES.COMPACT) return '';
 
-    const hasJalons = record?.jalons && record.jalons !== '[]' && record.jalons.trim() !== '';
-    if (!hasJalons) return '';
-
-    let jalonCount = 0;
-    try {
-      const jalons = JSON.parse(record.jalons);
-      jalonCount = Array.isArray(jalons) ? jalons.length : 0;
-    } catch {
-      jalonCount = 1;
-    }
+    const jalonsList = this.normalizeJalonsData(record?.jalons);
+    const jalonCount = jalonsList.length;
+    if (jalonCount === 0) return '';
 
     const tooltip = viewMode === VIEW_MODES.FOCUS
       ? `title="${jalonCount} jalon${jalonCount > 1 ? 's' : ''} planifié${jalonCount > 1 ? 's' : ''} - cliquer pour voir"`
@@ -1331,21 +1362,15 @@ export class ViewManager {
         </div>`;
     }
 
-    if (record?.jalons && record.jalons !== '[]') {
-      try {
-        const jalons = JSON.parse(record.jalons);
-        if (Array.isArray(jalons) && jalons.length > 0) {
-          expandedContent += `
-            <div class="expanded-jalons">
-              <h6><i class="bi bi-calendar-event me-1"></i>Jalons:</h6>
-              <ul class="list-unstyled ms-3">
-                ${jalons.map(j => `<li>• ${j.titre} (${j.date})</li>`).join('')}
-              </ul>
-            </div>`;
-        }
-      } catch {
-        // Ignorer les erreurs de parsing
-      }
+    const jalonsList = this.normalizeJalonsData(record?.jalons);
+    if (jalonsList.length > 0) {
+      expandedContent += `
+        <div class="expanded-jalons">
+          <h6><i class="bi bi-calendar-event me-1"></i>Jalons:</h6>
+          <ul class="list-unstyled ms-3">
+            ${jalonsList.map(j => `<li>• ${j.titre}${j.date ? ` (${j.date})` : ''}</li>`).join('')}
+          </ul>
+        </div>`;
     }
 
     if (record?.notes && (record.notes.includes('\\\\') || record.notes.includes('http'))) {
