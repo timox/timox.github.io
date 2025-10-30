@@ -183,7 +183,12 @@ export class JalonManager {
     });
 
     // Sélectionner la carte cliquée
-    document.querySelector(`[data-type="${type}"]`).classList.add('selected');
+    const selectedCard = document.querySelector(`[data-type="${type}"]`);
+    if (selectedCard) {
+      selectedCard.classList.add('selected');
+    } else {
+      this.logger?.warn(`Carte type jalon introuvable pour le type "${type}"`);
+    }
 
     // Masquer tous les champs conditionnels
     document.querySelectorAll('.jalon-conditional-fields').forEach(fields => {
@@ -711,6 +716,9 @@ export class JalonManager {
     document.getElementById('jalon-criteres').value = '';
     document.getElementById('jalon-format').value = '';
     document.getElementById('jalon-destinataire').value = '';
+
+    // Sélectionner un type par défaut pour garantir un formulaire valide
+    this.selectJalonType('reunion');
   }
 
   /**
