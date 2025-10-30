@@ -248,7 +248,7 @@
     gap: 1rem;
     padding: 0 0.5rem;
   }
-  
+
   .kanban-container > .kanban-board {
     flex: 0 0 320px;
     min-width: 320px;
@@ -259,7 +259,7 @@
     min-width: 340px;
     max-width: 340px;
   }
-  
+
   .kanban-container.kanban-compact {
     gap: 0.5rem;
   }
