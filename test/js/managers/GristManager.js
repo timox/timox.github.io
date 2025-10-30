@@ -474,11 +474,12 @@ export class GristManager {
       'statut_precedent'
     ];
 
-    const alwaysIncludedFields = new Set(['titre', 'description', 'statut', 'projet', 'urgence', 'impact', 'notes']);
+    const fallbackFields = new Set(['titre', 'statut']);
+    const coreFields = new Set(['titre', 'description', 'statut', 'projet', 'urgence', 'impact', 'notes']);
 
     simpleFields.forEach(field => {
       const hasValue = Object.prototype.hasOwnProperty.call(recordData, field);
-      const shouldFallback = !hasValue && alwaysIncludedFields.has(field) && existingRecord;
+      const shouldFallback = !hasValue && fallbackFields.has(field) && existingRecord;
 
       if (!hasValue && !shouldFallback) {
         return;
@@ -488,11 +489,11 @@ export class GristManager {
         ? recordData[field]
         : existingRecord[field];
 
-      if (!alwaysIncludedFields.has(field) && !this.availableColumns.has(field)) {
+      if (!coreFields.has(field) && !this.availableColumns.has(field)) {
         return;
       }
 
-      gristData[field] = sourceValue || null;
+      gristData[field] = typeof sourceValue === 'undefined' || sourceValue === '' ? null : sourceValue;
     });
 
     // Traiter les listes (bureau, qui)
