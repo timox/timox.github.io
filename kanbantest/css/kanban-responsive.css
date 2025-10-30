@@ -224,17 +224,17 @@
   .kanban-container {
     gap: 1.5rem;
   }
-  
+
   .kanban-container > .kanban-board {
     flex: 0 0 320px;
     min-width: 320px;
   }
-  
+
   .kanban-container.kanban-compact > .kanban-board {
     flex: 0 0 250px;
     min-width: 250px;
   }
-  
+
   .kanban-container.kanban-detailed > .kanban-board {
     flex: 0 0 280px;
     min-width: 280px;
@@ -247,12 +247,12 @@
     gap: 1rem;
     padding: 0 0.5rem;
   }
-  
+
   .kanban-container > .kanban-board {
     flex: 0 0 280px;
     min-width: 280px;
   }
-  
+
   .kanban-container.kanban-compact {
     gap: 0.5rem;
   }
