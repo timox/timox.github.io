@@ -543,44 +543,92 @@ export class KanbanManager {
     }
   }
   
+  resolveStatusFromElement(element) {
+    if (!element) return null;
+
+    if (element.dataset) {
+      if (element.dataset.status) {
+        return element.dataset.status;
+      }
+      if (element.dataset.statusId) {
+        return element.dataset.statusId;
+      }
+    }
+
+    const statusNode = element.closest?.('[data-status]');
+    if (statusNode?.dataset?.status) {
+      return statusNode.dataset.status;
+    }
+
+    const statusIdNode = element.closest?.('[data-status-id]');
+    if (statusIdNode?.dataset?.statusId) {
+      return statusIdNode.dataset.statusId;
+    }
+
+    return null;
+  }
+
   /**
    * G�re le drag & drop d'une t�che
    * @param {Event} evt - �v�nement de drag
    * @param {string} targetStatus - Statut de destination
    */
   async handleDragEnd(evt, targetStatus) {
-    if (!evt.item || !evt.item.dataset) return;
-    
-    const taskId = parseInt(evt.item.dataset.id, 10);
-    if (isNaN(taskId)) return;
-    
+    const itemEl = evt?.item;
+    const rawTaskId = itemEl?.dataset?.id;
+    const taskId = Number(rawTaskId);
+    const statusFromDom = this.resolveStatusFromElement(evt?.to);
+    const newStatus = targetStatus || statusFromDom;
+
+    if (!Number.isInteger(taskId)) {
+      console.error('KanbanManager: Drag&drop - identifiant t�che invalide', rawTaskId);
+      displayError("Impossible d'identifier la t�che d�plac�e.");
+      this.refreshKanban();
+      return;
+    }
+
+    if (!newStatus) {
+      console.error('KanbanManager: Drag&drop - statut cible introuvable', evt?.to);
+      displayError("Impossible de d�terminer la colonne cible du d�placement.");
+      this.refreshKanban();
+      return;
+    }
+
     const task = this.currentRecords.find(r => r.id === taskId);
-    if (!task) return;
-    
+
+    if (!task) {
+      console.error('KanbanManager: Drag&drop - t�che introuvable', taskId);
+      this.refreshKanban();
+      return;
+    }
+
     const oldStatus = task.statut;
-    if (oldStatus === targetStatus) return;
-    
-    console.log(`KanbanManager: D�placement t�che ${taskId}: ${oldStatus} ? ${targetStatus}`);
-    
+    if (oldStatus === newStatus) {
+      console.log('KanbanManager: Drag&drop ignor� (m�me statut)', { taskId, newStatus });
+      return;
+    }
+
+    console.log(`KanbanManager: D�placement t�che ${taskId}: ${oldStatus} → ${newStatus}`);
+
     try {
       // Pr�parer les donn�es de mise � jour
-      const updateData = { statut: targetStatus };
-      
+      const updateData = { statut: newStatus };
+
       // Ajouter l'historique si le HistoryManager est disponible
       if (this.historyManager && typeof this.historyManager.updateTaskHistory === 'function') {
-        const historyUpdate = this.historyManager.updateTaskHistory(task, targetStatus);
+        const historyUpdate = this.historyManager.updateTaskHistory(task, newStatus);
         Object.assign(updateData, historyUpdate);
       }
-      
+
       // Sauvegarder via GristManager
       await this.gristManager.saveRecord(updateData, taskId);
-      
+
       console.log('KanbanManager: D�placement r�ussi');
-      
+
     } catch (error) {
       console.error('KanbanManager: Erreur lors du d�placement:', error);
       displayError(`Erreur: ${error.message}`);
-      
+
       // Rafra�chir pour annuler le d�placement visuel
       this.refreshKanban();
     }
