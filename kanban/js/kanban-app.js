@@ -1655,39 +1655,49 @@ class KanbanManager {
   }
 
   // === DRAG & DROP ===
+  normalizeStatusValue(status) {
+    if (typeof status !== 'string') {
+      return null;
+    }
+
+    const trimmed = status.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+
   resolveStatusFromElement(element) {
     if (!element) return null;
 
-    if (element.dataset) {
-      if (element.dataset.status) {
-        return element.dataset.status;
+    const extractStatus = (node) => {
+      if (!node) {
+        return null;
       }
-      if (element.dataset.statusId) {
-        return element.dataset.statusId;
-      }
-    }
 
-    const statusNode = element.closest('[data-status]');
-    if (statusNode?.dataset?.status) {
-      return statusNode.dataset.status;
-    }
+      return (
+        this.normalizeStatusValue(node?.dataset?.status) ||
+        this.normalizeStatusValue(node?.getAttribute?.('data-status')) ||
+        this.normalizeStatusValue(node?.dataset?.statusId) ||
+        this.normalizeStatusValue(node?.getAttribute?.('data-status-id'))
+      );
+    };
 
-    const statusIdNode = element.closest('[data-status-id]');
-    if (statusIdNode?.dataset?.statusId) {
-      return statusIdNode.dataset.statusId;
-    }
-
-    return null;
+    return (
+      extractStatus(element) ||
+      extractStatus(element.parentElement) ||
+      extractStatus(element.closest?.('[data-status]')) ||
+      extractStatus(element.closest?.('[data-status-id]')) ||
+      null
+    );
   }
+
 
   async handleDragEnd(evt) {
     const itemEl = evt.item;
     const targetContainer = evt.to;
     const rawTaskId = itemEl?.dataset?.id;
-    const taskId = Number(rawTaskId);
+    const taskId = Number.parseInt(rawTaskId, 10);
     const newStatus = this.resolveStatusFromElement(targetContainer);
 
-    if (!Number.isInteger(taskId)) {
+    if (!Number.isFinite(taskId)) {
       console.error('❌ Drag&drop: identifiant tâche invalide', rawTaskId);
       displayError("Impossible d'identifier la tâche déplacée.");
       this.refreshKanban();
@@ -1710,7 +1720,7 @@ class KanbanManager {
     });
 
     const record = this.currentRecords.find(r => r.id === taskId);
-    
+
     console.log(`🐛 Record trouvé:`, {
       found: !!record,
       recordId: record?.id,
@@ -1725,32 +1735,45 @@ class KanbanManager {
 
     try {
       this.isUpdating = true;
-      
+
       // ✅ CAPTURER L'ANCIEN STATUT AVANT TOUTE MODIFICATION
       const oldStatus = record.statut;
-      
+
       // Mettre à jour les données locales
       const recordIndex = this.currentRecords.findIndex(r => r.id === taskId);
       if (recordIndex !== -1) {
-        this.currentRecords[recordIndex].statut = newStatus;
+        this.currentRecords[recordIndex] = {
+          ...this.currentRecords[recordIndex],
+          statut: newStatus
+        };
       }
-      
+
       // NE PAS signaler de mise à jour locale pour le drag&drop
       // On veut recevoir les notifications de changement de Grist
       // this.signalLocalUpdate();
-      
+
       // Envoyer la mise à jour à Grist
       console.log(`📊 Drag&Drop: ${taskId} ${oldStatus} → ${newStatus}`);
       // Préparer les données de mise à jour en gardant le format existant de strategie_id
       const updateData = { statut: newStatus };
-      
+
+      const assignIfValid = (value) => (typeof value === 'string' && value.trim() ? value : null);
+      let safeTitle = assignIfValid(record?.titre) || assignIfValid(record?.title);
+
+      if (!safeTitle) {
+        console.warn('⚠️ Drag&Drop: titre introuvable pour la tâche, utilisation d\'un titre par défaut', taskId);
+        safeTitle = `Tâche ${taskId}`;
+      }
+
+      updateData.titre = safeTitle;
+
       // Les strategie_id sont maintenant au bon format ['L', id] - pas besoin de les corriger
-      
+
       await window.grist.docApi.applyUserActions([
         ['UpdateRecord', TABLE_ID, taskId, updateData]
       ]);
       console.log(`Grist sauvegardé pour ${taskId}`);
-      
+
       // ✅ ENREGISTRER L'HISTORIQUE AVEC LES BONNES VALEURS
       try {
         const userActionManager = getUserActionManager();
@@ -1763,7 +1786,7 @@ class KanbanManager {
       } catch (userActionError) {
         console.error(`❌ Erreur UserAction:`, userActionError);
       }
-      
+
       // Refresh direct depuis Grist après sauvegarde
       this.refreshKanban();
       console.log(`Succès mise à jour statut ${taskId}.`);
@@ -1776,6 +1799,8 @@ class KanbanManager {
       this.isUpdating = false;
     }
   }
+
+
 
   // === GESTION DES MISES À JOUR GRIST ===
   handleGristUpdate(gristRecords, mappings = null) {

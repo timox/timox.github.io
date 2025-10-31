@@ -2171,6 +2171,14 @@ export class HistoryManager {
       } else {
         historyData = { historique: [], version: 1 };
       }
+
+      if (!historyData || typeof historyData !== 'object') {
+        historyData = { historique: [], version: 1 };
+      }
+
+      if (!Array.isArray(historyData.historique)) {
+        historyData.historique = [];
+      }
       
       // Si il y a un historique, fermer la dernière entrée
       if (historyData.historique.length > 0) {
