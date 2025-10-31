@@ -1655,11 +1655,51 @@ class KanbanManager {
   }
 
   // === DRAG & DROP ===
+  resolveStatusFromElement(element) {
+    if (!element) return null;
+
+    if (element.dataset) {
+      if (element.dataset.status) {
+        return element.dataset.status;
+      }
+      if (element.dataset.statusId) {
+        return element.dataset.statusId;
+      }
+    }
+
+    const statusNode = element.closest('[data-status]');
+    if (statusNode?.dataset?.status) {
+      return statusNode.dataset.status;
+    }
+
+    const statusIdNode = element.closest('[data-status-id]');
+    if (statusIdNode?.dataset?.statusId) {
+      return statusIdNode.dataset.statusId;
+    }
+
+    return null;
+  }
+
   async handleDragEnd(evt) {
     const itemEl = evt.item;
     const targetContainer = evt.to;
-    const taskId = parseInt(itemEl.dataset.id, 10);
-    const newStatus = targetContainer.dataset.status;
+    const rawTaskId = itemEl?.dataset?.id;
+    const taskId = Number(rawTaskId);
+    const newStatus = this.resolveStatusFromElement(targetContainer);
+
+    if (!Number.isInteger(taskId)) {
+      console.error('❌ Drag&drop: identifiant tâche invalide', rawTaskId);
+      displayError("Impossible d'identifier la tâche déplacée.");
+      this.refreshKanban();
+      return;
+    }
+
+    if (!newStatus) {
+      console.error('❌ Drag&drop: statut cible introuvable', targetContainer);
+      displayError("Impossible de déterminer la colonne cible du déplacement.");
+      this.refreshKanban();
+      return;
+    }
 
     console.log(`🐛 Debug drag&drop:`, {
       taskId,
