@@ -631,9 +631,37 @@ export class KanbanManager {
     try {
       const updateData = { statut: newStatus };
 
+      let safeTitle = null;
+      const assignIfValid = (value) => {
+        if (!safeTitle && typeof value === 'string' && value.trim()) {
+          safeTitle = value;
+        }
+      };
+
+      assignIfValid(task?.titre);
+      assignIfValid(task?.title);
+
+      if (!safeTitle && this.gristManager?.currentRecords) {
+        const cachedRecord = this.gristManager.currentRecords.find(r => r.id === taskId);
+        assignIfValid(cachedRecord?.titre);
+      }
+
+      if (!safeTitle) {
+        console.warn('KanbanManager: titre introuvable pour la tâche, utilisation d\'un titre par défaut', taskId);
+        safeTitle = `Tâche ${taskId}`;
+      }
+
+      updateData.titre = safeTitle;
+
       if (this.historyManager && typeof this.historyManager.updateTaskHistory === 'function') {
-        const historyUpdate = this.historyManager.updateTaskHistory(task, newStatus);
-        Object.assign(updateData, historyUpdate);
+        try {
+          const historyUpdate = this.historyManager.updateTaskHistory(task, newStatus);
+          if (historyUpdate && typeof historyUpdate === 'object') {
+            Object.assign(updateData, historyUpdate);
+          }
+        } catch (historyError) {
+          console.error('KanbanManager: Erreur mise à jour historique:', historyError);
+        }
       }
 
       await this.gristManager.saveRecord(updateData, taskId);

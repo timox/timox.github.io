@@ -1757,7 +1757,15 @@ class KanbanManager {
       // Préparer les données de mise à jour en gardant le format existant de strategie_id
       const updateData = { statut: newStatus };
 
-      // Les strategie_id sont maintenant au bon format ['L', id] - pas besoin de les corriger
+      const assignIfValid = (value) => (typeof value === 'string' && value.trim() ? value : null);
+      let safeTitle = assignIfValid(record?.titre) || assignIfValid(record?.title);
+
+      if (!safeTitle) {
+        console.warn('⚠️ Drag&Drop: titre introuvable pour la tâche, utilisation d\'un titre par défaut', taskId);
+        safeTitle = `Tâche ${taskId}`;
+      }
+
+      updateData.titre = safeTitle;
 
       await window.grist.docApi.applyUserActions([
         ['UpdateRecord', TABLE_ID, taskId, updateData]
