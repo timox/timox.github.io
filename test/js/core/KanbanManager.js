@@ -593,7 +593,15 @@ export class KanbanManager {
     const taskId = Number.parseInt(rawTaskId, 10);
     const resolvedTarget = this.normalizeStatusValue(targetStatus);
     const statusFromDom = this.resolveStatusFromElement(evt?.to);
-    const newStatus = resolvedTarget || statusFromDom;
+    const newStatus = statusFromDom || resolvedTarget;
+
+    if (statusFromDom && resolvedTarget && statusFromDom !== resolvedTarget) {
+      console.warn('KanbanManager: Drag&drop - statut cible ambigu', {
+        taskId,
+        statusFromDom,
+        resolvedTarget
+      });
+    }
 
     if (!Number.isFinite(taskId)) {
       console.error('KanbanManager: Drag&drop - identifiant tâche invalide', rawTaskId);
