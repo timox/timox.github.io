@@ -17,6 +17,117 @@ export class EventManager {
     EventManager.instance = this;
   }
 
+  getBucket(eventKey, createIfMissing = false) {
+    if (!this.registeredEvents.has(eventKey)) {
+      if (!createIfMissing) {
+        return null;
+      }
+      this.registeredEvents.set(eventKey, new Map());
+    }
+
+    return this.registeredEvents.get(eventKey);
+  }
+
+  getSelectorKey(resolved, originalSelector) {
+    if (resolved.type === 'string') {
+      return resolved.selector;
+    }
+
+    if (resolved.target) {
+      return resolved.target;
+    }
+
+    return typeof originalSelector === 'string' ? originalSelector : originalSelector ?? null;
+  }
+
+  getSelectorLabel(selector, resolved) {
+    if (typeof selector === 'string') {
+      return selector;
+    }
+
+    if (resolved.type === 'window') {
+      return 'window';
+    }
+
+    if (resolved.type === 'document') {
+      return 'document';
+    }
+
+    if (selector && selector.nodeType === 1) {
+      const element = selector;
+      const tag = element.tagName ? element.tagName.toLowerCase() : 'element';
+      const id = element.id ? `#${element.id}` : '';
+      const classes = element.classList && element.classList.length
+        ? `.${Array.from(element.classList).join('.')}`
+        : '';
+
+      return `<${tag}${id}${classes}>`;
+    }
+
+    return String(selector);
+  }
+
+  detachEntry(entry) {
+    if (entry && entry.listenTarget) {
+      entry.listenTarget.removeEventListener(entry.eventType, entry.delegatedHandler, true);
+    }
+  }
+
+  removeEntry(eventKey, selectorKey) {
+    const bucket = this.registeredEvents.get(eventKey);
+    if (!bucket) {
+      return null;
+    }
+
+    const entry = bucket.get(selectorKey);
+    if (!entry) {
+      return null;
+    }
+
+    this.detachEntry(entry);
+    bucket.delete(selectorKey);
+
+    if (bucket.size === 0) {
+      this.registeredEvents.delete(eventKey);
+    }
+
+    return entry;
+  }
+
+  /**
+   * Identifie le type de cible fourni lors de l'enregistrement.
+   * @param {*} selector
+   * @returns {{type: 'string'|'element'|'document'|'window'|'unknown', target?: EventTarget, selector?: string}}
+   */
+  resolveSelector(selector) {
+    if (!selector) {
+      return { type: 'unknown' };
+    }
+
+    const hasWindow = typeof window !== 'undefined';
+    const hasDocument = typeof document !== 'undefined';
+
+    if (hasWindow && selector === window) {
+      return { type: 'window', target: window };
+    }
+
+    const isDocumentInstance = typeof Document !== 'undefined' && selector instanceof Document;
+    const isDocumentNode = selector && selector.nodeType === 9;
+    if (hasDocument && (selector === document || isDocumentInstance || isDocumentNode)) {
+      return { type: 'document', target: document };
+    }
+
+    if (typeof Element !== 'undefined' && selector instanceof Element) {
+      return { type: 'element', target: selector };
+    }
+
+    if (typeof selector === 'string') {
+      return { type: 'string', selector };
+    }
+
+    return { type: 'unknown' };
+  }
+
   /**
    * Retrouve l'élément correspondant au sélecteur pour l'événement courant.
    * @param {Event} event
@@ -24,17 +135,17 @@ export class EventManager {
    * @returns {Element|null}
    */
   findMatchingTarget(event, selector) {
-    if (!selector) {
+    if (!selector || typeof selector !== 'string') {
       return null;
     }
 
-    const isElement = (candidate) => candidate instanceof Element;
+    const isElement = (candidate) => typeof Element !== 'undefined' && candidate instanceof Element;
 
     if (isElement(event.target) && event.target.matches(selector)) {
       return event.target;
     }
 
-    if (isElement(event.target) && event.target.closest) {
+    if (isElement(event.target) && typeof event.target.closest === 'function') {
       return event.target.closest(selector);
     }
 
@@ -59,31 +170,59 @@ export class EventManager {
    */
   on(selector, eventType, handler, namespace = 'default') {
     const eventKey = `${eventType}.${namespace}`;
-    const fullKey = `${selector}:${eventKey}`;
 
     // Nettoyer l'ancien écouteur s'il existe
     this.off(selector, eventType, namespace);
 
+    const resolved = this.resolveSelector(selector);
+    const selectorKey = this.getSelectorKey(resolved, selector);
+    const isDelegated = resolved.type === 'string';
+
+    if (selectorKey == null) {
+      console.warn('🎯 Impossible de déterminer une clé de sélecteur valide', selector, eventType, namespace);
+      return;
+    }
+
     const delegatedHandler = (event) => {
-      const matchingTarget = this.findMatchingTarget(event, selector);
+      if (!isDelegated) {
+        handler.call(resolved.target, event);
+        return;
+      }
+
+      const matchingTarget = this.findMatchingTarget(event, resolved.selector);
       if (!matchingTarget) {
         return;
       }
       handler.call(matchingTarget, event);
     };
 
-    document.addEventListener(eventType, delegatedHandler, true);
+    const target = isDelegated ? document : resolved.target;
 
-    this.registeredEvents.set(fullKey, {
+    if (!target) {
+      console.warn('🎯 Impossible d’attacher un événement sur une cible inconnue', selector, eventType, namespace);
+      return;
+    }
+
+    target.addEventListener(eventType, delegatedHandler, true);
+
+    const bucket = this.getBucket(eventKey, true);
+    const selectorLabel = this.getSelectorLabel(selector, resolved);
+
+    bucket.set(selectorKey, {
       selector,
+      selectorKey,
+      selectorLabel,
+      eventKey,
       eventType,
       namespace,
       handler,
       delegatedHandler,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      listenTarget: target,
+      delegated: isDelegated
     });
 
-    console.log(`📎 Événement attaché: ${selector} ${eventKey}`);
+    console.log(`📎 Événement attaché: ${selectorLabel} ${eventKey}`);
   }
 
   /**
@@ -91,13 +230,17 @@ export class EventManager {
    */
   off(selector, eventType, namespace = 'default') {
     const eventKey = `${eventType}.${namespace}`;
-    const fullKey = `${selector}:${eventKey}`;
-    const entry = this.registeredEvents.get(fullKey);
+    const resolved = this.resolveSelector(selector);
+    const selectorKey = this.getSelectorKey(resolved, selector);
 
-    if (entry) {
-      document.removeEventListener(entry.eventType, entry.delegatedHandler, true);
-      this.registeredEvents.delete(fullKey);
-      console.log(`🗑️ Événement supprimé: ${selector} ${eventKey}`);
+    if (selectorKey == null) {
+      return;
+    }
+
+    const removed = this.removeEntry(eventKey, selectorKey);
+
+    if (removed) {
+      console.log(`🗑️ Événement supprimé: ${removed.selectorLabel} ${eventKey}`);
     }
   }
 
@@ -107,14 +250,18 @@ export class EventManager {
   offNamespace(namespace) {
     const toRemove = [];
 
-    this.registeredEvents.forEach((event, key) => {
-      if (event.namespace === namespace) {
-        document.removeEventListener(event.eventType, event.delegatedHandler, true);
-        toRemove.push(key);
-      }
+    this.registeredEvents.forEach((bucket, eventKey) => {
+      bucket.forEach((event, selectorKey) => {
+        if (event.namespace === namespace) {
+          toRemove.push({ eventKey, selectorKey });
+        }
+      });
     });
 
-    toRemove.forEach((key) => this.registeredEvents.delete(key));
+    toRemove.forEach(({ eventKey, selectorKey }) => {
+      this.removeEntry(eventKey, selectorKey);
+    });
+
     console.log(`🧹 Namespace nettoyé: ${namespace} (${toRemove.length} événements)`);
   }
 
@@ -124,18 +271,24 @@ export class EventManager {
   getStats() {
     const stats = {};
 
-    this.registeredEvents.forEach((event) => {
-      const key = event.namespace;
-      if (!stats[key]) {
-        stats[key] = 0;
-      }
-      stats[key]++;
+    let total = 0;
+    const all = [];
+
+    this.registeredEvents.forEach((bucket) => {
+      bucket.forEach((event) => {
+        total++;
+        if (!stats[event.namespace]) {
+          stats[event.namespace] = 0;
+        }
+        stats[event.namespace]++;
+        all.push(`${event.selectorLabel}:${event.eventKey}`);
+      });
     });
 
     return {
-      total: this.registeredEvents.size,
+      total,
       byNamespace: stats,
-      all: Array.from(this.registeredEvents.keys())
+      all
     };
   }
 
@@ -143,8 +296,10 @@ export class EventManager {
    * Nettoie tous les événements (utile pour debug).
    */
   cleanup() {
-    this.registeredEvents.forEach((event) => {
-      document.removeEventListener(event.eventType, event.delegatedHandler, true);
+    this.registeredEvents.forEach((bucket) => {
+      bucket.forEach((event) => {
+        this.detachEntry(event);
+      });
     });
 
     this.registeredEvents.clear();
@@ -172,5 +327,21 @@ export function cleanNamespace(namespace) {
 window.EventManagerDebug = {
   stats: () => eventManager.getStats(),
   cleanup: () => eventManager.cleanup(),
-  list: () => console.table(Array.from(eventManager.registeredEvents.entries()))
+  list: () => {
+    const rows = [];
+    eventManager.registeredEvents.forEach((bucket, eventKey) => {
+      bucket.forEach((entry) => {
+        rows.push({
+          eventKey,
+          selector: entry.selectorLabel,
+          namespace: entry.namespace,
+          delegated: entry.delegated,
+          attachedAt: new Date(entry.timestamp).toISOString()
+        });
+      });
+    });
+
+    console.table(rows);
+    return rows;
+  }
 };
