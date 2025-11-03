@@ -129,6 +129,40 @@ export class EventManager {
   }
 
   /**
+   * Identifie le type de cible fourni lors de l'enregistrement.
+   * @param {*} selector
+   * @returns {{type: 'string'|'element'|'document'|'window'|'unknown', target?: EventTarget, selector?: string}}
+   */
+  resolveSelector(selector) {
+    if (!selector) {
+      return { type: 'unknown' };
+    }
+
+    const hasWindow = typeof window !== 'undefined';
+    const hasDocument = typeof document !== 'undefined';
+
+    if (hasWindow && selector === window) {
+      return { type: 'window', target: window };
+    }
+
+    const isDocumentInstance = typeof Document !== 'undefined' && selector instanceof Document;
+    const isDocumentNode = selector && selector.nodeType === 9;
+    if (hasDocument && (selector === document || isDocumentInstance || isDocumentNode)) {
+      return { type: 'document', target: document };
+    }
+
+    if (typeof Element !== 'undefined' && selector instanceof Element) {
+      return { type: 'element', target: selector };
+    }
+
+    if (typeof selector === 'string') {
+      return { type: 'string', selector };
+    }
+
+    return { type: 'unknown' };
+  }
+
+  /**
    * Retrouve l'élément correspondant au sélecteur pour l'événement courant.
    * @param {Event} event
    * @param {string} selector
