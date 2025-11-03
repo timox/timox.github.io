@@ -18,44 +18,57 @@ export class EventManager {
   }
 
   /**
+   * Identifie le type de cible fourni lors de l'enregistrement.
+   * @param {*} selector
+   * @returns {{type: 'string'|'element'|'document'|'window'|'unknown', target?: EventTarget, selector?: string}}
+   */
+  resolveSelector(selector) {
+    if (!selector) {
+      return { type: 'unknown' };
+    }
+
+    const hasWindow = typeof window !== 'undefined';
+    const hasDocument = typeof document !== 'undefined';
+
+    if (hasWindow && selector === window) {
+      return { type: 'window', target: window };
+    }
+
+    const isDocumentInstance = typeof Document !== 'undefined' && selector instanceof Document;
+    const isDocumentNode = selector && selector.nodeType === 9;
+    if (hasDocument && (selector === document || isDocumentInstance || isDocumentNode)) {
+      return { type: 'document', target: document };
+    }
+
+    if (typeof Element !== 'undefined' && selector instanceof Element) {
+      return { type: 'element', target: selector };
+    }
+
+    if (typeof selector === 'string') {
+      return { type: 'string', selector };
+    }
+
+    return { type: 'unknown' };
+  }
+
+  /**
    * Retrouve l'élément correspondant au sélecteur pour l'événement courant.
    * @param {Event} event
    * @param {string} selector
    * @returns {Element|null}
    */
   findMatchingTarget(event, selector) {
-    if (!selector) {
+    if (!selector || typeof selector !== 'string') {
       return null;
     }
 
-    const isElement = (candidate) => candidate instanceof Element;
-    const isDocument = (candidate) => candidate instanceof Document || candidate === document;
-    const isWindow = (candidate) => typeof window !== 'undefined' && candidate === window;
-
-    if (isWindow(selector)) {
-      return window;
-    }
-
-    if (isDocument(selector)) {
-      return document;
-    }
-
-    if (isElement(selector)) {
-      if (selector === event.target || selector.contains(event.target)) {
-        return selector;
-      }
-      return null;
-    }
-
-    if (typeof selector !== 'string') {
-      return null;
-    }
+    const isElement = (candidate) => typeof Element !== 'undefined' && candidate instanceof Element;
 
     if (isElement(event.target) && event.target.matches(selector)) {
       return event.target;
     }
 
-    if (isElement(event.target) && event.target.closest) {
+    if (isElement(event.target) && typeof event.target.closest === 'function') {
       return event.target.closest(selector);
     }
 
@@ -85,15 +98,30 @@ export class EventManager {
     // Nettoyer l'ancien écouteur s'il existe
     this.off(selector, eventType, namespace);
 
+    const resolved = this.resolveSelector(selector);
+    const isDelegated = resolved.type === 'string';
+
     const delegatedHandler = (event) => {
-      const matchingTarget = this.findMatchingTarget(event, selector);
+      if (!isDelegated) {
+        handler.call(resolved.target, event);
+        return;
+      }
+
+      const matchingTarget = this.findMatchingTarget(event, resolved.selector);
       if (!matchingTarget) {
         return;
       }
       handler.call(matchingTarget, event);
     };
 
-    document.addEventListener(eventType, delegatedHandler, true);
+    const target = isDelegated ? document : resolved.target;
+
+    if (!target) {
+      console.warn('🎯 Impossible d’attacher un événement sur une cible inconnue', selector, eventType, namespace);
+      return;
+    }
+
+    target.addEventListener(eventType, delegatedHandler, true);
 
     this.registeredEvents.set(fullKey, {
       selector,
@@ -101,7 +129,9 @@ export class EventManager {
       namespace,
       handler,
       delegatedHandler,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      target,
+      delegated: isDelegated
     });
 
     console.log(`📎 Événement attaché: ${selector} ${eventKey}`);
@@ -116,7 +146,10 @@ export class EventManager {
     const entry = this.registeredEvents.get(fullKey);
 
     if (entry) {
-      document.removeEventListener(entry.eventType, entry.delegatedHandler, true);
+      const target = entry.delegated ? document : entry.target;
+      if (target) {
+        target.removeEventListener(entry.eventType, entry.delegatedHandler, true);
+      }
       this.registeredEvents.delete(fullKey);
       console.log(`🗑️ Événement supprimé: ${selector} ${eventKey}`);
     }
@@ -130,7 +163,10 @@ export class EventManager {
 
     this.registeredEvents.forEach((event, key) => {
       if (event.namespace === namespace) {
-        document.removeEventListener(event.eventType, event.delegatedHandler, true);
+        const target = event.delegated ? document : event.target;
+        if (target) {
+          target.removeEventListener(event.eventType, event.delegatedHandler, true);
+        }
         toRemove.push(key);
       }
     });
@@ -165,7 +201,10 @@ export class EventManager {
    */
   cleanup() {
     this.registeredEvents.forEach((event) => {
-      document.removeEventListener(event.eventType, event.delegatedHandler, true);
+      const target = event.delegated ? document : event.target;
+      if (target) {
+        target.removeEventListener(event.eventType, event.delegatedHandler, true);
+      }
     });
 
     this.registeredEvents.clear();
