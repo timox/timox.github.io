@@ -29,6 +29,27 @@ export class EventManager {
     }
 
     const isElement = (candidate) => candidate instanceof Element;
+    const isDocument = (candidate) => candidate instanceof Document || candidate === document;
+    const isWindow = (candidate) => typeof window !== 'undefined' && candidate === window;
+
+    if (isWindow(selector)) {
+      return window;
+    }
+
+    if (isDocument(selector)) {
+      return document;
+    }
+
+    if (isElement(selector)) {
+      if (selector === event.target || selector.contains(event.target)) {
+        return selector;
+      }
+      return null;
+    }
+
+    if (typeof selector !== 'string') {
+      return null;
+    }
 
     if (isElement(event.target) && event.target.matches(selector)) {
       return event.target;
