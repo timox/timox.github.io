@@ -218,15 +218,28 @@ export class EventManager {
         event.delegateTarget = matchingTarget;
       }
 
+      // Proxifier l'événement pour exposer currentTarget/delegateTarget tout en conservant
+      // les méthodes natives (preventDefault, stopPropagation, ...) liées au véritable event.
       const proxiedEvent = new Proxy(event, {
         get(target, prop, receiver) {
           if (prop === 'currentTarget' || prop === 'delegateTarget') {
             return matchingTarget;
           }
-          return Reflect.get(target, prop, receiver);
+
+          if (prop === 'originalEvent') {
+            return target;
+          }
+
+          const value = Reflect.get(target, prop, receiver);
+
+          if (typeof value === 'function') {
+            return value.bind(target);
+          }
+
+          return value;
         },
         has(target, prop) {
-          if (prop === 'currentTarget' || prop === 'delegateTarget') {
+          if (prop === 'currentTarget' || prop === 'delegateTarget' || prop === 'originalEvent') {
             return true;
           }
           return Reflect.has(target, prop);
