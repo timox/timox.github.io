@@ -1656,10 +1656,15 @@ export class ModalManager {
     
     // Gérer les références dans le champ notes
     const referencesText = referenceManager.cleanReferences(getFieldValue('popup-references'));
-    if (referencesText || this.currentTask?.notes) {
+    const existingReferences = this.extractReferencesFromNotes(this.currentTask?.notes);
+    const shouldUpdateReferences = this.isNewTask
+      ? Boolean(referencesText)
+      : referencesText !== existingReferences;
+
+    if (shouldUpdateReferences) {
       try {
         // Parser les notes existantes ou créer une nouvelle structure
-        let notesData = {};
+        let notesData;
         if (this.currentTask?.notes) {
           try {
             notesData = JSON.parse(this.currentTask.notes);
@@ -1670,10 +1675,14 @@ export class ModalManager {
         } else {
           notesData = { content: "", history: [] };
         }
-        
+
+        if (!Array.isArray(notesData.history)) {
+          notesData.history = [];
+        }
+
         // Ajouter les références
         notesData.references = referencesText || "";
-        
+
         // Sérialiser les notes mises à jour
         gristData.notes = JSON.stringify(notesData);
       } catch (error) {
