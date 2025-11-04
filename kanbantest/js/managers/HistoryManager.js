@@ -1988,7 +1988,7 @@ export class HistoryManager {
       
       // Extraire le timestamp du commentId pour trouver l'entrée à modifier
       const normalizeTimestampToDigits = (timestamp) => {
-        if (!timestamp && timestamp !== 0) {
+        if (timestamp === null || typeof timestamp === 'undefined') {
           return null;
         }
 
@@ -2011,7 +2011,7 @@ export class HistoryManager {
           if (typeof timestamp === 'string') {
             const trimmed = timestamp.trim();
             if (!trimmed) {
-              return null;
+              return '';
             }
             // Tenter de détecter les timestamps en millisecondes stockés sous forme de chaîne numérique
             if (/^\d{10,}$/.test(trimmed)) {
@@ -2042,7 +2042,7 @@ export class HistoryManager {
       this.logger.debug('updateCommentInGrist - Timestamp recherché:', commentTimestampDigits);
       this.logger.debug('updateCommentInGrist - Entrées d\'historique disponibles:', notesData.history.length);
 
-      if (!commentTimestampDigits) {
+      if (commentTimestampDigits == null) {
         this.logger.warn('updateCommentInGrist - Timestamp de commentaire invalide, fallback sans correspondance précise:', commentId);
       }
 
@@ -2053,7 +2053,7 @@ export class HistoryManager {
         const entry = notesData.history[i];
         const entryTimestamp = normalizeTimestampToDigits(entry?.timestamp);
 
-        if (!entryTimestamp) {
+        if (entryTimestamp == null) {
           this.logger.warn('updateCommentInGrist - Entrée sans timestamp, ignorée:', entry);
           continue;
         }
@@ -2061,7 +2061,11 @@ export class HistoryManager {
         this.logger.debug(`updateCommentInGrist - Entrée ${i}: action=${entry.action}, timestamp=${entryTimestamp.substring(0, 12)}`);
 
         // Comparer les timestamps (on prend les premiers caractères pour éviter les problèmes de précision)
-        if (commentTimestampDigits && entryTimestamp.substring(0, 12) === commentTimestampDigits.substring(0, 12)) {
+        const timestampsMatch =
+          (entryTimestamp === '' && commentTimestampDigits === '') ||
+          (entryTimestamp && commentTimestampDigits && entryTimestamp.substring(0, 12) === commentTimestampDigits.substring(0, 12));
+
+        if (timestampsMatch) {
           // Vérifier que c'est bien un commentaire
           if (entry.action === 'comment' || entry.action === 'create' || entry.action === 'update') {
             this.logger.debug('Modification du commentaire trouvé dans history:', entry);
