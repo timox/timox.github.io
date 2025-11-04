@@ -113,7 +113,8 @@ export class EventManager {
 
     const isDocumentInstance = typeof Document !== 'undefined' && selector instanceof Document;
     const isDocumentNode = selector && selector.nodeType === 9;
-    if (hasDocument && (selector === document || isDocumentInstance || isDocumentNode)) {
+    const isDocumentLikeString = typeof selector === 'string' && selector.trim() === '[object HTMLDocument]';
+    if (hasDocument && (selector === document || isDocumentInstance || isDocumentNode || isDocumentLikeString)) {
       return { type: 'document', target: document };
     }
 
@@ -121,38 +122,8 @@ export class EventManager {
       return { type: 'element', target: selector };
     }
 
-    if (typeof selector === 'string') {
-      return { type: 'string', selector };
-    }
-
-    return { type: 'unknown' };
-  }
-
-  /**
-   * Identifie le type de cible fourni lors de l'enregistrement.
-   * @param {*} selector
-   * @returns {{type: 'string'|'element'|'document'|'window'|'unknown', target?: EventTarget, selector?: string}}
-   */
-  resolveSelector(selector) {
-    if (!selector) {
-      return { type: 'unknown' };
-    }
-
-    const hasWindow = typeof window !== 'undefined';
-    const hasDocument = typeof document !== 'undefined';
-
-    if (hasWindow && selector === window) {
-      return { type: 'window', target: window };
-    }
-
-    const isDocumentInstance = typeof Document !== 'undefined' && selector instanceof Document;
-    const isDocumentNode = selector && selector.nodeType === 9;
-    if (hasDocument && (selector === document || isDocumentInstance || isDocumentNode)) {
+    if (typeof selector === 'object' && selector !== null && String(selector) === '[object HTMLDocument]') {
       return { type: 'document', target: document };
-    }
-
-    if (typeof Element !== 'undefined' && selector instanceof Element) {
-      return { type: 'element', target: selector };
     }
 
     if (typeof selector === 'string') {
@@ -170,6 +141,10 @@ export class EventManager {
    */
   findMatchingTarget(event, selector) {
     if (!selector || typeof selector !== 'string') {
+      return null;
+    }
+
+    if (selector.startsWith('[object ')) {
       return null;
     }
 
@@ -227,7 +202,51 @@ export class EventManager {
       if (!matchingTarget) {
         return;
       }
-      handler.call(matchingTarget, event);
+
+      if (!event.delegateTarget) {
+        try {
+          Object.defineProperty(event, 'delegateTarget', {
+            configurable: true,
+            enumerable: false,
+            writable: true,
+            value: matchingTarget
+          });
+        } catch (defineError) {
+          event.delegateTarget = matchingTarget;
+        }
+      } else {
+        event.delegateTarget = matchingTarget;
+      }
+
+      // Proxifier l'événement pour exposer currentTarget/delegateTarget tout en conservant
+      // les méthodes natives (preventDefault, stopPropagation, ...) liées au véritable event.
+      const proxiedEvent = new Proxy(event, {
+        get(target, prop, receiver) {
+          if (prop === 'currentTarget' || prop === 'delegateTarget') {
+            return matchingTarget;
+          }
+
+          if (prop === 'originalEvent') {
+            return target;
+          }
+
+          const value = Reflect.get(target, prop, receiver);
+
+          if (typeof value === 'function') {
+            return value.bind(target);
+          }
+
+          return value;
+        },
+        has(target, prop) {
+          if (prop === 'currentTarget' || prop === 'delegateTarget' || prop === 'originalEvent') {
+            return true;
+          }
+          return Reflect.has(target, prop);
+        }
+      });
+
+      handler.call(matchingTarget, proxiedEvent);
     };
 
     const target = isDelegated ? document : resolved.target;

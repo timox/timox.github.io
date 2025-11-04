@@ -1987,28 +1987,97 @@ export class HistoryManager {
       }
       
       // Extraire le timestamp du commentId pour trouver l'entrée à modifier
+      const normalizeTimestampToDigits = (timestamp) => {
+        if (timestamp === null || typeof timestamp === 'undefined') {
+          return null;
+        }
+
+        try {
+          if (timestamp instanceof Date) {
+            if (Number.isNaN(timestamp.getTime())) {
+              return null;
+            }
+            return timestamp.toISOString().replace(/[^\d]/g, '');
+          }
+
+          if (typeof timestamp === 'number') {
+            const date = new Date(timestamp);
+            if (Number.isNaN(date.getTime())) {
+              return null;
+            }
+            return date.toISOString().replace(/[^\d]/g, '');
+          }
+
+          if (typeof timestamp === 'string') {
+            const trimmed = timestamp.trim();
+            if (!trimmed) {
+              return '';
+            }
+            // Tenter de détecter les timestamps en millisecondes stockés sous forme de chaîne numérique
+            if (/^\d{10,}$/.test(trimmed)) {
+              const asNumber = Number(trimmed);
+              if (Number.isFinite(asNumber)) {
+                const date = new Date(asNumber);
+                if (!Number.isNaN(date.getTime())) {
+                  return date.toISOString().replace(/[^\d]/g, '');
+                }
+              }
+            }
+            return trimmed.replace(/[^\d]/g, '');
+          }
+
+          // Dernier recours : convertir en string
+          return String(timestamp).replace(/[^\d]/g, '');
+        } catch (normalizationError) {
+          this.logger.warn('Impossible de normaliser le timestamp:', timestamp, normalizationError);
+          return null;
+        }
+      };
+
       const commentTimestamp = commentId.replace('comment-', '');
+      const commentTimestampDigits = normalizeTimestampToDigits(commentTimestamp);
       let entryFound = false;
-      
+
       this.logger.debug('updateCommentInGrist - Recherche du commentaire:', commentId);
-      this.logger.debug('updateCommentInGrist - Timestamp recherché:', commentTimestamp);
+      this.logger.debug('updateCommentInGrist - Timestamp recherché:', commentTimestampDigits);
       this.logger.debug('updateCommentInGrist - Entrées d\'historique disponibles:', notesData.history.length);
-      
+
+      if (commentTimestampDigits == null) {
+        this.logger.warn('updateCommentInGrist - Timestamp de commentaire invalide, fallback sans correspondance précise:', commentId);
+      }
+
       // CORRECTION: Gérer les commentaires anciens (dans content) ET nouveaux (dans history)
-      
+
       // 1. Chercher dans l'historique JSON (nouveau système)
       for (let i = 0; i < notesData.history.length; i++) {
         const entry = notesData.history[i];
-        const entryTimestamp = entry.timestamp.replace(/[^\d]/g, '');
-        
+        const entryTimestamp = normalizeTimestampToDigits(entry?.timestamp);
+
+        if (entryTimestamp == null) {
+          this.logger.warn('updateCommentInGrist - Entrée sans timestamp, ignorée:', entry);
+          continue;
+        }
+
         this.logger.debug(`updateCommentInGrist - Entrée ${i}: action=${entry.action}, timestamp=${entryTimestamp.substring(0, 12)}`);
-        
+
         // Comparer les timestamps (on prend les premiers caractères pour éviter les problèmes de précision)
-        if (entryTimestamp.substring(0, 12) === commentTimestamp.substring(0, 12)) {
+        const timestampsMatch = (() => {
+          if (commentTimestampDigits == null) {
+            return false;
+          }
+
+          if (entryTimestamp === '' || commentTimestampDigits === '') {
+            return entryTimestamp === commentTimestampDigits;
+          }
+
+          return entryTimestamp.substring(0, 12) === commentTimestampDigits.substring(0, 12);
+        })();
+
+        if (timestampsMatch) {
           // Vérifier que c'est bien un commentaire
           if (entry.action === 'comment' || entry.action === 'create' || entry.action === 'update') {
             this.logger.debug('Modification du commentaire trouvé dans history:', entry);
-            
+
             // Modifier le contenu selon le format
             if (entry.newValue) {
               notesData.history[i].newValue = newContent;
