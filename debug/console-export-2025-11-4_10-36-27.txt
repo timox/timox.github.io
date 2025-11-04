@@ -1,0 +1,1048 @@
+10:33:29.738 Referrer Policy: Ignoring the less restricted referrer policy “origin-when-cross-origin” for the cross-site request: https://stats.beta.gouv.fr/matomo.js matomo.js
+10:33:29.807 Localization initialized in 5ms sentry.min.js:3:44522
+10:33:29.815 gristConfigCache getWorker[3JvD44PeeTbL8ZK83BxNLA]: found and deleted value https://grist.numerique.gouv.fr/dw/10-42-34-147/v/unknown/ sentry.min.js:3:44522
+10:33:29.904 GristWSConnection connecting to: wss://grist.numerique.gouv.fr/dw/10-42-34-147/v/unknown/o/sdis25-gssi?clientId=0&counter=2&newClient=1&browserSettings=%7B%22timezone%22%3A%22Europe%2FParis%22%7D&user= sentry.min.js:3:44522
+10:33:29.912 DocPageModel _openDoc starting for 3JvD44PeeTbL (mode undefined) sentry.min.js:3:44522
+10:33:29.913 gristConfigCache getDoc[3JvD44PeeTbL]: not found sentry.min.js:3:44522
+10:33:29.951 GristWSConnection: onopen: Connected sentry.min.js:3:44522
+10:33:29.956 GristWSConnection: onmessage (113 bytes) sentry.min.js:3:44522
+10:33:29.956 GristWSConnection established: clientId ea9518eaa608bcac counter 2 needReload false sentry.min.js:3:44522
+10:33:29.957 Comm: Triggering event clientConnect main.bundle.js:2:28349
+10:33:29.957 App clientConnect event: needReload false version unknown sentry.min.js:3:44522
+10:33:29.983 Comm.useDocConnection(3JvD44PeeTbL8ZK83BxNLA): useCount now 1 main.bundle.js:2:25623
+10:33:29.983 Comm request #0 openDoc 
+Array [ "3JvD44PeeTbL8ZK83BxNLA", {…} ]
+main.bundle.js:2:26696
+10:33:29.983 GristWSConnection.send[true] {"reqId":0,"method":"openDoc","args":["3JvD44PeeTbL8ZK83BxNLA",{"openMode":"default","originalUrlId":"3JvD44PeeTbL"}]} sentry.min.js:3:44522
+10:33:30.062 GristWSConnection: onmessage (100257 bytes) sentry.min.js:3:44522
+10:33:30.062 Comm response #0 openDoc OK main.bundle.js:2:28063
+10:33:30.063 Comm.useDocConnection(3JvD44PeeTbL8ZK83BxNLA): useCount now 2 main.bundle.js:2:25623
+10:33:30.063 RECEIVED DOC RESPONSE 
+Object { docFD: 0, clientId: "ea9518eaa608bcac", doc: {…}, log: (100) […], recoveryMode: false, user: {…}, docUsage: {…}, isTimingOn: false }
+sentry.min.js:3:44522
+10:33:30.229 Comm request #1 listActiveUserProfiles 
+Array [ 0 ]
+main.bundle.js:2:26696
+10:33:30.230 GristWSConnection.send[true] {"reqId":1,"method":"listActiveUserProfiles","args":[0]} sentry.min.js:3:44522
+10:33:30.242 BaseView viewSection 50 (Ssir_principale_task) lastCursorPos {"rowId":0,"fieldIndex":0} sentry.min.js:3:44522
+10:33:30.249 Comm request #2 fetchTable 
+Array [ 0, "Ssir_principale_task" ]
+main.bundle.js:2:26696
+10:33:30.249 GristWSConnection.send[true] {"reqId":2,"method":"fetchTable","args":[0,"Ssir_principale_task"]} sentry.min.js:3:44522
+10:33:30.250 Feature Policy: Skipping unsupported feature name “clipboard-write”. main.bundle.js:2:1181536
+10:33:30.267 Feature Policy: Skipping unsupported feature name “clipboard-write”. main.bundle.js:2:1184108
+10:33:30.269 Comm request #3 getUsersForViewAs 
+Array [ 0 ]
+main.bundle.js:2:26696
+10:33:30.270 GristWSConnection.send[true] {"reqId":3,"method":"getUsersForViewAs","args":[0]} sentry.min.js:3:44522
+10:33:30.270 Comm.releaseDocConnection(3JvD44PeeTbL8ZK83BxNLA): useCount now 1 main.bundle.js:2:25764
+10:33:30.280 GristWSConnection: onmessage (124 bytes) sentry.min.js:3:44522
+10:33:30.280 GristWSConnection skipping duplicate 'clientConnect' message sentry.min.js:3:44522
+10:33:30.363 GristWSConnection: onmessage (460444 bytes) sentry.min.js:3:44522
+10:33:30.364 Comm response #2 fetchTable OK main.bundle.js:2:28063
+10:33:30.365 GristWSConnection: onmessage (31 bytes) sentry.min.js:3:44522
+10:33:30.365 Comm response #1 listActiveUserProfiles OK main.bundle.js:2:28063
+10:33:30.391 GristWSConnection: onmessage (1651 bytes) sentry.min.js:3:44522
+10:33:30.391 Comm response #3 getUsersForViewAs OK main.bundle.js:2:28063
+10:33:30.832 ✅ Protection will-change ultra-renforcée activée index.html:527:15
+10:33:30.832 === DIAGNOSTIC MODAL HISTORY === index.html:542:13
+10:33:30.832 DOM ready state: loading index.html:543:13
+10:33:30.832 task-history-modal au chargement: true index.html:544:13
+10:33:30.907 DOMContentLoaded: task-history-modal existe: true index.html:547:15
+10:33:30.907 [LOGGER] Initialized with level: INFO LoggerManager.js:39:13
+10:33:30.907 [LOGGER] Logger exposé globalement - Tapez logger.showHelp() pour commencer LoggerManager.js:240:13
+10:33:31.461 PLUGIN VIEW /kanban/index.html: Rpc sending Ready grist-plugin-api.ts:408:15
+10:33:31.462 Rpc sending Custom 4 sentry.min.js:3:44522
+10:33:31.463 🧹 Namespace nettoyé: modal (0 événements) EventManager.js:118:13
+10:33:31.463 📎 Événement attaché: #btn-nouvelle-tache click.modal EventManager.js:86:13
+10:33:31.463 📎 Événement attaché: #btn-save-task click.modal EventManager.js:86:13
+10:33:31.463 📎 Événement attaché: #btn-delete-task click.modal EventManager.js:86:13
+10:33:31.463 📎 Événement attaché: #btn-toggle-history-panel click.modal EventManager.js:86:13
+10:33:31.463 🔍 DIAGNOSTIC STRATEGIES ModalManager: ModalManager.js:208:13
+10:33:31.463   - kanban.strategiesData length: 0 ModalManager.js:209:13
+10:33:31.463   - kanban.strategyData length: 0 ModalManager.js:210:13
+10:33:31.463 ❌ Aucune donnée stratégique disponible ModalManager.js:219:15
+10:33:31.464 [INFO:HistoryManager] History manager initialized (événements centralisés via EventCentralizer) LoggerManager.js:146:15
+10:33:31.464 [INFO:ViewManager] Contrôles de vue créés et insérés dans le bandeau haut LoggerManager.js:146:15
+10:33:31.464 [INFO:ViewManager] Application du mode de vue: detailed LoggerManager.js:146:15
+10:33:31.464 [INFO:ViewManager] Mode détaillé appliqué - système de repliage initialisé LoggerManager.js:146:15
+10:33:31.464 [INFO:ViewManager] Gestionnaire de modes de vue initialisé LoggerManager.js:146:15
+10:33:31.464 KanbanManager: Gestionnaires initialisés KanbanManager.js:148:13
+10:33:31.464 ⏱️ Attente KanbanManager.isInitialized... app-initializer.js:684:13
+10:33:31.465 PLUGIN VIEW /kanban/index.html: Rpc for CustomSectionAPI.configure#1: RPC_CALLING grist-plugin-api.ts:408:15
+10:33:31.465 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: CustomSectionAPI.configure#1 grist-plugin-api.ts:408:15
+10:33:31.465 KanbanManager: Chargement des donn�es... KanbanManager.js:155:13
+10:33:31.465 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#2: RPC_CALLING grist-plugin-api.ts:408:15
+10:33:31.465 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristDocAPI.fetchTable#2 grist-plugin-api.ts:408:15
+10:33:31.465 Rpc for CustomSectionAPI.configure#1: RPC_ONCALL sentry.min.js:3:44522
+10:33:31.465 Rpc for CustomSectionAPI.configure#1: RPC_ONCALL_OK sentry.min.js:3:44522
+10:33:31.465 Rpc sending RpcRespData sentry.min.js:3:44522
+10:33:31.465 Rpc for GristDocAPI.fetchTable#2: RPC_ONCALL sentry.min.js:3:44522
+10:33:31.466 Comm request #4 fetchTable 
+Array [ 0, "Ssir_strategie2" ]
+main.bundle.js:2:26696
+10:33:31.466 GristWSConnection.send[true] {"reqId":4,"method":"fetchTable","args":[0,"Ssir_strategie2"]} sentry.min.js:3:44522
+10:33:31.466 Window load: task-history-modal existe: true index.html:551:15
+10:33:31.466 🚀 KANBAN MODULAIRE CHARGÉ index.html:584:15
+10:33:31.466 📚 Modules disponibles: index.html:585:15
+10:33:31.466   - config/constants.js index.html:586:15
+10:33:31.466   - utils/dates.js index.html:587:15
+10:33:31.466   - utils/badges.js index.html:588:15
+10:33:31.466   - utils/dom.js index.html:589:15
+10:33:31.466   - core/KanbanManager.js index.html:590:15
+10:33:31.466 <empty string> index.html:591:15
+10:33:31.466 🔧 Debug disponible: index.html:592:15
+10:33:31.466   - window.kanbanManager : Instance principale index.html:593:15
+10:33:31.466   - window.kanbanAppInitializer : Initialiseur courant index.html:594:15
+10:33:31.466   - logger.setLogLevel("INFO") : Activer logs détaillés index.html:595:15
+10:33:31.467 <empty string> index.html:596:15
+10:33:31.467 ⌨️  Raccourcis: index.html:597:15
+10:33:31.467   - R : Recharger le kanban index.html:598:15
+10:33:31.467   - N : Nouvelle tâche index.html:599:15
+10:33:31.467   - F : Focus recherche index.html:600:15
+10:33:31.469 PLUGIN VIEW /kanban/index.html: Rpc for GristView.fetchSelectedTable#3: RPC_CALLING grist-plugin-api.ts:408:15
+10:33:31.469 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristView.fetchSelectedTable#3 grist-plugin-api.ts:408:15
+10:33:31.469 Rpc for GristView.fetchSelectedTable#3: RPC_ONCALL sentry.min.js:3:44522
+10:33:31.470 PLUGIN VIEW /kanban/index.html: Rpc sending Custom grist-plugin-api.ts:408:15
+10:33:31.470 Rpc for GristView.fetchSelectedTable#3: RPC_ONCALL_OK sentry.min.js:3:44522
+10:33:31.470 PLUGIN VIEW /kanban/index.html: Rpc for GristView.fetchSelectedTable#4: RPC_CALLING grist-plugin-api.ts:408:15
+10:33:31.470 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristView.fetchSelectedTable#4 grist-plugin-api.ts:408:15
+10:33:31.470 Rpc sending RpcRespData sentry.min.js:3:44522
+10:33:31.471 PLUGIN VIEW /kanban/index.html: Rpc for CustomSectionAPI.configure#1: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:33:31.472 Rpc for GristView.fetchSelectedTable#4: RPC_ONCALL sentry.min.js:3:44522
+10:33:31.473 Rpc for GristView.fetchSelectedTable#4: RPC_ONCALL_OK sentry.min.js:3:44522
+10:33:31.473 Rpc sending RpcRespData sentry.min.js:3:44522
+10:33:31.475 PLUGIN VIEW /kanban/index.html: Rpc for GristView.fetchSelectedTable#3: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:33:31.476 PLUGIN VIEW /kanban/index.html: Rpc for CustomSectionAPI.mappings#5: RPC_CALLING grist-plugin-api.ts:408:15
+10:33:31.476 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: CustomSectionAPI.mappings#5 grist-plugin-api.ts:408:15
+10:33:31.477 Rpc for CustomSectionAPI.mappings#5: RPC_ONCALL sentry.min.js:3:44522
+10:33:31.477 Rpc for CustomSectionAPI.mappings#5: RPC_ONCALL_OK sentry.min.js:3:44522
+10:33:31.477 Rpc sending RpcRespData sentry.min.js:3:44522
+10:33:31.478 PLUGIN VIEW /kanban/index.html: Rpc for GristView.fetchSelectedTable#4: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:33:31.478 PLUGIN VIEW /kanban/index.html: Rpc for CustomSectionAPI.mappings#5: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:33:31.478 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#6: RPC_CALLING grist-plugin-api.ts:408:15
+10:33:31.478 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristDocAPI.fetchTable#6 grist-plugin-api.ts:408:15
+10:33:31.478 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#7: RPC_CALLING grist-plugin-api.ts:408:15
+10:33:31.478 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristDocAPI.fetchTable#7 grist-plugin-api.ts:408:15
+10:33:31.479 Rpc for GristDocAPI.fetchTable#6: RPC_ONCALL sentry.min.js:3:44522
+10:33:31.479 Comm request #5 fetchTable 
+Array [ 0, "Ssir_principale_task" ]
+main.bundle.js:2:26696
+10:33:31.479 GristWSConnection.send[true] {"reqId":5,"method":"fetchTable","args":[0,"Ssir_principale_task"]} sentry.min.js:3:44522
+10:33:31.479 Rpc for GristDocAPI.fetchTable#7: RPC_ONCALL sentry.min.js:3:44522
+10:33:31.479 Comm request #6 fetchTable 
+Array [ 0, "Ssir_principale_task" ]
+main.bundle.js:2:26696
+10:33:31.479 GristWSConnection.send[true] {"reqId":6,"method":"fetchTable","args":[0,"Ssir_principale_task"]} sentry.min.js:3:44522
+10:33:31.520 KanbanManager: Rafra�chissement ignor� (pas initialis� ou en cours de mise � jour) KanbanManager.js:434:15
+10:33:31.522 [INFO:FilterManager] Filtered results: 0/0 tasks displayed LoggerManager.js:146:15
+10:33:31.554 GristWSConnection: onmessage (460444 bytes) sentry.min.js:3:44522
+10:33:31.555 Comm response #5 fetchTable OK main.bundle.js:2:28063
+10:33:31.555 Rpc for GristDocAPI.fetchTable#6: RPC_ONCALL_OK sentry.min.js:3:44522
+10:33:31.555 Rpc sending RpcRespData sentry.min.js:3:44522
+10:33:31.560 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#6: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:33:31.563 KanbanManager: Donn�es recharg�es depuis Grist KanbanManager.js:701:13
+10:33:31.563 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#8: RPC_CALLING grist-plugin-api.ts:408:15
+10:33:31.563 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristDocAPI.fetchTable#8 grist-plugin-api.ts:408:15
+10:33:31.564 Rpc for GristDocAPI.fetchTable#8: RPC_ONCALL sentry.min.js:3:44522
+10:33:31.564 Comm request #7 fetchTable 
+Array [ 0, "Ssir_strategie2" ]
+main.bundle.js:2:26696
+10:33:31.564 GristWSConnection.send[true] {"reqId":7,"method":"fetchTable","args":[0,"Ssir_strategie2"]} sentry.min.js:3:44522
+10:33:31.565 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#9: RPC_CALLING grist-plugin-api.ts:408:15
+10:33:31.565 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristDocAPI.fetchTable#9 grist-plugin-api.ts:408:15
+10:33:31.566 Rpc for GristDocAPI.fetchTable#9: RPC_ONCALL sentry.min.js:3:44522
+10:33:31.566 Comm request #8 fetchTable 
+Array [ 0, "Ssir_principale_task" ]
+main.bundle.js:2:26696
+10:33:31.566 GristWSConnection.send[true] {"reqId":8,"method":"fetchTable","args":[0,"Ssir_principale_task"]} sentry.min.js:3:44522
+10:33:31.570 GristWSConnection: onmessage (460444 bytes) sentry.min.js:3:44522
+10:33:31.571 Comm response #6 fetchTable OK main.bundle.js:2:28063
+10:33:31.571 Rpc for GristDocAPI.fetchTable#7: RPC_ONCALL_OK sentry.min.js:3:44522
+10:33:31.571 Rpc sending RpcRespData sentry.min.js:3:44522
+10:33:31.573 GristWSConnection: onmessage (11609 bytes) sentry.min.js:3:44522
+10:33:31.573 Comm response #4 fetchTable OK main.bundle.js:2:28063
+10:33:31.573 Rpc for GristDocAPI.fetchTable#2: RPC_ONCALL_OK sentry.min.js:3:44522
+10:33:31.573 Rpc sending RpcRespData sentry.min.js:3:44522
+10:33:31.575 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#7: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:33:31.576 KanbanManager: Donn�es recharg�es depuis Grist KanbanManager.js:701:13
+10:33:31.576 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#10: RPC_CALLING grist-plugin-api.ts:408:15
+10:33:31.576 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristDocAPI.fetchTable#10 grist-plugin-api.ts:408:15
+10:33:31.577 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#2: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:33:31.577 Rpc for GristDocAPI.fetchTable#10: RPC_ONCALL sentry.min.js:3:44522
+10:33:31.577 Comm request #9 fetchTable 
+Array [ 0, "Ssir_strategie2" ]
+main.bundle.js:2:26696
+10:33:31.577 GristWSConnection.send[true] {"reqId":9,"method":"fetchTable","args":[0,"Ssir_strategie2"]} sentry.min.js:3:44522
+10:33:31.578 GristWSConnection: onmessage (11609 bytes) sentry.min.js:3:44522
+10:33:31.578 Comm response #7 fetchTable OK main.bundle.js:2:28063
+10:33:31.578 [WARN:GristManager] Impossible de récupérer les infos utilisateur: TypeError: gristApi.docApi.getDocInfo is not a function
+    getUserInfo https://timox.github.io/kanban/js/managers/GristManager.js:765
+    loadUserInfo https://timox.github.io/kanban/js/core/KanbanManager.js:282
+    loadInitialData https://timox.github.io/kanban/js/core/KanbanManager.js:166
+LoggerManager.js:137:15
+10:33:31.578 Rpc for GristDocAPI.fetchTable#8: RPC_ONCALL_OK sentry.min.js:3:44522
+10:33:31.578 KanbanManager: Aucun utilisateur d�tect� KanbanManager.js:287:17
+10:33:31.578 Rpc sending RpcRespData sentry.min.js:3:44522
+10:33:31.578 KanbanManager: 95 t�ches charg�es KanbanManager.js:168:13
+10:33:31.578 KanbanManager: 43 strat�gies charg�es KanbanManager.js:169:13
+10:33:31.578 KanbanManager: Rafra�chissement ignor� (pas initialis� ou en cours de mise � jour) KanbanManager.js:434:15
+10:33:31.579 📎 Événement attaché: .btn-history, .btn-timeline click.history EventManager.js:86:13
+10:33:31.579 📎 Événement attaché: .btn-edit-comment click.history EventManager.js:86:13
+10:33:31.579 📎 Événement attaché: [data-mode] click.viewMode EventManager.js:86:13
+10:33:31.579 📎 Événement attaché: .btn-delete-jalon click.jalon EventManager.js:86:13
+10:33:31.579 📎 Événement attaché: [object HTMLDocument] keydown.keyboard EventManager.js:86:13
+10:33:31.579 🎯 EventCentralizer: Tous les listeners centralisés via jQuery EventCentralizer.js:96:13
+10:33:31.579 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#8: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:33:31.590 [INFO:GristManager] 95 enregistrements rechargés LoggerManager.js:146:15
+10:33:31.602 GristWSConnection: onmessage (460444 bytes) sentry.min.js:3:44522
+10:33:31.603 Comm response #8 fetchTable OK main.bundle.js:2:28063
+10:33:31.604 Rpc for GristDocAPI.fetchTable#9: RPC_ONCALL_OK sentry.min.js:3:44522
+10:33:31.604 Rpc sending RpcRespData sentry.min.js:3:44522
+10:33:31.606 GristWSConnection: onmessage (11609 bytes) sentry.min.js:3:44522
+10:33:31.606 Comm response #9 fetchTable OK main.bundle.js:2:28063
+10:33:31.606 Rpc for GristDocAPI.fetchTable#10: RPC_ONCALL_OK sentry.min.js:3:44522
+10:33:31.606 Rpc sending RpcRespData sentry.min.js:3:44522
+10:33:31.621 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#9: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:33:31.621 [INFO:GristManager] 95 enregistrements chargés LoggerManager.js:146:15
+10:33:31.622 [INFO:GristManager] Connexion établie avec Grist LoggerManager.js:146:15
+10:33:31.622 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#10: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:33:31.633 [INFO:GristManager] 95 enregistrements rechargés LoggerManager.js:146:15
+10:33:31.659 [INFO:ViewManager] 7 boutons de repliage initialisés 2 LoggerManager.js:146:15
+10:33:31.699 [INFO:ViewManager] Application du mode de vue: detailed LoggerManager.js:146:15
+10:33:31.699 [INFO:ViewManager] Mode détaillé appliqué - système de repliage initialisé LoggerManager.js:146:15
+10:33:31.700 KanbanAppInitializer: initialisation terminée app-initializer.js:65:15
+10:33:31.713 [INFO:ViewManager] 7 boutons de repliage initialisés 2 LoggerManager.js:146:15
+10:33:31.714 The Notification permission may only be requested from inside a short running user-generated event handler. index.html
+10:33:31.777 [INFO:FilterManager] Filtered results: 95/95 tasks displayed LoggerManager.js:146:15
+10:33:31.805 [INFO:ViewManager] 7 boutons de repliage initialisés LoggerManager.js:146:15
+10:33:40.559    Extracted strategy IDs: 
+Array [ 33, 24 ]
+ModalManager.js:784:13
+10:33:40.559    strategyIds.length: 2 ModalManager.js:785:13
+10:33:40.559    Available strategies data: 43 ModalManager.js:795:13
+10:33:40.559    Processing strategy ID: 33 number ModalManager.js:800:17
+10:33:40.559    Found strategy: 33 - Répondre aux demandes des métiers ModalManager.js:808:17
+10:33:40.560    Processing strategy ID: 24 number ModalManager.js:800:17
+10:33:40.560    Found strategy: 24 - Répondre aux demandes des métiers ModalManager.js:808:17
+10:33:40.561 [INFO:ModalManager] Strategies loaded from Grist: 2 items LoggerManager.js:146:15
+10:33:47.253 Uncaught DOMException: Element.matches: '[object HTMLDocument]' is not a valid selector
+    findMatchingTarget https://timox.github.io/kanban/js/utils/EventManager.js:33
+    delegatedHandler https://timox.github.io/kanban/js/utils/EventManager.js:68
+19 EventManager.js:33
+10:33:52.968    mapping strategy: 
+Object { id: 33, objectif: "Répondre aux demandes des métiers", sous_objectif: "Mettre en place les solutions NexSIS-RRF", action: "Prévoir et accompagner les évolutions techniques", echeance: "2024-2030", responsable: "Équipe projet", portee: "Générale" }
+ModalManager.js:1461:15
+10:33:52.968    mapping strategy: 
+Object { id: 24, objectif: "Répondre aux demandes des métiers", sous_objectif: "Pérenniser les outils à destination des métiers et utilisateurs", action: "Aide à la maitrise d'ouvrage pour la continuité des outils et le support avec les fournisseurs de logiciels", echeance: "2024-", responsable: "ISI", portee: "Générale" }
+ModalManager.js:1461:15
+10:33:52.968 🎯 Strategies saved: 2 items 
+Array(3) [ "L", 33, 24 ]
+ModalManager.js:1465:13
+10:33:52.968 ✅ 2 stratégies validées: 
+Array [ 33, 24 ]
+ModalManager.js:1574:19
+10:33:52.968    Type: string ModalManager.js:1627:13
+10:33:52.968    Valeur brute: {"jalons":[{"id":"1762188444487rmy1d","type":"reunion","titre":"formation et migration test","date":"2025-12-03","commentaire":"","statut":"planifie","created_at":"2025-11-03T16:47:24.487Z","participants":[],"lieu":""},{"id":"1762188467737t5zmt","type":"echeance","titre":"faire les VM pastell","date":"2025-11-03","commentaire":"","statut":"planifie","created_at":"2025-11-03T16:47:47.737Z","criticite":"normale","consequences":""}],"lastModified":"2025-11-04T09:33:52.968Z"} ModalManager.js:1628:13
+10:33:52.968 ✅ Jalons après traitement: {"jalons":[{"id":"1762188444487rmy1d","type":"reunion","titre":"formation et migration test","date":"2025-12-03","commentaire":"","statut":"planifie","created_at":"2025-11-03T16:47:24.487Z","participants":[],"lieu":""},{"id":"1762188467737t5zmt","type":"echeance","titre":"faire les VM pastell","date":"2025-11-03","commentaire":"","statut":"planifie","created_at":"2025-11-03T16:47:47.737Z","criticite":"normale","consequences":""}],"lastModified":"2025-11-04T09:33:52.968Z"} ModalManager.js:1635:15
+10:33:52.968 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.applyUserActions#11: RPC_CALLING grist-plugin-api.ts:408:15
+10:33:52.968 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristDocAPI.applyUserActions#11 grist-plugin-api.ts:408:15
+10:33:52.971 Rpc for GristDocAPI.applyUserActions#11: RPC_ONCALL sentry.min.js:3:44522
+10:33:52.971 Comm request #10 applyUserActions 
+Array(3) [ 0, (1) […], {…} ]
+main.bundle.js:2:26696
+10:33:52.971 GristWSConnection.send[true] {"reqId":10,"method":"applyUserActions","args":[0,[["UpdateRecord","Ssir_principale_task",155,{"titre":"mise à jour de pastell","statut":"À faire","projet":"Évolution applicative","urgence":"Courte","impact":"Important","bureau":["L","BDD","Chef SSIR"],"qui":["L","Chloé","Timothée","Yvon"],"strategie_id":["L",33,24],"jalons":"{\"jalons\":[{\"id\":\"1762188444487rmy1d\",\"type\":\"reunion\",\"titre\":\"formation et migration test\",\"date\":\"2025-12-03\",\"commentaire\":\"\",\"statut\":\"planifie\",\"created_at\":\"2025-11-03T16:47:24.487Z\",\"participants\":[],\"lieu\":\"\"},{\"id\":\"1762188467737t5zmt\",\"type\":\"echeance\",\"titre\":\"faire les VM pastell\",\"date\":\"2025-11-03\",\"commentaire\":\"\",\"statut\":\"planifie\",\"created_at\":\"2025-11-03T16:47:47.737Z\",\"criticite\":\"normale\",\"consequences\":\"\"}],\"lastModified\":\"2025-11-04T09:33:52.968Z\"}","date_echeance":null,"date_derniere_maj":"2025-11-04T09:33:52.968Z","notes":"{\"content\":\"Voici le planning proposé par libriciel \\n--------------------------------------\\nBonjour,\\n\\nVeuillez trouver ci-dessous une proposition de planning concernant l'outil pastell :\\n\\n    Réunion de validation des pré-requis techniques à l’installation de la version 4.1 de pastell sur les serveurs de la personne publique, et rédaction du compte-rendu : le 03/11 à 14h00 (à distance) avec M. TOMAS\\n    Migration (avec reprise des données) de 1 instance Pastell de test en version 4.1 : le 19/11 à 09h00 (à distance) avec M. SUBIAS\\n    Formation aux nouveautés fonctionnelles des versions 4.0 et4.1 de Pastell : le 25/11 de 09h00 à 12h00 et de 14h00 à 17h00 (soit 1j à distance) avec M. BOUKARI\\n    Migration (avec reprise des données) de 1 instance Pastell de production en version 4.1 : le 03/12 à 09h00 (à distance) avec M. SUBIAS\\n\\n\\nJe vous transmets en p/j les prérequis d'installation, ainsi que la fiche d'informations à compléter. (1 par instance)\\n\\nAttention, les prérequis ont changés, si votre système d'exploitation n'est plus supporté, de nouveaux serveurs conformes aux prérequis devront être provisionnés.\\n\\nL'intervention nécessite une interruption de service de l'outil.\\n\\nDans l'attente de votre retour,\\n\\nBien cordialement,\",\"history\":[{\"timestamp\":\"2025-10-27T13:48:46.752Z\",\"user\":\"timothee.foucart\",\"action\":\"comment\",\"details\":\"Commentaire initial: Voici le planning proposé par libriciel \\n--------------------------------------\\nBonjour,\\n\\nVeuillez trouver ci-dessous une proposition de planning concernant l'outil pastell :\\n\\n    Réunion de validation des pré-requis techniques à l’installation de la version 4.1 de pastell sur les serveurs de la personne publique, et rédaction du compte-rendu : le 03/11 à 14h00 (à distance) avec M. TOMAS\\n    Migration (avec reprise des données) de 1 instance Pastell de test en version 4.1 : le 19/11 à 09h00 (à distance) avec M. SUBIAS\\n    Formation aux nouveautés fonctionnelles des versions 4.0 et4.1 de Pastell : le 25/11 de 09h00 à 12h00 et de 14h00 à 17h00 (soit 1j à distance) avec M. BOUKARI\\n    Migration (avec reprise des données) de 1 instance Pastell de production en version 4.1 : le 03/12 à 09h00 (à distance) avec M. SUBIAS\\n\\n\\nJe vous transmets en p/j les prérequis d'installation, ainsi que la fiche d'informations à compléter. (1 par instance)\\n\\nAttention, les prérequis ont changés, si votre système d'exploitation n'est plus supporté, de nouveaux serveurs conformes aux prérequis devront être provisionnés.\\n\\nL'intervention nécessite une interruption de service de l'outil.\\n\\nDans l'attente de votre retour,\\n\\nBien cordialement,\",\"status\":\"Backlog\",\"newValue\":\"Voici le planning proposé par libriciel \\n--------------------------------------\\nBonjour,\\n\\nVeuillez trouver ci-dessous une proposition de planning concernant l'outil pastell :\\n\\n    Réunion de validation des pré-requis techniques à l’installation de la version 4.1 de pastell sur les serveurs de la personne publique, et rédaction du compte-rendu : le 03/11 à 14h00 (à distance) avec M. TOMAS\\n    Migration (avec reprise des données) de 1 instance Pastell de test en version 4.1 : le 19/11 à 09h00 (à distance) avec M. SUBIAS\\n    Formation aux nouveautés fonctionnelles des versions 4.0 et4.1 de Pastell : le 25/11 de 09h00 à 12h00 et de 14h00 à 17h00 (soit 1j à distance) avec M. BOUKARI\\n    Migration (avec reprise des données) de 1 instance Pastell de production en version 4.1 : le 03/12 à 09h00 (à distance) avec M. SUBIAS\\n\\n\\nJe vous transmets en p/j les prérequis d'installation, ainsi que la fiche d'informations à compléter. (1 par instance)\\n\\nAttention, les prérequis ont changés, si votre système d'exploitation n'est plus supporté, de nouveaux serveurs conformes aux prérequis devront être provisionnés.\\n\\nL'intervention nécessite une interruption de service de l'outil.\\n\\nDans l'attente de votre retour,\\n\\nBien cordialement,\"}],\"references\":\"\"}"}]],{}]} sentry.min.js:3:44522
+10:33:53.015 GristWSConnection: onmessage (2931 bytes) sentry.min.js:3:44522
+10:33:53.015 Comm: Triggering event docUserAction main.bundle.js:2:28349
+10:33:53.015 GristDoc.onDocUserAction 
+Object { type: "docUserAction", data: {…}, docFD: 0, fromSelf: true, seqId: 10 }
+sentry.min.js:3:44522
+10:33:53.015 GristDoc applying #0 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 155, {…} ]
+sentry.min.js:3:44522
+10:33:53.016 GristDoc applying #1 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 155, {…} ]
+sentry.min.js:3:44522
+10:33:53.016 GristDoc applying #2 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 155, {…} ]
+sentry.min.js:3:44522
+10:33:53.017 GristWSConnection: onmessage (170 bytes) sentry.min.js:3:44522
+10:33:53.018 Comm response #10 applyUserActions OK main.bundle.js:2:28063
+10:33:53.018 Rpc for GristDocAPI.applyUserActions#11: RPC_ONCALL_OK sentry.min.js:3:44522
+10:33:53.018 Rpc sending RpcRespData sentry.min.js:3:44522
+10:33:53.019 Rpc sending Custom sentry.min.js:3:44522
+10:33:53.024 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.applyUserActions#11: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:33:53.030 PLUGIN VIEW /kanban/index.html: Rpc for GristView.fetchSelectedTable#12: RPC_CALLING grist-plugin-api.ts:408:15
+10:33:53.030 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristView.fetchSelectedTable#12 grist-plugin-api.ts:408:15
+10:33:53.031 Rpc for GristView.fetchSelectedTable#12: RPC_ONCALL sentry.min.js:3:44522
+10:33:53.032 Rpc for GristView.fetchSelectedTable#12: RPC_ONCALL_OK sentry.min.js:3:44522
+10:33:53.032 Rpc sending RpcRespData sentry.min.js:3:44522
+10:33:53.044 PLUGIN VIEW /kanban/index.html: Rpc for GristView.fetchSelectedTable#12: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:33:53.045 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#13: RPC_CALLING grist-plugin-api.ts:408:15
+10:33:53.045 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristDocAPI.fetchTable#13 grist-plugin-api.ts:408:15
+10:33:53.045 Rpc for GristDocAPI.fetchTable#13: RPC_ONCALL sentry.min.js:3:44522
+10:33:53.045 Comm request #11 fetchTable 
+Array [ 0, "Ssir_principale_task" ]
+main.bundle.js:2:26696
+10:33:53.045 GristWSConnection.send[true] {"reqId":11,"method":"fetchTable","args":[0,"Ssir_principale_task"]} sentry.min.js:3:44522
+10:33:53.145 GristWSConnection: onmessage (460446 bytes) sentry.min.js:3:44522
+10:33:53.146 Comm response #11 fetchTable OK main.bundle.js:2:28063
+10:33:53.146 Rpc for GristDocAPI.fetchTable#13: RPC_ONCALL_OK sentry.min.js:3:44522
+10:33:53.146 Rpc sending RpcRespData sentry.min.js:3:44522
+10:33:53.150 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#13: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:33:53.153 KanbanManager: Donn�es recharg�es depuis Grist KanbanManager.js:701:13
+10:33:53.154 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#14: RPC_CALLING grist-plugin-api.ts:408:15
+10:33:53.155 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristDocAPI.fetchTable#14 grist-plugin-api.ts:408:15
+10:33:53.156 Rpc for GristDocAPI.fetchTable#14: RPC_ONCALL sentry.min.js:3:44522
+10:33:53.156 Comm request #12 fetchTable 
+Array [ 0, "Ssir_strategie2" ]
+main.bundle.js:2:26696
+10:33:53.156 GristWSConnection.send[true] {"reqId":12,"method":"fetchTable","args":[0,"Ssir_strategie2"]} sentry.min.js:3:44522
+10:33:53.173 GristWSConnection: onmessage (11611 bytes) sentry.min.js:3:44522
+10:33:53.174 Comm response #12 fetchTable OK main.bundle.js:2:28063
+10:33:53.174 Rpc for GristDocAPI.fetchTable#14: RPC_ONCALL_OK sentry.min.js:3:44522
+10:33:53.174 Rpc sending RpcRespData sentry.min.js:3:44522
+10:33:53.175 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#14: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:33:53.182 KanbanManager: Refresh ignor� car mise � jour en cours KanbanManager.js:719:15
+10:33:53.182 [INFO:GristManager] 95 enregistrements rechargés LoggerManager.js:146:15
+10:33:53.182 KanbanManager: Rafra�chissement ignor� (pas initialis� ou en cours de mise � jour) KanbanManager.js:434:15
+10:33:56.998 Uncaught DOMException: Element.matches: '[object HTMLDocument]' is not a valid selector
+    findMatchingTarget https://timox.github.io/kanban/js/utils/EventManager.js:33
+    delegatedHandler https://timox.github.io/kanban/js/utils/EventManager.js:68
+EventManager.js:33
+10:33:57.964 Source map error: Error: request failed with status 404
+Stack in the worker:networkRequest@resource://devtools/client/shared/source-map-loader/utils/network-request.js:43:9
+
+Resource URL: https://grist.numerique.gouv.fr/custom-assets/sentry.min.js
+Source Map URL: bundle.min.js.map
+10:34:05.997 While disposing e, error disposing Function: TypeError: id().domDispose is not a function sentry.min.js:3:44522
+10:34:06.005 Navigated to https://grist.numerique.gouv.fr/o/sdis25-gssi/3JvD44PeeTbL/kanban
+10:34:06.005 DocComm: shutdown clientId ea9518eaa608bcac docFD 0 sentry.min.js:3:44522
+10:34:06.005 Comm request #13 closeDoc 
+Array [ 0 ]
+main.bundle.js:2:26696
+10:34:06.006 GristWSConnection.send[true] {"reqId":13,"method":"closeDoc","args":[0]} sentry.min.js:3:44522
+10:34:06.008 GristWSConnection: disconnect sentry.min.js:3:44522
+10:34:06.042 GET
+https://grist.numerique.gouv.fr/o/sdis25-gssi/3JvD44PeeTbL/kanban
+[HTTP/2 200  151ms]
+
+10:34:06.235 GET
+https://grist.numerique.gouv.fr/v/unknown/jqueryui/themes/smoothness/jquery-ui.css
+[HTTP/2 200  53ms]
+
+10:34:06.236 GET
+https://grist.numerique.gouv.fr/v/unknown/hljs.default.css
+[HTTP/2 200  49ms]
+
+10:34:06.237 GET
+https://grist.numerique.gouv.fr/v/unknown/bootstrap-datepicker/dist/css/bootstrap-datepicker3.min.css
+[HTTP/2 200  25ms]
+
+10:34:06.238 GET
+https://grist.numerique.gouv.fr/v/unknown/bundle.css
+[HTTP/2 200  47ms]
+
+10:34:06.239 GET
+https://grist.numerique.gouv.fr/v/unknown/icons/icons.css
+[HTTP/2 200  48ms]
+
+10:34:06.240 XHRGET
+https://grist.numerique.gouv.fr/v/unknown/locales/fr.client.json
+[HTTP/2 200  30ms]
+
+10:34:06.241 XHRGET
+https://grist.numerique.gouv.fr/v/unknown/locales/en.client.json
+[HTTP/2 200  44ms]
+
+10:34:06.241 XHRGET
+https://grist.numerique.gouv.fr/v/unknown/locales/fr.server.json
+[HTTP/2 200  39ms]
+
+10:34:06.242 XHRGET
+https://grist.numerique.gouv.fr/v/unknown/locales/en.server.json
+[HTTP/2 200  45ms]
+
+10:34:06.243 GET
+https://grist.numerique.gouv.fr/v/unknown/custom.css
+[HTTP/2 200  41ms]
+
+10:34:06.244 GET
+https://grist.numerique.gouv.fr/v/unknown/jquery/dist/jquery.min.js
+[HTTP/2 200  57ms]
+
+10:34:06.244 GET
+https://grist.numerique.gouv.fr/v/5/custom.js
+[HTTP/2 200  19ms]
+
+10:34:06.245 GET
+https://grist.numerique.gouv.fr/v/unknown/jqueryui/jquery-ui.min.js
+[HTTP/2 200  55ms]
+
+10:34:06.246 GET
+https://grist.numerique.gouv.fr/v/unknown/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js
+[HTTP/2 200  42ms]
+
+10:34:06.248 GET
+https://grist.numerique.gouv.fr/v/unknown/main.bundle.js
+[HTTP/2 200  43ms]
+
+10:34:06.249 GET
+https://grist.numerique.gouv.fr/v/unknown/browser-check.js
+[HTTP/2 200  18ms]
+
+10:34:06.319 GET
+https://grist.numerique.gouv.fr/v/unknown/@gouvfr-lasuite/integration/dist/css/gaufre.css
+[HTTP/2 200  31ms]
+
+10:34:06.355 Referrer Policy: Ignoring the less restricted referrer policy “origin-when-cross-origin” for the cross-site request: https://stats.beta.gouv.fr/matomo.js matomo.js
+10:34:06.357 GET
+https://grist.numerique.gouv.fr/custom-assets/sentry.min.js
+[HTTP/2 200  22ms]
+
+10:34:06.359 GET
+https://stats.beta.gouv.fr/matomo.js
+[HTTP/2 200  20ms]
+
+10:34:06.367 GET
+https://grist.numerique.gouv.fr/v/unknown/img/gplaypattern.png
+[HTTP/2 200  26ms]
+
+10:34:06.513 GET
+https://grist.numerique.gouv.fr/v/unknown/icons/favicon.png
+[HTTP/2 200  28ms]
+
+10:34:06.524 POST
+https://stats.beta.gouv.fr/matomo.php?action_name=kanban - Grist&idsite=205&rec=1&r=363272&h=10&m=34&s=6&url=https://grist.numerique.gouv.fr/o/sdis25-gssi/3JvD44PeeTbL/kanban&urlref=https://grist.numerique.gouv.fr/o/sdis25-gssi/&_id=44eb90d4f357cd9e&_idn=0&send_image=0&_refts=0&pv_id=tugj6c&pf_net=51&pf_srv=115&pf_tfr=1&pf_dm1=308&uadata={}&pdf=1&qt=0&realp=0&wma=0&fla=0&java=0&ag=0&cookie=1&res=2144x1340
+[HTTP/2 204  38ms]
+
+10:34:06.532 Localization initialized in 7ms sentry.min.js:3:44522
+10:34:06.538 XHRGET
+https://grist.numerique.gouv.fr/o/sdis25-gssi/api/session/access/active
+[HTTP/2 200  61ms]
+
+10:34:06.540 XHRGET
+https://grist.numerique.gouv.fr/o/sdis25-gssi/api/session/access/all
+[HTTP/2 200  65ms]
+
+10:34:06.543 gristConfigCache getWorker[3JvD44PeeTbL8ZK83BxNLA]: found and deleted value https://grist.numerique.gouv.fr/dw/10-42-34-147/v/unknown/ sentry.min.js:3:44522
+10:34:06.550 GET
+https://grist.numerique.gouv.fr/v/unknown/388.bundle.js
+[HTTP/2 200  25ms]
+
+10:34:06.554 GET
+https://grist.numerique.gouv.fr/v/unknown/img/gplaypattern.png
+[HTTP/1.1 200 OK 0ms]
+
+10:34:06.619 GristWSConnection connecting to: wss://grist.numerique.gouv.fr/dw/10-42-34-147/v/unknown/o/sdis25-gssi?clientId=ea9518eaa608bcac&counter=3&newClient=1&browserSettings=%7B%22timezone%22%3A%22Europe%2FParis%22%7D&user= sentry.min.js:3:44522
+10:34:06.623 GET
+wss://grist.numerique.gouv.fr/dw/10-42-34-147/v/unknown/o/sdis25-gssi?clientId=ea9518eaa608bcac&counter=3&newClient=1&browserSettings={"timezone":"Europe/Paris"}&user=
+[HTTP/1.1 101 Switching Protocols 50ms]
+
+10:34:06.626 DocPageModel _openDoc starting for 3JvD44PeeTbL (mode undefined) sentry.min.js:3:44522
+10:34:06.628 GET
+https://grist.numerique.gouv.fr/v/unknown/499.bundle.js
+[HTTP/2 200  29ms]
+
+10:34:06.631 gristConfigCache getDoc[3JvD44PeeTbL]: not found sentry.min.js:3:44522
+10:34:06.639 GET
+https://grist.numerique.gouv.fr/v/unknown/884.bundle.js
+[HTTP/2 200  45ms]
+
+10:34:06.640 GET
+https://grist.numerique.gouv.fr/v/unknown/903.bundle.js
+[HTTP/2 200  21ms]
+
+10:34:06.641 GET
+https://grist.numerique.gouv.fr/v/unknown/958.bundle.js
+[HTTP/2 200  27ms]
+
+10:34:06.642 GET
+https://grist.numerique.gouv.fr/v/unknown/730.bundle.js
+[HTTP/2 200  19ms]
+
+10:34:06.643 GET
+https://grist.numerique.gouv.fr/v/unknown/GristDoc.bundle.js
+[HTTP/2 200  29ms]
+
+10:34:06.644 GET
+data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PHBhdGggZmlsbD0iIzAwMCIgZmlsbC1ydWxlPSJub256ZXJvIiBkPSJNOCw5LjE3NDYzMDUyIEwxMC45MjE4MjczLDYuMTg5MDIzMiBDMTEuMTY4NDc0Miw1LjkzNjk5MjI3IDExLjU2ODM2NzksNS45MzY5OTIyNyAxMS44MTUwMTQ4LDYuMTg5MDIzMiBDMTIuMDYxNjYxNyw2LjQ0MTA1NDEzIDEyLjA2MTY2MTcsNi44NDk2NzcwMSAxMS44MTUwMTQ4LDcuMTAxNzA3OTQgTDgsMTEgTDQuMTg0OTg1MTksNy4xMDE3MDc5NCBDMy45MzgzMzgyNyw2Ljg0OTY3NzAxIDMuOTM4MzM4MjcsNi40NDEwNTQxMyA0LjE4NDk4NTE5LDYuMTg5MDIzMiBDNC40MzE2MzIxMSw1LjkzNjk5MjI3IDQuODMxNTI1NzgsNS45MzY5OTIyNyA1LjA3ODE3MjcsNi4xODkwMjMyIEw4LDkuMTc0NjMwNTIgWiIvPjwvc3ZnPg==
+
+10:34:06.644 XHRGET
+https://grist.numerique.gouv.fr/o/sdis25-gssi/api/docs/3JvD44PeeTbL
+[HTTP/2 200  57ms]
+
+10:34:06.645 GET
+data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PHBhdGggZmlsbD0iIzAwMCIgZmlsbC1ydWxlPSJub256ZXJvIiBkPSJNMy43MDcxMDY3OCw4LjUgTDUuODUzNTUzMzksMTAuNjQ2NDQ2NiBDNi4wNDg4MTU1NCwxMC44NDE3MDg4IDYuMDQ4ODE1NTQsMTEuMTU4MjkxMiA1Ljg1MzU1MzM5LDExLjM1MzU1MzQgQzUuNjU4MjkxMjQsMTEuNTQ4ODE1NSA1LjM0MTcwODc2LDExLjU0ODgxNTUgNS4xNDY0NDY2MSwxMS4zNTM1NTM0IEwyLjE0NjQ0NjYxLDguMzUzNTUzMzkgQzEuOTUxMTg0NDYsOC4xNTgyOTEyNCAxLjk1MTE4NDQ2LDcuODQxNzA4NzYgMi4xNDY0NDY2MSw3LjY0NjQ0NjYxIEw1LjE0NjQ0NjYxLDQuNjQ2NDQ2NjEgQzUuMzQxNzA4NzYsNC40NTExODQ0NiA1LjY1ODI5MTI0LDQuNDUxMTg0NDYgNS44NTM1NTMzOSw0LjY0NjQ0NjYxIEM2LjA0ODgxNTU0LDQuODQxNzA4NzYgNi4wNDg4MTU1NCw1LjE1ODI5MTI0IDUuODUzNTUzMzksNS4zNTM1NTMzOSBMMy43MDcxMDY3OCw3LjUgTDguNSw3LjUgQzguNzc2MTQyMzcsNy41IDksNy43MjM4NTc2MyA5LDggQzksOC4yNzYxNDIzNyA4Ljc3NjE0MjM3LDguNSA4LjUsOC41IEwzLjcwNzEwNjc4LDguNSBaIE0xMCwxMy41IEwxMCwyLjUgQzEwLDIuMjIzODU3NjMgMTAuMjIzODU3NiwyIDEwLjUsMiBMMTMuNSwyIEMxMy43NzYxNDI0LDIgMTQsMi4yMjM4NTc2MyAxNCwyLjUgTDE0LDEzLjUgQzE0LDEzLjc3NjE0MjQgMTMuNzc2MTQyNCwxNCAxMy41LDE0IEwxMC41LDE0IEMxMC4yMjM4NTc2LDE0IDEwLDEzLjc3NjE0MjQgMTAsMTMuNSBaIiB0cmFuc2Zvcm09Im1hdHJpeCgtMSAwIDAgMSAxNiAwKSIvPjwvc3ZnPg==
+
+10:34:06.646 GET
+data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PHBhdGggZmlsbD0iIzAwMCIgZmlsbC1ydWxlPSJub256ZXJvIiBkPSJNMy43MDcxMDY3OCw4LjUgTDUuODUzNTUzMzksMTAuNjQ2NDQ2NiBDNi4wNDg4MTU1NCwxMC44NDE3MDg4IDYuMDQ4ODE1NTQsMTEuMTU4MjkxMiA1Ljg1MzU1MzM5LDExLjM1MzU1MzQgQzUuNjU4MjkxMjQsMTEuNTQ4ODE1NSA1LjM0MTcwODc2LDExLjU0ODgxNTUgNS4xNDY0NDY2MSwxMS4zNTM1NTM0IEwyLjE0NjQ0NjYxLDguMzUzNTUzMzkgQzEuOTUxMTg0NDYsOC4xNTgyOTEyNCAxLjk1MTE4NDQ2LDcuODQxNzA4NzYgMi4xNDY0NDY2MSw3LjY0NjQ0NjYxIEw1LjE0NjQ0NjYxLDQuNjQ2NDQ2NjEgQzUuMzQxNzA4NzYsNC40NTExODQ0NiA1LjY1ODI5MTI0LDQuNDUxMTg0NDYgNS44NTM1NTMzOSw0LjY0NjQ0NjYxIEM2LjA0ODgxNTU0LDQuODQxNzA4NzYgNi4wNDg4MTU1NCw1LjE1ODI5MTI0IDUuODUzNTUzMzksNS4zNTM1NTMzOSBMMy43MDcxMDY3OCw3LjUgTDguNSw3LjUgQzguNzc2MTQyMzcsNy41IDksNy43MjM4NTc2MyA5LDggQzksOC4yNzYxNDIzNyA4Ljc3NjE0MjM3LDguNSA4LjUsOC41IEwzLjcwNzEwNjc4LDguNSBaIE0xMCwxMy41IEwxMCwyLjUgQzEwLDIuMjIzODU3NjMgMTAuMjIzODU3NiwyIDEwLjUsMiBMMTMuNSwyIEMxMy43NzYxNDI0LDIgMTQsMi4yMjM4NTc2MyAxNCwyLjUgTDE0LDEzLjUgQzE0LDEzLjc3NjE0MjQgMTMuNzc2MTQyNCwxNCAxMy41LDE0IEwxMC41LDE0IEMxMC4yMjM4NTc2LDE0IDEwLDEzLjc3NjE0MjQgMTAsMTMuNSBaIi8+PC9zdmc+
+
+10:34:06.646 GET
+data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PHBhdGggZmlsbD0iIzAwMCIgZmlsbC1ydWxlPSJub256ZXJvIiBkPSJNMS41LDExIEMyLjMyODg1NzYzLDExIDMsMTAuMzI4ODU3NiAzLDkuNSBMMyw1IEMzLDIuMjM4ODU3NjMgNS4yMzg4NTc2MywwIDgsMCBDMTAuNzYxMTQyNCwwIDEzLDIuMjM4ODU3NjMgMTMsNSBMMTMsOS41IEMxMywxMC4yMjAzMzI0IDE0LjA0ODk4MjgsMTEgMTUsMTEgTDE1LjUsMTEgQzE1Ljc3NjE0MjQsMTEgMTYsMTEuMjIzODU3NiAxNiwxMS41IEMxNiwxMS43NzYxNDI0IDE1Ljc3NjE0MjQsMTIgMTUuNSwxMiBMMC41LDEyIEMwLjIyMzg1NzYyNSwxMiAwLDExLjc3NjE0MjQgMCwxMS41IEMwLDExLjIyMzg1NzYgMC4yMjM4NTc2MjUsMTEgMC41LDExIEwxLjUwMDAwMDI2LDExIFogTTMuNTAwNDQ4OTQsMTEgTDEyLjY3NDU2ODksMTEgQzEyLjI2MzM4ODUsMTAuNTc3OTAyOCAxMiwxMC4wNTU1NzE4IDEyLDkuNSBMMTIsNSBDMTIsMi43OTExNDIzNyAxMC4yMDg4NTc2LDEgOCwxIEM1Ljc5MTE0MjM3LDEgNCwyLjc5MTE0MjM3IDQsNSBMNCw5LjUgQzQsMTAuMDYyODk1NSAzLjgxNDE1MzkxLDEwLjU4MjIyNDUgMy41MDA0NDg5NCwxMSBaIE05LjUsMTMuNSBDOS41LDEzLjIyMzg1NzYgOS43MjM4NTc2MywxMyAxMCwxMyBDMTAuMjc2MTQyNCwxMyAxMC41LDEzLjIyMzg1NzYgMTAuNSwxMy41IEMxMC41LDE0Ljg4MTE0MjQgOS4zODExNDIzNywxNiA4LDE2IEM2LjYxODg1NzYzLDE2IDUuNSwxNC44ODExNDI0IDUuNSwxMy41IEM1LjUsMTMuMjIzODU3NiA1LjcyMzg1NzYzLDEzIDYsMTMgQzYuMjc2MTQyMzcsMTMgNi41LDEzLjIyMzg1NzYgNi41LDEzLjUgQzYuNSwxNC4zMjg4NTc2IDcuMTcxMTQyMzcsMTUgOCwxNSBDOC44Mjg4NTc2MywxNSA5LjUsMTQuMzI4ODU3NiA5LjUsMTMuNSBaIi8+PC9zdmc+
+
+10:34:06.659 GET
+https://grist.numerique.gouv.fr/v/unknown/search.bundle.js
+[HTTP/2 200  24ms]
+
+10:34:06.660 GET
+https://grist.numerique.gouv.fr/v/unknown/ui-icons/Logo/logo.svg
+[HTTP/2 200  31ms]
+
+10:34:06.691 GristWSConnection: onopen: Connected sentry.min.js:3:44522
+10:34:06.692 GristWSConnection: onmessage (113 bytes) sentry.min.js:3:44522
+10:34:06.692 GristWSConnection established: clientId ea9518eaa608bcac counter 3 needReload false sentry.min.js:3:44522
+10:34:06.692 Comm: Triggering event clientConnect main.bundle.js:2:28349
+10:34:06.692 App clientConnect event: needReload false version unknown sentry.min.js:3:44522
+10:34:06.708 Comm.useDocConnection(3JvD44PeeTbL8ZK83BxNLA): useCount now 1 main.bundle.js:2:25623
+10:34:06.708 Comm request #0 openDoc 
+Array [ "3JvD44PeeTbL8ZK83BxNLA", {…} ]
+main.bundle.js:2:26696
+10:34:06.708 GristWSConnection.send[true] {"reqId":0,"method":"openDoc","args":["3JvD44PeeTbL8ZK83BxNLA",{"openMode":"default","originalUrlId":"3JvD44PeeTbL"}]} sentry.min.js:3:44522
+10:34:06.714 GET
+data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PHBhdGggZmlsbD0iIzAwMCIgZmlsbC1ydWxlPSJub256ZXJvIiBkPSJNNi43NzQxMTAwNSw5LjE0NDEzMDI5IEw5Ljc1Njg3ODc2LDExLjAwNzg2NTEgQzEwLjMwNjQwNjUsMTAuMzg5NTUyMyAxMS4xMDc3MTA5LDEwIDEyLDEwIEMxMy42NTY4NTQyLDEwIDE1LDExLjM0MzE0NTggMTUsMTMgQzE1LDE0LjY1Njg1NDIgMTMuNjU2ODU0MiwxNiAxMiwxNiBDMTAuMzQzMTQ1OCwxNiA5LDE0LjY1Njg1NDIgOSwxMyBDOSwxMi41OTQ2NTcyIDkuMDgwMzg5NTMsMTIuMjA4MDkwNCA5LjIyNjA5NTA3LDExLjg1NTM3MyBMNi4yNDM0NzgyNCw5Ljk5MTczMzE3IEM1LjY5Mzk0MDU1LDEwLjYxMDI3OSA0Ljg5MjQ4MjM5LDExIDQsMTEgQzIuMzQzMTQ1NzUsMTEgMSw5LjY1Njg1NDI1IDEsOCBDMSw2LjM0MzE0NTc1IDIuMzQzMTQ1NzUsNSA0LDUgQzQuODkyNDgyMzksNSA1LjY5Mzk0MDU1LDUuMzg5NzIxMDMgNi4yNDM0NzgyNCw2LjAwODI2NjgzIEw5LjIyNjA5NTA3LDQuMTQ0NjI2OTYgQzkuMDgwMzg5NTMsMy43OTE5MDk2MyA5LDMuNDA1MzQyOCA5LDMgQzksMS4zNDMxNDU3NSAxMC4zNDMxNDU4LDAgMTIsMCBDMTMuNjU2ODU0MiwwIDE1LDEuMzQzMTQ1NzUgMTUsMyBDMTUsNC42NTY4NTQyNSAxMy42NTY4NTQyLDYgMTIsNiBDMTEuMTA3NzEwOSw2IDEwLjMwNjQwNjUsNS42MTA0NDc3MyA5Ljc1Njg3ODc2LDQuOTkyMTM0OTMgTDYuNzc0MTEwMDUsNi44NTU4Njk3MSBDNi45MTk2ODU5Miw3LjIwODQ1MzI1IDcsNy41OTQ4NDc0NCA3LDggQzcsOC40MDUxNTI1NiA2LjkxOTY4NTkyLDguNzkxNTQ2NzUgNi43NzQxMTAwNSw5LjE0NDEzMDI5IFogTTUuNzA0MTI0ODUsOS4wNDc0MTcxNiBDNS44OTE3NjA2Niw4Ljc0Mjc4NzM0IDYsOC4zODQwMzQgNiw4IEM2LDcuNjE1OTY2IDUuODkxNzYwNjYsNy4yNTcyMTI2NiA1LjcwNDEyNDg1LDYuOTUyNTgyODQgQzUuNzAxMzUzNDYsNi45NDg0MjU3NyA1LjY5ODYzNDQyLDYuOTQ0MjE0MzIgNS42OTU5NjkxOCw2LjkzOTk0ODggQzUuNjkzNDYyNDcsNi45MzU5MzY5OSA1LjY5MTAxOTU5LDYuOTMxOTAzMzggNS42ODg2NDAyOSw2LjkyNzg0OTE1IEM1LjMzMzc0OTkxLDYuMzcwMDYxNjUgNC43MTAwOTEyMiw2IDQsNiBDMi44OTU0MzA1LDYgMiw2Ljg5NTQzMDUgMiw4IEMyLDkuMTA0NTY5NSAyLjg5NTQzMDUsMTAgNCwxMCBDNC43MTAwOTEyMiwxMCA1LjMzMzc0OTkxLDkuNjI5OTM4MzUgNS42ODg2NDAyOSw5LjA3MjE1MDg1IEM1LjY5MTAxOTU5LDkuMDY4MDk2NjIgNS42OTM0NjI0Nyw5LjA2NDA2MzAxIDUuNjk1OTY5MTgsOS4wNjAwNTEyIEM1LjY5ODYzNDQyLDkuMDU1Nzg1NjggNS43MDEzNTM0Niw5LjA1MTU3NDIzIDUuNzA0MTI0ODUsOS4wNDc0MTcxNiBaIE0xMC4zMTk5MDkyLDExLjkxNDUyODMgQzEwLjMxNTIyNjgsMTEuOTIzMDg5NyAxMC4zMTAyNjgxLDExLjkzMTU2NjkgMTAuMzA1MDMwOCwxMS45Mzk5NDg4IEMxMC4yOTk1OTYsMTEuOTQ4NjQ2OCAxMC4yOTM5Mzc2LDExLjk1NzExOTkgMTAuMjg4MDY3NiwxMS45NjUzNjU1IEMxMC4xMDUyNCwxMi4yNjcyMjg2IDEwLDEyLjYyMTMyNDMgMTAsMTMgQzEwLDE0LjEwNDU2OTUgMTAuODk1NDMwNSwxNSAxMiwxNSBDMTMuMTA0NTY5NSwxNSAxNCwxNC4xMDQ1Njk1IDE0LDEzIEMxNCwxMS44OTU0MzA1IDEzLjEwNDU2OTUsMTEgMTIsMTEgQzExLjI5NTU3NjcsMTEgMTAuNjc2MjExNywxMS4zNjQxNzc1IDEwLjMxOTkwOTIsMTEuOTE0NTI4MyBaIE0xMC4yODgwNjc2LDQuMDM0NjM0NTQgQzEwLjI5MzkzNzYsNC4wNDI4ODAwOSAxMC4yOTk1OTYsNC4wNTEzNTMyNSAxMC4zMDUwMzA4LDQuMDYwMDUxMiBDMTAuMzEwMjY4MSw0LjA2ODQzMzE1IDEwLjMxNTIyNjgsNC4wNzY5MTAyNSAxMC4zMTk5MDkyLDQuMDg1NDcxNjggQzEwLjY3NjIxMTcsNC42MzU4MjI0NSAxMS4yOTU1NzY3LDUgMTIsNSBDMTMuMTA0NTY5NSw1IDE0LDQuMTA0NTY5NSAxNCwzIEMxNCwxLjg5NTQzMDUgMTMuMTA0NTY5NSwxIDEyLDEgQzEwLjg5NTQzMDUsMSAxMCwxLjg5NTQzMDUgMTAsMyBDMTAsMy4zNzg2NzU3NCAxMC4xMDUyNCwzLjczMjc3MTM3IDEwLjI4ODA2NzYsNC4wMzQ2MzQ1NCBaIi8+PC9zdmc+
+
+10:34:06.752 GET
+https://grist.numerique.gouv.fr/v/unknown/ui-icons/Logo/logo.svg
+[HTTP/1.1 200 OK 0ms]
+
+10:34:06.772 GristWSConnection: onmessage (100257 bytes) sentry.min.js:3:44522
+10:34:06.773 Comm response #0 openDoc OK main.bundle.js:2:28063
+10:34:06.801 Comm.useDocConnection(3JvD44PeeTbL8ZK83BxNLA): useCount now 2 main.bundle.js:2:25623
+10:34:06.802 RECEIVED DOC RESPONSE 
+Object { docFD: 0, clientId: "ea9518eaa608bcac", doc: {…}, log: (100) […], recoveryMode: false, user: {…}, docUsage: {…}, isTimingOn: false }
+sentry.min.js:3:44522
+10:34:06.994 Comm request #1 listActiveUserProfiles 
+Array [ 0 ]
+main.bundle.js:2:26696
+10:34:06.995 GristWSConnection.send[true] {"reqId":1,"method":"listActiveUserProfiles","args":[0]} sentry.min.js:3:44522
+10:34:07.008 BaseView viewSection 50 (Ssir_principale_task) lastCursorPos {"rowId":0,"fieldIndex":0} sentry.min.js:3:44522
+10:34:07.016 Comm request #2 fetchTable 
+Array [ 0, "Ssir_principale_task" ]
+main.bundle.js:2:26696
+10:34:07.016 GristWSConnection.send[true] {"reqId":2,"method":"fetchTable","args":[0,"Ssir_principale_task"]} sentry.min.js:3:44522
+10:34:07.017 Feature Policy: Skipping unsupported feature name “clipboard-write”. main.bundle.js:2:1181536
+10:34:07.026 Feature Policy: Skipping unsupported feature name “clipboard-write”. main.bundle.js:2:1184108
+10:34:07.029 GET
+https://timox.github.io/kanban/index.html?access=full&readonly=false&culture=fr&language=fr&timeZone=Europe/Paris&currency=USD
+[HTTP/2 200  28ms]
+
+10:34:07.029 Comm request #3 getUsersForViewAs 
+Array [ 0 ]
+main.bundle.js:2:26696
+10:34:07.030 GristWSConnection.send[true] {"reqId":3,"method":"getUsersForViewAs","args":[0]} sentry.min.js:3:44522
+10:34:07.030 Comm.releaseDocConnection(3JvD44PeeTbL8ZK83BxNLA): useCount now 1 main.bundle.js:2:25764
+10:34:07.033 GET
+data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PHBhdGggZmlsbD0iIzAwMCIgZmlsbC1ydWxlPSJub256ZXJvIiBkPSJNOC41LDcuNSBMMTMsNy41IEMxMy4yNzYxNDI0LDcuNSAxMy41LDcuNzIzODU3NjMgMTMuNSw4IEMxMy41LDguMjc2MTQyMzcgMTMuMjc2MTQyNCw4LjUgMTMsOC41IEw4LjUsOC41IEw4LjUsMTMgQzguNSwxMy4yNzYxNDI0IDguMjc2MTQyMzcsMTMuNSA4LDEzLjUgQzcuNzIzODU3NjMsMTMuNSA3LjUsMTMuMjc2MTQyNCA3LjUsMTMgTDcuNSw4LjUgTDMsOC41IEMyLjcyMzg1NzYzLDguNSAyLjUsOC4yNzYxNDIzNyAyLjUsOCBDMi41LDcuNzIzODU3NjMgMi43MjM4NTc2Myw3LjUgMyw3LjUgTDcuNSw3LjUgTDcuNSwzIEM3LjUsMi43MjM4NTc2MyA3LjcyMzg1NzYzLDIuNSA4LDIuNSBDOC4yNzYxNDIzNywyLjUgOC41LDIuNzIzODU3NjMgOC41LDMgTDguNSw3LjUgWiIvPjwvc3ZnPg==
+
+10:34:07.034 GET
+data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PHBhdGggZmlsbD0iIzAwMCIgZmlsbC1ydWxlPSJub256ZXJvIiBkPSJNMy4yMzUwMDQ3Nyw4LjQwMDQwMDM3IEMzLjU0NzMwNDc5LDguOTEwMzQxODIgMy45MDk3Mzk1LDkuNDIwNTE3OTEgNC4zMTY0Nzk3MSw5Ljg5NDkwOTkzIEM1LjQ1MTQxOTI2LDExLjIxODYyMDQgNi42OTU2MTA0MywxMiA4LDEyIEM5LjMwNDM4OTU3LDEyIDEwLjU0ODU4MDcsMTEuMjE4NjIwNCAxMS42ODM1MjAzLDkuODk0OTA5OTMgQzEyLjA5MDI2MDUsOS40MjA1MTc5MSAxMi40NTI2OTUyLDguOTEwMzQxODIgMTIuNzY0OTk1Miw4LjQwMDQwMDM3IEMxMi44NTg1NzQ3LDguMjQ3NTk4NDQgMTIuOTM3MTE2NCw4LjExMjYxMDY0IDEzLDggQzEyLjkzNzExNjQsNy44ODczODkzNiAxMi44NTg1NzQ3LDcuNzUyNDAxNTYgMTIuNzY0OTk1Miw3LjU5OTU5OTYzIEMxMi40NTI2OTUyLDcuMDg5NjU4MTggMTIuMDkwMjYwNSw2LjU3OTQ4MjA5IDExLjY4MzUyMDMsNi4xMDUwOTAwNyBDMTAuNTQ4NTgwNyw0Ljc4MTM3OTYxIDkuMzA0Mzg5NTcsNCA4LDQgQzYuNjk1NjEwNDMsNCA1LjQ1MTQxOTI2LDQuNzgxMzc5NjEgNC4zMTY0Nzk3MSw2LjEwNTA5MDA3IEMzLjkwOTczOTUsNi41Nzk0ODIwOSAzLjU0NzMwNDc5LDcuMDg5NjU4MTggMy4yMzUwMDQ3Nyw3LjU5OTU5OTYzIEMzLjE0MTQyNTMxLDcuNzUyNDAxNTYgMy4wNjI4ODM1OCw3Ljg4NzM4OTM2IDMsOCBDMy4wNjI4ODM1OCw4LjExMjYxMDY0IDMuMTQxNDI1MzEsOC4yNDc1OTg0NCAzLjIzNTAwNDc3LDguNDAwNDAwMzcgWiBNMi4wNTk4MDYyNSw3Ljc0MTE2MTAxIEMyLjEzNjA0ODExLDcuNTg2OTAyODggMi4yNzc3NTg2Nyw3LjMyNzkzMDcxIDIuNDgxMTU5MDYsNi45OTg3MDMwNyBDMi44MTgyMjQ4OCw2LjQ1MzEyMjA1IDMuMjA5MDU2NDgsNS45MDc3NzA5MiAzLjY1MDgwNTQ1LDUuMzk3MDQwMTQgQzQuOTM5ODA0MDUsMy45MDY3NTY0NiA2LjM5NjMzNDE5LDMgOCwzIEM5LjYwMzY2NTgxLDMgMTEuMDYwMTk1OSwzLjkwNjc1NjQ2IDEyLjM0OTE5NDYsNS4zOTcwNDAxNCBDMTIuNzkwOTQzNSw1LjkwNzc3MDkyIDEzLjE4MTc3NTEsNi40NTMxMjIwNSAxMy41MTg4NDA5LDYuOTk4NzAzMDcgQzEzLjcyMjI0MTMsNy4zMjc5MzA3MSAxMy44NjM5NTE5LDcuNTg2OTAyODggMTMuOTQwMTkzNyw3Ljc0MTE2MTAxIEMxNC4wMTk5MzU0LDcuOTAyNTAwMTkgMTQuMDE5OTM1NCw4LjA5NzQ5OTgxIDEzLjk0MDE5MzcsOC4yNTg4Mzg5OSBDMTMuODYzOTUxOSw4LjQxMzA5NzEyIDEzLjcyMjI0MTMsOC42NzIwNjkyOSAxMy41MTg4NDA5LDkuMDAxMjk2OTMgQzEzLjE4MTc3NTEsOS41NDY4Nzc5NSAxMi43OTA5NDM1LDEwLjA5MjIyOTEgMTIuMzQ5MTk0NiwxMC42MDI5NTk5IEMxMS4wNjAxOTU5LDEyLjA5MzI0MzUgOS42MDM2NjU4MSwxMyA4LDEzIEM2LjM5NjMzNDE5LDEzIDQuOTM5ODA0MDUsMTIuMDkzMjQzNSAzLjY1MDgwNTQ1LDEwLjYwMjk1OTkgQzMuMjA5MDU2NDgsMTAuMDkyMjI5MSAyLjgxODIyNDg4LDkuNTQ2ODc3OTUgMi40ODExNTkwNiw5LjAwMTI5NjkzIEMyLjI3Nzc1ODY3LDguNjcyMDY5MjkgMi4xMzYwNDgxMSw4LjQxMzA5NzEyIDIuMDU5ODA2MjUsOC4yNTg4Mzg5OSBDMS45ODAwNjQ1OCw4LjA5NzQ5OTgxIDEuOTgwMDY0NTgsNy45MDI1MDAxOSAyLjA1OTgwNjI1LDcuNzQxMTYxMDEgWiBNOC4wNjQyMTk2MiwxMC4yODcyNzY2IEM2LjcyNzYwMzYyLDEwLjI4NzI3NjYgNS42NDQwNjIyNiw5LjI2MzIyNzk2IDUuNjQ0MDYyMjYsOCBDNS42NDQwNjIyNiw2LjczNjc3MjA0IDYuNzI3NjAzNjIsNS43MTI3MjM0NCA4LjA2NDIxOTYyLDUuNzEyNzIzNDQgQzkuNDAwODM1NjMsNS43MTI3MjM0NCAxMC40ODQzNzcsNi43MzY3NzIwNCAxMC40ODQzNzcsOCBDMTAuNDg0Mzc3LDkuMjYzMjI3OTYgOS40MDA4MzU2MywxMC4yODcyNzY2IDguMDY0MjE5NjIsMTAuMjg3Mjc2NiBaIE04LjA2NDIxOTYyLDkuMzI0MjEyNzUgQzguODM4MDQ5OTQsOS4zMjQyMTI3NSA5LjQ2NTM2MzM2LDguNzMxMzQyNTEgOS40NjUzNjMzNiw4IEM5LjQ2NTM2MzM2LDcuMjY4NjU3NDkgOC44MzgwNDk5NCw2LjY3NTc4NzI1IDguMDY0MjE5NjIsNi42NzU3ODcyNSBDNy4yOTAzODkzMSw2LjY3NTc4NzI1IDYuNjYzMDc1ODksNy4yNjg2NTc0OSA2LjY2MzA3NTg5LDggQzYuNjYzMDc1ODksOC43MzEzNDI1MSA3LjI5MDM4OTMxLDkuMzI0MjEyNzUgOC4wNjQyMTk2Miw5LjMyNDIxMjc1IFoiLz48L3N2Zz4=
+
+10:34:07.034 GET
+data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PHBhdGggZmlsbD0iIzAwMCIgZmlsbC1ydWxlPSJub256ZXJvIiBkPSJNNi41LDMgQzYuNzc2MTQyMzcsMyA3LDMuMjIzODU3NjMgNywzLjUgTDcsMTIuNSBDNywxMi43NzYxNDI0IDYuNzc2MTQyMzcsMTMgNi41LDEzIEM2LjIyMzg1NzYzLDEzIDYsMTIuNzc2MTQyNCA2LDEyLjUgTDYsMy41IEM2LDMuMjIzODU3NjMgNi4yMjM4NTc2MywzIDYuNSwzIFogTTkuNSwzIEM5Ljc3NjE0MjM3LDMgMTAsMy4yMjM4NTc2MyAxMCwzLjUgTDEwLDEyLjUgQzEwLDEyLjc3NjE0MjQgOS43NzYxNDIzNywxMyA5LjUsMTMgQzkuMjIzODU3NjMsMTMgOSwxMi43NzYxNDI0IDksMTIuNSBMOSwzLjUgQzksMy4yMjM4NTc2MyA5LjIyMzg1NzYzLDMgOS41LDMgWiIvPjwvc3ZnPg==
+
+10:34:07.035 GET
+data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PHBhdGggZmlsbD0iIzAwMCIgZmlsbC1ydWxlPSJub256ZXJvIiBkPSJNMTAuMDMzMzI3MiwwLjMyMDUxMDQ2IEMxMC4xMzI0NTY1LDAuMDYyNzc0MTg4IDEwLjQyMTc1MzMsLTAuMDY1ODAyMTM4NiAxMC42Nzk0ODk1LDAuMDMzMzI3MTk2OSBDMTAuOTM3MjI1OCwwLjEzMjQ1NjUzMiAxMS4wNjU4MDIxLDAuNDIxNzUzMjY3IDEwLjk2NjY3MjgsMC42Nzk0ODk1NCBMNS45NjY2NzI4LDEzLjY3OTQ4OTUgQzUuODY3NTQzNDcsMTMuOTM3MjI1OCA1LjU3ODI0NjczLDE0LjA2NTgwMjEgNS4zMjA1MTA0NiwxMy45NjY2NzI4IEM1LjA2Mjc3NDE5LDEzLjg2NzU0MzUgNC45MzQxOTc4NiwxMy41NzgyNDY3IDUuMDMzMzI3MiwxMy4zMjA1MTA1IEwxMC4wMzMzMjcyLDAuMzIwNTEwNDYgWiBNMy44NTM1NTMzOSw5LjE0NjQ0NjYxIEM0LjA0ODgxNTU0LDkuMzQxNzA4NzYgNC4wNDg4MTU1NCw5LjY1ODI5MTI0IDMuODUzNTUzMzksOS44NTM1NTMzOSBDMy42NTgyOTEyNCwxMC4wNDg4MTU1IDMuMzQxNzA4NzYsMTAuMDQ4ODE1NSAzLjE0NjQ0NjYxLDkuODUzNTUzMzkgTDAuMTQ2NDQ2NjA5LDYuODUzNTUzMzkgQy0wLjA0ODgxNTUzNjUsNi42NTgyOTEyNCAtMC4wNDg4MTU1MzY1LDYuMzQxNzA4NzYgMC4xNDY0NDY2MDksNi4xNDY0NDY2MSBMMy4xNDY0NDY2MSwzLjE0NjQ0NjYxIEMzLjM0MTcwODc2LDIuOTUxMTg0NDYgMy42NTgyOTEyNCwyLjk1MTE4NDQ2IDMuODUzNTUzMzksMy4xNDY0NDY2MSBDNC4wNDg4MTU1NCwzLjM0MTcwODc2IDQuMDQ4ODE1NTQsMy42NTgyOTEyNCAzLjg1MzU1MzM5LDMuODUzNTUzMzkgTDEuMjA3MTA2NzgsNi41IEwzLjg1MzU1MzM5LDkuMTQ2NDQ2NjEgWiBNMTIuMTQ2NDQ2NiwzLjg1MzU1MzM5IEMxMS45NTExODQ1LDMuNjU4MjkxMjQgMTEuOTUxMTg0NSwzLjM0MTcwODc2IDEyLjE0NjQ0NjYsMy4xNDY0NDY2MSBDMTIuMzQxNzA4OCwyLjk1MTE4NDQ2IDEyLjY1ODI5MTIsMi45NTExODQ0NiAxMi44NTM1NTM0LDMuMTQ2NDQ2NjEgTDE1Ljg1MzU1MzQsNi4xNDY0NDY2MSBDMTYuMDQ4ODE1NSw2LjM0MTcwODc2IDE2LjA0ODgxNTUsNi42NTgyOTEyNCAxNS44NTM1NTM0LDYuODUzNTUzMzkgTDEyLjg1MzU1MzQsOS44NTM1NTMzOSBDMTIuNjU4MjkxMiwxMC4wNDg4MTU1IDEyLjM0MTcwODgsMTAuMDQ4ODE1NSAxMi4xNDY0NDY2LDkuODUzNTUzMzkgQzExLjk1MTE4NDUsOS42NTgyOTEyNCAxMS45NTExODQ1LDkuMzQxNzA4NzYgMTIuMTQ2NDQ2Niw5LjE0NjQ0NjYxIEwxNC43OTI4OTMyLDYuNSBMMTIuMTQ2NDQ2NiwzLjg1MzU1MzM5IFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAgMSkiLz48L3N2Zz4=
+
+10:34:07.035 GET
+data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PHBhdGggZmlsbD0iIzAwMCIgZmlsbC1ydWxlPSJub256ZXJvIiBkPSJNNy41LDguNSBMNi41LDguNSBDNi4yMjM4NTc2Myw4LjUgNiw4LjI3NjE0MjM3IDYsOCBDNiw3LjcyMzg1NzYzIDYuMjIzODU3NjMsNy41IDYuNSw3LjUgTDcuNSw3LjUgTDcuNSwwLjUgQzcuNSwwLjIyMzg1NzYyNSA3LjcyMzg1NzYzLDAgOCwwIEM4LjI3NjE0MjM3LDAgOC41LDAuMjIzODU3NjI1IDguNSwwLjUgTDguNSwzIEw5LjUsMyBDOS43NzYxNDIzNywzIDEwLDMuMjIzODU3NjMgMTAsMy41IEMxMCwzLjc3NjE0MjM3IDkuNzc2MTQyMzcsNCA5LjUsNCBMOC41LDQgTDguNSwxMiBMOS41LDEyIEM5Ljc3NjE0MjM3LDEyIDEwLDEyLjIyMzg1NzYgMTAsMTIuNSBDMTAsMTIuNzc2MTQyNCA5Ljc3NjE0MjM3LDEzIDkuNSwxMyBMOC41LDEzIEw4LjUsMTUuNSBDOC41LDE1Ljc3NjE0MjQgOC4yNzYxNDIzNywxNiA4LDE2IEM3LjcyMzg1NzYzLDE2IDcuNSwxNS43NzYxNDI0IDcuNSwxNS41IEw3LjUsOC41IFogTTEyLDIgTDEyLDUgTDE1LDUgTDE1LDIgTDEyLDIgWiBNMTEuNSwxIEwxNS41LDEgQzE1Ljc3NjE0MjQsMSAxNiwxLjIyMzg1NzYzIDE2LDEuNSBMMTYsNS41IEMxNiw1Ljc3NjE0MjM3IDE1Ljc3NjE0MjQsNiAxNS41LDYgTDExLjUsNiBDMTEuMjIzODU3Niw2IDExLDUuNzc2MTQyMzcgMTEsNS41IEwxMSwxLjUgQzExLDEuMjIzODU3NjMgMTEuMjIzODU3NiwxIDExLjUsMSBaIE0xMiwxMSBMMTIsMTQgTDE1LDE0IEwxNSwxMSBMMTIsMTEgWiBNMTEuNSwxMCBMMTUuNSwxMCBDMTUuNzc2MTQyNCwxMCAxNiwxMC4yMjM4NTc2IDE2LDEwLjUgTDE2LDE0LjUgQzE2LDE0Ljc3NjE0MjQgMTUuNzc2MTQyNCwxNSAxNS41LDE1IEwxMS41LDE1IEMxMS4yMjM4NTc2LDE1IDExLDE0Ljc3NjE0MjQgMTEsMTQuNSBMMTEsMTAuNSBDMTEsMTAuMjIzODU3NiAxMS4yMjM4NTc2LDEwIDExLjUsMTAgWiBNNCw5LjUgTDQsNi41IEwxLDYuNSBMMSw5LjUgTDQsOS41IFogTTQuNSwxMC41IEwwLjUsMTAuNSBDMC4yMjM4NTc2MjUsMTAuNSAwLDEwLjI3NjE0MjQgMCwxMCBMOC44ODE3ODQyZS0xNiw2IEM4Ljg4MTc4NDJlLTE2LDUuNzIzODU3NjMgMC4yMjM4NTc2MjUsNS41IDAuNSw1LjUgTDQuNSw1LjUgQzQuNzc2MTQyMzcsNS41IDUsNS43MjM4NTc2MyA1LDYgTDUsMTAgQzUsMTAuMjc2MTQyNCA0Ljc3NjE0MjM3LDEwLjUgNC41LDEwLjUgWiIvPjwvc3ZnPg==
+
+10:34:07.035 GET
+data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMjEyMTIxIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHN0cm9rZS1taXRlcmxpbWl0PSIxMCIgY2xhc3M9Im5jLWljb24td3JhcHBlciI+PGVsbGlwc2UgY3g9IjgiIGN5PSIzIiBkYXRhLWNhcD0iYnV0dCIgcng9IjYuNSIgcnk9IjIuNSIvPjxwYXRoIGQ9Ik0xLjUsNi41VjEzIGMwLDEuMzgxLDIuOTEsMi41LDYuNSwyLjVzNi41LTEuMTE5LDYuNS0yLjVWNi41IiBkYXRhLWNhcD0iYnV0dCIvPjwvZz48L3N2Zz4=
+
+10:34:07.036 GET
+data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgZmlsbD0iY3VycmVudENvbG9yIiBjbGFzcz0iYmkgYmktdW5pdmVyc2FsLWFjY2Vzcy1jaXJjbGUiPjxwYXRoIGQ9Ik04IDQuMTQzQTEuMDcxIDEuMDcxIDAgMSAwIDggMmExLjA3MSAxLjA3MSAwIDAgMCAwIDIuMTQzbS00LjY2OCAxLjQ3IDMuMjQuMzE2djIuNWwtLjMyMyA0LjU4NUEuMzgzLjM4MyAwIDAgMCA3IDEzLjE0bC44MjYtNC4wMTdjLjA0NS0uMTguMzAxLS4xOC4zNDYgMEw5IDEzLjEzOWEuMzgzLjM4MyAwIDAgMCAuNzUyLS4xMjVMOS40MyA4LjQzdi0yLjVsMy4yMzktLjMxNmEuMzguMzggMCAwIDAtLjA0Ny0uNzU2SDMuMzc5YS4zOC4zOCAwIDAgMC0uMDQ3Ljc1NloiLz48cGF0aCBkPSJNOCAwYTggOCAwIDEgMCAwIDE2QTggOCAwIDAgMCA4IDBNMSA4YTcgNyAwIDEgMSAxNCAwQTcgNyAwIDAgMSAxIDgiLz48L3N2Zz4=
+
+10:34:07.036 GET
+data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PHBhdGggZmlsbD0iIzAwMCIgZmlsbC1ydWxlPSJub256ZXJvIiBkPSJNMTIuMjkyODkzMiwzIEw4LjUsMyBDOC4yMjM4NTc2MywzIDgsMi43NzYxNDIzNyA4LDIuNSBDOCwyLjIyMzg1NzYzIDguMjIzODU3NjMsMiA4LjUsMiBMMTMuNSwyIEMxMy43NzYxNDI0LDIgMTQsMi4yMjM4NTc2MyAxNCwyLjUgTDE0LDcuNSBDMTQsNy43NzYxNDIzNyAxMy43NzYxNDI0LDggMTMuNSw4IEMxMy4yMjM4NTc2LDggMTMsNy43NzYxNDIzNyAxMyw3LjUgTDEzLDMuNzA3MTA2NzggTDcuODUzNTUzMzksOC44NTM1NTMzOSBDNy42NTgyOTEyNCw5LjA0ODgxNTU0IDcuMzQxNzA4NzYsOS4wNDg4MTU1NCA3LjE0NjQ0NjYxLDguODUzNTUzMzkgQzYuOTUxMTg0NDYsOC42NTgyOTEyNCA2Ljk1MTE4NDQ2LDguMzQxNzA4NzYgNy4xNDY0NDY2MSw4LjE0NjQ0NjYxIEwxMi4yOTI4OTMyLDMgWiBNMTEsMTAuNSBDMTEsMTAuMjIzODU3NiAxMS4yMjM4NTc2LDEwIDExLjUsMTAgQzExLjc3NjE0MjQsMTAgMTIsMTAuMjIzODU3NiAxMiwxMC41IEwxMiwxMi41IEMxMiwxMy4zMjg0MjcxIDExLjMyODQyNzEsMTQgMTAuNSwxNCBMMy41LDE0IEMyLjY3MTU3Mjg4LDE0IDIsMTMuMzI4NDI3MSAyLDEyLjUgTDIsNS41IEMyLDQuNjcxNTcyODggMi42NzE1NzI4OCw0IDMuNSw0IEw1LjUsNCBDNS43NzYxNDIzNyw0IDYsNC4yMjM4NTc2MyA2LDQuNSBDNiw0Ljc3NjE0MjM3IDUuNzc2MTQyMzcsNSA1LjUsNSBMMy41LDUgQzMuMjIzODU3NjMsNSAzLDUuMjIzODU3NjMgMyw1LjUgTDMsMTIuNSBDMywxMi43NzYxNDI0IDMuMjIzODU3NjMsMTMgMy41LDEzIEwxMC41LDEzIEMxMC43NzYxNDI0LDEzIDExLDEyLjc3NjE0MjQgMTEsMTIuNSBMMTEsMTAuNSBaIi8+PC9zdmc+
+
+10:34:07.036 GET
+data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PHBhdGggZmlsbD0iIzAwMCIgZmlsbC1ydWxlPSJub256ZXJvIiBkPSJNMi43MDkyNjQ0MywzLjQxNjM3MTIxIEMxLjY0NDQwNzY5LDQuNjQ0NDMyMjIgMSw2LjI0Njk2MTM3IDEsOCBDMSw5Ljc1MzAzODYzIDEuNjQ0NDA3NjksMTEuMzU1NTY3OCAyLjcwOTI2NDQzLDEyLjU4MzYyODggTDQuODQwMDcxMjksMTAuNDUyODIxOSBDNC4zMTM1NDA4LDkuNzc1NDgwMDcgNCw4LjkyNDM1NTczIDQsOCBDNCw3LjA3NTY0NDI3IDQuMzEzNTQwOCw2LjIyNDUxOTkzIDQuODQwMDcxMjksNS41NDcxNzgwNyBMMi43MDkyNjQ0MywzLjQxNjM3MTIxIFogTTMuNDE2MzcxMjEsMi43MDkyNjQ0MyBMNS41NDcxNzgwNyw0Ljg0MDA3MTI5IEM2LjIyNDUxOTkzLDQuMzEzNTQwOCA3LjA3NTY0NDI3LDQgOCw0IEM4LjkyNDM1NTczLDQgOS43NzU0ODAwNyw0LjMxMzU0MDggMTAuNDUyODIxOSw0Ljg0MDA3MTI5IEwxMi41ODM2Mjg4LDIuNzA5MjY0NDMgQzExLjM1NTU2NzgsMS42NDQ0MDc2OSA5Ljc1MzAzODYzLDEgOCwxIEM2LjI0Njk2MTM3LDEgNC42NDQ0MzIyMiwxLjY0NDQwNzY5IDMuNDE2MzcxMjEsMi43MDkyNjQ0MyBaIE01LjkwMTk4NzMxLDUuODU1NjIzNzYgQzUuODk0ODIwMDEsNS44NjM3ODMwNyA1Ljg4NzM0MjA0LDUuODcxNzY0NzQgNS44Nzk1NTMzOSw1Ljg3OTU1MzM5IEM1Ljg3MTc2NDc0LDUuODg3MzQyMDQgNS44NjM3ODMwNyw1Ljg5NDgyMDAxIDUuODU1NjIzNzYsNS45MDE5ODczMSBDNS4zMjYyOTU1LDYuNDQyOTM5MzIgNSw3LjE4MzM2NDQ2IDUsOCBDNSw4LjgxNjYzNTU0IDUuMzI2Mjk1NSw5LjU1NzA2MDY4IDUuODU1NjIzNzYsMTAuMDk4MDEyNyBDNS44NjM3ODMwNywxMC4xMDUxOCA1Ljg3MTc2NDc0LDEwLjExMjY1OCA1Ljg3OTU1MzM5LDEwLjEyMDQ0NjYgQzUuODg3MzQyMDQsMTAuMTI4MjM1MyA1Ljg5NDgyMDAxLDEwLjEzNjIxNjkgNS45MDE5ODczMSwxMC4xNDQzNzYyIEM2LjQ0MjkzOTMyLDEwLjY3MzcwNDUgNy4xODMzNjQ0NiwxMSA4LDExIEM4LjgxNjYzNTU0LDExIDkuNTU3MDYwNjgsMTAuNjczNzA0NSAxMC4wOTgwMTI3LDEwLjE0NDM3NjIgQzEwLjEwNTE4LDEwLjEzNjIxNjkgMTAuMTEyNjU4LDEwLjEyODIzNTMgMTAuMTIwNDQ2NiwxMC4xMjA0NDY2IEMxMC4xMjgyMzUzLDEwLjExMjY1OCAxMC4xMzYyMTY5LDEwLjEwNTE4IDEwLjE0NDM3NjIsMTAuMDk4MDEyNyBDMTAuNjczNzA0NSw5LjU1NzA2MDY4IDExLDguODE2NjM1NTQgMTEsOCBDMTEsNy4xODMzNjQ0NiAxMC42NzM3MDQ1LDYuNDQyOTM5MzIgMTAuMTQ0Mzc2Miw1LjkwMTk4NzMxIEMxMC4xMzYyMTY5LDUuODk0ODIwMDEgMTAuMTI4MjM1Myw1Ljg4NzM0MjA0IDEwLjEyMDQ0NjYsNS44Nzk1NTMzOSBDMTAuMTEyNjU4LDUuODcxNzY0NzQgMTAuMTA1MTgsNS44NjM3ODMwNyAxMC4wOTgwMTI3LDUuODU1NjIzNzYgQzkuNTU3MDYwNjgsNS4zMjYyOTU1IDguODE2NjM1NTQsNSA4LDUgQzcuMTgzMzY0NDYsNSA2LjQ0MjkzOTMyLDUuMzI2Mjk1NSA1LjkwMTk4NzMxLDUuODU1NjIzNzYgWiBNMy40MTYzNzEyMSwxMy4yOTA3MzU2IEM0LjY0NDQzMjIyLDE0LjM1NTU5MjMgNi4yNDY5NjEzNywxNSA4LDE1IEM5Ljc1MzAzODYzLDE1IDExLjM1NTU2NzgsMTQuMzU1NTkyMyAxMi41ODM2Mjg4LDEzLjI5MDczNTYgTDEwLjQ1MjgyMTksMTEuMTU5OTI4NyBDOS43NzU0ODAwNywxMS42ODY0NTkyIDguOTI0MzU1NzMsMTIgOCwxMiBDNy4wNzU2NDQyNywxMiA2LjIyNDUxOTkzLDExLjY4NjQ1OTIgNS41NDcxNzgwNywxMS4xNTk5Mjg3IEwzLjQxNjM3MTIxLDEzLjI5MDczNTYgWiBNMTMuMjkwNzM1NiwxMi41ODM2Mjg4IEMxNC4zNTU1OTIzLDExLjM1NTU2NzggMTUsOS43NTMwMzg2MyAxNSw4IEMxNSw2LjI0Njk2MTM3IDE0LjM1NTU5MjMsNC42NDQ0MzIyMiAxMy4yOTA3MzU2LDMuNDE2MzcxMjEgTDExLjE1OTkyODcsNS41NDcxNzgwNyBDMTEuNjg2NDU5Miw2LjIyNDUxOTkzIDEyLDcuMDc1NjQ0MjcgMTIsOCBDMTIsOC45MjQzNTU3MyAxMS42ODY0NTkyLDkuNzc1NDgwMDcgMTEuMTU5OTI4NywxMC40NTI4MjE5IEwxMy4yOTA3MzU2LDEyLjU4MzYyODggWiBNOCwxNiBDMy41ODE3MjIsMTYgMCwxMi40MTgyNzggMCw4IEMwLDMuNTgxNzIyIDMuNTgxNzIyLDAgOCwwIEMxMi40MTgyNzgsMCAxNiwzLjU4MTcyMiAxNiw4IEMxNiwxMi40MTgyNzggMTIuNDE4Mjc4LDE2IDgsMTYgWiIvPjwvc3ZnPg==
+
+10:34:07.036 GET
+data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PHBhdGggZmlsbD0iIzAwMCIgZmlsbC1ydWxlPSJub256ZXJvIiBkPSJNMy45ODA0NzE5LDMuMjczMzY1MTIgQzQuODE0MTQ0NjUsMi41Nzg0MDY4NCA1Ljg1NjYyMjkxLDIuMTI1NDU2NzQgNywyLjAyMjQyMTUxIEw3LDAuNSBDNywwLjIyMzg1NzYyNSA3LjIyMzg1NzYzLDAgNy41LDAgQzcuNzc2MTQyMzcsMCA4LDAuMjIzODU3NjI1IDgsMC41IEw4LDIuMDIyNDIxNTEgQzkuMTQzMzc3MDksMi4xMjU0NTY3NCAxMC4xODU4NTU0LDIuNTc4NDA2ODQgMTEuMDE5NTI4MSwzLjI3MzM2NTEyIEwxMi4wOTY0NDY2LDIuMTk2NDQ2NjEgQzEyLjI5MTcwODgsMi4wMDExODQ0NiAxMi42MDgyOTEyLDIuMDAxMTg0NDYgMTIuODAzNTUzNCwyLjE5NjQ0NjYxIEMxMi45OTg4MTU1LDIuMzkxNzA4NzYgMTIuOTk4ODE1NSwyLjcwODI5MTI0IDEyLjgwMzU1MzQsMi45MDM1NTMzOSBMMTEuNzI2NjM0OSwzLjk4MDQ3MTkgQzEyLjQyMTU5MzIsNC44MTQxNDQ2NSAxMi44NzQ1NDMzLDUuODU2NjIyOTEgMTIuOTc3NTc4NSw3IEwxNC41LDcgQzE0Ljc3NjE0MjQsNyAxNSw3LjIyMzg1NzYzIDE1LDcuNSBDMTUsNy43NzYxNDIzNyAxNC43NzYxNDI0LDggMTQuNSw4IEwxMi45Nzc1Nzg1LDggQzEyLjg3NDU0MzMsOS4xNDMzNzcwOSAxMi40MjE1OTMyLDEwLjE4NTg1NTQgMTEuNzI2NjM0OSwxMS4wMTk1MjgxIEwxMi44MDM1NTM0LDEyLjA5NjQ0NjYgQzEyLjk5ODgxNTUsMTIuMjkxNzA4OCAxMi45OTg4MTU1LDEyLjYwODI5MTIgMTIuODAzNTUzNCwxMi44MDM1NTM0IEMxMi42MDgyOTEyLDEyLjk5ODgxNTUgMTIuMjkxNzA4OCwxMi45OTg4MTU1IDEyLjA5NjQ0NjYsMTIuODAzNTUzNCBMMTEuMDE5NTI4MSwxMS43MjY2MzQ5IEMxMC4xODU4NTU0LDEyLjQyMTU5MzIgOS4xNDMzNzcwOSwxMi44NzQ1NDMzIDgsMTIuOTc3NTc4NSBMOCwxNC41IEM4LDE0Ljc3NjE0MjQgNy43NzYxNDIzNywxNSA3LjUsMTUgQzcuMjIzODU3NjMsMTUgNywxNC43NzYxNDI0IDcsMTQuNSBMNywxMi45Nzc1Nzg1IEM1Ljg1NjYyMjkxLDEyLjg3NDU0MzMgNC44MTQxNDQ2NSwxMi40MjE1OTMyIDMuOTgwNDcxOSwxMS43MjY2MzQ5IEwyLjkwMzU1MzM5LDEyLjgwMzU1MzQgQzIuNzA4MjkxMjQsMTIuOTk4ODE1NSAyLjM5MTcwODc2LDEyLjk5ODgxNTUgMi4xOTY0NDY2MSwxMi44MDM1NTM0IEMyLjAwMTE4NDQ2LDEyLjYwODI5MTIgMi4wMDExODQ0NiwxMi4yOTE3MDg4IDIuMTk2NDQ2NjEsMTIuMDk2NDQ2NiBMMy4yNzMzNjUxMiwxMS4wMTk1MjgxIEMyLjU3ODQwNjg0LDEwLjE4NTg1NTQgMi4xMjU0NTY3NCw5LjE0MzM3NzA5IDIuMDIyNDIxNTEsOCBMMC41LDggQzAuMjIzODU3NjI1LDggMCw3Ljc3NjE0MjM3IDAsNy41IEMwLDcuMjIzODU3NjMgMC4yMjM4NTc2MjUsNyAwLjUsNyBMMi4wMjI0MjE1MSw3IEMyLjEyNTQ1Njc0LDUuODU2NjIyOTEgMi41Nzg0MDY4NCw0LjgxNDE0NDY1IDMuMjczMzY1MTIsMy45ODA0NzE5IEwyLjE5NjQ0NjYxLDIuOTAzNTUzMzkgQzIuMDAxMTg0NDYsMi43MDgyOTEyNCAyLjAwMTE4NDQ2LDIuMzkxNzA4NzYgMi4xOTY0NDY2MSwyLjE5NjQ0NjYxIEMyLjM5MTcwODc2LDIuMDAxMTg0NDYgMi43MDgyOTEyNCwyLjAwMTE4NDQ2IDIuOTAzNTUzMzksMi4xOTY0NDY2MSBMMy45ODA0NzE5LDMuMjczMzY1MTIgWiBNNy41LDEwIEM2LjExOTI4ODEzLDEwIDUsOC44ODA3MTE4NyA1LDcuNSBDNSw2LjExOTI4ODEzIDYuMTE5Mjg4MTMsNSA3LjUsNSBDOC44ODA3MTE4Nyw1IDEwLDYuMTE5Mjg4MTMgMTAsNy41IEMxMCw4Ljg4MDcxMTg3IDguODgwNzExODcsMTAgNy41LDEwIFogTTcuNSw5IEM4LjMyODQyNzEyLDkgOSw4LjMyODQyNzEyIDksNy41IEM5LDYuNjcxNTcyODggOC4zMjg0MjcxMiw2IDcuNSw2IEM2LjY3MTU3Mjg4LDYgNiw2LjY3MTU3Mjg4IDYsNy41IEM2LDguMzI4NDI3MTIgNi42NzE1NzI4OCw5IDcuNSw5IFogTTcuNSwxMiBDOS45ODUyODEzNywxMiAxMiw5Ljk4NTI4MTM3IDEyLDcuNSBDMTIsNS4wMTQ3MTg2MyA5Ljk4NTI4MTM3LDMgNy41LDMgQzUuMDE0NzE4NjMsMyAzLDUuMDE0NzE4NjMgMyw3LjUgQzMsOS45ODUyODEzNyA1LjAxNDcxODYzLDEyIDcuNSwxMiBaIi8+PC9zdmc+
+
+10:34:07.037 GET
+data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PHBhdGggZmlsbD0iIzAwMCIgZmlsbC1ydWxlPSJub256ZXJvIiBkPSJNMTEuNDM2MjEyNywxMC43MjkxMDU5IEwxNC44NTM1NTM0LDE0LjE0NjQ0NjYgQzE1LjA0ODgxNTUsMTQuMzQxNzA4OCAxNS4wNDg4MTU1LDE0LjY1ODI5MTIgMTQuODUzNTUzNCwxNC44NTM1NTM0IEMxNC42NTgyOTEyLDE1LjA0ODgxNTUgMTQuMzQxNzA4OCwxNS4wNDg4MTU1IDE0LjE0NjQ0NjYsMTQuODUzNTUzNCBMMTAuNzI5MTA1OSwxMS40MzYyMTI3IEM5LjU5MjMzODQ4LDEyLjQxMTA0ODcgOC4xMTQ5NDc3MSwxMyA2LjUsMTMgQzIuOTEwMTQ5MTMsMTMgMCwxMC4wODk4NTA5IDAsNi41IEMwLDIuOTEwMTQ5MTMgMi45MTAxNDkxMywwIDYuNSwwIEMxMC4wODk4NTA5LDAgMTMsMi45MTAxNDkxMyAxMyw2LjUgQzEzLDguMTE0OTQ3NzEgMTIuNDExMDQ4Nyw5LjU5MjMzODQ4IDExLjQzNjIxMjcsMTAuNzI5MTA1OSBaIE0xMC40MDk1NzQ3LDEwLjM2ODQ5MjEgQzExLjM5MjgzMjUsOS4zNzQ4NTc4IDEyLDguMDA4MzM0NjggMTIsNi41IEMxMiwzLjQ2MjQzMzg4IDkuNTM3NTY2MTIsMSA2LjUsMSBDMy40NjI0MzM4OCwxIDEsMy40NjI0MzM4OCAxLDYuNSBDMSw5LjUzNzU2NjEyIDMuNDYyNDMzODgsMTIgNi41LDEyIEM4LjAwODMzNDY4LDEyIDkuMzc0ODU3OCwxMS4zOTI4MzI1IDEwLjM2ODQ5MjEsMTAuNDA5NTc0NyBDMTAuMzc0OTAwMSwxMC40MDIzODc5IDEwLjM4MTU1MTYsMTAuMzk1MzQxNiAxMC4zODg0NDY2LDEwLjM4ODQ0NjYgQzEwLjM5NTM0MTYsMTAuMzgxNTUxNiAxMC40MDIzODc5LDEwLjM3NDkwMDEgMTAuNDA5NTc0NywxMC4zNjg0OTIxIFoiLz48L3N2Zz4=
+
+10:34:07.037 GET
+data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PHBhdGggZmlsbD0iIzAwMCIgZmlsbC1ydWxlPSJub256ZXJvIiBkPSJNMi4zNTUzMjgsNSBMNi41MDAxMDIzOCw1IEM2Ljc3NjI0NDc2LDUgNy4wMDAxMDIzOCw1LjIyMzg1NzYzIDcuMDAwMTAyMzgsNS41IEM3LjAwMDEwMjM4LDUuNzc2MTQyMzcgNi43NzYyNDQ3Niw2IDYuNTAwMTAyMzgsNiBMMS41MTAyMTIzOCw2IEMxLjQ4Njg1NDQ0LDYuMDAwNDkxOTggMS40NjMzNTg5Nyw1Ljk5OTM0NDE0IDEuNDM5ODk2MjcsNS45OTY0OTkyNSBDMS4zNjAzODQ1NCw1Ljk4Njg3MDU4IDEuMjg2NjA3NDMsNS45NTg2NjU2MyAxLjIyMzA3NjA0LDUuOTE2MzA0ODQgQzEuMDk5MzE4MDEsNS44MzQxNzU0NyAxLjAyMTk2NzA5LDUuNzAzNDc4OCAxLjAwNDAxNjU2LDUuNTYyODY2MjkgQzEuMDAxOTEyNzcsNS41NDYwOTYwMiAxLjAwMDYzOTU2LDUuNTI5MDY3NCAxLjAwMDIzOTQyLDUuNTExODIyOTIgQzAuOTk5OTU2MzcxLDUuNTA0MjczMjEgMC45OTk5NDI2ODQsNS40OTY3MDQ2IDEuMDAwMTAyMzgsNS40ODkxMjY5MyBMMS4wMDAxMDIzOCwwLjUgQzEuMDAwMTAyMzgsMC4yMjM4NTc2MjUgMS4yMjM5NjAwMSwwIDEuNTAwMTAyMzgsMCBDMS43NzYyNDQ3NiwwIDIuMDAwMTAyMzgsMC4yMjM4NTc2MjUgMi4wMDAxMDIzOCwwLjUgTDIuMDAwMTAyMzgsMy43NzQ2OTMxNiBDMy4zNjg2NDMyOCwyLjAzOTQwMzQzIDUuMzI5MTc3OTgsMSA3LjUwMDEwMjM4LDEgQzExLjY0MjI0NDgsMSAxNS4wMDAxMDI0LDQuMzU3ODU3NjMgMTUuMDAwMTAyNCw4LjUgQzE1LjAwMDEwMjQsMTIuNjQyMTQyNCAxMS42NDIyNDQ4LDE2IDcuNTAwMTAyMzgsMTYgQzcuMjIzOTYwMDEsMTYgNy4wMDAxMDIzOCwxNS43NzYxNDI0IDcuMDAwMTAyMzgsMTUuNSBDNy4wMDAxMDIzOCwxNS4yMjM4NTc2IDcuMjIzOTYwMDEsMTUgNy41MDAxMDIzOCwxNSBDMTEuMDg5OTYsMTUgMTQuMDAwMTAyNCwxMi4wODk4NTc2IDE0LjAwMDEwMjQsOC41IEMxNC4wMDAxMDI0LDQuOTEwMTQyMzcgMTEuMDg5OTYsMiA3LjUwMDEwMjM4LDIgQzUuNDE1ODQ4OTIsMiAzLjU0NTY1NDAyLDMuMTMwNjQwNyAyLjM1NTMyOCw1IFoiIHRyYW5zZm9ybT0ibWF0cml4KC0xIDAgMCAxIDE2IDApIi8+PC9zdmc+
+
+10:34:07.037 GET
+data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PHBhdGggZmlsbD0iIzAwMCIgZmlsbC1ydWxlPSJub256ZXJvIiBkPSJNMi4zNTUyMjU2Miw1IEw2LjUsNSBDNi43NzYxNDIzNyw1IDcsNS4yMjM4NTc2MyA3LDUuNSBDNyw1Ljc3NjE0MjM3IDYuNzc2MTQyMzcsNiA2LjUsNiBMMS41MTAxMDk5OSw2IEMxLjQ4Njc1MjA2LDYuMDAwNDkxOTggMS40NjMyNTY1OSw1Ljk5OTM0NDE0IDEuNDM5NzkzODksNS45OTY0OTkyNSBDMS4zNjAyODIxNiw1Ljk4Njg3MDU4IDEuMjg2NTA1MDUsNS45NTg2NjU2MyAxLjIyMjk3MzY1LDUuOTE2MzA0ODQgQzEuMDk5MjE1NjMsNS44MzQxNzU0NyAxLjAyMTg2NDcxLDUuNzAzNDc4OCAxLjAwMzkxNDE3LDUuNTYyODY2MjkgQzEuMDAxODEwMzksNS41NDYwOTYwMiAxLjAwMDUzNzE4LDUuNTI5MDY3NCAxLjAwMDEzNzA0LDUuNTExODIyOTIgQzAuOTk5ODUzOTg3LDUuNTA0MjczMjEgMC45OTk4NDAyOTksNS40OTY3MDQ2IDEsNS40ODkxMjY5MyBMMSwwLjUgQzEsMC4yMjM4NTc2MjUgMS4yMjM4NTc2MywwIDEuNSwwIEMxLjc3NjE0MjM3LDAgMiwwLjIyMzg1NzYyNSAyLDAuNSBMMiwzLjc3NDY5MzE2IEMzLjM2ODU0MDksMi4wMzk0MDM0MyA1LjMyOTA3NTYsMSA3LjUsMSBDMTEuNjQyMTQyNCwxIDE1LDQuMzU3ODU3NjMgMTUsOC41IEMxNSwxMi42NDIxNDI0IDExLjY0MjE0MjQsMTYgNy41LDE2IEM3LjIyMzg1NzYzLDE2IDcsMTUuNzc2MTQyNCA3LDE1LjUgQzcsMTUuMjIzODU3NiA3LjIyMzg1NzYzLDE1IDcuNSwxNSBDMTEuMDg5ODU3NiwxNSAxNCwxMi4wODk4NTc2IDE0LDguNSBDMTQsNC45MTAxNDIzNyAxMS4wODk4NTc2LDIgNy41LDIgQzUuNDE1NzQ2NTQsMiAzLjU0NTU1MTYzLDMuMTMwNjQwNyAyLjM1NTIyNTYyLDUgWiIvPjwvc3ZnPg==
+
+10:34:07.037 GET
+data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PHBhdGggZmlsbD0iIzAwMCIgZmlsbC1ydWxlPSJub256ZXJvIiBkPSJNOCwyLjA4MzA5NTE5IEwxLjQ3MTgyNTMyLDYgTDgsOS45MTY5MDQ4MSBMMTQuNTI4MTc0Nyw2IEw4LDIuMDgzMDk1MTkgWiBNOC4yNTcyNDc4OCwxLjA3MTI1MzU0IEwxNS43NTcyNDc5LDUuNTcxMjUzNTQgQzE2LjA4MDkxNzQsNS43NjU0NTUyMyAxNi4wODA5MTc0LDYuMjM0NTQ0NzcgMTUuNzU3MjQ3OSw2LjQyODc0NjQ2IEw4LjI1NzI0Nzg4LDEwLjkyODc0NjUgQzguMDk4OTA2NjgsMTEuMDIzNzUxMiA3LjkwMTA5MzMyLDExLjAyMzc1MTIgNy43NDI3NTIxMiwxMC45Mjg3NDY1IEwwLjI0Mjc1MjEyMiw2LjQyODc0NjQ2IEMtMC4wODA5MTczNzQxLDYuMjM0NTQ0NzcgLTAuMDgwOTE3Mzc0MSw1Ljc2NTQ1NTIzIDAuMjQyNzUyMTIyLDUuNTcxMjUzNTQgTDcuNzQyNzUyMTIsMS4wNzEyNTM1NCBDNy45MDEwOTMzMiwwLjk3NjI0ODgyMSA4LjA5ODkwNjY4LDAuOTc2MjQ4ODIxIDguMjU3MjQ3ODgsMS4wNzEyNTM1NCBaIE0xNC41MjgxNzQ3LDEwIEwxMy43NDI3NTIxLDkuNTI4NzQ2NDYgQzEzLjUwNTk2Miw5LjM4NjY3MjM4IDEzLjQyOTE3OTUsOS4wNzk1NDIyNiAxMy41NzEyNTM1LDguODQyNzUyMTIgQzEzLjcxMzMyNzYsOC42MDU5NjE5OSAxNC4wMjA0NTc3LDguNTI5MTc5NDYgMTQuMjU3MjQ3OSw4LjY3MTI1MzU0IEwxNS43NTcyNDc5LDkuNTcxMjUzNTQgQzE2LjA4MDkxNzQsOS43NjU0NTUyMyAxNi4wODA5MTc0LDEwLjIzNDU0NDggMTUuNzU3MjQ3OSwxMC40Mjg3NDY1IEw4LjI1NzI0Nzg4LDE0LjkyODc0NjUgQzguMDk4OTA2NjgsMTUuMDIzNzUxMiA3LjkwMTA5MzMyLDE1LjAyMzc1MTIgNy43NDI3NTIxMiwxNC45Mjg3NDY1IEwwLjI0Mjc1MjEyMiwxMC40Mjg3NDY1IEMtMC4wODA5MTczNzQxLDEwLjIzNDU0NDggLTAuMDgwOTE3Mzc0MSw5Ljc2NTQ1NTIzIDAuMjQyNzUyMTIyLDkuNTcxMjUzNTQgTDEuNzQyNzUyMTIsOC42NzEyNTM1NCBDMS45Nzk1NDIyNiw4LjUyOTE3OTQ2IDIuMjg2NjcyMzgsOC42MDU5NjE5OSAyLjQyODc0NjQ2LDguODQyNzUyMTIgQzIuNTcwODIwNTQsOS4wNzk1NDIyNiAyLjQ5NDAzODAxLDkuMzg2NjcyMzggMi4yNTcyNDc4OCw5LjUyODc0NjQ2IEwxLjQ3MTgyNTMyLDEwIEw4LDEzLjkxNjkwNDggTDE0LjUyODE3NDcsMTAgWiIvPjwvc3ZnPg==
+
+10:34:07.038 GET
+data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PHBhdGggZmlsbD0iIzAwMCIgZmlsbC1ydWxlPSJub256ZXJvIiBkPSJNOCw5LjUgQzcuMTcxNTcyODgsOS41IDYuNSw4LjgyODQyNzEyIDYuNSw4IEM2LjUsNy4xNzE1NzI4OCA3LjE3MTU3Mjg4LDYuNSA4LDYuNSBDOC44Mjg0MjcxMiw2LjUgOS41LDcuMTcxNTcyODggOS41LDggQzkuNSw4LjgyODQyNzEyIDguODI4NDI3MTIsOS41IDgsOS41IFogTTEyLjUsOS41IEMxMS42NzE1NzI5LDkuNSAxMSw4LjgyODQyNzEyIDExLDggQzExLDcuMTcxNTcyODggMTEuNjcxNTcyOSw2LjUgMTIuNSw2LjUgQzEzLjMyODQyNzEsNi41IDE0LDcuMTcxNTcyODggMTQsOCBDMTQsOC44Mjg0MjcxMiAxMy4zMjg0MjcxLDkuNSAxMi41LDkuNSBaIE0zLjUsOS41IEMyLjY3MTU3Mjg4LDkuNSAyLDguODI4NDI3MTIgMiw4IEMyLDcuMTcxNTcyODggMi42NzE1NzI4OCw2LjUgMy41LDYuNSBDNC4zMjg0MjcxMiw2LjUgNSw3LjE3MTU3Mjg4IDUsOCBDNSw4LjgyODQyNzEyIDQuMzI4NDI3MTIsOS41IDMuNSw5LjUgWiIvPjwvc3ZnPg==
+
+10:34:07.038 GET
+data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiI+PHBhdGggZmlsbD0iIzAwMCIgZmlsbC1ydWxlPSJub256ZXJvIiBkPSJNMi41LDQgTDEuNSw0IEMxLjIyNCw0IDEsMy43NzYgMSwzLjUgQzEsMy4yMjQgMS4yMjQsMyAxLjUsMyBMMi41LDMgQzIuNzc2LDMgMywzLjIyNCAzLDMuNSBDMywzLjc3NiAyLjc3Niw0IDIuNSw0IFogTTQuNSw3IEwxLjUsNyBDMS4yMjQsNyAxLDYuNzc2IDEsNi41IEMxLDYuMjI0IDEuMjI0LDYgMS41LDYgTDQuNSw2IEM0Ljc3Niw2IDUsNi4yMjQgNSw2LjUgQzUsNi43NzYgNC43NzYsNyA0LjUsNyBaIE02LjUsMTAgTDEuNSwxMCBDMS4yMjQsMTAgMSw5Ljc3NiAxLDkuNSBDMSw5LjIyNCAxLjIyNCw5IDEuNSw5IEw2LjUsOSBDNi43NzYsOSA3LDkuMjI0IDcsOS41IEM3LDkuNzc2IDYuNzc2LDEwIDYuNSwxMCBaIE04LjUsMTMgTDEuNSwxMyBDMS4yMjQsMTMgMSwxMi43NzYgMSwxMi41IEMxLDEyLjIyNCAxLjIyNCwxMiAxLjUsMTIgTDguNSwxMiBDOC43NzYsMTIgOSwxMi4yMjQgOSwxMi41IEM5LDEyLjc3NiA4Ljc3NiwxMyA4LjUsMTMgWiBNMTQuOTcyODg4LDIuMjg0OTA4ODUgQzE1LjAyNjUzODIsMi40NTczNjE3OCAxNC45OTY4ODY0LDIuNjU1OTY3MjUgMTQuODk3ODkzMiwyLjc4NzgwNjgzIEwxMS42ODEzMDY4LDcuMDc2NjY5NjUgQzExLjYxMTczNDcsNy4xNjk1ODgwOSAxMS41MzgwMDksNy40MDY4MDcwMiAxMS41MzgwMDksNy41MzgxODUwOCBMMTEuNTM4MDA5LDEzLjUzNzg4NTYgQzExLjUzODAwOSwxMy43MjQ2NDU1IDExLjQ1Mzc4NCwxMy44OTI5NDQ4IDExLjMyNDMzMTQsMTMuOTY0MTcyIEMxMS4yODE1MjY2LDEzLjk4ODAxNyAxMS4yMzY1Mjk3LDEzLjk5OTQwMSAxMS4xOTE5OTQzLDEzLjk5OTQwMSBDMTEuMTAxODg1MSwxMy45OTk0MDEgMTEuMDEzMjc1OCwxMy45NTI0ODAzIDEwLjk0NzE2NSwxMy44NjQxNzcgTDkuNTYyNjQ0ODYsMTIuMDE4MTE1MyBDOS40OTc2ODc3OSwxMS45MzE2NTgxIDkuNDYxMjI4NzYsMTEuODE0Mjc5MyA5LjQ2MTIyODc2LDExLjY5MTgyMzkgTDkuNDYxMjI4NzYsNy41MzgxODUwOCBDOS40NjEyMjg3Niw3LjQwNjgwNzAyIDkuMzg3NjE4NDQsNy4xNjk1ODgwOSA5LjMxNzkzMDkyLDcuMDc2OTc3MzMgTDYuMTAxMzQ0NTIsMi43ODc5NjA2NyBDNi4wMDIzNTEzMywyLjY1NTk2NzI1IDUuOTcyODE0OSwyLjQ1NzUxNTYyIDYuMDI2MzQ5NjgsMi4yODQ5MDg4NSBDNi4wNzk4ODQ0NSwyLjExMjMwMjA5IDYuMjA2MTA2NTQsMiA2LjM0NjA1ODQ1LDIgTDE0LjY1MzE3OTMsMiBDMTQuNzkzMjQ2NiwyIDE0LjkxOTQ2ODYsMi4xMTIzMDIwOSAxNC45NzI4ODgsMi4yODQ5MDg4NSBaIi8+PC9zdmc+
+
+10:34:07.038 GET
+data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCI+PHBhdGggZmlsbD0iIzAwMCIgZmlsbC1ydWxlPSJub256ZXJvIiBkPSJNOS41NjIgM2E3LjUgNy41IDAgMCAwLTYuNzk4IDEwLjY3M2wtLjcyNCAyLjg0MmExLjI1IDEuMjUgMCAwIDAgMS41MDQgMS41MjRjLjc1LS4xOCAxLjkwMy0uNDU3IDIuOTMtLjcwMkE3LjUgNy41IDAgMSAwIDkuNTYxIDNabS02IDcuNWE2IDYgMCAxIDEgMy4zMyA1LjM3NWwtLjI0NC0uMTIxLS4yNjQuMDYzYy0uOTIzLjIyLTEuOTkuNDc1LTIuNzg4LjY2N2wuNjktMi43MDguMDctLjI3Ni0uMTMtLjI1M2E1Ljk3MSA1Ljk3MSAwIDAgMS0uNjY0LTIuNzQ3Wm0xMSAxMC41Yy0xLjk3IDAtMy43NjItLjc1OS01LjEtMmguMWMuNzE4IDAgMS40MTUtLjA4OSAyLjA4LS4yNTcuODY1LjQ4MiAxLjg2Ljc1NyAyLjkyLjc1Ny45NiAwIDEuODY2LS4yMjUgMi42Ny0uNjI1bC4yNDMtLjEyMS4yNjQuMDYzYy45MjIuMjIgMS45NjYuNDQ1IDIuNzQuNjEtLjE3NS0uNzUxLS40MTQtMS43NTYtLjY0Mi0yLjY1MWwtLjA3LS4yNzYuMTMtLjI1M2E1Ljk3MSA1Ljk3MSAwIDAgMCAuNjY1LTIuNzQ3IDUuOTk1IDUuOTk1IDAgMCAwLTIuNzQ3LTUuMDQyIDguNDQgOC40NCAwIDAgMC0uOC0yLjA0NyA3LjUwMyA3LjUwMyAwIDAgMSA0LjM0NCAxMC4yNjNjLjI1MyAxLjAwOC41MDkgMi4xLjY3MSAyLjgwM2ExLjI0NCAxLjI0NCAwIDAgMS0xLjQ2NyAxLjUgMTMyLjYyIDEzMi42MiAwIDAgMS0yLjkxMy0uNjQgNy40NzYgNy40NzYgMCAwIDEtMy4wODguNjYzWiIvPjwvc3ZnPg==
+
+10:34:07.049 GristWSConnection: onmessage (124 bytes) sentry.min.js:3:44522
+10:34:07.049 GristWSConnection skipping duplicate 'clientConnect' message sentry.min.js:3:44522
+10:34:07.049 GristWSConnection: onmessage (32 bytes) sentry.min.js:3:44522
+10:34:07.049 Comm response #1 listActiveUserProfiles OK main.bundle.js:2:28063
+10:34:07.095 GristWSConnection: onmessage (460445 bytes) sentry.min.js:3:44522
+10:34:07.097 GET
+https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css
+[HTTP/2 200  32ms]
+
+10:34:07.097 Comm response #2 fetchTable OK main.bundle.js:2:28063
+10:34:07.098 GET
+https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css
+[HTTP/2 200  47ms]
+
+10:34:07.099 GET
+https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css
+[HTTP/2 200  47ms]
+
+10:34:07.100 GET
+https://timox.github.io/kanban/css/kanban-modal.css
+[HTTP/2 200  28ms]
+
+10:34:07.100 GET
+https://timox.github.io/kanban/css/kanban-base.css
+[HTTP/2 200  32ms]
+
+10:34:07.102 GET
+https://timox.github.io/kanban/css/kanban-responsive.css
+[HTTP/2 200  31ms]
+
+10:34:07.103 GET
+https://timox.github.io/kanban/css/strategy-accordion.css
+[HTTP/2 200  27ms]
+
+10:34:07.104 GET
+https://docs.getgrist.com/grist-plugin-api.js
+[HTTP/2 200  441ms]
+
+10:34:07.105 GET
+https://code.jquery.com/jquery-3.6.0.min.js
+[HTTP/2 200  25ms]
+
+10:34:07.106 GET
+https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js
+[HTTP/2 200  47ms]
+
+10:34:07.106 GET
+https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js
+[HTTP/2 200  46ms]
+
+10:34:07.107 GET
+https://cdn.jsdelivr.net/npm/flatpickr
+[HTTP/2 200  49ms]
+
+10:34:07.108 GET
+https://timox.github.io/kanban/js/app-initializer.js
+[HTTP/2 200  27ms]
+
+10:34:07.108 GET
+https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/fr.js
+[HTTP/2 200  49ms]
+
+10:34:07.133 GristWSConnection: onmessage (1652 bytes) sentry.min.js:3:44522
+10:34:07.133 Comm response #3 getUsersForViewAs OK main.bundle.js:2:28063
+10:34:07.169 GET
+data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e
+
+10:34:07.171 GET
+data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/%3e%3c/svg%3e
+
+10:34:07.186 GET
+https://timox.github.io/kanban/js/utils/dom.js
+[HTTP/2 200  27ms]
+
+10:34:07.187 GET
+https://timox.github.io/kanban/js/utils/LoggerManager.js
+[HTTP/2 200  26ms]
+
+10:34:07.191 GET
+https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/fonts/bootstrap-icons.woff2?2ab2cbbe07fcebb53bdaa7313bb290f2
+[HTTP/2 200  36ms]
+
+10:34:07.219 GET
+https://timox.github.io/kanban/js/config/constants.js
+[HTTP/2 200  28ms]
+
+10:34:07.593 ✅ Protection will-change ultra-renforcée activée index.html:527:15
+10:34:07.596 === DIAGNOSTIC MODAL HISTORY === index.html:542:13
+10:34:07.596 DOM ready state: loading index.html:543:13
+10:34:07.596 task-history-modal au chargement: true index.html:544:13
+10:34:07.602 DOMContentLoaded: task-history-modal existe: true index.html:547:15
+10:34:07.602 [LOGGER] Initialized with level: INFO LoggerManager.js:39:13
+10:34:07.602 [LOGGER] Logger exposé globalement - Tapez logger.showHelp() pour commencer LoggerManager.js:240:13
+10:34:07.605 GET
+https://timox.github.io/kanban/js/core/KanbanManager.js
+[HTTP/2 200  30ms]
+
+10:34:07.640 GET
+https://timox.github.io/kanban/js/core/EventCentralizer.js
+[HTTP/2 200  28ms]
+
+10:34:07.642 GET
+https://timox.github.io/kanban/js/managers/DatePickerManager.js
+[HTTP/2 200  28ms]
+
+10:34:07.644 GET
+https://timox.github.io/kanban/js/managers/ModalManager.js
+[HTTP/2 200  34ms]
+
+10:34:07.645 GET
+https://timox.github.io/kanban/js/managers/HistoryManager.js
+[HTTP/2 200  36ms]
+
+10:34:07.648 GET
+https://timox.github.io/kanban/js/managers/FilterManager.js
+[HTTP/2 200  49ms]
+
+10:34:07.649 GET
+https://timox.github.io/kanban/js/managers/ViewManager.js
+[HTTP/2 200  44ms]
+
+10:34:07.650 GET
+https://timox.github.io/kanban/js/managers/JalonManager.js
+[HTTP/2 200  46ms]
+
+10:34:07.651 GET
+https://timox.github.io/kanban/js/managers/GristManager.js
+[HTTP/2 200  46ms]
+
+10:34:07.673 GET
+https://timox.github.io/kanban/js/utils/EventManager.js
+[HTTP/2 200  27ms]
+
+10:34:07.675 GET
+https://timox.github.io/kanban/js/utils/dates.js
+[HTTP/2 200  26ms]
+
+10:34:07.684 GET
+https://timox.github.io/kanban/js/utils/UserActionManager.js
+[HTTP/2 200  26ms]
+
+10:34:07.686 GET
+https://timox.github.io/kanban/js/utils/ReferenceManager.js
+[HTTP/2 200  32ms]
+
+10:34:07.705 GET
+https://timox.github.io/kanban/js/utils/badges.js
+[HTTP/2 200  27ms]
+
+10:34:07.714 GET
+https://timox.github.io/kanban/js/utils/NotesJsonMigrator.js
+[HTTP/2 200  28ms]
+
+10:34:07.748 PLUGIN VIEW /kanban/index.html: Rpc sending Ready grist-plugin-api.ts:408:15
+10:34:07.751 Rpc sending Custom 2 sentry.min.js:3:44522
+10:34:07.752 🧹 Namespace nettoyé: modal (0 événements) EventManager.js:118:13
+10:34:07.752 Rpc sending Custom sentry.min.js:3:44522
+10:34:07.752 📎 Événement attaché: #btn-nouvelle-tache click.modal EventManager.js:86:13
+10:34:07.752 📎 Événement attaché: #btn-save-task click.modal EventManager.js:86:13
+10:34:07.752 📎 Événement attaché: #btn-delete-task click.modal EventManager.js:86:13
+10:34:07.752 📎 Événement attaché: #btn-toggle-history-panel click.modal EventManager.js:86:13
+10:34:07.752 🔍 DIAGNOSTIC STRATEGIES ModalManager: ModalManager.js:208:13
+10:34:07.752   - kanban.strategiesData length: 0 ModalManager.js:209:13
+10:34:07.752   - kanban.strategyData length: 0 ModalManager.js:210:13
+10:34:07.752 ❌ Aucune donnée stratégique disponible ModalManager.js:219:15
+10:34:07.752 Rpc sending Custom sentry.min.js:3:44522
+10:34:07.752 [INFO:HistoryManager] History manager initialized (événements centralisés via EventCentralizer) LoggerManager.js:146:15
+10:34:07.753 [INFO:ViewManager] Contrôles de vue créés et insérés dans le bandeau haut LoggerManager.js:146:15
+10:34:07.753 [INFO:ViewManager] Application du mode de vue: detailed LoggerManager.js:146:15
+10:34:07.753 [INFO:ViewManager] Mode détaillé appliqué - système de repliage initialisé LoggerManager.js:146:15
+10:34:07.753 [INFO:ViewManager] Gestionnaire de modes de vue initialisé LoggerManager.js:146:15
+10:34:07.753 KanbanManager: Gestionnaires initialisés KanbanManager.js:148:13
+10:34:07.753 ⏱️ Attente KanbanManager.isInitialized... app-initializer.js:684:13
+10:34:07.754 PLUGIN VIEW /kanban/index.html: Rpc for CustomSectionAPI.configure#1: RPC_CALLING grist-plugin-api.ts:408:15
+10:34:07.754 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: CustomSectionAPI.configure#1 grist-plugin-api.ts:408:15
+10:34:07.754 KanbanManager: Chargement des donn�es... KanbanManager.js:155:13
+10:34:07.754 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#2: RPC_CALLING grist-plugin-api.ts:408:15
+10:34:07.754 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristDocAPI.fetchTable#2 grist-plugin-api.ts:408:15
+10:34:07.754 Rpc for CustomSectionAPI.configure#1: RPC_ONCALL sentry.min.js:3:44522
+10:34:07.754 Rpc for CustomSectionAPI.configure#1: RPC_ONCALL_OK sentry.min.js:3:44522
+10:34:07.754 Rpc sending RpcRespData sentry.min.js:3:44522
+10:34:07.755 Rpc for GristDocAPI.fetchTable#2: RPC_ONCALL sentry.min.js:3:44522
+10:34:07.755 Comm request #4 fetchTable 
+Array [ 0, "Ssir_strategie2" ]
+main.bundle.js:2:26696
+10:34:07.755 GristWSConnection.send[true] {"reqId":4,"method":"fetchTable","args":[0,"Ssir_strategie2"]} sentry.min.js:3:44522
+10:34:07.756 Window load: task-history-modal existe: true index.html:551:15
+10:34:07.756 🚀 KANBAN MODULAIRE CHARGÉ index.html:584:15
+10:34:07.756 📚 Modules disponibles: index.html:585:15
+10:34:07.756   - config/constants.js index.html:586:15
+10:34:07.756   - utils/dates.js index.html:587:15
+10:34:07.756   - utils/badges.js index.html:588:15
+10:34:07.756   - utils/dom.js index.html:589:15
+10:34:07.756   - core/KanbanManager.js index.html:590:15
+10:34:07.756 <empty string> index.html:591:15
+10:34:07.756 🔧 Debug disponible: index.html:592:15
+10:34:07.756   - window.kanbanManager : Instance principale index.html:593:15
+10:34:07.756   - window.kanbanAppInitializer : Initialiseur courant index.html:594:15
+10:34:07.756   - logger.setLogLevel("INFO") : Activer logs détaillés index.html:595:15
+10:34:07.756 <empty string> index.html:596:15
+10:34:07.756 ⌨️  Raccourcis: index.html:597:15
+10:34:07.756   - R : Recharger le kanban index.html:598:15
+10:34:07.756   - N : Nouvelle tâche index.html:599:15
+10:34:07.756   - F : Focus recherche index.html:600:15
+10:34:07.757 PLUGIN VIEW /kanban/index.html: Rpc for GristView.fetchSelectedTable#3: RPC_CALLING grist-plugin-api.ts:408:15
+10:34:07.757 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristView.fetchSelectedTable#3 grist-plugin-api.ts:408:15
+10:34:07.758 PLUGIN VIEW /kanban/index.html: Rpc sending Custom grist-plugin-api.ts:408:15
+10:34:07.758 Rpc for GristView.fetchSelectedTable#3: RPC_ONCALL sentry.min.js:3:44522
+10:34:07.758 PLUGIN VIEW /kanban/index.html: Rpc for GristView.fetchSelectedTable#4: RPC_CALLING grist-plugin-api.ts:408:15
+10:34:07.758 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristView.fetchSelectedTable#4 grist-plugin-api.ts:408:15
+10:34:07.759 PLUGIN VIEW /kanban/index.html: Rpc for CustomSectionAPI.configure#1: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:34:07.759 Rpc for GristView.fetchSelectedTable#3: RPC_ONCALL_OK sentry.min.js:3:44522
+10:34:07.759 Rpc sending RpcRespData sentry.min.js:3:44522
+10:34:07.761 Rpc for GristView.fetchSelectedTable#4: RPC_ONCALL sentry.min.js:3:44522
+10:34:07.762 Rpc for GristView.fetchSelectedTable#4: RPC_ONCALL_OK sentry.min.js:3:44522
+10:34:07.762 Rpc sending RpcRespData sentry.min.js:3:44522
+10:34:07.763 PLUGIN VIEW /kanban/index.html: Rpc for GristView.fetchSelectedTable#3: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:34:07.765 PLUGIN VIEW /kanban/index.html: Rpc for CustomSectionAPI.mappings#5: RPC_CALLING grist-plugin-api.ts:408:15
+10:34:07.765 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: CustomSectionAPI.mappings#5 grist-plugin-api.ts:408:15
+10:34:07.766 Rpc for CustomSectionAPI.mappings#5: RPC_ONCALL sentry.min.js:3:44522
+10:34:07.766 Rpc for CustomSectionAPI.mappings#5: RPC_ONCALL_OK sentry.min.js:3:44522
+10:34:07.766 Rpc sending RpcRespData sentry.min.js:3:44522
+10:34:07.771 PLUGIN VIEW /kanban/index.html: Rpc for GristView.fetchSelectedTable#4: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:34:07.771 PLUGIN VIEW /kanban/index.html: Rpc for CustomSectionAPI.mappings#5: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:34:07.772 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#6: RPC_CALLING grist-plugin-api.ts:408:15
+10:34:07.772 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristDocAPI.fetchTable#6 grist-plugin-api.ts:408:15
+10:34:07.772 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#7: RPC_CALLING grist-plugin-api.ts:408:15
+10:34:07.772 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristDocAPI.fetchTable#7 grist-plugin-api.ts:408:15
+10:34:07.772 Rpc for GristDocAPI.fetchTable#6: RPC_ONCALL sentry.min.js:3:44522
+10:34:07.772 Comm request #5 fetchTable 
+Array [ 0, "Ssir_principale_task" ]
+main.bundle.js:2:26696
+10:34:07.773 GristWSConnection.send[true] {"reqId":5,"method":"fetchTable","args":[0,"Ssir_principale_task"]} sentry.min.js:3:44522
+10:34:07.773 Rpc for GristDocAPI.fetchTable#7: RPC_ONCALL sentry.min.js:3:44522
+10:34:07.773 Comm request #6 fetchTable 
+Array [ 0, "Ssir_principale_task" ]
+main.bundle.js:2:26696
+10:34:07.773 GristWSConnection.send[true] {"reqId":6,"method":"fetchTable","args":[0,"Ssir_principale_task"]} sentry.min.js:3:44522
+10:34:07.777 GristWSConnection: onmessage (11610 bytes) sentry.min.js:3:44522
+10:34:07.777 Comm response #4 fetchTable OK main.bundle.js:2:28063
+10:34:07.777 Rpc for GristDocAPI.fetchTable#2: RPC_ONCALL_OK sentry.min.js:3:44522
+10:34:07.777 Rpc sending RpcRespData sentry.min.js:3:44522
+10:34:07.777 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#2: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:34:07.779 [WARN:GristManager] Impossible de récupérer les infos utilisateur: TypeError: gristApi.docApi.getDocInfo is not a function
+    getUserInfo https://timox.github.io/kanban/js/managers/GristManager.js:765
+    loadUserInfo https://timox.github.io/kanban/js/core/KanbanManager.js:282
+    loadInitialData https://timox.github.io/kanban/js/core/KanbanManager.js:166
+    init https://timox.github.io/kanban/js/core/KanbanManager.js:71
+    KanbanManager https://timox.github.io/kanban/js/core/KanbanManager.js:54
+    initializeBaseComponents https://timox.github.io/kanban/js/app-initializer.js:114
+    _performInitialization https://timox.github.io/kanban/js/app-initializer.js:59
+    init https://timox.github.io/kanban/js/app-initializer.js:49
+    KanbanAppInitializer https://timox.github.io/kanban/js/app-initializer.js:38
+    <anonymous> https://timox.github.io/kanban/js/app-initializer.js:791
+    EventListener.handleEvent* https://timox.github.io/kanban/js/app-initializer.js:789
+LoggerManager.js:137:15
+10:34:07.780 KanbanManager: Aucun utilisateur d�tect� KanbanManager.js:287:17
+10:34:07.780 KanbanManager: 0 t�ches charg�es KanbanManager.js:168:13
+10:34:07.780 KanbanManager: 43 strat�gies charg�es KanbanManager.js:169:13
+10:34:07.780 KanbanManager: Rafra�chissement ignor� (pas initialis� ou en cours de mise � jour) KanbanManager.js:434:15
+10:34:07.780 📎 Événement attaché: .btn-history, .btn-timeline click.history EventManager.js:86:13
+10:34:07.780 📎 Événement attaché: .btn-edit-comment click.history EventManager.js:86:13
+10:34:07.780 📎 Événement attaché: [data-mode] click.viewMode EventManager.js:86:13
+10:34:07.780 📎 Événement attaché: .btn-delete-jalon click.jalon EventManager.js:86:13
+10:34:07.780 📎 Événement attaché: [object HTMLDocument] keydown.keyboard EventManager.js:86:13
+10:34:07.780 🎯 EventCentralizer: Tous les listeners centralisés via jQuery EventCentralizer.js:96:13
+10:34:07.813 [INFO:FilterManager] Filtered results: 0/0 tasks displayed LoggerManager.js:146:15
+10:34:07.824 GristWSConnection: onmessage (460445 bytes) sentry.min.js:3:44522
+10:34:07.825 Comm response #5 fetchTable OK main.bundle.js:2:28063
+10:34:07.825 Rpc for GristDocAPI.fetchTable#6: RPC_ONCALL_OK sentry.min.js:3:44522
+10:34:07.825 Rpc sending RpcRespData sentry.min.js:3:44522
+10:34:07.826 [INFO:ViewManager] 7 boutons de repliage initialisés LoggerManager.js:146:15
+10:34:07.829 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#6: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:34:07.832 KanbanManager: Donn�es recharg�es depuis Grist KanbanManager.js:701:13
+10:34:07.832 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#8: RPC_CALLING grist-plugin-api.ts:408:15
+10:34:07.832 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristDocAPI.fetchTable#8 grist-plugin-api.ts:408:15
+10:34:07.833 Rpc for GristDocAPI.fetchTable#8: RPC_ONCALL sentry.min.js:3:44522
+10:34:07.833 Comm request #7 fetchTable 
+Array [ 0, "Ssir_strategie2" ]
+main.bundle.js:2:26696
+10:34:07.833 GristWSConnection.send[true] {"reqId":7,"method":"fetchTable","args":[0,"Ssir_strategie2"]} sentry.min.js:3:44522
+10:34:07.842 GristWSConnection: onmessage (460445 bytes) sentry.min.js:3:44522
+10:34:07.844 Comm response #6 fetchTable OK main.bundle.js:2:28063
+10:34:07.844 Rpc for GristDocAPI.fetchTable#7: RPC_ONCALL_OK sentry.min.js:3:44522
+10:34:07.844 Rpc sending RpcRespData sentry.min.js:3:44522
+10:34:07.849 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#7: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:34:07.850 KanbanManager: Donn�es recharg�es depuis Grist KanbanManager.js:701:13
+10:34:07.850 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#9: RPC_CALLING grist-plugin-api.ts:408:15
+10:34:07.850 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristDocAPI.fetchTable#9 grist-plugin-api.ts:408:15
+10:34:07.851 Rpc for GristDocAPI.fetchTable#9: RPC_ONCALL sentry.min.js:3:44522
+10:34:07.851 Comm request #8 fetchTable 
+Array [ 0, "Ssir_strategie2" ]
+main.bundle.js:2:26696
+10:34:07.852 GristWSConnection.send[true] {"reqId":8,"method":"fetchTable","args":[0,"Ssir_strategie2"]} sentry.min.js:3:44522
+10:34:07.852 GristWSConnection: onmessage (11610 bytes) sentry.min.js:3:44522
+10:34:07.852 Comm response #7 fetchTable OK main.bundle.js:2:28063
+10:34:07.852 Rpc for GristDocAPI.fetchTable#8: RPC_ONCALL_OK sentry.min.js:3:44522
+10:34:07.852 Rpc sending RpcRespData sentry.min.js:3:44522
+10:34:07.852 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#8: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:34:07.862 [INFO:GristManager] 95 enregistrements rechargés LoggerManager.js:146:15
+10:34:07.871 GristWSConnection: onmessage (11610 bytes) sentry.min.js:3:44522
+10:34:07.871 Comm response #8 fetchTable OK main.bundle.js:2:28063
+10:34:07.872 Rpc for GristDocAPI.fetchTable#9: RPC_ONCALL_OK sentry.min.js:3:44522
+10:34:07.872 Rpc sending RpcRespData sentry.min.js:3:44522
+10:34:07.888 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#10: RPC_CALLING grist-plugin-api.ts:408:15
+10:34:07.889 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristDocAPI.fetchTable#10 grist-plugin-api.ts:408:15
+10:34:07.890 Rpc for GristDocAPI.fetchTable#10: RPC_ONCALL sentry.min.js:3:44522
+10:34:07.890 Comm request #9 fetchTable 
+Array [ 0, "Ssir_principale_task" ]
+main.bundle.js:2:26696
+10:34:07.890 GristWSConnection.send[true] {"reqId":9,"method":"fetchTable","args":[0,"Ssir_principale_task"]} sentry.min.js:3:44522
+10:34:07.909 [INFO:ViewManager] Application du mode de vue: detailed LoggerManager.js:146:15
+10:34:07.909 [INFO:ViewManager] Mode détaillé appliqué - système de repliage initialisé LoggerManager.js:146:15
+10:34:07.910 ⏱️ Attente GristManager.isConnected... app-initializer.js:684:13
+10:34:07.917 [INFO:ViewManager] 7 boutons de repliage initialisés LoggerManager.js:146:15
+10:34:07.930 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#9: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:34:07.932 GristWSConnection: onmessage (460445 bytes) sentry.min.js:3:44522
+10:34:07.933 Comm response #9 fetchTable OK main.bundle.js:2:28063
+10:34:07.934 Rpc for GristDocAPI.fetchTable#10: RPC_ONCALL_OK sentry.min.js:3:44522
+10:34:07.934 Rpc sending RpcRespData sentry.min.js:3:44522
+10:34:07.949 [INFO:GristManager] 95 enregistrements rechargés LoggerManager.js:146:15
+10:34:07.990 [INFO:ViewManager] 7 boutons de repliage initialisés 2 LoggerManager.js:146:15
+10:34:07.993 The Notification permission may only be requested from inside a short running user-generated event handler. index.html
+10:34:08.004 [INFO:FilterManager] Filtered results: 95/95 tasks displayed LoggerManager.js:146:15
+10:34:08.005 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#10: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:34:08.005 [INFO:GristManager] 95 enregistrements chargés LoggerManager.js:146:15
+10:34:08.006 [INFO:GristManager] Connexion établie avec Grist LoggerManager.js:146:15
+10:34:08.026 [INFO:ViewManager] 7 boutons de repliage initialisés LoggerManager.js:146:15
+10:34:08.043 KanbanAppInitializer: initialisation terminée app-initializer.js:65:15
+10:34:12.421    Extracted strategy IDs: 
+Array [ 33, 24 ]
+ModalManager.js:784:13
+10:34:12.422    strategyIds.length: 2 ModalManager.js:785:13
+10:34:12.422    Available strategies data: 43 ModalManager.js:795:13
+10:34:12.422    Processing strategy ID: 33 number ModalManager.js:800:17
+10:34:12.422    Found strategy: 33 - Répondre aux demandes des métiers ModalManager.js:808:17
+10:34:12.423    Processing strategy ID: 24 number ModalManager.js:800:17
+10:34:12.423    Found strategy: 24 - Répondre aux demandes des métiers ModalManager.js:808:17
+10:34:12.424 [INFO:ModalManager] Strategies loaded from Grist: 2 items LoggerManager.js:146:15
+10:34:12.572 GET
+data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e
+
+10:34:12.573 GET
+data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23212529' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M2 5L8 11L14 5'/%3e%3c/svg%3e
+
+10:34:15.661 Uncaught DOMException: Element.matches: '[object HTMLDocument]' is not a valid selector
+    findMatchingTarget https://timox.github.io/kanban/js/utils/EventManager.js:33
+    delegatedHandler https://timox.github.io/kanban/js/utils/EventManager.js:68
+    on https://timox.github.io/kanban/js/utils/EventManager.js:75
+    safeOn https://timox.github.io/kanban/js/utils/EventManager.js:160
+    setupGlobalListeners https://timox.github.io/kanban/js/core/EventCentralizer.js:88
+    EventCentralizer https://timox.github.io/kanban/js/core/EventCentralizer.js:14
+    getEventCentralizer https://timox.github.io/kanban/js/core/EventCentralizer.js:158
+    setupEventCentralizer https://timox.github.io/kanban/js/core/KanbanManager.js:1116
+    init https://timox.github.io/kanban/js/core/KanbanManager.js:80
+    KanbanManager https://timox.github.io/kanban/js/core/KanbanManager.js:54
+    initializeBaseComponents https://timox.github.io/kanban/js/app-initializer.js:114
+    _performInitialization https://timox.github.io/kanban/js/app-initializer.js:59
+    init https://timox.github.io/kanban/js/app-initializer.js:49
+    KanbanAppInitializer https://timox.github.io/kanban/js/app-initializer.js:38
+    <anonymous> https://timox.github.io/kanban/js/app-initializer.js:791
+    EventListener.handleEvent* https://timox.github.io/kanban/js/app-initializer.js:789
+4 EventManager.js:33
+10:34:17.216    mapping strategy: 
+Object { id: 33, objectif: "Répondre aux demandes des métiers", sous_objectif: "Mettre en place les solutions NexSIS-RRF", action: "Prévoir et accompagner les évolutions techniques", echeance: "2024-2030", responsable: "Équipe projet", portee: "Générale" }
+ModalManager.js:1461:15
+10:34:17.216    mapping strategy: 
+Object { id: 24, objectif: "Répondre aux demandes des métiers", sous_objectif: "Pérenniser les outils à destination des métiers et utilisateurs", action: "Aide à la maitrise d'ouvrage pour la continuité des outils et le support avec les fournisseurs de logiciels", echeance: "2024-", responsable: "ISI", portee: "Générale" }
+ModalManager.js:1461:15
+10:34:17.216 🎯 Strategies saved: 2 items 
+Array(3) [ "L", 33, 24 ]
+ModalManager.js:1465:13
+10:34:17.217 ✅ 2 stratégies validées: 
+Array [ 33, 24 ]
+ModalManager.js:1574:19
+10:34:17.217    Type: string ModalManager.js:1627:13
+10:34:17.217    Valeur brute: {"jalons":[{"id":"1762188444487rmy1d","type":"reunion","titre":"formation et migration test","date":"2025-12-03","commentaire":"","statut":"planifie","created_at":"2025-11-03T16:47:24.487Z","participants":[],"lieu":""},{"id":"1762188467737t5zmt","type":"echeance","titre":"faire les VM pastell","date":"2025-11-03","commentaire":"","statut":"planifie","created_at":"2025-11-03T16:47:47.737Z","criticite":"normale","consequences":""}],"lastModified":"2025-11-04T09:34:17.217Z"} ModalManager.js:1628:13
+10:34:17.217 ✅ Jalons après traitement: {"jalons":[{"id":"1762188444487rmy1d","type":"reunion","titre":"formation et migration test","date":"2025-12-03","commentaire":"","statut":"planifie","created_at":"2025-11-03T16:47:24.487Z","participants":[],"lieu":""},{"id":"1762188467737t5zmt","type":"echeance","titre":"faire les VM pastell","date":"2025-11-03","commentaire":"","statut":"planifie","created_at":"2025-11-03T16:47:47.737Z","criticite":"normale","consequences":""}],"lastModified":"2025-11-04T09:34:17.217Z"} ModalManager.js:1635:15
+10:34:17.217 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.applyUserActions#11: RPC_CALLING grist-plugin-api.ts:408:15
+10:34:17.217 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristDocAPI.applyUserActions#11 grist-plugin-api.ts:408:15
+10:34:17.218 Rpc for GristDocAPI.applyUserActions#11: RPC_ONCALL sentry.min.js:3:44522
+10:34:17.219 Comm request #10 applyUserActions 
+Array(3) [ 0, (1) […], {…} ]
+main.bundle.js:2:26696
+10:34:17.220 GristWSConnection.send[true] {"reqId":10,"method":"applyUserActions","args":[0,[["UpdateRecord","Ssir_principale_task",155,{"titre":"mise à jour de pastell","statut":"À faire","projet":"Évolution applicative","urgence":"Courte","impact":"Important","bureau":["L","BDD","Chef SSIR"],"qui":["L","Chloé","Timothée","Yvon"],"strategie_id":["L",33,24],"jalons":"{\"jalons\":[{\"id\":\"1762188444487rmy1d\",\"type\":\"reunion\",\"titre\":\"formation et migration test\",\"date\":\"2025-12-03\",\"commentaire\":\"\",\"statut\":\"planifie\",\"created_at\":\"2025-11-03T16:47:24.487Z\",\"participants\":[],\"lieu\":\"\"},{\"id\":\"1762188467737t5zmt\",\"type\":\"echeance\",\"titre\":\"faire les VM pastell\",\"date\":\"2025-11-03\",\"commentaire\":\"\",\"statut\":\"planifie\",\"created_at\":\"2025-11-03T16:47:47.737Z\",\"criticite\":\"normale\",\"consequences\":\"\"}],\"lastModified\":\"2025-11-04T09:34:17.217Z\"}","date_echeance":null,"date_derniere_maj":"2025-11-04T09:34:17.217Z","notes":"{\"content\":\"Voici le planning proposé par libriciel \\n--------------------------------------\\nBonjour,\\n\\nVeuillez trouver ci-dessous une proposition de planning concernant l'outil pastell :\\n\\n    Réunion de validation des pré-requis techniques à l’installation de la version 4.1 de pastell sur les serveurs de la personne publique, et rédaction du compte-rendu : le 03/11 à 14h00 (à distance) avec M. TOMAS\\n    Migration (avec reprise des données) de 1 instance Pastell de test en version 4.1 : le 19/11 à 09h00 (à distance) avec M. SUBIAS\\n    Formation aux nouveautés fonctionnelles des versions 4.0 et4.1 de Pastell : le 25/11 de 09h00 à 12h00 et de 14h00 à 17h00 (soit 1j à distance) avec M. BOUKARI\\n    Migration (avec reprise des données) de 1 instance Pastell de production en version 4.1 : le 03/12 à 09h00 (à distance) avec M. SUBIAS\\n\\n\\nJe vous transmets en p/j les prérequis d'installation, ainsi que la fiche d'informations à compléter. (1 par instance)\\n\\nAttention, les prérequis ont changés, si votre système d'exploitation n'est plus supporté, de nouveaux serveurs conformes aux prérequis devront être provisionnés.\\n\\nL'intervention nécessite une interruption de service de l'outil.\\n\\nDans l'attente de votre retour,\\n\\nBien cordialement,\",\"history\":[{\"timestamp\":\"2025-10-27T13:48:46.752Z\",\"user\":\"timothee.foucart\",\"action\":\"comment\",\"details\":\"Commentaire initial: Voici le planning proposé par libriciel \\n--------------------------------------\\nBonjour,\\n\\nVeuillez trouver ci-dessous une proposition de planning concernant l'outil pastell :\\n\\n    Réunion de validation des pré-requis techniques à l’installation de la version 4.1 de pastell sur les serveurs de la personne publique, et rédaction du compte-rendu : le 03/11 à 14h00 (à distance) avec M. TOMAS\\n    Migration (avec reprise des données) de 1 instance Pastell de test en version 4.1 : le 19/11 à 09h00 (à distance) avec M. SUBIAS\\n    Formation aux nouveautés fonctionnelles des versions 4.0 et4.1 de Pastell : le 25/11 de 09h00 à 12h00 et de 14h00 à 17h00 (soit 1j à distance) avec M. BOUKARI\\n    Migration (avec reprise des données) de 1 instance Pastell de production en version 4.1 : le 03/12 à 09h00 (à distance) avec M. SUBIAS\\n\\n\\nJe vous transmets en p/j les prérequis d'installation, ainsi que la fiche d'informations à compléter. (1 par instance)\\n\\nAttention, les prérequis ont changés, si votre système d'exploitation n'est plus supporté, de nouveaux serveurs conformes aux prérequis devront être provisionnés.\\n\\nL'intervention nécessite une interruption de service de l'outil.\\n\\nDans l'attente de votre retour,\\n\\nBien cordialement,\",\"status\":\"Backlog\",\"newValue\":\"Voici le planning proposé par libriciel \\n--------------------------------------\\nBonjour,\\n\\nVeuillez trouver ci-dessous une proposition de planning concernant l'outil pastell :\\n\\n    Réunion de validation des pré-requis techniques à l’installation de la version 4.1 de pastell sur les serveurs de la personne publique, et rédaction du compte-rendu : le 03/11 à 14h00 (à distance) avec M. TOMAS\\n    Migration (avec reprise des données) de 1 instance Pastell de test en version 4.1 : le 19/11 à 09h00 (à distance) avec M. SUBIAS\\n    Formation aux nouveautés fonctionnelles des versions 4.0 et4.1 de Pastell : le 25/11 de 09h00 à 12h00 et de 14h00 à 17h00 (soit 1j à distance) avec M. BOUKARI\\n    Migration (avec reprise des données) de 1 instance Pastell de production en version 4.1 : le 03/12 à 09h00 (à distance) avec M. SUBIAS\\n\\n\\nJe vous transmets en p/j les prérequis d'installation, ainsi que la fiche d'informations à compléter. (1 par instance)\\n\\nAttention, les prérequis ont changés, si votre système d'exploitation n'est plus supporté, de nouveaux serveurs conformes aux prérequis devront être provisionnés.\\n\\nL'intervention nécessite une interruption de service de l'outil.\\n\\nDans l'attente de votre retour,\\n\\nBien cordialement,\"}],\"references\":\"\"}"}]],{}]} sentry.min.js:3:44522
+10:34:17.259 GristWSConnection: onmessage (2931 bytes) sentry.min.js:3:44522
+10:34:17.260 Comm: Triggering event docUserAction main.bundle.js:2:28349
+10:34:17.261 GristDoc.onDocUserAction 
+Object { type: "docUserAction", data: {…}, docFD: 0, fromSelf: true, seqId: 25 }
+sentry.min.js:3:44522
+10:34:17.262 GristDoc applying #0 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 155, {…} ]
+sentry.min.js:3:44522
+10:34:17.262 GristDoc applying #1 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 155, {…} ]
+sentry.min.js:3:44522
+10:34:17.263 GristDoc applying #2 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 155, {…} ]
+sentry.min.js:3:44522
+10:34:17.264 Rpc sending Custom sentry.min.js:3:44522
+10:34:17.264 GristWSConnection: onmessage (170 bytes) sentry.min.js:3:44522
+10:34:17.264 Comm response #10 applyUserActions OK main.bundle.js:2:28063
+10:34:17.264 Rpc for GristDocAPI.applyUserActions#11: RPC_ONCALL_OK sentry.min.js:3:44522
+10:34:17.264 Rpc sending RpcRespData sentry.min.js:3:44522
+10:34:17.265 PLUGIN VIEW /kanban/index.html: Rpc for GristView.fetchSelectedTable#12: RPC_CALLING grist-plugin-api.ts:408:15
+10:34:17.265 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristView.fetchSelectedTable#12 grist-plugin-api.ts:408:15
+10:34:17.265 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.applyUserActions#11: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:34:17.265 Rpc for GristView.fetchSelectedTable#12: RPC_ONCALL sentry.min.js:3:44522
+10:34:17.266 Rpc for GristView.fetchSelectedTable#12: RPC_ONCALL_OK sentry.min.js:3:44522
+10:34:17.266 Rpc sending RpcRespData sentry.min.js:3:44522
+10:34:17.278 PLUGIN VIEW /kanban/index.html: Rpc for GristView.fetchSelectedTable#12: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:34:17.279 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#13: RPC_CALLING grist-plugin-api.ts:408:15
+10:34:17.279 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristDocAPI.fetchTable#13 grist-plugin-api.ts:408:15
+10:34:17.280 Rpc for GristDocAPI.fetchTable#13: RPC_ONCALL sentry.min.js:3:44522
+10:34:17.280 Comm request #11 fetchTable 
+Array [ 0, "Ssir_principale_task" ]
+main.bundle.js:2:26696
+10:34:17.280 GristWSConnection.send[true] {"reqId":11,"method":"fetchTable","args":[0,"Ssir_principale_task"]} sentry.min.js:3:44522
+10:34:17.367 GristWSConnection: onmessage (460446 bytes) sentry.min.js:3:44522
+10:34:17.369 Comm response #11 fetchTable OK main.bundle.js:2:28063
+10:34:17.369 Rpc for GristDocAPI.fetchTable#13: RPC_ONCALL_OK sentry.min.js:3:44522
+10:34:17.369 Rpc sending RpcRespData sentry.min.js:3:44522
+10:34:17.374 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#13: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:34:17.377 KanbanManager: Donn�es recharg�es depuis Grist KanbanManager.js:701:13
+10:34:17.378 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#14: RPC_CALLING grist-plugin-api.ts:408:15
+10:34:17.378 PLUGIN VIEW /kanban/index.html: Rpc sending RpcCall: GristDocAPI.fetchTable#14 grist-plugin-api.ts:408:15
+10:34:17.379 Rpc for GristDocAPI.fetchTable#14: RPC_ONCALL sentry.min.js:3:44522
+10:34:17.379 Comm request #12 fetchTable 
+Array [ 0, "Ssir_strategie2" ]
+main.bundle.js:2:26696
+10:34:17.380 GristWSConnection.send[true] {"reqId":12,"method":"fetchTable","args":[0,"Ssir_strategie2"]} sentry.min.js:3:44522
+10:34:17.398 GristWSConnection: onmessage (11611 bytes) sentry.min.js:3:44522
+10:34:17.398 Comm response #12 fetchTable OK main.bundle.js:2:28063
+10:34:17.398 Rpc for GristDocAPI.fetchTable#14: RPC_ONCALL_OK sentry.min.js:3:44522
+10:34:17.398 Rpc sending RpcRespData sentry.min.js:3:44522
+10:34:17.399 PLUGIN VIEW /kanban/index.html: Rpc for GristDocAPI.fetchTable#14: RPC_RESULT_OK grist-plugin-api.ts:408:15
+10:34:17.405 KanbanManager: Refresh ignor� car mise � jour en cours KanbanManager.js:719:15
+10:34:17.405 [INFO:GristManager] 95 enregistrements rechargés LoggerManager.js:146:15
+10:34:17.405 KanbanManager: Rafra�chissement ignor� (pas initialis� ou en cours de mise � jour) KanbanManager.js:434:15
+10:34:20.076 Uncaught DOMException: Element.matches: '[object HTMLDocument]' is not a valid selector
+    findMatchingTarget https://timox.github.io/kanban/js/utils/EventManager.js:33
+    delegatedHandler https://timox.github.io/kanban/js/utils/EventManager.js:68
+    on https://timox.github.io/kanban/js/utils/EventManager.js:75
+    safeOn https://timox.github.io/kanban/js/utils/EventManager.js:160
+    setupGlobalListeners https://timox.github.io/kanban/js/core/EventCentralizer.js:88
+    EventCentralizer https://timox.github.io/kanban/js/core/EventCentralizer.js:14
+    getEventCentralizer https://timox.github.io/kanban/js/core/EventCentralizer.js:158
+    setupEventCentralizer https://timox.github.io/kanban/js/core/KanbanManager.js:1116
+    init https://timox.github.io/kanban/js/core/KanbanManager.js:80
+    KanbanManager https://timox.github.io/kanban/js/core/KanbanManager.js:54
+    initializeBaseComponents https://timox.github.io/kanban/js/app-initializer.js:114
+    _performInitialization https://timox.github.io/kanban/js/app-initializer.js:59
+    init https://timox.github.io/kanban/js/app-initializer.js:49
+    KanbanAppInitializer https://timox.github.io/kanban/js/app-initializer.js:38
+    <anonymous> https://timox.github.io/kanban/js/app-initializer.js:791
+    EventListener.handleEvent* https://timox.github.io/kanban/js/app-initializer.js:789
+EventManager.js:33
+10:34:20.272 Source map error: Error: request failed with status 404
+Stack in the worker:networkRequest@resource://devtools/client/shared/source-map-loader/utils/network-request.js:43:9
+
+Resource URL: https://grist.numerique.gouv.fr/custom-assets/sentry.min.js
+Source Map URL: bundle.min.js.map
+10:35:02.399 GristWSConnection.send[true] {"beat":"alive","url":"https://grist.numerique.gouv.fr/o/sdis25-gssi/3JvD44PeeTbL/kanban","docId":"3JvD44PeeTbL8ZK83BxNLA"} 2 sentry.min.js:3:44522
