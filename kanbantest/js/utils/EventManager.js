@@ -218,22 +218,36 @@ export class EventManager {
         event.delegateTarget = matchingTarget;
       }
 
-      const proxiedEvent = new Proxy(event, {
-        get(target, prop, receiver) {
-          if (prop === 'currentTarget' || prop === 'delegateTarget') {
-            return matchingTarget;
-          }
-          return Reflect.get(target, prop, receiver);
-        },
-        has(target, prop) {
-          if (prop === 'currentTarget' || prop === 'delegateTarget') {
-            return true;
-          }
-          return Reflect.has(target, prop);
-        }
-      });
+      const previousCurrentTargetDescriptor = Object.getOwnPropertyDescriptor(event, 'currentTarget');
+      let restoreCurrentTarget = null;
 
-      handler.call(matchingTarget, proxiedEvent);
+      if (!previousCurrentTargetDescriptor || previousCurrentTargetDescriptor.configurable) {
+        try {
+          Object.defineProperty(event, 'currentTarget', {
+            configurable: true,
+            enumerable: false,
+            writable: true,
+            value: matchingTarget
+          });
+          restoreCurrentTarget = () => {
+            if (previousCurrentTargetDescriptor) {
+              Object.defineProperty(event, 'currentTarget', previousCurrentTargetDescriptor);
+            } else {
+              delete event.currentTarget;
+            }
+          };
+        } catch (defineCurrentTargetError) {
+          restoreCurrentTarget = null;
+        }
+      }
+
+      try {
+        handler.call(matchingTarget, event);
+      } finally {
+        if (restoreCurrentTarget) {
+          restoreCurrentTarget();
+        }
+      }
     };
 
     const target = isDelegated ? document : resolved.target;
