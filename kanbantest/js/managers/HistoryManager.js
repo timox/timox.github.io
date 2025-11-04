@@ -2061,9 +2061,17 @@ export class HistoryManager {
         this.logger.debug(`updateCommentInGrist - Entrée ${i}: action=${entry.action}, timestamp=${entryTimestamp.substring(0, 12)}`);
 
         // Comparer les timestamps (on prend les premiers caractères pour éviter les problèmes de précision)
-        const timestampsMatch =
-          (entryTimestamp === '' && commentTimestampDigits === '') ||
-          (entryTimestamp && commentTimestampDigits && entryTimestamp.substring(0, 12) === commentTimestampDigits.substring(0, 12));
+        const timestampsMatch = (() => {
+          if (commentTimestampDigits == null) {
+            return false;
+          }
+
+          if (entryTimestamp === '' || commentTimestampDigits === '') {
+            return entryTimestamp === commentTimestampDigits;
+          }
+
+          return entryTimestamp.substring(0, 12) === commentTimestampDigits.substring(0, 12);
+        })();
 
         if (timestampsMatch) {
           // Vérifier que c'est bien un commentaire
