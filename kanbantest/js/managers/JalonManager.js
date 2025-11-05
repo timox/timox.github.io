@@ -22,18 +22,63 @@ export class JalonManager {
     this.logger.debug('Initialisation JalonManager...');
 
     // Initialiser la modale Bootstrap
+    this.initializeModalInstance();
+
+    this.setupEventListeners();
+  }
+
+  /**
+   * Retourne la librairie Bootstrap disponible, même en mode module
+   */
+  getBootstrapLibrary() {
+    if (typeof bootstrap !== 'undefined') {
+      return bootstrap;
+    }
+
+    if (typeof window !== 'undefined' && window.bootstrap) {
+      return window.bootstrap;
+    }
+
+    return null;
+  }
+
+  /**
+   * Initialise (ou réinitialise) l'instance de modale Bootstrap
+   */
+  initializeModalInstance() {
     try {
       const modalElement = document.getElementById('jalonModal');
-      if (typeof bootstrap === 'undefined' || !modalElement) {
-        throw new Error('Bootstrap ou élément jalonModal indisponible');
+      const bootstrapLib = this.getBootstrapLibrary();
+
+      if (!bootstrapLib || !bootstrapLib.Modal) {
+        throw new Error('Librairie Bootstrap Modale indisponible');
       }
-      this.jalonModal = new bootstrap.Modal(modalElement);
+
+      if (!modalElement) {
+        throw new Error('Élément #jalonModal introuvable dans le DOM');
+      }
+
+      const existingInstance = bootstrapLib.Modal.getInstance?.(modalElement);
+      this.jalonModal = existingInstance || new bootstrapLib.Modal(modalElement);
+      this.logger.debug('Instance de modale jalon initialisée');
     } catch (error) {
       this.logger.error('Impossible d\'initialiser la modale des jalons:', error);
       this.jalonModal = null;
     }
+  }
 
-    this.setupEventListeners();
+  /**
+   * Vérifie que la modale est prête avant usage
+   * @returns {boolean}
+   */
+  ensureModalReady() {
+    if (this.jalonModal) {
+      return true;
+    }
+
+    this.logger.warn('Modale de jalon non prête, nouvelle tentative d\'initialisation...');
+    this.initializeModalInstance();
+    return !!this.jalonModal;
   }
 
   /**
@@ -87,7 +132,8 @@ export class JalonManager {
     }
 
     // Reset form à la fermeture de la modale
-    document.getElementById('jalonModal').addEventListener('hidden.bs.modal', () => {
+    const modalElement = document.getElementById('jalonModal');
+    modalElement?.addEventListener('hidden.bs.modal', () => {
       this.resetJalonForm();
     });
 
@@ -165,7 +211,7 @@ export class JalonManager {
    * @param {object} jalon - Jalon à éditer (null pour nouveau)
    */
   openJalonModal(jalon = null) {
-    if (!this.jalonModal) {
+    if (!this.ensureModalReady()) {
       this.logger.error('Modale de jalon non initialisée');
       return;
     }
