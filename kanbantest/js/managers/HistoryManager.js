@@ -22,6 +22,9 @@ export class HistoryManager {
     this.kanban = kanbanManager;
     this.currentTaskHistory = null;
     this.logger = createModuleLogger('HistoryManager');
+
+    // Widget d'édition de commentaire (accordéon modale)
+    this.activeModalFocusTrap = null;
     
     this.init();
   }
@@ -1419,49 +1422,51 @@ export class HistoryManager {
       this.logger.debug('Suppression du widget existant');
       existingWidget.remove();
     }
-    
+
     this.logger.debug('Création du widget d\'édition de commentaires pour accordéon');
-    
+
     // Créer le HTML du widget avec structure corrigée
     const widgetHTML = `
       <div id="accordion-comment-edit-widget" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1070;">
-        <div class="comment-edit-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; pointer-events: none;">
+        <div class="comment-edit-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; pointer-events: auto;">
           <div class="comment-edit-modal-container" style="pointer-events: auto;">
-          <div class="comment-edit-modal" style="background: white; border-radius: 8px; max-width: 700px; width: 95%; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
-            <div class="comment-edit-header" style="padding: 1rem; border-bottom: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: center;">
-              <h5 style="margin: 0; color: #333;"><i class="bi bi-pencil me-2"></i>Édition de commentaire</h5>
-              <button type="button" id="accordion-btn-close-comment-edit" class="btn-close" aria-label="Fermer" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6c757d;">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-            
-            <div class="comment-edit-body" style="padding: 1rem;">
-              <div class="mb-2">
-                <small class="text-muted">Date: <span id="accordion-comment-edit-date"></span></small>
+            <div class="comment-edit-modal" style="background: white; border-radius: 8px; max-width: 700px; width: 95%; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+              <div class="comment-edit-header" style="padding: 1rem; border-bottom: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: center;">
+                <h5 style="margin: 0; color: #333;"><i class="bi bi-pencil me-2"></i>Édition de commentaire</h5>
+                <button type="button" id="accordion-btn-close-comment-edit" class="btn-close" aria-label="Fermer" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6c757d;">
+                  <span aria-hidden="true">&times;</span>
+                </button>
               </div>
-              <textarea id="accordion-comment-edit-text" rows="6" 
-                        placeholder="Modifiez votre commentaire..." 
-                        style="width: 100%; min-height: 120px; padding: 10px; border: 2px solid #007bff; background: white; font-family: inherit; font-size: 14px; line-height: 1.4; resize: vertical; outline: none;"
-                        ></textarea>
+
+              <div class="comment-edit-body" style="padding: 1rem;">
+                <div class="mb-2">
+                  <small class="text-muted">Date: <span id="accordion-comment-edit-date"></span></small>
+                </div>
+                <textarea id="accordion-comment-edit-text" rows="6"
+                          placeholder="Modifiez votre commentaire..."
+                          style="width: 100%; min-height: 120px; padding: 10px; border: 2px solid #007bff; background: white; font-family: inherit; font-size: 14px; line-height: 1.4; resize: vertical; outline: none;"
+                          ></textarea>
+              </div>
+
+              <div class="comment-edit-footer" style="padding: 1rem; border-top: 1px solid #dee2e6; display: flex; justify-content: flex-end; gap: 0.5rem;">
+                <button type="button" id="accordion-btn-cancel-comment-edit" class="btn btn-secondary">
+                  <i class="bi bi-x-circle me-1"></i>Annuler
+                </button>
+                <button type="button" id="accordion-btn-save-comment-edit" class="btn btn-primary">
+                  <i class="bi bi-check-circle me-1"></i>Sauvegarder
+                </button>
+              </div>
             </div>
-            
-            <div class="comment-edit-footer" style="padding: 1rem; border-top: 1px solid #dee2e6; display: flex; justify-content: flex-end; gap: 0.5rem;">
-              <button type="button" id="accordion-btn-cancel-comment-edit" class="btn btn-secondary">
-                <i class="bi bi-x-circle me-1"></i>Annuler
-              </button>
-              <button type="button" id="accordion-btn-save-comment-edit" class="btn btn-primary">
-                <i class="bi bi-check-circle me-1"></i>Sauvegarder
-              </button>
-            </div>
-          </div>
           </div>
         </div>
       </div>
     `;
-    
-    // Ajouter au body
-    document.body.insertAdjacentHTML('beforeend', widgetHTML);
-    
+
+    const container = document.getElementById('popup-tache') || document.body;
+    container.insertAdjacentHTML('beforeend', widgetHTML);
+
+    this.addCommentEditStyles();
+
     // Attacher les event listeners après création
     this.attachCommentEditListeners();
   }
@@ -1686,7 +1691,9 @@ export class HistoryManager {
     textArea.dataset.commentId = commentId;
     textArea.setAttribute('data-comment-id', commentId);
     textArea.setAttribute('data-original', originalContent);
-    
+
+    this.disableTaskModalFocusTrap();
+
     widget.style.display = 'block';
     
     // Focus avec debugging
@@ -1713,7 +1720,9 @@ export class HistoryManager {
     if (widget) {
       widget.style.display = 'none';
     }
-    
+
+    this.restoreTaskModalFocusTrap();
+
     this.currentEditingComment = null;
     
     // Nettoyer le formulaire (IDs uniques pour accordéon)
@@ -1730,7 +1739,12 @@ export class HistoryManager {
    */
   isCommentEditOpen() {
     const widget = document.getElementById('accordion-comment-edit-widget');
-    return widget && widget.style.display === 'block';
+    if (!widget) {
+      return false;
+    }
+
+    const style = window.getComputedStyle(widget);
+    return style.display !== 'none' && widget.getAttribute('aria-hidden') !== 'true';
   }
   
   /**
@@ -1743,8 +1757,10 @@ export class HistoryManager {
     const widget = document.getElementById('accordion-comment-edit-widget');
     const textArea = document.getElementById('accordion-comment-edit-text');
     const dateSpan = document.getElementById('accordion-comment-edit-date');
-    
-    if (!widget || widget.style.display !== 'block' || !textArea) {
+
+    const widgetVisible = widget && window.getComputedStyle(widget).display !== 'none' && widget.getAttribute('aria-hidden') !== 'true';
+
+    if (!widget || !widgetVisible || !textArea) {
       this.logger.error('❌ Widget d\'édition non disponible ou invisible');
       displayError('Erreur: Aucun commentaire sélectionné pour édition');
       return false;
@@ -1778,8 +1794,80 @@ export class HistoryManager {
       id: commentId,
       hasOriginalContent: !!this.currentEditingComment.originalContent
     });
-    
+
     return true;
+  }
+
+  getBootstrapModalCandidates() {
+    const modalManager = this.kanban?.modalManager;
+    if (!modalManager) {
+      return [];
+    }
+
+    const candidates = [];
+    if (modalManager.taskModal) {
+      candidates.push(modalManager.taskModal);
+    }
+
+    if (modalManager.historyModal) {
+      candidates.push(modalManager.historyModal);
+    }
+
+    return candidates;
+  }
+
+  getActiveBootstrapModalInstance() {
+    const candidates = this.getBootstrapModalCandidates();
+    if (!candidates.length) {
+      return null;
+    }
+
+    const activeModal = candidates.find((modal) => modal?._element?.classList?.contains('show'));
+    return activeModal || candidates[0] || null;
+  }
+
+  /**
+   * Désactive temporairement le focus trap de la modale de tâche (Bootstrap)
+   */
+  disableTaskModalFocusTrap() {
+    const modalInstance = this.getActiveBootstrapModalInstance();
+    if (!modalInstance || !modalInstance._focustrap) {
+      return;
+    }
+
+    if (this.activeModalFocusTrap?.instance === modalInstance && this.activeModalFocusTrap.active) {
+      return;
+    }
+
+    try {
+      modalInstance._focustrap.deactivate();
+      this.activeModalFocusTrap = {
+        instance: modalInstance,
+        active: true
+      };
+      this.logger.debug('Focus trap de la modale active désactivé pour édition de commentaire');
+    } catch (error) {
+      this.logger.warn('Impossible de désactiver le focus trap de la modale active', error);
+    }
+  }
+
+  /**
+   * Restaure le focus trap de la modale de tâche (Bootstrap)
+   */
+  restoreTaskModalFocusTrap() {
+    if (!this.activeModalFocusTrap?.instance?._focustrap) {
+      this.activeModalFocusTrap = null;
+      return;
+    }
+
+    try {
+      this.activeModalFocusTrap.instance._focustrap.activate();
+      this.logger.debug('Focus trap de la modale active réactivé après édition de commentaire');
+    } catch (error) {
+      this.logger.warn('Impossible de réactiver le focus trap de la modale active', error);
+    }
+
+    this.activeModalFocusTrap = null;
   }
 
   /**

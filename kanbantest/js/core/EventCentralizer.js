@@ -48,16 +48,29 @@ export class EventCentralizer {
     safeOn('.btn-edit-comment', 'click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      
+
       const historyManager = this.managers.get('history');
-      if (!historyManager) return;
-      
+      if (!historyManager || typeof historyManager.openCommentEditWidget !== 'function') {
+        return;
+      }
+
       const button = e.currentTarget;
-      const commentText = button.closest('.history-entry').querySelector('.comment-text')?.textContent.trim();
-      const historyIndex = parseInt(button.dataset.historyIndex, 10);
-      
-      if (commentText && !isNaN(historyIndex)) {
-        historyManager.openCommentEditWidget(commentText, historyIndex, button);
+      const container = button.closest('[data-comment-id]')
+        || button.closest('.comment-item')
+        || button.closest('.timeline-entry');
+      const commentId = button.dataset.commentId || container?.dataset.commentId;
+
+      if (commentId) {
+        historyManager.openCommentEditWidget(commentId);
+        return;
+      }
+
+      const fallbackContent = container?.querySelector('.comment-content, .timeline-content')?.textContent?.trim();
+      if (fallbackContent) {
+        historyManager.logger?.warn?.('Identifiant de commentaire manquant, ouverture via contenu', fallbackContent);
+        historyManager.openCommentEditWidgetFromContent?.(fallbackContent, button);
+      } else {
+        historyManager.logger?.error?.('Impossible de déterminer le commentaire à éditer depuis le bouton', button);
       }
     }, 'history');
     
@@ -71,10 +84,23 @@ export class EventCentralizer {
     }, 'viewMode');
     
     // === JALONS ===
+    safeOn('#btn-add-jalon', 'click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const jalonManager = this.managers.get('jalon');
+      if (!jalonManager || typeof jalonManager.openJalonModal !== 'function') {
+        return;
+      }
+
+      jalonManager.logger?.debug?.('Bouton ajouter un jalon cliqué via EventCentralizer');
+      jalonManager.openJalonModal();
+    }, 'jalon');
+
     safeOn('.btn-delete-jalon', 'click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      
+
       const jalonManager = this.managers.get('jalon');
       if (!jalonManager) return;
       
