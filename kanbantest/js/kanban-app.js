@@ -24,7 +24,10 @@ import {
   formatDuration
 } from './utils/dates.js';
 
-import { initUserActionManager, getUserActionManager } from './utils/UserActionManager.js';
+import {
+  initUserActionManager,
+  getUserActionManager as getUserActionManagerSingleton
+} from './utils/UserActionManager.js';
 import { initNotesJsonMigrator, getNotesJsonMigrator } from './utils/NotesJsonMigrator.js';
 import { initLogger, createModuleLogger } from './utils/LoggerManager.js';
 
@@ -103,6 +106,7 @@ class KanbanManager {
     // Gestion utilisateur
     this.currentUser = null;
     this.userInitialized = false;
+    this.userActionManager = null;
     
     // Instances Sortable
     this.sortableInstances = [];
@@ -181,7 +185,7 @@ class KanbanManager {
   // NOUVEAU: Initialisation des managers
   initializeManagers() {
     console.log('🔧 Initialisation des managers...');
-    
+
     // Manager des filtres
     this.filterManager = new FilterManager(this);
     
@@ -193,17 +197,56 @@ class KanbanManager {
     
     // Manager de l'historique
     this.historyManager = new HistoryManager(this);
-    
+
     // Manager du sélecteur de dates
     this.datePickerManager = new DatePickerManager(this);
-    
+
     // Manager Grist
     this.gristManager = new GristManager(this);
-    
+
+    if (this.gristManager?.userActionManager) {
+      this.exposeUserActionManager(this.gristManager.userActionManager);
+    }
+
     // Manager des jalons
     this.jalonManager = new JalonManager(this);
-    
+
     console.log('✅ Managers initialisés');
+  }
+
+  exposeUserActionManager(managerInstance) {
+    if (managerInstance) {
+      this.userActionManager = managerInstance;
+    }
+
+    if (typeof window !== 'undefined') {
+      window.getUserActionManager = () => this.getUserActionManager();
+    }
+
+    return this.userActionManager;
+  }
+
+  setUserActionManager(managerInstance) {
+    return this.exposeUserActionManager(managerInstance);
+  }
+
+  getUserActionManager() {
+    if (this.userActionManager) {
+      return this.userActionManager;
+    }
+
+    const singleton = getUserActionManagerSingleton();
+    if (singleton) {
+      this.userActionManager = singleton;
+      return singleton;
+    }
+
+    if (this.gristManager?.userActionManager) {
+      this.userActionManager = this.gristManager.userActionManager;
+      return this.userActionManager;
+    }
+
+    return null;
   }
 
   async waitForGristReady() {
@@ -223,12 +266,15 @@ class KanbanManager {
         this.logger.info("Listener onRecords attaché.");
         
         // Initialiser le gestionnaire d'actions utilisateur et le migrateur
-        initUserActionManager(window.grist);
+        this.userActionManager = initUserActionManager(window.grist);
         initNotesJsonMigrator(window.grist);
         this.logger.info("UserActionManager et NotesJsonMigrator initialisés.");
-        
+
+        // Synchroniser l'instance avec les autres gestionnaires
+        this.exposeUserActionManager(this.userActionManager);
+
         // Initialiser le nom d'utilisateur
-        const userActionManager = getUserActionManager();
+        const userActionManager = this.getUserActionManager();
         if (userActionManager) {
           userActionManager.initializeUser().then(userName => {
             this.logger.debug("Nom d'utilisateur initialisé:", userName);
@@ -259,7 +305,7 @@ class KanbanManager {
       if (!this.currentRecords?.length) console.warn("Aucune donnée tâche Grist chargée.");
 
       // Migrer les notes vers le format JSON si nécessaire
-      const userActionManager = getUserActionManager();
+      const userActionManager = this.getUserActionManager();
       this.logger.debug("UserActionManager disponible:", !!userActionManager);
       this.logger.debug("Nombre d'enregistrements:", this.currentRecords?.length);
       
@@ -1776,7 +1822,7 @@ class KanbanManager {
 
       // ✅ ENREGISTRER L'HISTORIQUE AVEC LES BONNES VALEURS
       try {
-        const userActionManager = getUserActionManager();
+        const userActionManager = this.getUserActionManager();
         if (userActionManager) {
           await userActionManager.statusChangeAction(taskId, oldStatus, newStatus);
           console.log(`✅ Status change tracked: ${taskId} ${oldStatus} → ${newStatus}`);

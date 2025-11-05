@@ -20,11 +20,65 @@ export class JalonManager {
   init() {
     this.logger = createModuleLogger('JalonManager');
     this.logger.debug('Initialisation JalonManager...');
-    
+
     // Initialiser la modale Bootstrap
-    this.jalonModal = new bootstrap.Modal(document.getElementById('jalonModal'));
-    
+    this.initializeModalInstance();
+
     this.setupEventListeners();
+  }
+
+  /**
+   * Retourne la librairie Bootstrap disponible, même en mode module
+   */
+  getBootstrapLibrary() {
+    if (typeof bootstrap !== 'undefined') {
+      return bootstrap;
+    }
+
+    if (typeof window !== 'undefined' && window.bootstrap) {
+      return window.bootstrap;
+    }
+
+    return null;
+  }
+
+  /**
+   * Initialise (ou réinitialise) l'instance de modale Bootstrap
+   */
+  initializeModalInstance() {
+    try {
+      const modalElement = document.getElementById('jalonModal');
+      const bootstrapLib = this.getBootstrapLibrary();
+
+      if (!bootstrapLib || !bootstrapLib.Modal) {
+        throw new Error('Librairie Bootstrap Modale indisponible');
+      }
+
+      if (!modalElement) {
+        throw new Error('Élément #jalonModal introuvable dans le DOM');
+      }
+
+      const existingInstance = bootstrapLib.Modal.getInstance?.(modalElement);
+      this.jalonModal = existingInstance || new bootstrapLib.Modal(modalElement);
+      this.logger.debug('Instance de modale jalon initialisée');
+    } catch (error) {
+      this.logger.error('Impossible d\'initialiser la modale des jalons:', error);
+      this.jalonModal = null;
+    }
+  }
+
+  /**
+   * Vérifie que la modale est prête avant usage
+   * @returns {boolean}
+   */
+  ensureModalReady() {
+    if (this.jalonModal) {
+      return true;
+    }
+
+    this.logger.warn('Modale de jalon non prête, nouvelle tentative d\'initialisation...');
+    this.initializeModalInstance();
+    return !!this.jalonModal;
   }
 
   /**
@@ -54,13 +108,6 @@ export class JalonManager {
 
   setupEventListeners() {
     // Bouton ajouter un jalon
-    const btnAddJalon = document.getElementById('btn-add-jalon');
-    if (btnAddJalon) {
-      btnAddJalon.addEventListener('click', () => {
-        this.openJalonModal();
-      });
-    }
-
     // Sélection du type de jalon
     const typeCards = document.querySelectorAll('.jalon-type-card');
     typeCards.forEach(card => {
@@ -78,17 +125,26 @@ export class JalonManager {
     }
 
     // Reset form à la fermeture de la modale
-    document.getElementById('jalonModal').addEventListener('hidden.bs.modal', () => {
+    const modalElement = document.getElementById('jalonModal');
+    modalElement?.addEventListener('hidden.bs.modal', () => {
       this.resetJalonForm();
     });
 
     // Délégation d'événements pour les boutons de suppression et d'édition (éléments dynamiques)
     document.addEventListener('click', (e) => {
+      const addButton = e.target.closest('#btn-add-jalon');
+      if (addButton) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.openJalonModal();
+        return;
+      }
+
       // Gestion des boutons de suppression
       if (e.target.closest('.btn-delete-jalon')) {
         e.preventDefault();
         e.stopPropagation();
-        
+
         const btn = e.target.closest('.btn-delete-jalon');
         const jalonId = btn.dataset.jalonId;
         
@@ -156,6 +212,11 @@ export class JalonManager {
    * @param {object} jalon - Jalon à éditer (null pour nouveau)
    */
   openJalonModal(jalon = null) {
+    if (!this.ensureModalReady()) {
+      this.logger.error('Modale de jalon non initialisée');
+      return;
+    }
+
     const modalTitle = document.getElementById('jalon-modal-title');
     
     if (jalon) {
