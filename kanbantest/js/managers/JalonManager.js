@@ -20,10 +20,19 @@ export class JalonManager {
   init() {
     this.logger = createModuleLogger('JalonManager');
     this.logger.debug('Initialisation JalonManager...');
-    
+
     // Initialiser la modale Bootstrap
-    this.jalonModal = new bootstrap.Modal(document.getElementById('jalonModal'));
-    
+    try {
+      const modalElement = document.getElementById('jalonModal');
+      if (typeof bootstrap === 'undefined' || !modalElement) {
+        throw new Error('Bootstrap ou élément jalonModal indisponible');
+      }
+      this.jalonModal = new bootstrap.Modal(modalElement);
+    } catch (error) {
+      this.logger.error('Impossible d\'initialiser la modale des jalons:', error);
+      this.jalonModal = null;
+    }
+
     this.setupEventListeners();
   }
 
@@ -156,6 +165,11 @@ export class JalonManager {
    * @param {object} jalon - Jalon à éditer (null pour nouveau)
    */
   openJalonModal(jalon = null) {
+    if (!this.jalonModal) {
+      this.logger.error('Modale de jalon non initialisée');
+      return;
+    }
+
     const modalTitle = document.getElementById('jalon-modal-title');
     
     if (jalon) {

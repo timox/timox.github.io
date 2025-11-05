@@ -15,6 +15,8 @@ import {
 import { displayError } from '../utils/dom.js';
 import { normalizeDate } from '../utils/dates.js';
 import { createModuleLogger } from '../utils/LoggerManager.js';
+import { initUserActionManager, getUserActionManager } from '../utils/UserActionManager.js';
+import { initNotesJsonMigrator, getNotesJsonMigrator } from '../utils/NotesJsonMigrator.js';
 
 /**
  * Gestionnaire pour l'interface avec Grist
@@ -28,7 +30,10 @@ export class GristManager {
     this.currentRecords = [];
     this.gristOptions = {};
     this.logger = createModuleLogger('GristManager');
-    
+    this.userActionManager = null;
+    this.hasInitializedNotesSystem = false;
+    this.hasRunNotesMigration = false;
+
     this.init();
   }
   
@@ -38,12 +43,84 @@ export class GristManager {
   async init() {
     try {
       await this.waitForGristReady();
+      this.initializeNotesInfrastructure();
       await this.loadInitialData();
+      await this.runPendingNotesMigration();
       this.isConnected = true;
       this.logger.info('Connexion établie avec Grist');
     } catch (error) {
       this.logger.error('Erreur d\'initialisation:', error);
       displayError('Impossible de se connecter à Grist');
+    }
+  }
+
+  initializeNotesInfrastructure() {
+    if (this.hasInitializedNotesSystem) {
+      return;
+    }
+
+    try {
+      const gristApi = this.getGristApi();
+
+      // Initialiser le migrateur et le gestionnaire d'actions utilisateur
+      initNotesJsonMigrator(gristApi);
+      this.userActionManager = initUserActionManager(gristApi);
+
+      if (this.kanban?.setUserActionManager) {
+        this.kanban.setUserActionManager(this.userActionManager);
+      } else if (this.kanban) {
+        this.kanban.userActionManager = this.userActionManager;
+      }
+
+      if (typeof window !== 'undefined') {
+        window.getUserActionManager = () => getUserActionManager();
+      }
+
+      if (this.userActionManager && typeof this.userActionManager.initializeUser === 'function') {
+        this.userActionManager.initializeUser()
+          .then(userName => {
+            if (userName) {
+              this.logger.debug(`Utilisateur courant détecté: ${userName}`);
+            }
+          })
+          .catch(error => {
+            this.logger.warn('Impossible d\'initialiser le nom utilisateur:', error);
+          });
+      }
+
+      this.hasInitializedNotesSystem = true;
+    } catch (error) {
+      this.logger.warn('Initialisation du système de commentaires impossible:', error);
+    }
+  }
+
+  async runPendingNotesMigration() {
+    if (this.hasRunNotesMigration) {
+      return;
+    }
+
+    try {
+      const migrator = getNotesJsonMigrator();
+      const userActionManager = this.userActionManager || getUserActionManager();
+
+      if (!migrator || !userActionManager || !Array.isArray(this.currentRecords) || this.currentRecords.length === 0) {
+        this.hasRunNotesMigration = true;
+        return;
+      }
+
+      const migrated = await userActionManager.migrateAllTasks(this.currentRecords);
+      if (migrated > 0) {
+        this.logger.info(`Migration des notes effectuée pour ${migrated} enregistrements`);
+      }
+
+      const synchronized = await userActionManager.synchronizeAllContent(this.currentRecords);
+      if (synchronized > 0) {
+        this.logger.info(`Synchronisation des commentaires effectuée pour ${synchronized} enregistrements`);
+      }
+
+      this.hasRunNotesMigration = true;
+    } catch (error) {
+      this.logger.warn('Erreur lors de la migration des commentaires:', error);
     }
   }
   
