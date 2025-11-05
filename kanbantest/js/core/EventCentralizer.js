@@ -84,10 +84,23 @@ export class EventCentralizer {
     }, 'viewMode');
     
     // === JALONS ===
+    safeOn('#btn-add-jalon', 'click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const jalonManager = this.managers.get('jalon');
+      if (!jalonManager || typeof jalonManager.openJalonModal !== 'function') {
+        return;
+      }
+
+      jalonManager.logger?.debug?.('Bouton ajouter un jalon cliqué via EventCentralizer');
+      jalonManager.openJalonModal();
+    }, 'jalon');
+
     safeOn('.btn-delete-jalon', 'click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      
+
       const jalonManager = this.managers.get('jalon');
       if (!jalonManager) return;
       
