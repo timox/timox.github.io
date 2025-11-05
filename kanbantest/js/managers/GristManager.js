@@ -66,6 +66,16 @@ export class GristManager {
       initNotesJsonMigrator(gristApi);
       this.userActionManager = initUserActionManager(gristApi);
 
+      if (this.kanban?.setUserActionManager) {
+        this.kanban.setUserActionManager(this.userActionManager);
+      } else if (this.kanban) {
+        this.kanban.userActionManager = this.userActionManager;
+      }
+
+      if (typeof window !== 'undefined') {
+        window.getUserActionManager = () => getUserActionManager();
+      }
+
       if (this.userActionManager && typeof this.userActionManager.initializeUser === 'function') {
         this.userActionManager.initializeUser()
           .then(userName => {
