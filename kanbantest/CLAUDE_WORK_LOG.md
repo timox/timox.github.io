@@ -59,16 +59,35 @@ Problème de duplication et d'ambiguïté des gestionnaires d'événements :
 
 ---
 
-## Managers restants à migrer
+### ⏳ ModalManager (PARTIEL)
+**Statut** : 4/19 événements migrés (21%)
 
-### ⏳ ModalManager
-**Statut** : 0/19 événements migrés
-- btnAjoutProjet (click)
-- urgenceSelect, impactSelect (change)
-- descriptionTextarea (input)
-- Divers headers, buttons, fields
-- checkboxes, elements (change, input)
-- **Conserver** : `shown.bs.collapse`, `hidden.bs.collapse` (Bootstrap lifecycle)
+**Événements migrés vers EventCentralizer :**
+1. `#btn-ajout-projet` (click) - ajout de projet
+2. `#popup-urgence`, `#popup-impact` (change) - calcul automatique de priorité
+3. `#popup-description` (input) - auto-resize textarea
+4. `.strategy-tag-remove` (click) - suppression tags (via délégation)
+
+**Conservés dans ModalManager (Bootstrap lifecycle) :**
+- `shown.bs.collapse`, `hidden.bs.collapse` - événements Bootstrap sur accordéons
+
+**Conservés dans ModalManager (éléments dynamiques créés à la volée) :**
+- `header` (click) - dans createObjectiveSection()
+- `actionDiv` (click) - dans createActionDiv()
+- `field`, `descriptionField` (click, focus, blur, mouseenter) - créés dynamiquement
+- `checkbox`, `element` (change, input) - créés dynamiquement
+
+**Note** : Les événements sur éléments créés dynamiquement restent en addEventListener
+direct car ils sont attachés au moment de la création de l'élément. Envisager la
+délégation d'événements pour ceux-ci dans une future itération.
+
+**Fichiers modifiés :**
+- `kanbantest/js/core/EventCentralizer.js` - ajout des 4 handlers
+- `kanbantest/js/managers/ModalManager.js` - suppression des addEventListener statiques
+
+---
+
+## Managers restants à migrer
 
 ### ⏳ HistoryManager
 **Statut** : 0/17 événements migrés
@@ -86,15 +105,17 @@ Problème de duplication et d'ambiguïté des gestionnaires d'événements :
 
 ## Résumé de progression
 
-| Manager | Événements | Migrés | Restants | % |
-|---------|-----------|---------|----------|---|
-| JalonManager | 5 | 5 | 0 | ✅ 100% |
-| FilterManager | 7 | 7 | 0 | ✅ 100% |
-| ModalManager | 19 | 0 | 19 | ⏳ 0% |
-| HistoryManager | 17 | 0 | 17 | ⏳ 0% |
-| ViewManager | 12 | 0 | 12 | ⏳ 0% |
-| DatePickerManager | 4 | 0 | 4 | ⏳ 0% |
-| **TOTAL** | **64** | **12** | **52** | **19%** |
+| Manager | Événements | Migrés | Restants | % | Statut |
+|---------|-----------|---------|----------|---|--------|
+| JalonManager | 5 | 5 | 0 | ✅ 100% | Complet |
+| FilterManager | 7 | 7 | 0 | ✅ 100% | Complet |
+| ModalManager | 19 | 4 | 15* | ⏳ 21% | Partiel (15 = éléments dynamiques) |
+| HistoryManager | 17 | 0 | 17 | ⏳ 0% | À faire |
+| ViewManager | 12 | 0 | 12 | ⏳ 0% | À faire |
+| DatePickerManager | 4 | 0 | 4 | ⏳ 0% | À faire |
+| **TOTAL** | **64** | **16** | **48** | **25%** | En cours |
+
+\* Les 15 événements restants de ModalManager sont sur des éléments créés dynamiquement.
 
 ---
 

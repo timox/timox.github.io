@@ -250,6 +250,56 @@ export class EventCentralizer {
       filterManager.applyFilters();
     }, 'filter');
 
+    // === MODALES ===
+    safeOn('#btn-ajout-projet', 'click', (e) => {
+      const modalManager = this.managers.get('modal');
+      if (!modalManager || typeof modalManager.addNewProject !== 'function') {
+        return;
+      }
+
+      modalManager.addNewProject();
+    }, 'modal');
+
+    safeOn('#popup-urgence, #popup-impact', 'change', (e) => {
+      const modalManager = this.managers.get('modal');
+      if (!modalManager) return;
+
+      const urgenceSelect = document.getElementById('popup-urgence');
+      const impactSelect = document.getElementById('popup-impact');
+      const prioriteField = document.getElementById('popup-priorite-calculee');
+
+      if (urgenceSelect && impactSelect && prioriteField) {
+        prioriteField.value = modalManager.calculatePriorite(urgenceSelect.value, impactSelect.value);
+      }
+    }, 'modal');
+
+    safeOn('#popup-description', 'input', (e) => {
+      const modalManager = this.managers.get('modal');
+      if (!modalManager || typeof modalManager.autoResizeTextarea !== 'function') {
+        return;
+      }
+
+      modalManager.autoResizeTextarea.call(e.target);
+    }, 'modal');
+
+    // Délégation pour éléments dynamiques de stratégie
+    safeOn('.strategy-tag-remove', 'click', (e) => {
+      e.stopPropagation();
+
+      const modalManager = this.managers.get('modal');
+      if (!modalManager) return;
+
+      const btn = e.currentTarget;
+      const strategyId = parseInt(btn.dataset.strategyId);
+
+      if (!isNaN(strategyId)) {
+        modalManager.removeStrategyFromSelection(strategyId);
+        modalManager.updateStrategyTags();
+        modalManager.updateStrategyPreview();
+        modalManager.updateStrategyIds();
+      }
+    }, 'modal');
+
     // === RACCOURCIS CLAVIER ===
     safeOn(document, 'keydown', (e) => {
       // Ignorer si dans un champ de saisie
