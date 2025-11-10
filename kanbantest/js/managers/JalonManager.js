@@ -107,31 +107,19 @@ export class JalonManager {
   }
 
   setupEventListeners() {
-    // Bouton ajouter un jalon
-    // Sélection du type de jalon
-    const typeCards = document.querySelectorAll('.jalon-type-card');
-    typeCards.forEach(card => {
-      card.addEventListener('click', () => {
-        this.selectJalonType(card.dataset.type);
-      });
-    });
-
-    // Bouton sauvegarder
-    const btnSaveJalon = document.getElementById('btn-save-jalon');
-    if (btnSaveJalon) {
-      btnSaveJalon.addEventListener('click', () => {
-        this.saveJalon();
-      });
-    }
-
-    // Reset form à la fermeture de la modale
+    // Reset form à la fermeture de la modale (événement Bootstrap lifecycle - exception autorisée)
     const modalElement = document.getElementById('jalonModal');
     modalElement?.addEventListener('hidden.bs.modal', () => {
       this.resetJalonForm();
     });
 
-    // NOTE: Tous les boutons des jalons (#btn-add-jalon, .btn-delete-jalon, .btn-edit-jalon)
-    // sont gérés de manière centralisée par EventCentralizer.js via jQuery
+    // NOTE: TOUS les événements utilisateur des jalons sont gérés de manière centralisée
+    // par EventCentralizer.js via jQuery/safeOn :
+    // - #btn-add-jalon (ajout)
+    // - .btn-delete-jalon (suppression)
+    // - .btn-edit-jalon (édition)
+    // - .jalon-type-card (sélection de type)
+    // - #btn-save-jalon (sauvegarde)
   }
 
   /**

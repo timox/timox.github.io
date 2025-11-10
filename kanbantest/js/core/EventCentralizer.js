@@ -158,7 +158,98 @@ export class EventCentralizer {
         jalonManager.logger?.error?.('Erreur lors de l\'édition du jalon:', error);
       }
     }, 'jalon');
-    
+
+    safeOn('.jalon-type-card', 'click', (e) => {
+      const jalonManager = this.managers.get('jalon');
+      if (!jalonManager || typeof jalonManager.selectJalonType !== 'function') {
+        return;
+      }
+
+      const card = e.currentTarget;
+      const type = card.dataset.type;
+      if (type) {
+        jalonManager.selectJalonType(type);
+      }
+    }, 'jalon');
+
+    safeOn('#btn-save-jalon', 'click', (e) => {
+      const jalonManager = this.managers.get('jalon');
+      if (!jalonManager || typeof jalonManager.saveJalon !== 'function') {
+        return;
+      }
+
+      jalonManager.saveJalon();
+    }, 'jalon');
+
+    // === FILTRES ===
+    safeOn('#task-search', 'input', (e) => {
+      const filterManager = this.managers.get('filter');
+      if (!filterManager) return;
+
+      filterManager.filters.search = e.target.value.toLowerCase().trim();
+      filterManager.debouncedSearch();
+    }, 'filter');
+
+    safeOn('#filter-bureau', 'change', (e) => {
+      const filterManager = this.managers.get('filter');
+      if (!filterManager) return;
+
+      filterManager.filters.bureau = e.target.value || '';
+      filterManager.logger?.debug?.(`Bureau filter changed: ${filterManager.filters.bureau}`);
+      filterManager.applyFilters();
+    }, 'filter');
+
+    safeOn('#filter-qui', 'change', (e) => {
+      const filterManager = this.managers.get('filter');
+      if (!filterManager) return;
+
+      filterManager.filters.qui = e.target.value || '';
+      filterManager.logger?.debug?.(`Qui filter changed: ${filterManager.filters.qui}`);
+      filterManager.applyFilters();
+    }, 'filter');
+
+    safeOn('#filter-projet', 'change', (e) => {
+      const filterManager = this.managers.get('filter');
+      if (!filterManager) return;
+
+      filterManager.filters.projet = e.target.value || '';
+      filterManager.logger?.debug?.(`Projet filter changed: ${filterManager.filters.projet}`);
+      filterManager.applyFilters();
+    }, 'filter');
+
+    safeOn('#filter-statut', 'change', (e) => {
+      const filterManager = this.managers.get('filter');
+      if (!filterManager) return;
+
+      filterManager.filters.statut = e.target.value || '';
+      filterManager.logger?.debug?.(`Statut filter changed: ${filterManager.filters.statut}`);
+
+      // Synchroniser avec ViewManager en mode focus
+      if (filterManager.kanban.viewMode === 'focus' && filterManager.kanban.viewManager) {
+        filterManager.kanban.viewManager.focusColumn = filterManager.filters.statut;
+      }
+
+      filterManager.applyFilters();
+    }, 'filter');
+
+    safeOn('#show-termine', 'change', (e) => {
+      const filterManager = this.managers.get('filter');
+      if (!filterManager) return;
+
+      filterManager.showTermine = e.target.checked;
+      filterManager.applyFilters();
+    }, 'filter');
+
+    safeOn('#clear-filters', 'click', (e) => {
+      e.preventDefault();
+
+      const filterManager = this.managers.get('filter');
+      if (!filterManager) return;
+
+      filterManager.clearAllFilters();
+      filterManager.applyFilters();
+    }, 'filter');
+
     // === RACCOURCIS CLAVIER ===
     safeOn(document, 'keydown', (e) => {
       // Ignorer si dans un champ de saisie
