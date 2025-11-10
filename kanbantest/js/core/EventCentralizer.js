@@ -103,10 +103,59 @@ export class EventCentralizer {
 
       const jalonManager = this.managers.get('jalon');
       if (!jalonManager) return;
-      
+
       const jalonId = e.currentTarget.dataset.jalonId;
-      if (jalonId) {
-        jalonManager.deleteJalon(jalonId);
+      if (!jalonId) {
+        jalonManager.logger?.error?.('ID de jalon manquant pour la suppression');
+        return;
+      }
+
+      if (confirm('Êtes-vous sûr de vouloir supprimer ce jalon ?')) {
+        try {
+          jalonManager.deleteJalon(jalonId);
+        } catch (error) {
+          jalonManager.logger?.error?.('Erreur lors de la suppression du jalon:', error);
+        }
+      }
+    }, 'jalon');
+
+    safeOn('.btn-edit-jalon', 'click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const jalonManager = this.managers.get('jalon');
+      if (!jalonManager || typeof jalonManager.openJalonModal !== 'function') {
+        return;
+      }
+
+      const button = e.currentTarget;
+
+      try {
+        // Rechercher l'ID de jalon de manière robuste
+        let jalonId = button.dataset.jalonId;
+
+        if (!jalonId) {
+          const jalonElement = button.closest('[data-jalon-id]');
+          if (jalonElement) {
+            jalonId = jalonElement.dataset.jalonId;
+          }
+        }
+
+        if (!jalonId) {
+          jalonManager.logger?.error?.('Impossible de trouver l\'ID du jalon à éditer');
+          return;
+        }
+
+        jalonManager.logger?.debug?.('Édition du jalon ID:', jalonId);
+
+        const jalon = jalonManager.jalons.find(j => j.id === jalonId);
+        if (jalon) {
+          jalonManager.openJalonModal(jalon);
+        } else {
+          jalonManager.logger?.error?.('Jalon non trouvé pour édition. ID:', jalonId);
+        }
+      } catch (error) {
+        jalonManager.logger?.error?.('Erreur lors de l\'édition du jalon:', error);
       }
     }, 'jalon');
     
