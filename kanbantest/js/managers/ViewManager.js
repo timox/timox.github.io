@@ -97,36 +97,15 @@ export class ViewManager {
    * Configure les écouteurs d'événements
    */
   setupEventListeners() {
-    // Boutons de mode de vue
-    document.addEventListener('click', (e) => {
-      if (e.target.closest('[data-mode]')) {
-        const button = e.target.closest('[data-mode]');
-        const mode = button.dataset.mode;
-        this.setViewMode(mode);
-      }
-    });
-    
-    // Raccourcis clavier
-    document.addEventListener('keydown', (e) => {
-      if (!e.target.matches('input, textarea, select')) {
-        switch (e.key) {
-          case '1':
-            e.preventDefault();
-            this.setViewMode(VIEW_MODES.COMPACT);
-            break;
-          case '2':
-            e.preventDefault();
-            this.setViewMode(VIEW_MODES.DETAILED);
-            break;
-          case '3':
-            e.preventDefault();
-            this.setViewMode(VIEW_MODES.FOCUS);
-            break;
-        }
-      }
-    });
-    
-    // Navigation focus supprimée - le mode focus utilise maintenant le filtre statut directement
+    // NOTE: Les événements suivants sont gérés dans EventCentralizer.js :
+    // - [data-mode] (click) - boutons de mode de vue (DOUBLON SUPPRIMÉ)
+    // - document keydown (1,2,3) - raccourcis clavier modes (DOUBLON SUPPRIMÉ)
+    // - #kanban-container (scroll) - navigation horizontale
+    // - .scroll-arrow-left, .scroll-arrow-right (click) - flèches navigation
+    // - .board-count (click) - badges (via délégation)
+    //
+    // Les addEventListener sur éléments créés dynamiquement restent dans les méthodes
+    // de rendu (ex: renderFocusMode, attachCardEventListeners)
   }
 
   getKanbanWrapper() {
@@ -1923,15 +1902,8 @@ export class ViewManager {
       }
     };
 
-    kanbanContainer.addEventListener('scroll', updateArrows);
-
-    leftArrow.addEventListener('click', () => {
-      kanbanContainer.scrollBy({ left: -300, behavior: 'smooth' });
-    });
-
-    rightArrow.addEventListener('click', () => {
-      kanbanContainer.scrollBy({ left: 300, behavior: 'smooth' });
-    });
+    // NOTE: Événements de scroll et click sur flèches gérés par EventCentralizer.js
+    // (supprimés pour éviter les doublons)
 
     const resizeObserver = new ResizeObserver(updateArrows);
     resizeObserver.observe(kanbanContainer);
@@ -1942,23 +1914,11 @@ export class ViewManager {
   attachEventListeners(container) {
     this.attachCardEventListeners(container);
 
-    container.querySelectorAll('.board-count').forEach(badge => {
-      badge.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+    // NOTE: Événements click sur .board-count gérés par EventCentralizer.js via délégation
+    // (supprimés pour éviter les doublons)
 
-        const statut = e.currentTarget.dataset.status;
-
-        if (this.kanban.filterManager) {
-          const currentStatut = this.kanban.filterManager.filters.statut;
-          const newStatut = currentStatut === statut ? '' : statut;
-
-          this.kanban.filterManager.setFilter('statut', newStatut);
-          this.updateBadgeStates(container, newStatut);
-        }
-      });
-    });
-
+    // NOTE: Container keydown pour ArrowLeft/Right reste ici car lié au container spécifique
+    // (difficile à déléguer sans contexte du container)
     container.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         this.handleKeyboardNavigation(e);

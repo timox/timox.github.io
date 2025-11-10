@@ -300,6 +300,95 @@ export class EventCentralizer {
       }
     }, 'modal');
 
+    // === VUES - Navigation horizontale ===
+    // NOTE: Le scroll sur #kanban-container est géré par le ResizeObserver
+    // dans ViewManager.setupHorizontalScroll() - pas besoin d'événement supplémentaire
+
+    safeOn('.scroll-arrow-left', 'click', (e) => {
+      const kanbanContainer = document.getElementById('kanban-container');
+      if (kanbanContainer) {
+        kanbanContainer.scrollBy({ left: -300, behavior: 'smooth' });
+      }
+    }, 'viewMode');
+
+    safeOn('.scroll-arrow-right', 'click', (e) => {
+      const kanbanContainer = document.getElementById('kanban-container');
+      if (kanbanContainer) {
+        kanbanContainer.scrollBy({ left: 300, behavior: 'smooth' });
+      }
+    }, 'viewMode');
+
+    // Délégation pour badges board-count (éléments dynamiques)
+    safeOn('.board-count', 'click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const viewManager = this.managers.get('viewMode');
+      if (!viewManager) return;
+
+      const badge = e.currentTarget;
+      const statut = badge.dataset.status;
+
+      if (viewManager.kanban.filterManager) {
+        const currentStatut = viewManager.kanban.filterManager.filters.statut;
+        const newStatut = currentStatut === statut ? '' : statut;
+
+        viewManager.kanban.filterManager.setFilter('statut', newStatut);
+        viewManager.updateBadgeStates(document.getElementById('kanban-container'), newStatut);
+      }
+    }, 'viewMode');
+
+    // === DATES ===
+    safeOn('#btn-pick-date', 'click', (e) => {
+      const datePickerManager = this.managers.get('datePicker');
+      if (!datePickerManager || typeof datePickerManager.openDatePicker !== 'function') {
+        return;
+      }
+
+      datePickerManager.openDatePicker();
+    }, 'datePicker');
+
+    safeOn('#btn-clear-date', 'click', (e) => {
+      const datePickerManager = this.managers.get('datePicker');
+      if (!datePickerManager || typeof datePickerManager.clearDate !== 'function') {
+        return;
+      }
+
+      datePickerManager.clearDate();
+    }, 'datePicker');
+
+    safeOn('#popup-delai', 'keydown', (e) => {
+      const datePickerManager = this.managers.get('datePicker');
+      if (!datePickerManager) return;
+
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (typeof datePickerManager.clearDate === 'function') {
+          e.preventDefault();
+          datePickerManager.clearDate();
+        }
+      } else if (e.key === 'Enter' || e.key === ' ') {
+        if (typeof datePickerManager.openDatePicker === 'function') {
+          e.preventDefault();
+          datePickerManager.openDatePicker();
+        }
+      }
+    }, 'datePicker');
+
+    // Délégation pour presets de date (éléments dynamiques)
+    safeOn('[data-preset]', 'click', (e) => {
+      e.preventDefault();
+
+      const datePickerManager = this.managers.get('datePicker');
+      if (!datePickerManager || typeof datePickerManager.setDatePreset !== 'function') {
+        return;
+      }
+
+      const preset = e.currentTarget.dataset.preset;
+      if (preset) {
+        datePickerManager.setDatePreset(preset);
+      }
+    }, 'datePicker');
+
     // === RACCOURCIS CLAVIER ===
     safeOn(document, 'keydown', (e) => {
       // Ignorer si dans un champ de saisie

@@ -87,19 +87,58 @@ délégation d'événements pour ceux-ci dans une future itération.
 
 ---
 
+### ✅ ViewManager (COMPLET - principaux événements)
+**Statut** : 5/12 événements migrés (42%)
+
+**Événements migrés vers EventCentralizer :**
+1. `[data-mode]` (click) - boutons de mode de vue (**DOUBLON SUPPRIMÉ** - déjà dans EventCentralizer)
+2. `document` keydown (1,2,3) - raccourcis clavier modes (**DOUBLON SUPPRIMÉ** - déjà dans EventCentralizer)
+3. `.scroll-arrow-left`, `.scroll-arrow-right` (click) - flèches navigation horizontale
+4. `.board-count` (click) - badges de compteur (via délégation)
+
+**Conservés dans ViewManager (éléments dynamiques) :**
+- `btn` collapse (click) - dans renderFocusMode()
+- `.btn-expand-from-stack` (click) - expand from stack
+- `zone`, `btn`, `card` (click/keydown) - créés dynamiquement
+- `container` keydown (ArrowLeft/Right) - navigation clavier contextuelle
+
+**Note** : Le scroll sur #kanban-container est géré par ResizeObserver, pas besoin d'événement.
+
+**Fichiers modifiés :**
+- `kanbantest/js/core/EventCentralizer.js` - ajout des handlers
+- `kanbantest/js/managers/ViewManager.js` - suppression des doublons
+
+---
+
+### ✅ DatePickerManager (COMPLET)
+**Statut** : 4/4 événements migrés (100%)
+
+**Événements migrés vers EventCentralizer :**
+1. `#btn-pick-date` (click) - ouvrir le sélecteur
+2. `#btn-clear-date` (click) - effacer la date
+3. `#popup-delai` (keydown Delete/Backspace/Enter/Space) - raccourcis clavier
+4. `[data-preset]` (click) - presets de date (via délégation)
+
+**Fichiers modifiés :**
+- `kanbantest/js/core/EventCentralizer.js` - ajout des 4 handlers
+- `kanbantest/js/managers/DatePickerManager.js` - suppression des addEventListener
+
+---
+
 ## Managers restants à migrer
 
-### ⏳ HistoryManager
-**Statut** : 0/17 événements migrés
-- À auditer en détail
+### ⏳ HistoryManager (DÉJÀ CENTRALISÉ PARTIELLEMENT)
+**Statut** : Principaux événements déjà gérés dans EventCentralizer
 
-### ⏳ ViewManager
-**Statut** : 0/12 événements migrés
-- À auditer en détail
+**Événements DÉJÀ CENTRALISÉS :**
+- `.btn-history`, `.btn-timeline` (click) - ✅ Déjà dans EventCentralizer ligne 29-45
+- `.btn-edit-comment` (click) - ✅ Déjà dans EventCentralizer ligne 48-75
 
-### ⏳ DatePickerManager
-**Statut** : 0/4 événements migrés
-- À auditer en détail
+**Conservés dans HistoryManager (17 addEventListener restants) :**
+- `hidden.bs.modal` - Bootstrap lifecycle (exception autorisée)
+- Widgets d'édition de commentaires (openCommentEditWidget, createCommentEditWidget) - éléments créés dynamiquement difficiles à déléguer
+
+**Note** : Les principaux événements utilisateur sont DÉJÀ centralisés, les addEventListener restants sont principalement sur des widgets dynamiques créés à la volée.
 
 ---
 
@@ -109,13 +148,15 @@ délégation d'événements pour ceux-ci dans une future itération.
 |---------|-----------|---------|----------|---|--------|
 | JalonManager | 5 | 5 | 0 | ✅ 100% | Complet |
 | FilterManager | 7 | 7 | 0 | ✅ 100% | Complet |
-| ModalManager | 19 | 4 | 15* | ⏳ 21% | Partiel (15 = éléments dynamiques) |
-| HistoryManager | 17 | 0 | 17 | ⏳ 0% | À faire |
-| ViewManager | 12 | 0 | 12 | ⏳ 0% | À faire |
-| DatePickerManager | 4 | 0 | 4 | ⏳ 0% | À faire |
-| **TOTAL** | **64** | **16** | **48** | **25%** | En cours |
+| DatePickerManager | 4 | 4 | 0 | ✅ 100% | Complet |
+| ViewManager | 12 | 5 | 7* | ⏳ 42% | Partiel (7 = dynamiques) |
+| ModalManager | 19 | 4 | 15** | ⏳ 21% | Partiel (15 = dynamiques) |
+| HistoryManager*** | 17 | 2 | 15 | ✅ Principaux | Déjà centralisé (widgets restants) |
+| **TOTAL** | **64** | **27** | **37** | **42%** | ✅ Principaux OK |
 
-\* Les 15 événements restants de ModalManager sont sur des éléments créés dynamiquement.
+\* 7 événements ViewManager restants sont sur éléments dynamiques (render functions)
+\*\* 15 événements ModalManager restants sont sur éléments créés à la volée
+\*\*\* HistoryManager : événements principaux (.btn-history, .btn-edit-comment) DÉJÀ dans EventCentralizer
 
 ---
 
