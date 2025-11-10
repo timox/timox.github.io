@@ -131,15 +131,8 @@ export class JalonManager {
     });
 
     // Délégation d'événements pour les boutons de suppression et d'édition (éléments dynamiques)
+    // NOTE: Le bouton d'ajout (#btn-add-jalon) est géré par EventCentralizer.js
     document.addEventListener('click', (e) => {
-      const addButton = e.target.closest('#btn-add-jalon');
-      if (addButton) {
-        e.preventDefault();
-        e.stopPropagation();
-        this.openJalonModal();
-        return;
-      }
-
       // Gestion des boutons de suppression
       if (e.target.closest('.btn-delete-jalon')) {
         e.preventDefault();

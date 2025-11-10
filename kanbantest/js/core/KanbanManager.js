@@ -11,6 +11,7 @@ import { ModalManager } from '../managers/ModalManager.js';
 import { HistoryManager } from '../managers/HistoryManager.js';
 import { FilterManager } from '../managers/FilterManager.js';
 import { ViewManager } from '../managers/ViewManager.js';
+import { JalonManager } from '../managers/JalonManager.js';
 
 // Importation du gestionnaire Grist
 import { GristManager } from '../managers/GristManager.js';
@@ -34,6 +35,7 @@ export class KanbanManager {
     this.historyManager = null;
     this.filterManager = null;
     this.viewManager = null;
+    this.jalonManager = null;
     
     // �tat des donn�es
     this.currentRecords = [];
@@ -139,6 +141,9 @@ export class KanbanManager {
 
     // 6. Gestionnaire de vues et de rendu
     this.viewManager = new ViewManager(this);
+
+    // 7. Gestionnaire des jalons
+    this.jalonManager = new JalonManager(this);
 
     console.log('KanbanManager: Gestionnaires initialisés');
   }
