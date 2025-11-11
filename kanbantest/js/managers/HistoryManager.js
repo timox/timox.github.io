@@ -58,87 +58,8 @@ export class HistoryManager {
     }, 5000); // Vérifier toutes les 5 secondes
   }
   
-  /**
-   * SUPPRIMÉ - Configure les écouteurs d'événements  
-   * Event listeners maintenant gérés par SimpleClickHandler
-   */
-  setupEventListeners_DISABLED() {
-    // Bouton "Voir tous les commentaires"
-    const btnShowComments = document.getElementById('btn-show-comments-only');
-    if (btnShowComments) {
-      btnShowComments.addEventListener('click', () => {
-        if (!this.currentTaskHistory) {
-          this.logger.warn('Aucune tâche sélectionnée pour afficher les commentaires');
-          return;
-        }
-        this.showAllComments();
-      });
-    }
-    
-    // Bouton "Exporter cette tâche"
-    const btnExportTask = document.getElementById('btn-export-task-history');
-    if (btnExportTask) {
-      btnExportTask.addEventListener('click', () => {
-        if (!this.currentTaskHistory) {
-          this.logger.warn('Aucune tâche sélectionnée pour exporter');
-          return;
-        }
-        this.exportTaskHistory();
-      });
-    }
-    
-    // Widget d'édition de commentaire
-    this.setupCommentEditWidget();
-    
-    // Écouteurs pour les boutons d'historique sur les cartes (support des deux classes)
-    document.addEventListener('click', (e) => {
-      // Trouver le bouton parent si on a cliqué sur un enfant (icône, texte)
-      const button = e.target.closest('.btn-history, .btn-timeline');
-      
-      if (button) {
-        console.log('🔍 Click détecté sur bouton historique');
-        console.log('   Classes du bouton:', button.className);
-        console.log('   Task ID:', button.dataset.taskId);
-        this.logger.debug('Click détecté sur bouton historique', button);
-        
-        // Arrêter la propagation
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        
-        // Protection anti-spam: Éviter appels multiples rapides
-        if (this._historyOpening) {
-          this.logger.debug('ouverture déjà en cours - BLOQUÉ');
-          return;
-        }
-        
-        // Protection immédiate réduite
-        this._historyOpening = true;
-        setTimeout(() => { 
-          this._historyOpening = false; 
-          this.logger.debug('protection anti-spam levée');
-        }, 1000); // Reset après 1s
-        
-        // Récupérer l'ID de la tâche depuis les attributs data
-        const taskId = parseInt(button.dataset.taskId, 10);
-        
-        this.logger.debug('Debug bouton:', {
-          buttonElement: button,
-          buttonClass: button.className,
-          taskIdRaw: button.dataset.taskId,
-          taskIdParsed: taskId,
-          isValidId: !isNaN(taskId)
-        });
-        
-        if (!isNaN(taskId)) {
-          this.openTaskHistory(taskId);
-        }
-        
-        // Retourner false pour empêcher toute autre action
-        return false;
-      }
-    }, { capture: true }); // Capture en phase descendante pour priorité
-  }
+  // NOTE: setupEventListeners_DISABLED() supprimée - code mort jamais appelé.
+  // Tous les événements sont maintenant gérés par EventCentralizer.js
   
   /**
    * Rendre l'historique d'une tâche dans un élément donné

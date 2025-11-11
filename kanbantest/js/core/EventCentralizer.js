@@ -410,6 +410,37 @@ export class EventCentralizer {
       viewManager.handleColumnCollapse(e);
     }, 'viewMode');
 
+    // Délégation pour boutons d'expansion depuis le stack (éléments dynamiques)
+    safeOn('.btn-expand-from-stack', 'click', (e) => {
+      e.preventDefault();
+
+      const viewManager = this.managers.get('viewMode');
+      if (!viewManager) return;
+
+      const statusId = e.currentTarget.dataset.status;
+      if (!statusId) return;
+
+      const targetColumn = viewManager.findColumnByStatus(statusId);
+      const originalButton = targetColumn?.querySelector('.btn-collapse-column');
+
+      if (targetColumn && originalButton) {
+        viewManager.expandColumn(statusId, targetColumn, originalButton, { fromStack: true });
+      } else {
+        viewManager.collapsedColumns.delete(statusId);
+        viewManager.removeFromCollapsedStack(statusId);
+      }
+    }, 'viewMode');
+
+    // Délégation pour navigation clavier dans le container kanban
+    safeOn('#kanban-container', 'keydown', (e) => {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        const viewManager = this.managers.get('viewMode');
+        if (viewManager && typeof viewManager.handleKeyboardNavigation === 'function') {
+          viewManager.handleKeyboardNavigation(e);
+        }
+      }
+    }, 'viewMode');
+
     // === DATES ===
     safeOn('#btn-pick-date', 'click', (e) => {
       const datePickerManager = this.managers.get('datePicker');

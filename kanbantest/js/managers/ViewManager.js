@@ -943,18 +943,8 @@ export class ViewManager {
       </button>
     `;
 
-    stackItem.querySelector('.btn-expand-from-stack').addEventListener('click', (e) => {
-      e.preventDefault();
-      const targetColumn = this.findColumnByStatus(statusId);
-      const originalButton = targetColumn?.querySelector('.btn-collapse-column');
-
-      if (targetColumn && originalButton) {
-        this.expandColumn(statusId, targetColumn, originalButton, { fromStack: true });
-      } else {
-        this.collapsedColumns.delete(statusId);
-        this.removeFromCollapsedStack(statusId);
-      }
-    });
+    // NOTE: Événement .btn-expand-from-stack géré par EventCentralizer.js ligne 414-432
+    // (supprimé pour éviter l'accumulation de handlers)
 
     stackContent.appendChild(stackItem);
 
@@ -1883,16 +1873,9 @@ export class ViewManager {
   attachEventListeners(container) {
     this.attachCardEventListeners(container);
 
-    // NOTE: Événements click sur .board-count gérés par EventCentralizer.js via délégation
-    // (supprimés pour éviter les doublons)
-
-    // NOTE: Container keydown pour ArrowLeft/Right reste ici car lié au container spécifique
-    // (difficile à déléguer sans contexte du container)
-    container.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-        this.handleKeyboardNavigation(e);
-      }
-    });
+    // NOTE: TOUS les événements gérés par EventCentralizer.js via délégation :
+    // - .board-count (click) → EventCentralizer ligne 362
+    // - #kanban-container (keydown ArrowLeft/Right) → EventCentralizer ligne 435
   }
 
   updateBadgeStates(container, activeStatut) {
