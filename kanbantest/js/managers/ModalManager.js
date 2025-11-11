@@ -1096,7 +1096,12 @@ export class ModalManager {
     // Synchroniser avec les cases à cocher
     this.syncSelectToCheckbox('popup-bureau-checkboxes', 'popup-bureau');
     this.syncSelectToCheckbox('popup-qui-checkboxes', 'popup-qui');
-    
+
+    // IMPORTANT: Re-synchroniser dans l'autre sens pour s'assurer que le select caché est à jour
+    // (car cocher programmatiquement ne déclenche pas l'événement change)
+    this.syncCheckboxToSelect('popup-bureau-checkboxes', 'popup-bureau');
+    this.syncCheckboxToSelect('popup-qui-checkboxes', 'popup-qui');
+
     // Références et documentation (extraire depuis le champ notes)
     let referencesValue = '';
     if (task.notes) {
