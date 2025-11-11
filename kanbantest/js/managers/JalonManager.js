@@ -606,15 +606,10 @@ export class JalonManager {
    * Lie les événements aux éléments des jalons
    */
   bindJalonEvents() {
-    // Changement de statut
-    document.querySelectorAll('.jalon-status-select').forEach(select => {
-      select.addEventListener('change', (e) => {
-        const jalonId = e.target.dataset.jalonId;
-        this.updateJalonStatus(jalonId, e.target.value);
-      });
-    });
+    // NOTE: Changement de statut géré par EventCentralizer.js via délégation
+    // (.jalon-status-select change event)
 
-    // Les boutons d'édition et de suppression sont gérés par délégation dans setupEventListeners()
+    // Les boutons d'édition et de suppression sont gérés par délégation dans EventCentralizer
   }
 
   /**

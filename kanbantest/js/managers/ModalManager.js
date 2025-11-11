@@ -250,38 +250,27 @@ export class ModalManager {
     // Header cliquable
     const header = document.createElement('div');
     header.className = 'strategy-objective-header';
+    header.dataset.toggleTarget = 'strategy-content'; // Pour délégation EventCentralizer
     header.innerHTML = `
       <h6 class="strategy-objective-title">${objectif}</h6>
       <i class="bi bi-chevron-right strategy-toggle-icon"></i>
     `;
-    
+
     // Contenu des sous-objectifs
     const content = document.createElement('div');
     content.className = 'strategy-sub-objectives';
     content.style.display = 'none';
-    
+
     // Générer les sous-objectifs
     const sousObjectifs = mappings.sousObjectifs[objectif] || [];
     sousObjectifs.forEach(sousObjectif => {
       const subObjectiveDiv = this.createSubObjectiveSection(objectif, sousObjectif, mappings);
       content.appendChild(subObjectiveDiv);
     });
-    
-    // Event listener pour toggle
-    header.addEventListener('click', () => {
-      const isExpanded = content.style.display !== 'none';
-      
-      if (isExpanded) {
-        content.style.display = 'none';
-        header.classList.remove('expanded');
-        header.querySelector('.strategy-toggle-icon').classList.remove('expanded');
-      } else {
-        content.style.display = 'block';
-        header.classList.add('expanded');
-        header.querySelector('.strategy-toggle-icon').classList.add('expanded');
-      }
-    });
-    
+
+    // NOTE: Événement click géré par EventCentralizer.js via délégation
+    // (supprimé pour éviter l'accumulation de handlers)
+
     objectiveDiv.appendChild(header);
     objectiveDiv.appendChild(content);
     
@@ -517,13 +506,8 @@ export class ModalManager {
    * Configure les événements pour la gestion multiple
    */
   setupMultiStrategyEvents() {
-    // Bouton "Tout désélectionner"
-    const clearBtn = document.getElementById('btn-clear-strategies');
-    if (clearBtn) {
-      clearBtn.addEventListener('click', () => {
-        this.clearAllStrategies();
-      });
-    }
+    // NOTE: Bouton "Tout désélectionner" géré par EventCentralizer.js
+    // (#btn-clear-strategies via délégation)
   }
   
   /**
@@ -1004,24 +988,11 @@ export class ModalManager {
         field.removeAttribute('readonly');
         field.removeAttribute('disabled');
         field.tabIndex = 0;
-        
-        // Ajouter un gestionnaire de clic pour forcer le focus
-        if (!field.dataset.focusHandlerAdded) {
-          field.dataset.focusHandlerAdded = 'true';
-          field.addEventListener('click', function() {
-            setTimeout(() => {
-              this.focus();
-              if (this.tagName === 'TEXTAREA' || this.type === 'text') {
-                this.setSelectionRange(this.value.length, this.value.length);
-              }
-            }, 10);
-          });
-        }
       }
     });
-    
-    // Appeler la méthode spécifique pour la description
-    this.ensureDescriptionFocus();
+
+    // NOTE: Événements de focus/click gérés par EventCentralizer.js via délégation
+    // (plus besoin de listeners individuels - dataset.focusHandlerAdded supprimé)
   }
 
   /**
@@ -1030,37 +1001,16 @@ export class ModalManager {
   ensureDescriptionFocus() {
     const descriptionField = document.getElementById('popup-description');
     if (!descriptionField) return;
-    
+
     // Supprimer les attributs qui empêchent le focus
     descriptionField.removeAttribute('readonly');
     descriptionField.removeAttribute('disabled');
-    
+
     // Assurer que le champ est focusable
     descriptionField.tabIndex = 0;
-    
-    // Éviter de lier plusieurs fois les mêmes événements
-    if (descriptionField.dataset.focusHandlerAdded) return;
-    descriptionField.dataset.focusHandlerAdded = 'true';
-    
-    // Ajouter un gestionnaire de clic pour forcer le focus
-    descriptionField.addEventListener('click', function(e) {
-      e.stopPropagation();
-      setTimeout(() => {
-        this.focus();
-        this.setSelectionRange(this.value.length, this.value.length);
-      }, 10);
-    });
-    
-    // Ajouter un gestionnaire pour débugger les problèmes de focus
-    descriptionField.addEventListener('focus', function() {
-    });
-    
-    descriptionField.addEventListener('blur', function() {
-    });
-    
-    // Gestionnaire pour forcer le focus au survol
-    descriptionField.addEventListener('mouseenter', function() {
-    });
+
+    // NOTE: Événements gérés par EventCentralizer.js via délégation
+    // (addEventListener click/focus/blur/mouseenter supprimés - gérés globalement)
   }
   
   /**
@@ -2599,11 +2549,11 @@ export class ModalManager {
       optionElement.value = option;
       optionElement.textContent = option;
       hiddenSelect.appendChild(optionElement);
-      
-      // Event listener pour synchroniser avec le select caché
-      checkbox.addEventListener('change', (e) => {
-        this.syncCheckboxToSelect(containerId, selectId);
-      });
+
+      // NOTE: Événement change géré par EventCentralizer.js via délégation
+      // (checkbox synchronisation gérée globalement)
+      checkbox.dataset.containerId = containerId;
+      checkbox.dataset.selectId = selectId;
     });
     
     
@@ -2808,17 +2758,8 @@ export class ModalManager {
    * Configure les écouteurs pour la détection de modifications
    */
   setupChangeDetection() {
-    const formElements = document.querySelectorAll('#task-form input, #task-form select, #task-form textarea');
-    
-    formElements.forEach(element => {
-      element.addEventListener('change', () => {
-        this.updateSaveButtonState();
-      });
-      
-      element.addEventListener('input', () => {
-        this.updateSaveButtonState();
-      });
-    });
+    // NOTE: Événements change/input gérés par EventCentralizer.js via délégation
+    // (sur #task-form input, select, textarea)
   }
   
   /**

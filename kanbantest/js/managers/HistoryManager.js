@@ -292,14 +292,9 @@ export class HistoryManager {
     document.body.appendChild(simpleModal);
     
     // Ajouter la gestion Escape
-    const escapeHandler = (e) => {
-      if (e.key === 'Escape') {
-        document.getElementById('simple-history-modal')?.remove();
-        document.removeEventListener('keydown', escapeHandler);
-      }
-    };
-    document.addEventListener('keydown', escapeHandler);
-    
+    // NOTE: Événement Escape géré par EventCentralizer.js ligne 510-515
+    // (détection de #simple-history-modal et fermeture automatique)
+
     this.logger.info('Modal simple créée avec succès');
   }
   
@@ -1133,13 +1128,12 @@ export class HistoryManager {
     commentsHTML += '</div>';
     
     timelineContainer.innerHTML = commentsHTML;
-    
-    // Ajouter l'écouteur pour le bouton retour
+
+    // NOTE: Événement #btn-back-to-timeline géré par EventCentralizer.js
+    // (restauration du contenu original via data attribute)
     const backBtn = document.getElementById('btn-back-to-timeline');
     if (backBtn) {
-      backBtn.addEventListener('click', () => {
-        timelineContainer.innerHTML = originalContent;
-      });
+      backBtn.dataset.originalContent = originalContent;
     }
   }
   
@@ -1268,48 +1262,12 @@ export class HistoryManager {
     // NOTE: Événement .btn-edit-comment géré par EventCentralizer.js ligne 48-75
     // (supprimé pour éviter le doublon avec addEventListener sur document)
 
-    // Bouton fermer (IDs uniques pour accordéon)
-    const btnClose = document.getElementById('accordion-btn-close-comment-edit');
-    if (btnClose) {
-      btnClose.addEventListener('click', () => {
-        this.closeCommentEditWidget();
-      });
-    }
-    
-    // Bouton annuler
-    const btnCancel = document.getElementById('accordion-btn-cancel-comment-edit');
-    if (btnCancel) {
-      btnCancel.addEventListener('click', () => {
-        this.closeCommentEditWidget();
-      });
-    }
-    
-    // Bouton sauvegarder
-    const btnSave = document.getElementById('accordion-btn-save-comment-edit');
-    if (btnSave) {
-      btnSave.addEventListener('click', () => {
-        this.logger.debug('Bouton sauvegarder cliqué', this);
-        this.saveCommentEdit();
-      });
-    } else {
-      this.logger.error('Bouton accordion-btn-save-comment-edit non trouvé');
-    }
-    
-    // Fermer avec l'overlay (seulement celui de l'accordéon)
-    setTimeout(() => {
-      const overlay = document.querySelector('#accordion-comment-edit-widget .comment-edit-overlay');
-      if (overlay) {
-        overlay.addEventListener('click', (e) => {
-          // Fermer si on clique directement sur l'overlay (pas sur le modal)
-          if (e.target === overlay) {
-            this.closeCommentEditWidget();
-          }
-        });
-      }
-    }, 100);
-
-    // NOTE: Événement Escape géré par EventCentralizer.js ligne 437-443
-    // (supprimé pour éviter le doublon avec addEventListener sur document)
+    // NOTE: TOUS les événements du widget gérés par EventCentralizer.js via délégation :
+    // - #accordion-btn-close-comment-edit (click) → fermer widget
+    // - #accordion-btn-cancel-comment-edit (click) → fermer widget
+    // - #accordion-btn-save-comment-edit (click) → sauvegarder commentaire
+    // - .comment-edit-overlay (click) → fermer si click sur overlay direct
+    // - document (keydown Escape) → fermer widget
   }
   
   /**
@@ -1375,41 +1333,19 @@ export class HistoryManager {
    * Attache les event listeners au widget d'édition
    */
   attachCommentEditListeners() {
+    // NOTE: TOUS les événements gérés par EventCentralizer.js via délégation :
+    // - #accordion-btn-close-comment-edit (click)
+    // - #accordion-btn-cancel-comment-edit (click)
+    // - #accordion-btn-save-comment-edit (click)
+    // - #accordion-comment-edit-text (keydown/keyup pour stopPropagation)
+    // - #btn-back-to-timeline (click)
+    // - #simple-history-modal (Escape pour fermeture)
+    // - .comment-edit-overlay (click pour fermeture)
+
+    // Assurer que le textarea est focusable
     const textarea = document.getElementById('accordion-comment-edit-text');
-    const closeBtn = document.getElementById('accordion-btn-close-comment-edit');
-    const cancelBtn = document.getElementById('accordion-btn-cancel-comment-edit');
-    const saveBtn = document.getElementById('accordion-btn-save-comment-edit');
-    
-    this.logger.debug('Attachement des listeners:', {
-      textarea: !!textarea,
-      closeBtn: !!closeBtn,
-      cancelBtn: !!cancelBtn,
-      saveBtn: !!saveBtn
-    });
-    
-    // Event listeners pour les boutons
-    if (closeBtn) {
-      closeBtn.addEventListener('click', () => this.closeCommentEditWidget());
-    }
-    if (cancelBtn) {
-      cancelBtn.addEventListener('click', () => this.closeCommentEditWidget());
-    }
-    if (saveBtn) {
-      saveBtn.addEventListener('click', () => this.saveCommentEdit());
-    }
-    
-    // Textarea fonctionnel avec gestion des touches
     if (textarea) {
       textarea.tabIndex = 0;
-      
-      // Empêcher la propagation des touches pour éviter la fermeture de modales
-      textarea.addEventListener('keydown', (e) => {
-        e.stopPropagation(); // Empêche les listeners globaux
-      });
-      
-      textarea.addEventListener('keyup', (e) => {
-        e.stopPropagation(); // Empêche les listeners globaux
-      });
     }
   }
   
