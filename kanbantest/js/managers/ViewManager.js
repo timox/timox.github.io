@@ -628,10 +628,9 @@ export class ViewManager {
    * Initialise le système de repliage des colonnes pour le mode détaillé
    */
   initColumnCollapse() {
-    // Supprimer les anciens écouteurs
-    this.removeColumnCollapseListeners();
+    // NOTE: Événements .btn-collapse gérés par EventCentralizer.js via délégation
+    // (pas besoin de removeColumnCollapseListeners car plus d'addEventListener direct)
 
-    // Ajouter les nouveaux écouteurs
     setTimeout(() => {
       const collapseButtons = Array.from(document.querySelectorAll('.btn-collapse-column'));
 
@@ -642,8 +641,8 @@ export class ViewManager {
 
       this.createCollapsedStack({ reset: true });
 
+      // Décorer les boutons (visuel seulement)
       collapseButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => this.handleColumnCollapse(e));
         this.decorateCollapseButton(btn);
       });
 
@@ -1073,9 +1072,9 @@ export class ViewManager {
    * Supprime les écouteurs de repliage de colonnes
    */
   removeColumnCollapseListeners() {
-    document.querySelectorAll('.btn-collapse-column').forEach(btn => {
-      btn.replaceWith(btn.cloneNode(true));
-    });
+    // NOTE: Cette fonction n'est plus nécessaire car les événements .btn-collapse
+    // sont gérés par EventCentralizer.js via délégation (pas d'addEventListener direct).
+    // Conservée pour compatibilité mais peut être supprimée dans une future refactorisation.
   }
 
   onKanbanRendered() {
@@ -1355,44 +1354,14 @@ export class ViewManager {
   }
 
   attachCardEventListeners(container) {
-    container.querySelectorAll('.editable-zone').forEach(zone => {
-      zone.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-
-        const card = zone.closest('.kanban-item');
-        const taskId = parseInt(card?.dataset.id, 10);
-
-        if (!isNaN(taskId) && this.kanban.modalManager) {
-          const task = this.kanban.currentRecords?.find(r => r.id === taskId);
-          if (task) {
-            this.kanban.modalManager.openTaskModal(task);
-          }
-        }
-      });
-    });
-
-    container.querySelectorAll('.timeline-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-
-        const taskId = parseInt(btn.dataset.taskId, 10);
-        if (!isNaN(taskId)) {
-          window.open(`timeline.html?task=${taskId}`, '_blank');
-        }
-      });
-    });
-
-    container.querySelectorAll('.kanban-item').forEach(card => {
-      card.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          const editableZone = card.querySelector('.editable-zone');
-          editableZone?.click();
-        }
-      });
-    });
+    // NOTE: TOUS les événements des cartes sont maintenant gérés par EventCentralizer.js
+    // via délégation pour éviter l'accumulation de handlers (fuites mémoire) :
+    // - .editable-zone (click) → EventCentralizer ligne 342
+    // - .timeline-btn (click) → EventCentralizer ligne 361
+    // - .kanban-item (keydown) → EventCentralizer ligne 372
+    //
+    // Cette fonction est conservée vide pour compatibilité mais peut être supprimée
+    // dans une future refactorisation.
   }
 
   renderKanban(viewMode, records = [], options = {}) {

@@ -1340,27 +1340,13 @@ export class HistoryManager {
    */
   setupCommentEditWidget() {
     this.currentEditingComment = null;
-    
+
     // Créer le widget d'édition s'il n'existe pas
     this.createCommentEditWidget();
-    
-    // Écouteur pour les boutons d'édition (plus précis, sans logging)
-    document.addEventListener('click', (e) => {
-      // Ne traiter que les clics sur les boutons d'édition
-      if (e.target.matches('.btn-edit-comment, .btn-edit-comment *')) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const button = e.target.closest('.btn-edit-comment');
-        if (!button) {
-          return;
-        }
-        
-        const commentId = button.dataset.commentId;
-        this.openCommentEditWidget(commentId);
-      }
-    });
-    
+
+    // NOTE: Événement .btn-edit-comment géré par EventCentralizer.js ligne 48-75
+    // (supprimé pour éviter le doublon avec addEventListener sur document)
+
     // Bouton fermer (IDs uniques pour accordéon)
     const btnClose = document.getElementById('accordion-btn-close-comment-edit');
     if (btnClose) {
@@ -1400,16 +1386,9 @@ export class HistoryManager {
         });
       }
     }, 100);
-    
-    // Fermer avec Escape (éviter les listeners multiples)
-    if (!this.escapeListenerAdded) {
-      this.escapeListenerAdded = true;
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && this.isCommentEditOpen()) {
-          this.closeCommentEditWidget();
-        }
-      });
-    }
+
+    // NOTE: Événement Escape géré par EventCentralizer.js ligne 437-443
+    // (supprimé pour éviter le doublon avec addEventListener sur document)
   }
   
   /**
