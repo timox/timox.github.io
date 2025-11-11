@@ -172,6 +172,21 @@ export class EventCentralizer {
       }
     }, 'jalon');
 
+    // Délégation pour changement de statut des jalons (éléments dynamiques)
+    safeOn('.jalon-status-select', 'change', (e) => {
+      const jalonManager = this.managers.get('jalon');
+      if (!jalonManager || typeof jalonManager.updateJalonStatus !== 'function') {
+        return;
+      }
+
+      const jalonId = e.currentTarget.dataset.jalonId;
+      const newStatus = e.currentTarget.value;
+
+      if (jalonId) {
+        jalonManager.updateJalonStatus(jalonId, newStatus);
+      }
+    }, 'jalon');
+
     safeOn('#btn-save-jalon', 'click', (e) => {
       const jalonManager = this.managers.get('jalon');
       if (!jalonManager || typeof jalonManager.saveJalon !== 'function') {
@@ -323,6 +338,77 @@ export class EventCentralizer {
       }
     }, 'modal');
 
+    // Délégation pour toggle expand/collapse des objectifs stratégiques (éléments dynamiques)
+    safeOn('.strategy-objective-header', 'click', (e) => {
+      const header = e.currentTarget;
+      const content = header.nextElementSibling; // .strategy-sub-objectives
+
+      if (!content) return;
+
+      const isExpanded = content.style.display !== 'none';
+
+      if (isExpanded) {
+        content.style.display = 'none';
+        header.classList.remove('expanded');
+        const icon = header.querySelector('.strategy-toggle-icon');
+        if (icon) icon.classList.remove('expanded');
+      } else {
+        content.style.display = 'block';
+        header.classList.add('expanded');
+        const icon = header.querySelector('.strategy-toggle-icon');
+        if (icon) icon.classList.add('expanded');
+      }
+    }, 'modal');
+
+    // Bouton "Tout désélectionner" les stratégies
+    safeOn('#btn-clear-strategies', 'click', (e) => {
+      const modalManager = this.managers.get('modal');
+      if (modalManager && typeof modalManager.clearAllStrategies === 'function') {
+        modalManager.clearAllStrategies();
+      }
+    }, 'modal');
+
+    // Délégation pour auto-focus des champs de formulaire (click pour focus immédiat)
+    safeOn('#popup-tache input, #popup-tache textarea, #popup-tache select', 'click', function(e) {
+      const field = e.currentTarget;
+      setTimeout(() => {
+        field.focus();
+        if (field.tagName === 'TEXTAREA' || field.type === 'text') {
+          field.setSelectionRange(field.value.length, field.value.length);
+        }
+      }, 10);
+    }, 'modal');
+
+    // Délégation pour synchronisation checkboxes avec select caché
+    safeOn('.checkbox-group input[type="checkbox"]', 'change', (e) => {
+      const modalManager = this.managers.get('modal');
+      if (!modalManager) return;
+
+      const checkbox = e.currentTarget;
+      const containerId = checkbox.dataset.containerId;
+      const selectId = checkbox.dataset.selectId;
+
+      if (containerId && selectId && typeof modalManager.syncCheckboxToSelect === 'function') {
+        modalManager.syncCheckboxToSelect(containerId, selectId);
+      }
+    }, 'modal');
+
+    // Délégation pour détection de modifications du formulaire (change)
+    safeOn('#task-form input, #task-form select, #task-form textarea', 'change', (e) => {
+      const modalManager = this.managers.get('modal');
+      if (modalManager && typeof modalManager.updateSaveButtonState === 'function') {
+        modalManager.updateSaveButtonState();
+      }
+    }, 'modal');
+
+    // Délégation pour détection de modifications du formulaire (input)
+    safeOn('#task-form input, #task-form select, #task-form textarea', 'input', (e) => {
+      const modalManager = this.managers.get('modal');
+      if (modalManager && typeof modalManager.updateSaveButtonState === 'function') {
+        modalManager.updateSaveButtonState();
+      }
+    }, 'modal');
+
     // === VUES - Navigation horizontale ===
     // NOTE: Le scroll sur #kanban-container est géré par le ResizeObserver
     // dans ViewManager.setupHorizontalScroll() - pas besoin d'événement supplémentaire
@@ -410,6 +496,37 @@ export class EventCentralizer {
       viewManager.handleColumnCollapse(e);
     }, 'viewMode');
 
+    // Délégation pour boutons d'expansion depuis le stack (éléments dynamiques)
+    safeOn('.btn-expand-from-stack', 'click', (e) => {
+      e.preventDefault();
+
+      const viewManager = this.managers.get('viewMode');
+      if (!viewManager) return;
+
+      const statusId = e.currentTarget.dataset.status;
+      if (!statusId) return;
+
+      const targetColumn = viewManager.findColumnByStatus(statusId);
+      const originalButton = targetColumn?.querySelector('.btn-collapse-column');
+
+      if (targetColumn && originalButton) {
+        viewManager.expandColumn(statusId, targetColumn, originalButton, { fromStack: true });
+      } else {
+        viewManager.collapsedColumns.delete(statusId);
+        viewManager.removeFromCollapsedStack(statusId);
+      }
+    }, 'viewMode');
+
+    // Délégation pour navigation clavier dans le container kanban
+    safeOn('#kanban-container', 'keydown', (e) => {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        const viewManager = this.managers.get('viewMode');
+        if (viewManager && typeof viewManager.handleKeyboardNavigation === 'function') {
+          viewManager.handleKeyboardNavigation(e);
+        }
+      }
+    }, 'viewMode');
+
     // === DATES ===
     safeOn('#btn-pick-date', 'click', (e) => {
       const datePickerManager = this.managers.get('datePicker');
@@ -461,15 +578,79 @@ export class EventCentralizer {
       }
     }, 'datePicker');
 
+    // === HISTORY MANAGER - Widgets d'édition ===
+    // Bouton retour à la timeline
+    safeOn('#btn-back-to-timeline', 'click', (e) => {
+      const btn = e.currentTarget;
+      const originalContent = btn.dataset.originalContent;
+      if (originalContent) {
+        const timelineContainer = document.querySelector('.timeline-list');
+        if (timelineContainer) {
+          timelineContainer.innerHTML = originalContent;
+        }
+      }
+    }, 'history');
+
+    // Widget d'édition de commentaire - boutons
+    safeOn('#accordion-btn-close-comment-edit, #accordion-btn-cancel-comment-edit', 'click', (e) => {
+      const historyManager = this.managers.get('history');
+      if (historyManager && typeof historyManager.closeCommentEditWidget === 'function') {
+        historyManager.closeCommentEditWidget();
+      }
+    }, 'history');
+
+    safeOn('#accordion-btn-save-comment-edit', 'click', (e) => {
+      const historyManager = this.managers.get('history');
+      if (historyManager && typeof historyManager.saveCommentEdit === 'function') {
+        historyManager.saveCommentEdit();
+      }
+    }, 'history');
+
+    // Widget d'édition - overlay click pour fermer
+    safeOn('.comment-edit-overlay', 'click', (e) => {
+      if (e.target === e.currentTarget) { // Click direct sur overlay, pas sur enfant
+        const historyManager = this.managers.get('history');
+        if (historyManager && typeof historyManager.closeCommentEditWidget === 'function') {
+          historyManager.closeCommentEditWidget();
+        }
+      }
+    }, 'history');
+
+    // Textarea du widget - empêcher propagation des touches
+    safeOn('#accordion-comment-edit-text', 'keydown', (e) => {
+      e.stopPropagation(); // Empêche les listeners globaux
+    }, 'history');
+
+    safeOn('#accordion-comment-edit-text', 'keyup', (e) => {
+      e.stopPropagation(); // Empêche les listeners globaux
+    }, 'history');
+
     // === RACCOURCIS CLAVIER ===
     safeOn(document, 'keydown', (e) => {
       // Ignorer si dans un champ de saisie
       if (e.target.matches('input, textarea, select')) return;
-      
+
+      // Fermer simple-history-modal avec Escape
+      if (e.key === 'Escape') {
+        const simpleModal = document.getElementById('simple-history-modal');
+        if (simpleModal) {
+          simpleModal.remove();
+          return;
+        }
+
+        // Fermer widget d'édition de commentaire avec Escape
+        const historyManager = this.managers.get('history');
+        if (historyManager && typeof historyManager.isCommentEditOpen === 'function' &&
+            historyManager.isCommentEditOpen()) {
+          historyManager.closeCommentEditWidget();
+          return;
+        }
+      }
+
       // Déléguer aux managers appropriés
       this.handleKeyboardShortcuts(e);
     }, 'keyboard');
-    
+
     console.log('🎯 EventCentralizer: Tous les listeners centralisés via jQuery');
   }
   

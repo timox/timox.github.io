@@ -447,9 +447,9 @@ export class JalonManager {
     const emptyState = document.getElementById('jalons-empty');
     const countBadge = document.getElementById('jalons-count');
 
-    // Vérifier que les éléments existent
+    // Vérifier que les éléments existent (normal si la modale n'est pas ouverte)
     if (!timeline || !countBadge) {
-      this.logger.warn('Éléments DOM jalons non trouvés');
+      this.logger.debug('Éléments DOM jalons non trouvés - modale probablement fermée');
       return;
     }
 
@@ -606,15 +606,10 @@ export class JalonManager {
    * Lie les événements aux éléments des jalons
    */
   bindJalonEvents() {
-    // Changement de statut
-    document.querySelectorAll('.jalon-status-select').forEach(select => {
-      select.addEventListener('change', (e) => {
-        const jalonId = e.target.dataset.jalonId;
-        this.updateJalonStatus(jalonId, e.target.value);
-      });
-    });
+    // NOTE: Changement de statut géré par EventCentralizer.js via délégation
+    // (.jalon-status-select change event)
 
-    // Les boutons d'édition et de suppression sont gérés par délégation dans setupEventListeners()
+    // Les boutons d'édition et de suppression sont gérés par délégation dans EventCentralizer
   }
 
   /**
