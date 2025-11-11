@@ -447,9 +447,9 @@ export class JalonManager {
     const emptyState = document.getElementById('jalons-empty');
     const countBadge = document.getElementById('jalons-count');
 
-    // Vérifier que les éléments existent
+    // Vérifier que les éléments existent (normal si la modale n'est pas ouverte)
     if (!timeline || !countBadge) {
-      this.logger.warn('Éléments DOM jalons non trouvés');
+      this.logger.debug('Éléments DOM jalons non trouvés - modale probablement fermée');
       return;
     }
 
