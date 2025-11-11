@@ -300,6 +300,29 @@ export class EventCentralizer {
       }
     }, 'modal');
 
+    // Délégation pour sélection d'actions stratégiques (éléments dynamiques)
+    safeOn('.strategy-action', 'click', (e) => {
+      const modalManager = this.managers.get('modal');
+      if (!modalManager || typeof modalManager.selectStrategy !== 'function') {
+        return;
+      }
+
+      const actionDiv = e.currentTarget;
+      const strategyId = parseInt(actionDiv.dataset.strategyId);
+
+      if (!isNaN(strategyId) && modalManager.kanban.strategiesData) {
+        const strategy = modalManager.kanban.strategiesData.find(s => s.id === strategyId);
+        if (strategy) {
+          // Extraire les données nécessaires depuis les attributs data
+          const objectif = actionDiv.dataset.objectif || strategy.objectif;
+          const sousObjectif = actionDiv.dataset.sousObjectif || strategy['sous-objectif'];
+          const action = actionDiv.dataset.action || strategy.action;
+
+          modalManager.selectStrategy(strategy, objectif, sousObjectif, action, e);
+        }
+      }
+    }, 'modal');
+
     // === VUES - Navigation horizontale ===
     // NOTE: Le scroll sur #kanban-container est géré par le ResizeObserver
     // dans ViewManager.setupHorizontalScroll() - pas besoin d'événement supplémentaire
@@ -336,6 +359,55 @@ export class EventCentralizer {
         viewManager.kanban.filterManager.setFilter('statut', newStatut);
         viewManager.updateBadgeStates(document.getElementById('kanban-container'), newStatut);
       }
+    }, 'viewMode');
+
+    // Délégation pour zones éditables des cartes (éléments dynamiques)
+    safeOn('.editable-zone', 'click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+
+      const viewManager = this.managers.get('viewMode');
+      if (!viewManager) return;
+
+      const card = e.currentTarget.closest('.kanban-item');
+      const taskId = parseInt(card?.dataset.id, 10);
+
+      if (!isNaN(taskId) && viewManager.kanban.modalManager) {
+        const task = viewManager.kanban.currentRecords?.find(r => r.id === taskId);
+        if (task) {
+          viewManager.kanban.modalManager.openTaskModal(task);
+        }
+      }
+    }, 'viewMode');
+
+    // Délégation pour boutons timeline (éléments dynamiques)
+    safeOn('.timeline-btn', 'click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+
+      const taskId = parseInt(e.currentTarget.dataset.taskId, 10);
+      if (!isNaN(taskId)) {
+        window.open(`timeline.html?task=${taskId}`, '_blank');
+      }
+    }, 'viewMode');
+
+    // Délégation pour navigation clavier sur les cartes (éléments dynamiques)
+    safeOn('.kanban-item', 'keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        const editableZone = e.currentTarget.querySelector('.editable-zone');
+        editableZone?.click();
+      }
+    }, 'viewMode');
+
+    // Délégation pour boutons de repliage de colonnes (éléments dynamiques)
+    safeOn('.btn-collapse', 'click', (e) => {
+      const viewManager = this.managers.get('viewMode');
+      if (!viewManager || typeof viewManager.handleColumnCollapse !== 'function') {
+        return;
+      }
+
+      viewManager.handleColumnCollapse(e);
     }, 'viewMode');
 
     // === DATES ===

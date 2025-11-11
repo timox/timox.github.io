@@ -315,16 +315,19 @@ export class ModalManager {
    */
   createActionCard(objectif, sousObjectif, action) {
     // Trouver la stratégie correspondante dans les données Grist
-    const strategy = this.kanban.strategiesData.find(s => 
-      s.objectif === objectif && 
-      s.sous_objectif === sousObjectif && 
+    const strategy = this.kanban.strategiesData.find(s =>
+      s.objectif === objectif &&
+      s.sous_objectif === sousObjectif &&
       s.action === action
     );
-    
+
     const actionDiv = document.createElement('div');
     actionDiv.className = 'strategy-action';
     actionDiv.dataset.strategyId = strategy ? strategy.id : '';
-    
+    actionDiv.dataset.objectif = objectif;
+    actionDiv.dataset.sousObjectif = sousObjectif;
+    actionDiv.dataset.action = action;
+
     actionDiv.innerHTML = `
       <div class="strategy-action-title">${action}</div>
       <div class="strategy-action-details">
@@ -345,12 +348,10 @@ export class ModalManager {
       </div>
       <i class="bi bi-check-circle strategy-selected-indicator" style="display: none;"></i>
     `;
-    
-    // Event listener pour sélection
-    actionDiv.addEventListener('click', (evt) => {
-      this.selectStrategy(strategy, objectif, sousObjectif, action, evt);
-    });
-    
+
+    // NOTE: Événement .strategy-action géré par EventCentralizer.js ligne 304-324
+    // (supprimé pour éviter l'accumulation de handlers à chaque render)
+
     return actionDiv;
   }
 
