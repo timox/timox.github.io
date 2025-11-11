@@ -961,10 +961,17 @@ export class ModalManager {
     
     // Afficher/masquer le bouton supprimer
     toggleVisibility('btn-delete-task', !this.isNewTask, 'inline-block');
-    
+
     // Ouvrir la modal
     this.taskModal.show();
-    
+
+    // Rafraîchir l'affichage des jalons APRÈS ouverture (éléments DOM maintenant disponibles)
+    if (this.kanban.jalonManager && !this.isNewTask) {
+      setTimeout(() => {
+        this.kanban.jalonManager.updateJalonsDisplay();
+      }, 100);
+    }
+
     // Focus sur le premier champ
     setTimeout(() => {
       const firstField = document.getElementById('popup-titre');
