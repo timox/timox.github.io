@@ -9,7 +9,7 @@
 
 #task-history-modal .modal-dialog {
   width: 90%;
-  max-width: 1000px;
+  max-width: 1400px;
   margin: 20px auto;
 }
 
@@ -28,7 +28,7 @@
 
 /* Modale d'édition de tâche */
 .task-modal-dialog {
-  max-width: 1220px;
+  max-width: 1600px;
   width: calc(100% - 2rem);
 }
 
