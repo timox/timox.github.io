@@ -103,13 +103,292 @@ export class EventCentralizer {
 
       const jalonManager = this.managers.get('jalon');
       if (!jalonManager) return;
-      
+
       const jalonId = e.currentTarget.dataset.jalonId;
-      if (jalonId) {
-        jalonManager.deleteJalon(jalonId);
+      if (!jalonId) {
+        jalonManager.logger?.error?.('ID de jalon manquant pour la suppression');
+        return;
+      }
+
+      if (confirm('Êtes-vous sûr de vouloir supprimer ce jalon ?')) {
+        try {
+          jalonManager.deleteJalon(jalonId);
+        } catch (error) {
+          jalonManager.logger?.error?.('Erreur lors de la suppression du jalon:', error);
+        }
       }
     }, 'jalon');
-    
+
+    safeOn('.btn-edit-jalon', 'click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const jalonManager = this.managers.get('jalon');
+      if (!jalonManager || typeof jalonManager.openJalonModal !== 'function') {
+        return;
+      }
+
+      const button = e.currentTarget;
+
+      try {
+        // Rechercher l'ID de jalon de manière robuste
+        let jalonId = button.dataset.jalonId;
+
+        if (!jalonId) {
+          const jalonElement = button.closest('[data-jalon-id]');
+          if (jalonElement) {
+            jalonId = jalonElement.dataset.jalonId;
+          }
+        }
+
+        if (!jalonId) {
+          jalonManager.logger?.error?.('Impossible de trouver l\'ID du jalon à éditer');
+          return;
+        }
+
+        jalonManager.logger?.debug?.('Édition du jalon ID:', jalonId);
+
+        const jalon = jalonManager.jalons.find(j => j.id === jalonId);
+        if (jalon) {
+          jalonManager.openJalonModal(jalon);
+        } else {
+          jalonManager.logger?.error?.('Jalon non trouvé pour édition. ID:', jalonId);
+        }
+      } catch (error) {
+        jalonManager.logger?.error?.('Erreur lors de l\'édition du jalon:', error);
+      }
+    }, 'jalon');
+
+    safeOn('.jalon-type-card', 'click', (e) => {
+      const jalonManager = this.managers.get('jalon');
+      if (!jalonManager || typeof jalonManager.selectJalonType !== 'function') {
+        return;
+      }
+
+      const card = e.currentTarget;
+      const type = card.dataset.type;
+      if (type) {
+        jalonManager.selectJalonType(type);
+      }
+    }, 'jalon');
+
+    safeOn('#btn-save-jalon', 'click', (e) => {
+      const jalonManager = this.managers.get('jalon');
+      if (!jalonManager || typeof jalonManager.saveJalon !== 'function') {
+        return;
+      }
+
+      jalonManager.saveJalon();
+    }, 'jalon');
+
+    // === FILTRES ===
+    safeOn('#task-search', 'input', (e) => {
+      const filterManager = this.managers.get('filter');
+      if (!filterManager) return;
+
+      filterManager.filters.search = e.target.value.toLowerCase().trim();
+      filterManager.debouncedSearch();
+    }, 'filter');
+
+    safeOn('#filter-bureau', 'change', (e) => {
+      const filterManager = this.managers.get('filter');
+      if (!filterManager) return;
+
+      filterManager.filters.bureau = e.target.value || '';
+      filterManager.logger?.debug?.(`Bureau filter changed: ${filterManager.filters.bureau}`);
+      filterManager.applyFilters();
+    }, 'filter');
+
+    safeOn('#filter-qui', 'change', (e) => {
+      const filterManager = this.managers.get('filter');
+      if (!filterManager) return;
+
+      filterManager.filters.qui = e.target.value || '';
+      filterManager.logger?.debug?.(`Qui filter changed: ${filterManager.filters.qui}`);
+      filterManager.applyFilters();
+    }, 'filter');
+
+    safeOn('#filter-projet', 'change', (e) => {
+      const filterManager = this.managers.get('filter');
+      if (!filterManager) return;
+
+      filterManager.filters.projet = e.target.value || '';
+      filterManager.logger?.debug?.(`Projet filter changed: ${filterManager.filters.projet}`);
+      filterManager.applyFilters();
+    }, 'filter');
+
+    safeOn('#filter-statut', 'change', (e) => {
+      const filterManager = this.managers.get('filter');
+      if (!filterManager) return;
+
+      filterManager.filters.statut = e.target.value || '';
+      filterManager.logger?.debug?.(`Statut filter changed: ${filterManager.filters.statut}`);
+
+      // Synchroniser avec ViewManager en mode focus
+      if (filterManager.kanban.viewMode === 'focus' && filterManager.kanban.viewManager) {
+        filterManager.kanban.viewManager.focusColumn = filterManager.filters.statut;
+      }
+
+      filterManager.applyFilters();
+    }, 'filter');
+
+    safeOn('#show-termine', 'change', (e) => {
+      const filterManager = this.managers.get('filter');
+      if (!filterManager) return;
+
+      filterManager.showTermine = e.target.checked;
+      filterManager.applyFilters();
+    }, 'filter');
+
+    safeOn('#clear-filters', 'click', (e) => {
+      e.preventDefault();
+
+      const filterManager = this.managers.get('filter');
+      if (!filterManager) return;
+
+      filterManager.clearAllFilters();
+      filterManager.applyFilters();
+    }, 'filter');
+
+    // === MODALES ===
+    safeOn('#btn-ajout-projet', 'click', (e) => {
+      const modalManager = this.managers.get('modal');
+      if (!modalManager || typeof modalManager.addNewProject !== 'function') {
+        return;
+      }
+
+      modalManager.addNewProject();
+    }, 'modal');
+
+    safeOn('#popup-urgence, #popup-impact', 'change', (e) => {
+      const modalManager = this.managers.get('modal');
+      if (!modalManager) return;
+
+      const urgenceSelect = document.getElementById('popup-urgence');
+      const impactSelect = document.getElementById('popup-impact');
+      const prioriteField = document.getElementById('popup-priorite-calculee');
+
+      if (urgenceSelect && impactSelect && prioriteField) {
+        prioriteField.value = modalManager.calculatePriorite(urgenceSelect.value, impactSelect.value);
+      }
+    }, 'modal');
+
+    safeOn('#popup-description', 'input', (e) => {
+      const modalManager = this.managers.get('modal');
+      if (!modalManager || typeof modalManager.autoResizeTextarea !== 'function') {
+        return;
+      }
+
+      modalManager.autoResizeTextarea.call(e.target);
+    }, 'modal');
+
+    // Délégation pour éléments dynamiques de stratégie
+    safeOn('.strategy-tag-remove', 'click', (e) => {
+      e.stopPropagation();
+
+      const modalManager = this.managers.get('modal');
+      if (!modalManager) return;
+
+      const btn = e.currentTarget;
+      const strategyId = parseInt(btn.dataset.strategyId);
+
+      if (!isNaN(strategyId)) {
+        modalManager.removeStrategyFromSelection(strategyId);
+        modalManager.updateStrategyTags();
+        modalManager.updateStrategyPreview();
+        modalManager.updateStrategyIds();
+      }
+    }, 'modal');
+
+    // === VUES - Navigation horizontale ===
+    // NOTE: Le scroll sur #kanban-container est géré par le ResizeObserver
+    // dans ViewManager.setupHorizontalScroll() - pas besoin d'événement supplémentaire
+
+    safeOn('.scroll-arrow-left', 'click', (e) => {
+      const kanbanContainer = document.getElementById('kanban-container');
+      if (kanbanContainer) {
+        kanbanContainer.scrollBy({ left: -300, behavior: 'smooth' });
+      }
+    }, 'viewMode');
+
+    safeOn('.scroll-arrow-right', 'click', (e) => {
+      const kanbanContainer = document.getElementById('kanban-container');
+      if (kanbanContainer) {
+        kanbanContainer.scrollBy({ left: 300, behavior: 'smooth' });
+      }
+    }, 'viewMode');
+
+    // Délégation pour badges board-count (éléments dynamiques)
+    safeOn('.board-count', 'click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const viewManager = this.managers.get('viewMode');
+      if (!viewManager) return;
+
+      const badge = e.currentTarget;
+      const statut = badge.dataset.status;
+
+      if (viewManager.kanban.filterManager) {
+        const currentStatut = viewManager.kanban.filterManager.filters.statut;
+        const newStatut = currentStatut === statut ? '' : statut;
+
+        viewManager.kanban.filterManager.setFilter('statut', newStatut);
+        viewManager.updateBadgeStates(document.getElementById('kanban-container'), newStatut);
+      }
+    }, 'viewMode');
+
+    // === DATES ===
+    safeOn('#btn-pick-date', 'click', (e) => {
+      const datePickerManager = this.managers.get('datePicker');
+      if (!datePickerManager || typeof datePickerManager.openDatePicker !== 'function') {
+        return;
+      }
+
+      datePickerManager.openDatePicker();
+    }, 'datePicker');
+
+    safeOn('#btn-clear-date', 'click', (e) => {
+      const datePickerManager = this.managers.get('datePicker');
+      if (!datePickerManager || typeof datePickerManager.clearDate !== 'function') {
+        return;
+      }
+
+      datePickerManager.clearDate();
+    }, 'datePicker');
+
+    safeOn('#popup-delai', 'keydown', (e) => {
+      const datePickerManager = this.managers.get('datePicker');
+      if (!datePickerManager) return;
+
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (typeof datePickerManager.clearDate === 'function') {
+          e.preventDefault();
+          datePickerManager.clearDate();
+        }
+      } else if (e.key === 'Enter' || e.key === ' ') {
+        if (typeof datePickerManager.openDatePicker === 'function') {
+          e.preventDefault();
+          datePickerManager.openDatePicker();
+        }
+      }
+    }, 'datePicker');
+
+    // Délégation pour presets de date (éléments dynamiques)
+    safeOn('[data-preset]', 'click', (e) => {
+      e.preventDefault();
+
+      const datePickerManager = this.managers.get('datePicker');
+      if (!datePickerManager || typeof datePickerManager.setDatePreset !== 'function') {
+        return;
+      }
+
+      const preset = e.currentTarget.dataset.preset;
+      if (preset) {
+        datePickerManager.setDatePreset(preset);
+      }
+    }, 'datePicker');
+
     // === RACCOURCIS CLAVIER ===
     safeOn(document, 'keydown', (e) => {
       // Ignorer si dans un champ de saisie

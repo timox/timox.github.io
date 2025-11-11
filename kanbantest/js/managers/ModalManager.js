@@ -112,13 +112,7 @@ export class ModalManager {
     }, 'modal');
 
     // Bouton ajouter projet
-    const btnAjoutProjet = document.getElementById('btn-ajout-projet');
-    if (btnAjoutProjet) {
-      btnAjoutProjet.addEventListener('click', () => {
-        this.addNewProject();
-      });
-    }
-
+    // === ÉVÉNEMENTS BOOTSTRAP LIFECYCLE (exception autorisée) ===
     // Écouteur pour quand l'accordéon s'ouvre (événement Bootstrap)
     document.addEventListener('shown.bs.collapse', (e) => {
       if (e.target.id === 'comment-history-accordion') {
@@ -139,39 +133,16 @@ export class ModalManager {
         }
       }
     });
-    
-    // Calcul automatique de la priorité basé sur urgence + impact
-    const urgenceSelect = document.getElementById('popup-urgence');
-    const impactSelect = document.getElementById('popup-impact');
-    
-    if (urgenceSelect && impactSelect) {
-      const updatePriorite = () => {
-        const urgence = urgenceSelect.value;
-        const impact = impactSelect.value;
-        const prioriteField = document.getElementById('popup-priorite-calculee');
-        
-        if (prioriteField) {
-          prioriteField.value = this.calculatePriorite(urgence, impact);
-        }
-      };
-      
-      urgenceSelect.addEventListener('change', updatePriorite);
-      impactSelect.addEventListener('change', updatePriorite);
-    }
-    
-    // Raccourcis clavier - DÉSACTIVÉS (gérés centralement dans kanban-app.js)
-    // document.addEventListener('keydown', (e) => {
-    //   if ((e.key === 'n' || e.key === 'N') && !e.target.matches('input, textarea')) {
-    //     e.preventDefault();
-    //     this.openTaskModal();
-    //   }
-    // });
-    
-    // Auto-resize des textareas
-    const descriptionTextarea = document.getElementById('popup-description');
-    if (descriptionTextarea) {
-      descriptionTextarea.addEventListener('input', this.autoResizeTextarea);
-    }
+
+    // NOTE: Les événements suivants sont gérés dans EventCentralizer.js :
+    // - #btn-ajout-projet (click) - ajout de projet
+    // - #popup-urgence, #popup-impact (change) - calcul priorité
+    // - #popup-description (input) - auto-resize textarea
+    // - .strategy-tag-remove (click) - suppression tags stratégie (délégation)
+    //
+    // Les addEventListener sur éléments créés dynamiquement restent dans les méthodes
+    // de création (ex: createObjectiveSection, createActionDiv) car ils sont attachés
+    // au moment de la création de l'élément.
   }
   
   /**
@@ -501,17 +472,8 @@ export class ModalManager {
       </span>
     `).join('');
     
-    // Ajouter les événements de suppression
-    tagsContainer.querySelectorAll('.strategy-tag-remove').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const strategyId = parseInt(btn.dataset.strategyId);
-        this.removeStrategyFromSelection(strategyId);
-        this.updateStrategyTags();
-        this.updateStrategyPreview();
-        this.updateStrategyIds();
-      });
-    });
+    // NOTE: Les événements de suppression des tags sont gérés par EventCentralizer.js
+    // via délégation sur le sélecteur .strategy-tag-remove
   }
   
   /**

@@ -91,80 +91,17 @@ export class FilterManager {
    * Configure les écouteurs d'événements
    */
   setupEventListeners() {
-    // Recherche textuelle
-    if (this.elements.searchInput) {
-      this.elements.searchInput.addEventListener('input', (e) => {
-        this.filters.search = e.target.value.toLowerCase().trim();
-        this.debouncedSearch();
-      });
-      
-      // Raccourci clavier pour focus
-      // Raccourci F - DÉSACTIVÉ (géré centralement dans kanban-app.js)
-      // document.addEventListener('keydown', (e) => {
-      //   if ((e.key === 'f' || e.key === 'F') && !e.target.matches('input, textarea, select')) {
-      //     e.preventDefault();
-      //     this.elements.searchInput.focus();
-      //   }
-      // });
-    }
-    
-    // Filtres par sélection
-    if (this.elements.filterBureau) {
-      this.elements.filterBureau.addEventListener('change', (e) => {
-        this.filters.bureau = e.target.value || '';
-        this.logger.debug(`Bureau filter changed: ${this.filters.bureau}`);
-        this.applyFilters();
-      });
-    }
-    
-    if (this.elements.filterQui) {
-      this.elements.filterQui.addEventListener('change', (e) => {
-        this.filters.qui = e.target.value || '';
-        this.logger.debug(`Qui filter changed: ${this.filters.qui}`);
-        this.applyFilters();
-      });
-    }
-    
-    if (this.elements.filterProjet) {
-      this.elements.filterProjet.addEventListener('change', (e) => {
-        this.filters.projet = e.target.value || '';
-        this.logger.debug(`Projet filter changed: ${this.filters.projet}`);
-        this.applyFilters();
-      });
-    }
-    
-    if (this.elements.filterStatut) {
-      this.elements.filterStatut.addEventListener('change', (e) => {
-        this.filters.statut = e.target.value || '';
-        this.logger.debug(`Statut filter changed: ${this.filters.statut}`);
-        
-        // CORRIGÉ: Synchroniser avec ViewManager en mode focus
-        if (this.kanban.viewMode === 'focus' && this.kanban.viewManager) {
-          this.kanban.viewManager.focusColumn = this.filters.statut;
-        }
-        
-        this.applyFilters();
-      });
-    }
-    
-    // Affichage des tâches terminées
-    if (this.elements.showTermine) {
-      this.elements.showTermine.addEventListener('change', (e) => {
-        this.showTermine = e.target.checked;
-        this.applyFilters();
-      });
-    }
-    
-    // Bouton pour effacer tous les filtres
-    if (this.elements.clearFiltersBtn) {
-      this.elements.clearFiltersBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        this.clearAllFilters();
-        this.applyFilters();
-      });
-    }
-    
-    this.logger.debug('Filter event listeners configured');
+    // NOTE: TOUS les événements utilisateur des filtres sont gérés de manière centralisée
+    // par EventCentralizer.js via jQuery/safeOn :
+    // - #task-search (input - recherche textuelle)
+    // - #filter-bureau (change)
+    // - #filter-qui (change)
+    // - #filter-projet (change)
+    // - #filter-statut (change + sync ViewManager)
+    // - #show-termine (change)
+    // - #clear-filters (click)
+
+    this.logger.debug('FilterManager initialisé - événements gérés par EventCentralizer');
   }
   
   /**

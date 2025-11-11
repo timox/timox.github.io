@@ -107,104 +107,19 @@ export class JalonManager {
   }
 
   setupEventListeners() {
-    // Bouton ajouter un jalon
-    // Sélection du type de jalon
-    const typeCards = document.querySelectorAll('.jalon-type-card');
-    typeCards.forEach(card => {
-      card.addEventListener('click', () => {
-        this.selectJalonType(card.dataset.type);
-      });
-    });
-
-    // Bouton sauvegarder
-    const btnSaveJalon = document.getElementById('btn-save-jalon');
-    if (btnSaveJalon) {
-      btnSaveJalon.addEventListener('click', () => {
-        this.saveJalon();
-      });
-    }
-
-    // Reset form à la fermeture de la modale
+    // Reset form à la fermeture de la modale (événement Bootstrap lifecycle - exception autorisée)
     const modalElement = document.getElementById('jalonModal');
     modalElement?.addEventListener('hidden.bs.modal', () => {
       this.resetJalonForm();
     });
 
-    // Délégation d'événements pour les boutons de suppression et d'édition (éléments dynamiques)
-    document.addEventListener('click', (e) => {
-      const addButton = e.target.closest('#btn-add-jalon');
-      if (addButton) {
-        e.preventDefault();
-        e.stopPropagation();
-        this.openJalonModal();
-        return;
-      }
-
-      // Gestion des boutons de suppression
-      if (e.target.closest('.btn-delete-jalon')) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const btn = e.target.closest('.btn-delete-jalon');
-        const jalonId = btn.dataset.jalonId;
-        
-        if (!jalonId) {
-          this.logger.error('ID de jalon manquant pour la suppression');
-          return;
-        }
-        
-        this.logger.debug('Suppression du jalon ID:', jalonId);
-        
-        if (confirm('Êtes-vous sûr de vouloir supprimer ce jalon ?')) {
-          try {
-            this.deleteJalon(jalonId);
-          } catch (error) {
-            this.logger.error('Erreur lors de la suppression du jalon:', error);
-          }
-        }
-      }
-      
-      // Gestion des boutons d'édition
-      if (e.target.closest('.btn-edit-jalon')) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const btn = e.target.closest('.btn-edit-jalon');
-        
-        try {
-          // Rechercher l'ID de jalon de manière plus robuste
-          let jalonId;
-          
-          // Méthode 1: depuis le bouton lui-même
-          if (btn.dataset.jalonId) {
-            jalonId = btn.dataset.jalonId;
-          }
-          // Méthode 2: depuis le parent avec data-jalon-id
-          else {
-            const jalonElement = btn.closest('[data-jalon-id]');
-            if (jalonElement) {
-              jalonId = jalonElement.dataset.jalonId;
-            }
-          }
-          
-          if (!jalonId) {
-            this.logger.error('Impossible de trouver l\'ID du jalon à éditer');
-            return;
-          }
-          
-          this.logger.debug('Édition du jalon ID:', jalonId);
-          
-          const jalon = this.jalons.find(j => j.id === jalonId);
-          if (jalon) {
-            this.openJalonModal(jalon);
-          } else {
-            this.logger.error('Jalon non trouvé pour édition. ID:', jalonId);
-          }
-        } catch (error) {
-          this.logger.error('Erreur lors de l\'édition du jalon:', error);
-        }
-      }
-    });
+    // NOTE: TOUS les événements utilisateur des jalons sont gérés de manière centralisée
+    // par EventCentralizer.js via jQuery/safeOn :
+    // - #btn-add-jalon (ajout)
+    // - .btn-delete-jalon (suppression)
+    // - .btn-edit-jalon (édition)
+    // - .jalon-type-card (sélection de type)
+    // - #btn-save-jalon (sauvegarde)
   }
 
   /**
