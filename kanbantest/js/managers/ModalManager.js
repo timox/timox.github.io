@@ -33,10 +33,11 @@ export class ModalManager {
     this.currentTaskId = null;
     this.currentTask = null;
     this.isNewTask = false;
-    
+    this.isPopulating = false; // Flag pour éviter la validation pendant le chargement
+
     // Approche stateless - pas de cache, reset complet à chaque tâche
     this.selectedStrategies = [];
-    
+
     this.init();
   }
   
@@ -910,38 +911,44 @@ export class ModalManager {
     if (this.kanban.historyManager?.cleanupOrphanBackdrops) {
       this.kanban.historyManager.cleanupOrphanBackdrops();
     }
-    
+
+    // Flag pour éviter la validation pendant le chargement
+    this.isPopulating = true;
+
     // ✅ RESET intelligent : seulement si nouvelle tâche ou changement de tâche
     const isChangingTask = !task || this.currentTaskId !== task?.id;
     if (isChangingTask) {
       this.resetTaskForm();
     }
-    
+
     this.isNewTask = !task || !task.id;
     this.currentTask = task;
     this.currentTaskId = task?.id || null;
-    
+
     this.logger.debug(`Opening task modal: ${this.isNewTask ? 'new task' : 'edit task ' + this.currentTaskId}`);
-    
+
     // Mettre à jour le titre de la modal
     const modalTitle = document.getElementById('popup-tache-label');
     if (modalTitle) {
-      modalTitle.innerHTML = this.isNewTask 
+      modalTitle.innerHTML = this.isNewTask
         ? '<i class="bi bi-plus-circle me-2"></i>Nouvelle Tâche'
         : '<i class="bi bi-pencil-square me-2"></i>Modifier Tâche';
     }
-    
-    
+
+
     // Informer le JalonManager de la tâche en cours
     if (this.kanban.jalonManager) {
       this.kanban.jalonManager.setCurrentTaskId(this.currentTaskId);
     }
-    
+
     // Peupler les options des selects d'abord
     this.populateSelectOptions();
-    
+
     // Peupler les champs APRÈS avoir configuré les caches
     this.populateTaskForm(task);
+
+    // Fin du chargement - activer la validation
+    this.isPopulating = false;
     
     // Afficher/masquer le bouton supprimer
     toggleVisibility('btn-delete-task', !this.isNewTask, 'inline-block');
@@ -2667,25 +2674,25 @@ export class ModalManager {
    * @returns {boolean} True si valide
    */
   validateTaskData() {
+    // Ne pas valider pendant le chargement de la modale
+    if (this.isPopulating) {
+      return true;
+    }
+
     const titre = getFieldValue('popup-titre').trim();
-    
+
     if (!titre) {
       displayError('Le titre est obligatoire');
       return false;
     }
-    
+
     if (titre.length > 255) {
       displayError('Le titre ne peut pas dépasser 255 caractères');
       return false;
     }
-    
-    // Validation des bureaux
-    const bureaux = getSelectedOptionsAsGristFormat('popup-bureau');
-    if (bureaux.length <= 1) {
-      displayError('Veuillez sélectionner au moins un bureau');
-      return false;
-    }
-    
+
+    // Note: Bureau n'est pas obligatoire (demande utilisateur)
+
     return true;
   }
   
