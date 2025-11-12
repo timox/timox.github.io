@@ -201,7 +201,7 @@ export class EventCentralizer {
       const filterManager = this.managers.get('filter');
       if (!filterManager) return;
 
-      filterManager.filters.search = e.target.value.toLowerCase().trim();
+      filterManager.filters.search = e.currentTarget.value.toLowerCase().trim();
       filterManager.debouncedSearch();
     }, 'filter');
 
@@ -209,7 +209,7 @@ export class EventCentralizer {
       const filterManager = this.managers.get('filter');
       if (!filterManager) return;
 
-      filterManager.filters.bureau = e.target.value || '';
+      filterManager.filters.bureau = e.currentTarget.value || '';
       filterManager.logger?.debug?.(`Bureau filter changed: ${filterManager.filters.bureau}`);
       filterManager.applyFilters();
     }, 'filter');
@@ -218,7 +218,7 @@ export class EventCentralizer {
       const filterManager = this.managers.get('filter');
       if (!filterManager) return;
 
-      filterManager.filters.qui = e.target.value || '';
+      filterManager.filters.qui = e.currentTarget.value || '';
       filterManager.logger?.debug?.(`Qui filter changed: ${filterManager.filters.qui}`);
       filterManager.applyFilters();
     }, 'filter');
@@ -227,7 +227,7 @@ export class EventCentralizer {
       const filterManager = this.managers.get('filter');
       if (!filterManager) return;
 
-      filterManager.filters.projet = e.target.value || '';
+      filterManager.filters.projet = e.currentTarget.value || '';
       filterManager.logger?.debug?.(`Projet filter changed: ${filterManager.filters.projet}`);
       filterManager.applyFilters();
     }, 'filter');
@@ -236,7 +236,7 @@ export class EventCentralizer {
       const filterManager = this.managers.get('filter');
       if (!filterManager) return;
 
-      filterManager.filters.statut = e.target.value || '';
+      filterManager.filters.statut = e.currentTarget.value || '';
       filterManager.logger?.debug?.(`Statut filter changed: ${filterManager.filters.statut}`);
 
       // Synchroniser avec ViewManager en mode focus
@@ -251,7 +251,7 @@ export class EventCentralizer {
       const filterManager = this.managers.get('filter');
       if (!filterManager) return;
 
-      filterManager.showTermine = e.target.checked;
+      filterManager.showTermine = e.currentTarget.checked;
       filterManager.applyFilters();
     }, 'filter');
 
