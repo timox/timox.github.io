@@ -201,7 +201,7 @@ export class EventCentralizer {
       const filterManager = this.managers.get('filter');
       if (!filterManager) return;
 
-      filterManager.filters.search = e.target.value.toLowerCase().trim();
+      filterManager.filters.search = e.currentTarget.value.toLowerCase().trim();
       filterManager.debouncedSearch();
     }, 'filter');
 
@@ -209,7 +209,7 @@ export class EventCentralizer {
       const filterManager = this.managers.get('filter');
       if (!filterManager) return;
 
-      filterManager.filters.bureau = e.target.value || '';
+      filterManager.filters.bureau = e.currentTarget.value || '';
       filterManager.logger?.debug?.(`Bureau filter changed: ${filterManager.filters.bureau}`);
       filterManager.applyFilters();
     }, 'filter');
@@ -218,7 +218,7 @@ export class EventCentralizer {
       const filterManager = this.managers.get('filter');
       if (!filterManager) return;
 
-      filterManager.filters.qui = e.target.value || '';
+      filterManager.filters.qui = e.currentTarget.value || '';
       filterManager.logger?.debug?.(`Qui filter changed: ${filterManager.filters.qui}`);
       filterManager.applyFilters();
     }, 'filter');
@@ -227,7 +227,7 @@ export class EventCentralizer {
       const filterManager = this.managers.get('filter');
       if (!filterManager) return;
 
-      filterManager.filters.projet = e.target.value || '';
+      filterManager.filters.projet = e.currentTarget.value || '';
       filterManager.logger?.debug?.(`Projet filter changed: ${filterManager.filters.projet}`);
       filterManager.applyFilters();
     }, 'filter');
@@ -236,7 +236,7 @@ export class EventCentralizer {
       const filterManager = this.managers.get('filter');
       if (!filterManager) return;
 
-      filterManager.filters.statut = e.target.value || '';
+      filterManager.filters.statut = e.currentTarget.value || '';
       filterManager.logger?.debug?.(`Statut filter changed: ${filterManager.filters.statut}`);
 
       // Synchroniser avec ViewManager en mode focus
@@ -251,7 +251,7 @@ export class EventCentralizer {
       const filterManager = this.managers.get('filter');
       if (!filterManager) return;
 
-      filterManager.showTermine = e.target.checked;
+      filterManager.showTermine = e.currentTarget.checked;
       filterManager.applyFilters();
     }, 'filter');
 
@@ -394,7 +394,8 @@ export class EventCentralizer {
     }, 'modal');
 
     // Délégation pour détection de modifications du formulaire (change)
-    safeOn('#task-form input, #task-form select, #task-form textarea', 'change', (e) => {
+    // Exclure popup-description car les commentaires sont historisés séparément
+    safeOn('#task-form input:not(#popup-description), #task-form select, #task-form textarea:not(#popup-description)', 'change', (e) => {
       const modalManager = this.managers.get('modal');
       if (modalManager && typeof modalManager.updateSaveButtonState === 'function') {
         modalManager.updateSaveButtonState();
@@ -402,7 +403,8 @@ export class EventCentralizer {
     }, 'modal');
 
     // Délégation pour détection de modifications du formulaire (input)
-    safeOn('#task-form input, #task-form select, #task-form textarea', 'input', (e) => {
+    // Exclure popup-description car les commentaires sont historisés séparément
+    safeOn('#task-form input:not(#popup-description), #task-form select, #task-form textarea:not(#popup-description)', 'input', (e) => {
       const modalManager = this.managers.get('modal');
       if (modalManager && typeof modalManager.updateSaveButtonState === 'function') {
         modalManager.updateSaveButtonState();

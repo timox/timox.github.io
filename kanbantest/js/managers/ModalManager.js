@@ -114,6 +114,19 @@ export class ModalManager {
 
     // Bouton ajouter projet
     // === ÉVÉNEMENTS BOOTSTRAP LIFECYCLE (exception autorisée) ===
+
+    // Écouteur pour quand la modale de tâche est complètement affichée
+    const taskModalElement = document.getElementById('popup-tache');
+    if (taskModalElement) {
+      taskModalElement.addEventListener('shown.bs.modal', () => {
+        this.logger.debug('Task modal fully shown - refreshing jalons display');
+        // Rafraîchir l'affichage des jalons maintenant que le DOM est prêt
+        if (this.kanban.jalonManager && !this.isNewTask) {
+          this.kanban.jalonManager.updateJalonsDisplay();
+        }
+      });
+    }
+
     // Écouteur pour quand l'accordéon s'ouvre (événement Bootstrap)
     document.addEventListener('shown.bs.collapse', (e) => {
       if (e.target.id === 'comment-history-accordion') {
@@ -956,12 +969,8 @@ export class ModalManager {
     // Ouvrir la modal
     this.taskModal.show();
 
-    // Rafraîchir l'affichage des jalons APRÈS ouverture (éléments DOM maintenant disponibles)
-    if (this.kanban.jalonManager && !this.isNewTask) {
-      setTimeout(() => {
-        this.kanban.jalonManager.updateJalonsDisplay();
-      }, 100);
-    }
+    // NOTE: L'affichage des jalons est rafraîchi via l'événement 'shown.bs.modal'
+    // (voir setupEventListeners() ligne 121) pour garantir que le DOM est prêt
 
     // Focus sur le premier champ
     setTimeout(() => {
