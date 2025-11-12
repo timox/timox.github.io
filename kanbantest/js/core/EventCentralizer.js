@@ -294,7 +294,7 @@ export class EventCentralizer {
         return;
       }
 
-      modalManager.autoResizeTextarea.call(e.target);
+      modalManager.autoResizeTextarea(e);
     }, 'modal');
 
     // Délégation pour éléments dynamiques de stratégie
