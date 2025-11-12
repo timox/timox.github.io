@@ -159,7 +159,12 @@ export class JalonManager {
     });
 
     // Sélectionner la carte cliquée
-    document.querySelector(`[data-type="${type}"]`).classList.add('selected');
+    const typeCard = document.querySelector(`[data-type="${type}"]`);
+    if (typeCard) {
+      typeCard.classList.add('selected');
+    } else {
+      this.logger.warn(`Carte de type ${type} non trouvée`);
+    }
 
     // Masquer tous les champs conditionnels
     document.querySelectorAll('.jalon-conditional-fields').forEach(fields => {

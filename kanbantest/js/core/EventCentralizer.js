@@ -394,7 +394,8 @@ export class EventCentralizer {
     }, 'modal');
 
     // Délégation pour détection de modifications du formulaire (change)
-    safeOn('#task-form input, #task-form select, #task-form textarea', 'change', (e) => {
+    // Exclure popup-description car les commentaires sont historisés séparément
+    safeOn('#task-form input:not(#popup-description), #task-form select, #task-form textarea:not(#popup-description)', 'change', (e) => {
       const modalManager = this.managers.get('modal');
       if (modalManager && typeof modalManager.updateSaveButtonState === 'function') {
         modalManager.updateSaveButtonState();
@@ -402,7 +403,8 @@ export class EventCentralizer {
     }, 'modal');
 
     // Délégation pour détection de modifications du formulaire (input)
-    safeOn('#task-form input, #task-form select, #task-form textarea', 'input', (e) => {
+    // Exclure popup-description car les commentaires sont historisés séparément
+    safeOn('#task-form input:not(#popup-description), #task-form select, #task-form textarea:not(#popup-description)', 'input', (e) => {
       const modalManager = this.managers.get('modal');
       if (modalManager && typeof modalManager.updateSaveButtonState === 'function') {
         modalManager.updateSaveButtonState();
