@@ -1393,17 +1393,14 @@ export class ModalManager {
   collectStrategyData() {
     
     if (!this.selectedStrategies || this.selectedStrategies.length === 0) {
-      console.log(`❌ No strategies to collect - returning null`);
+      this.logger.debug('No strategies to collect - returning null');
       return null;
     }
 
-    // Format Grist ReferenceList: ['L', id1, id2, id3, ...] comme bureau et qui  
-    const strategyIds = this.selectedStrategies.map(s => {
-      console.log(`   mapping strategy:`, s);
-      return s.id;
-    });
+    // Format Grist ReferenceList: ['L', id1, id2, id3, ...] comme bureau et qui
+    const strategyIds = this.selectedStrategies.map(s => s.id);
     const gristFormat = ['L', ...strategyIds];
-    console.log(`🎯 Strategies saved: ${strategyIds.length} items`, gristFormat);
+    this.logger.debug(`Strategies collected: ${strategyIds.length} items`, gristFormat);
     return gristFormat;
   }
 
