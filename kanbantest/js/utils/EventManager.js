@@ -230,7 +230,10 @@ export class EventManager {
             return target;
           }
 
-          const value = Reflect.get(target, prop, receiver);
+          // IMPORTANT: Ne pas passer receiver au Reflect.get pour éviter les erreurs
+          // "'get target' called on an object that does not implement interface Event"
+          // Utiliser target comme receiver au lieu de proxy
+          const value = Reflect.get(target, prop, target);
 
           if (typeof value === 'function') {
             return value.bind(target);
