@@ -121,9 +121,13 @@ export class ModalManager {
       taskModalElement.addEventListener('shown.bs.modal', () => {
         this.logger.debug('Task modal fully shown - refreshing jalons display');
         // Rafraîchir l'affichage des jalons maintenant que le DOM est prêt
-        if (this.kanban.jalonManager && !this.isNewTask) {
-          this.kanban.jalonManager.updateJalonsDisplay();
-        }
+        // Petit délai pour s'assurer que tout le contenu de la modale est rendu
+        setTimeout(() => {
+          if (this.kanban.jalonManager && !this.isNewTask) {
+            this.logger.debug(`Calling updateJalonsDisplay - isNewTask: ${this.isNewTask}`);
+            this.kanban.jalonManager.updateJalonsDisplay();
+          }
+        }, 50);
       });
     }
 
