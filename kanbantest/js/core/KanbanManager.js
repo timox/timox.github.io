@@ -1121,7 +1121,8 @@ export class KanbanManager {
     eventCentralizer.registerManager('modal', this.modalManager);
     eventCentralizer.registerManager('jalon', this.jalonManager);
     eventCentralizer.registerManager('filter', this.filterManager);
-    
+    eventCentralizer.registerManager('datePicker', this.datePickerManager);
+
     this.eventCentralizer = eventCentralizer;
   }
 }

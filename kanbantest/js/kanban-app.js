@@ -51,7 +51,6 @@ import {
   getFieldValue,
   confirmAction,
   validateForm,
-  addEventListenerSafe,
   toggleVisibility
 } from './utils/dom.js';
 
@@ -1161,33 +1160,8 @@ class KanbanManager {
       this.sortableInstances.push(sortableInstance);
     });
     
-    // Attacher les événements pour les badges cliquables
-    this.attachCardEventListeners();
-    
-    // TEMPORAIRE: Attacher les listeners des cartes directement ici
-    // Utiliser cloneNode pour éviter les listeners en double
-    this.kanbanContainer.querySelectorAll('.editable-zone').forEach(zone => {
-      if (!zone.dataset.listenerAttached) {
-        zone.dataset.listenerAttached = 'true';
-        zone.addEventListener('click', (e) => {
-          e.stopPropagation();
-          e.preventDefault();
-          
-          const card = zone.closest('.kanban-item');
-          const taskId = parseInt(card.dataset.id, 10);
-          
-          if (!isNaN(taskId) && this.modalManager) {
-            const task = this.currentRecords?.find(r => r.id === taskId);
-            if (task) {
-              this.modalManager.openTaskModal(task);
-            }
-          }
-        });
-      }
-    });
-    
-    this.attachBadgeEventListeners();
-    this.initScrollArrows();
+    // NOTE: Tous les événements interactifs (cartes, badges, flèches) sont
+    // maintenant gérés via EventCentralizer.js pour éviter les doublons.
   }
 
   // === MÉTHODES UTILITAIRES POUR LE RENDU ===
@@ -1219,106 +1193,6 @@ class KanbanManager {
     return classes[statusId] || 'status-unknown';
   }
 
-  // === GESTION DES ÉVÉNEMENTS BADGES ===
-  attachBadgeEventListeners() {
-    // Écouteurs pour les badges de count (filtres par statut)
-    this.kanbanContainer.querySelectorAll('.board-count').forEach(badge => {
-      badge.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const statut = e.currentTarget.dataset.status;
-        
-        if (this.filterManager) {
-          // Toggle du filtre statut
-          const currentStatut = this.filterManager.filters.statut;
-          const newStatut = currentStatut === statut ? '' : statut;
-          
-          // Mettre à jour le filtre
-          this.filterManager.setFilter('statut', newStatut);
-          
-          // Mettre à jour l'interface
-          this.updateBadgeStates(newStatut);
-        }
-      });
-    });
-  }
-
-  // Met à jour l'état visuel des badges selon le filtre actif
-  updateBadgeStates(activeStatut) {
-    this.kanbanContainer.querySelectorAll('.board-count').forEach(badge => {
-      const statut = badge.dataset.status;
-      if (activeStatut && statut === activeStatut) {
-        badge.classList.add('active');
-      } else {
-        badge.classList.remove('active');
-      }
-    });
-  }
-
-  // === GESTION DES FLÈCHES DE SCROLL ===
-  initScrollArrows() {
-    const leftArrow = document.getElementById('scroll-left');
-    const rightArrow = document.getElementById('scroll-right');
-    
-    if (!leftArrow || !rightArrow) {
-      console.warn('Flèches de scroll non trouvées dans le DOM');
-      return;
-    }
-
-    // Gérer les clics sur les flèches
-    leftArrow.addEventListener('click', () => {
-      this.scrollContainer(-300);
-    });
-
-    rightArrow.addEventListener('click', () => {
-      this.scrollContainer(300);
-    });
-
-    // Gérer la visibilité des flèches au scroll
-    this.kanbanContainer.addEventListener('scroll', () => {
-      this.updateArrowVisibility();
-    });
-
-    // Mise à jour initiale de la visibilité
-    setTimeout(() => {
-      this.updateArrowVisibility();
-    }, 100);
-  }
-
-  scrollContainer(direction) {
-    this.kanbanContainer.scrollBy({
-      left: direction,
-      behavior: 'smooth'
-    });
-  }
-
-  updateArrowVisibility() {
-    const leftArrow = document.getElementById('scroll-left');
-    const rightArrow = document.getElementById('scroll-right');
-    
-    if (!leftArrow || !rightArrow) return;
-
-    const container = this.kanbanContainer;
-    const scrollLeft = container.scrollLeft;
-    const scrollWidth = container.scrollWidth;
-    const clientWidth = container.clientWidth;
-
-    // Afficher flèche gauche si on peut scroller à gauche
-    if (scrollLeft > 10) {
-      leftArrow.classList.remove('hidden');
-    } else {
-      leftArrow.classList.add('hidden');
-    }
-
-    // Afficher flèche droite si on peut scroller à droite
-    if (scrollLeft < scrollWidth - clientWidth - 10) {
-      rightArrow.classList.remove('hidden');
-    } else {
-      rightArrow.classList.add('hidden');
-    }
-  }
-
   // NOUVEAU: Tri des enregistrements
   sortRecords(records) {
     records.sort((a, b) => {
@@ -1329,40 +1203,9 @@ class KanbanManager {
     });
   }
 
-  // EVENT LISTENERS
-  attachCardEventListeners() {
-    // Seuls les boutons timeline - les autres événements sont gérés par ViewManager
-    // Le nettoyage se fait automatiquement via innerHTML dans refreshKanban
-    
-    // Supprimer tous les anciens listeners en utilisant la délégation d'événements
-    // au lieu d'attacher individuellement à chaque bouton
-    
-    // Vérifier si le listener global est déjà attaché
-    if (!this.timelineListenerAttached) {
-      this.timelineListenerAttached = true;
-      
-      // Utiliser la délégation d'événements sur le conteneur
-      this.kanbanContainer.addEventListener('click', (e) => {
-        const button = e.target.closest('.btn-timeline');
-        if (button) {
-          e.stopPropagation();
-          e.preventDefault();
-          
-          const taskId = parseInt(button.dataset.taskId, 10);
-          
-          console.log('Debug bouton historique (délégation):', {
-            'e.target': e.target,
-            'button found': button,
-            'taskId': taskId
-          });
-          
-          this.openTimelineModal(taskId);
-        }
-      });
-      
-      console.log('✅ Listener timeline attaché par délégation');
-    }
-  }
+  // NOTE: Les anciennes méthodes attachCardEventListeners, attachBadgeEventListeners
+  // et initScrollArrows ont été retirées car EventCentralizer.js gère désormais ces
+  // interactions dynamiques via délégation.
 
   // === GESTION DE LA MODAL TIMELINE ===
   openTimelineModal(taskId) {
