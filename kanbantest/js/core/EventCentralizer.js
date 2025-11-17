@@ -489,7 +489,7 @@ export class EventCentralizer {
     }, 'viewMode');
 
     // Délégation pour boutons de repliage de colonnes (éléments dynamiques)
-    safeOn('.btn-collapse', 'click', (e) => {
+    safeOn('.btn-collapse-column', 'click', (e) => {
       const viewManager = this.managers.get('viewMode');
       if (!viewManager || typeof viewManager.handleColumnCollapse !== 'function') {
         return;
