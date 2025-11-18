@@ -19,3 +19,4 @@ kanban_backup_*/
 *_backup_*/
 backup_avant_prod_*
 backup_avant_deploy_*
+backup_kanban_avant_kanbantest_*
