@@ -1767,8 +1767,6 @@ class KanbanManager {
 
       updateData.titre = safeTitle;
 
-      // Les strategie_id sont maintenant au bon format ['L', id] - pas besoin de les corriger
-
       await window.grist.docApi.applyUserActions([
         ['UpdateRecord', TABLE_ID, taskId, updateData]
       ]);

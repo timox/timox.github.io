@@ -1,0 +1,21 @@
+=== RAPPORT DE DÉPLOIEMENT ===
+Date: Tue Nov 18 06:02:35 UTC 2025
+Sauvegarde: backup_avant_deploy_20251118_060235
+Fichiers déployés:
+  js/kanban-app.js
+  js/managers/ModalManager.js
+  js/managers/HistoryManager.js
+  js/stats-app.js
+  js/config/constants.js
+  js/utils/badges.js
+  index.html
+  stats.html
+
+Corrections incluses:
+- Fix lien modal historique (openTaskModal → openTaskModalById)
+- Refactorisation saveCommentEdit() avec méthodes centralisées
+- Correction parseMultipleValues pour éviter erreur v.trim()
+- Validation de cohérence des IDs de tâches
+- Amélioration de la robustesse générale
+
+Status: SUCCÈS ✅
