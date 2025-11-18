@@ -1,0 +1,710 @@
+/* === css/kanban-responsive.css === */
+
+/* === Références et documentation === */
+.references-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.reference-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.5rem;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  text-decoration: none;
+  color: #495057;
+  transition: all 0.2s ease;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reference-badge:hover {
+  background-color: #e9ecef;
+  color: #495057;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.reference-badge i {
+  margin-right: 0.3rem;
+  font-size: 0.8rem;
+}
+
+/* Types de références */
+.reference-badge.type-url {
+  background-color: #e3f2fd;
+  border-color: #90caf9;
+  color: #1565c0;
+}
+
+.reference-badge.type-url:hover {
+  background-color: #1565c0;
+  color: white;
+}
+
+.reference-badge.type-file {
+  background-color: #f3e5f5;
+  border-color: #ce93d8;
+  color: #7b1fa2;
+}
+
+.reference-badge.type-file:hover {
+  background-color: #7b1fa2;
+  color: white;
+}
+
+.reference-badge.type-email {
+  background-color: #e8f5e8;
+  border-color: #a5d6a7;
+  color: #2e7d32;
+}
+
+.reference-badge.type-email:hover {
+  background-color: #2e7d32;
+  color: white;
+}
+
+.reference-badge.type-reference {
+  background-color: #fff3e0;
+  border-color: #ffcc02;
+  color: #ef6c00;
+}
+
+.reference-badge.type-reference:hover {
+  background-color: #ef6c00;
+  color: white;
+}
+
+.references-preview {
+  min-height: 30px;
+  padding: 0.5rem;
+  background-color: white;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+}
+
+/* Indicateur de références dans les cartes compactes */
+.references-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.85rem;
+}
+
+.references-indicator .badge {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.3rem;
+}
+
+/* Boutons expand/collapse des cartes */
+.btn-expand, .btn-collapse {
+  background: none;
+  border: none;
+  color: #6c757d;
+  padding: 0.2rem;
+  border-radius: 3px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+}
+
+.btn-expand:hover, .btn-collapse:hover {
+  background-color: #e9ecef;
+  color: #495057;
+  transform: scale(1.1);
+}
+
+.btn-expand:focus, .btn-collapse:focus {
+  outline: 2px solid #0d6efd;
+  outline-offset: 1px;
+}
+
+/* Style spécifique pour le header compact */
+.compact-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+/* === Badges Bureaux === */
+.bureau-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem; /* Espacement avec les éléments en dessous (priorité) */
+}
+
+.bureau-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 1rem;
+  border: 1px solid;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Couleurs distinctes par bureau */
+.bureau-badge.bureau-exploit {
+  background: linear-gradient(135deg, #e8f5e8, #c8e6c9);
+  color: #1b5e20;
+  border-color: #388e3c;
+}
+
+.bureau-badge.bureau-reseau {
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+  color: #0d47a1;
+  border-color: #1976d2;
+}
+
+.bureau-badge.bureau-bdd {
+  background: linear-gradient(135deg, #f3e5f5, #e1bee7);
+  color: #4a148c;
+  border-color: #7b1fa2;
+}
+
+.bureau-badge.bureau-ssir {
+  background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+  color: #e65100;
+  border-color: #ff9800;
+}
+
+.bureau-badge.bureau-sig {
+  background: linear-gradient(135deg, #e0f2f1, #b2dfdb);
+  color: #004d40;
+  border-color: #00695c;
+}
+
+.bureau-badge.bureau-nexsis-rrf {
+  background: linear-gradient(135deg, #fce4ec, #f8bbd9);
+  color: #880e4f;
+  border-color: #c2185b;
+}
+
+.bureau-badge.bureau-comsic {
+  background: linear-gradient(135deg, #e8eaf6, #c5cae9);
+  color: #1a237e;
+  border-color: #3f51b5;
+}
+
+.bureau-badge.bureau-rssi {
+  background: linear-gradient(135deg, #ffebee, #ffcdd2);
+  color: #b71c1c;
+  border-color: #d32f2f;
+}
+
+.bureau-badge.bureau-dpo {
+  background: linear-gradient(135deg, #f1f8e9, #dcedc8);
+  color: #33691e;
+  border-color: #689f38;
+}
+
+/* === Responsive Design === */
+
+/* Large screens (desktops) */
+@media (min-width: 1200px) {
+  .kanban-container {
+    gap: 1.5rem;
+  }
+
+  .kanban-container > .kanban-board {
+    flex: 0 0 340px;
+    min-width: 340px;
+  }
+
+  .kanban-container.kanban-compact > .kanban-board {
+    flex: 0 0 250px;
+    min-width: 250px;
+  }
+
+  .kanban-container.kanban-detailed > .kanban-board {
+    flex: 0 0 360px;
+    min-width: 360px;
+    max-width: 360px;
+  }
+}
+
+/* Medium screens (tablets) */
+@media (max-width: 991.98px) {
+  .kanban-container {
+    gap: 1rem;
+    padding: 0 0.5rem;
+  }
+
+  .kanban-container > .kanban-board {
+    flex: 0 0 320px;
+    min-width: 320px;
+  }
+
+  .kanban-container.kanban-detailed > .kanban-board {
+    flex: 0 0 340px;
+    min-width: 340px;
+    max-width: 340px;
+  }
+
+  .kanban-container.kanban-compact {
+    gap: 0.5rem;
+  }
+  
+  .kanban-container.kanban-compact > .kanban-board {
+    flex: 0 0 200px;
+    min-width: 200px;
+  }
+  
+  .kanban-header {
+    padding: 0.75rem 0;
+  }
+  
+  .kanban-controls {
+    padding: 0.75rem;
+  }
+  
+  .kanban-controls .row.g-3 {
+    gap: 0.75rem !important;
+  }
+  
+  /* Stack controls vertically on tablets */
+  .kanban-controls .col-md-2,
+  .kanban-controls .col-md-3 {
+    flex: 0 0 100%;
+    max-width: 100%;
+    margin-bottom: 0.5rem;
+  }
+  
+  .modal-xl {
+    max-width: 95%;
+  }
+}
+
+/* Small screens (phones) */
+@media (max-width: 767.98px) {
+  .kanban-container {
+    gap: 0.75rem;
+    padding: 0 0.25rem;
+  }
+
+  .kanban-container > .kanban-board {
+    flex: 0 0 320px;
+    min-width: 320px;
+  }
+
+  .kanban-container.kanban-detailed > .kanban-board {
+    flex: 0 0 340px;
+    min-width: 340px;
+    max-width: 340px;
+  }
+
+  .kanban-board {
+    min-height: auto;
+  }
+
+    .kanban-board-body {
+      padding: 0.5rem;
+      height: calc(100vh - 200px);
+      max-height: none;
+    }
+
+    .kanban-item {
+      padding: 0.75rem 0.5rem;
+      margin-bottom: 0.75rem;
+      min-height: auto;
+    }
+
+    .kanban-item-compact {
+      padding: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    /* Adjust header for mobile */
+    .kanban-header .row {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .kanban-header .col-auto {
+      align-self: stretch;
+    }
+
+    .kanban-header .col-auto .btn {
+      width: 100%;
+      margin-bottom: 0.25rem;
+    }
+
+    /* Hide keyboard shortcuts on mobile */
+    .keyboard-shortcuts {
+      display: none;
+    }
+
+    /* Adjust modal for mobile */
+    .modal-xl {
+      max-width: 98%;
+      margin: 0.5rem;
+    }
+
+    .modal-body {
+      padding: 1rem;
+    }
+
+    .modal-footer {
+      padding: 0.75rem 1rem;
+    }
+
+    /* Stack modal form elements */
+    .modal-body .col-md-4,
+    .modal-body .col-md-6 {
+      flex: 0 0 100%;
+      max-width: 100%;
+    }
+
+    /* Adjust strategy selects for mobile */
+    #strategie-objectif,
+    #strategie-sous-objectif,
+    #strategie-action {
+      min-width: 100% !important;
+      max-width: 100% !important;
+      min-height: 100px !important;
+    }
+
+    .input-group.flex-nowrap {
+      flex-direction: column !important;
+      gap: 0.5rem !important;
+    }
+
+    /* Adjust badges for mobile */
+    .bureau-badges {
+      gap: 0.15rem;
+    }
+
+    .bureau-badge {
+      font-size: 0.65rem;
+      padding: 0.15rem 0.4rem;
+    }
+
+    .priority-badge {
+      font-size: 0.8em;
+      padding: 0.2em 0.8em;
+    }
+
+    /* Focus mode adjustments for mobile */
+    .focus-container {
+      flex-direction: column;
+      height: auto;
+    }
+
+    .focus-navigation {
+      width: 100%;
+      flex-direction: row;
+      overflow-x: auto;
+      padding: 0.5rem;
+    }
+
+    .focus-navigation .btn {
+      flex-shrink: 0;
+      min-width: 120px;
+    }
+
+    .focus-column {
+      height: calc(100vh - 200px);
+      max-height: none;
+    }
+  }
+
+/* Large desktops */
+@media (max-width: 1400px) {
+  .collapsed-columns-stack {
+    top: 5.5rem;
+  }
+}
+
+/* Medium screens */
+@media (max-width: 1200px) {
+  .collapsed-columns-stack {
+    width: 100%;
+    flex: 0 0 auto;
+    position: static;
+    max-height: none;
+    order: -1;
+    margin-bottom: 1rem;
+  }
+}
+
+/* Large desktops */
+@media (max-width: 1400px) {
+  .collapsed-columns-stack {
+    top: 5.5rem;
+  }
+}
+
+/* Medium screens */
+@media (max-width: 1200px) {
+  .collapsed-columns-stack {
+    width: 100%;
+    flex: 0 0 auto;
+    position: static;
+    max-height: none;
+    order: -1;
+    margin-bottom: 1rem;
+  }
+}
+
+/* Large desktops */
+@media (max-width: 1400px) {
+  .collapsed-columns-stack {
+    top: 5.5rem;
+  }
+}
+
+/* Medium screens */
+@media (max-width: 1200px) {
+  .collapsed-columns-stack {
+    width: 100%;
+    flex: 0 0 auto;
+    position: static;
+    max-height: none;
+    order: -1;
+    margin-bottom: 1rem;
+  }
+}
+
+/* Large desktops */
+@media (max-width: 1400px) {
+  .collapsed-columns-stack {
+    top: 5.5rem;
+  }
+}
+
+/* Medium screens */
+@media (max-width: 1200px) {
+  .collapsed-columns-stack {
+    width: 100%;
+    flex: 0 0 auto;
+    position: static;
+    max-height: none;
+    order: -1;
+    margin-bottom: 1rem;
+  }
+}
+
+/* Large desktops */
+@media (max-width: 1400px) {
+  .collapsed-columns-stack {
+    top: 5.5rem;
+  }
+}
+
+/* Medium screens */
+@media (max-width: 1200px) {
+  .kanban-wrapper.has-collapsed-stack {
+    grid-template-columns: 1fr;
+  }
+
+  .collapsed-columns-stack {
+    width: 100%;
+    flex: 0 0 auto;
+    position: static;
+    max-height: none;
+    margin-bottom: 1rem;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 575.98px) {
+  .container-fluid {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  
+  .kanban-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .kanban-header small {
+    display: none;
+  }
+  
+  .kanban-controls {
+    padding: 0.5rem;
+  }
+  
+  .kanban-board-header {
+    padding: 0.5rem;
+  }
+  
+  .kanban-board-body {
+    padding: 0.5rem;
+  }
+  
+  .kanban-item {
+    padding: 0.5rem;
+  }
+  
+  .editable-zone {
+    margin-left: 24px;
+  }
+  
+  .drag-handle {
+    font-size: 1em;
+  }
+  
+  /* Simplify badges on very small screens */
+  .bureau-badge i {
+    display: none;
+  }
+  
+  .bureau-badge {
+    font-size: 0.6rem;
+    padding: 0.1rem 0.3rem;
+  }
+  
+  /* Hide debug panel on mobile */
+  .debug-panel {
+    display: none !important;
+  }
+}
+
+/* Print styles */
+@media print {
+  .kanban-header,
+  .kanban-controls,
+  .keyboard-shortcuts,
+  .debug-panel,
+  .btn-expand,
+  .btn-collapse,
+  .btn-history,
+  .drag-handle {
+    display: none !important;
+  }
+  
+  .kanban-container {
+    display: block !important;
+  }
+  
+  .kanban-board {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 1rem;
+  }
+  
+  .kanban-item {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  
+  body {
+    background: white !important;
+  }
+  
+  .kanban-board,
+  .kanban-item {
+    box-shadow: none !important;
+  }
+}
+
+/* Dark mode support (if needed in the future) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --kanban-bg: #1a1a1a;
+    --kanban-card-bg: #2d2d2d;
+    --kanban-border: #404040;
+    --kanban-text: #ffffff;
+    --kanban-text-muted: #a0a0a0;
+  }
+  
+  .kanban-item {
+    background: #333333;
+    border-color: #555555;
+  }
+  
+  .kanban-item-compact {
+    background: #333333;
+  }
+  
+  .bureau-badge {
+    filter: brightness(0.8);
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: more), (forced-colors: active) {
+  .kanban-item {
+    border-width: 2px;
+  }
+  
+  .bureau-badge {
+    border-width: 2px;
+    font-weight: 700;
+  }
+  
+  .priority-badge {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .kanban-item,
+  .bureau-badge,
+  .btn-expand,
+  .btn-collapse,
+  .btn-history,
+  .drag-handle {
+    transition: none !important;
+  }
+  
+  .timeline-entry {
+    transition: none !important;
+  }
+  
+  .priority-badge,
+  .kanban-item,
+  .timeline-entry {
+    animation: none !important;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .kanban-item {
+    min-height: 140px; /* Larger touch targets */
+  }
+  
+  .btn-expand,
+  .btn-collapse,
+  .btn-history {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0.5rem;
+  }
+  
+  .editable-zone {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .drag-handle {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}

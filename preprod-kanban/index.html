@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Tableau Kanban - Version Modulaire</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  
+  <!-- CSS modulaire (inchangé) -->
+  <link rel="stylesheet" href="css/kanban-base.css">
+  <link rel="stylesheet" href="css/kanban-modal.css">
+  <link rel="stylesheet" href="css/kanban-responsive.css">
+  <link rel="stylesheet" href="css/strategy-accordion.css">
+</head>
+<body class="bg-light">
+  <div class="view_data_pane_container flexvbox viewsection_type_custom">
+    <div class="container-fluid kanban-page px-3 px-lg-4">
+    <!-- Header -->
+    <div class="kanban-header">
+      <div class="container-fluid">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <div class="flex-grow-1">
+            <h1 class="h3 mb-0 d-flex align-items-center">
+              <i class="bi bi-kanban me-2"></i>
+              Tableau Kanban
+              <span class="badge bg-warning text-dark ms-2" style="font-size: 0.5rem; vertical-align: middle;">PRÉPRODUCTION</span>
+            </h1>
+          </div>
+          <div class="d-flex gap-2">
+            <a href="stats.html" class="btn btn-outline-primary btn-sm">
+              <i class="bi bi-graph-up me-1"></i>Stats
+            </a>
+            <a href="history.html" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-clock-history me-1"></i>Historique
+            </a>
+            <a href="timeline.html" class="btn btn-outline-info btn-sm">
+              <i class="bi bi-diagram-3 me-1"></i>Timeline
+            </a>
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#keyboard-shortcuts-modal" aria-label="Afficher l'aide clavier">
+              <i class="bi bi-question-circle me-1"></i>Aide
+            </button>
+            <button type="button" class="btn btn-primary btn-sm" id="btn-nouvelle-tache" aria-label="Créer une nouvelle tâche">
+              <i class="bi bi-plus-lg me-1"></i>Nouvelle Tâche
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="container-fluid">
+      <div class="kanban-controls">
+        <div class="row g-2 align-items-center" style="min-height: auto;">
+          <!-- Boutons de mode de vue (sera injecté par JS) -->
+          <div class="col-md-3">
+            <div class="input-group">
+              <input type="text" class="form-control" id="search-input" placeholder="Rechercher..." aria-label="Rechercher des tâches">
+              <button class="btn btn-outline-secondary" type="button" id="btn-clear-filters" title="Effacer tous les filtres">
+                <i class="bi bi-x-circle"></i>
+              </button>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <select class="form-select" id="filter-bureau" aria-label="Filtrer par bureau"></select>
+          </div>
+          <div class="col-md-2">
+            <select class="form-select" id="filter-qui" aria-label="Filtrer par responsable"></select>
+          </div>
+          <div class="col-md-2">
+            <select class="form-select" id="filter-projet" aria-label="Filtrer par projet"></select>
+          </div>
+          <div class="col-md-2">
+            <select class="form-select" id="filter-statut" aria-label="Filtrer par statut"></select>
+          </div>
+          <div class="col-md-1">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="show-termine" checked>
+              <label class="form-check-label" for="show-termine">Terminés</label>
+            </div>
+          </div>
+          <div class="col-auto">
+            <button class="btn btn-outline-danger btn-sm" type="button" id="btn-clean-backdrops" title="🚨 Nettoyer les overlays bloquants" style="display: none;">
+              <i class="bi bi-exclamation-triangle"></i> Débloquer
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error Container -->
+    <div id="error-container" role="alert" aria-live="polite"></div>
+
+    <!-- Loading Spinner -->
+    <div class="loading-spinner" id="loading-spinner" aria-hidden="true">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Chargement...</span>
+      </div>
+      <p class="mt-2">Chargement du Kanban...</p>
+    </div>
+
+    <!-- Kanban Container -->
+    <div class="container-fluid">
+      <div class="kanban-wrapper">
+        <button class="scroll-arrow scroll-left hidden" id="scroll-left" aria-label="Faire défiler vers la gauche">
+          <i class="bi bi-chevron-left"></i>
+        </button>
+        <button class="scroll-arrow scroll-right hidden" id="scroll-right" aria-label="Faire défiler vers la droite">
+          <i class="bi bi-chevron-right"></i>
+        </button>
+        <div id="kanban-container" class="kanban-container" role="main" aria-label="Tableau Kanban"></div>
+      </div>
+    </div>
+
+    <!-- Debug Panel (commenté - réactiver au besoin)
+    <div class="debug-panel" style="position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; padding: 10px; border-radius: 5px; font-size: 12px; z-index: 9999;">
+      <div><strong>Debug Info:</strong></div>
+      <div id="debug-mode">Mode: <span id="current-mode">-</span></div>
+      <div id="debug-tasks">Tâches: <span id="task-count">-</span></div>
+      <div id="debug-user">Utilisateur: <span id="current-user">-</span></div>
+    </div>
+    -->
+
+    </div>
+  </div>
+
+<!-- Modal Tâche repensée -->
+<div class="modal fade" id="popup-tache" tabindex="-1" aria-labelledby="popup-tache-label" aria-hidden="true">
+  <div class="modal-dialog modal-xxl modal-dialog-centered task-modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header task-modal-header">
+        <h5 class="modal-title" id="popup-tache-label">
+          <i class="bi bi-card-checklist me-2"></i>Détails Tâche
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <div class="modal-body task-modal-body">
+        <form id="task-form" novalidate>
+          <div class="task-modal-layout">
+            <section class="task-modal-main">
+              <div class="task-section task-section-primary">
+                <div class="row g-3 align-items-start">
+                  <div class="col-12 col-xl-8">
+                    <label for="popup-titre" class="form-label">
+                      <i class="bi bi-card-text section-icon"></i>Titre *
+                    </label>
+                    <input type="text" class="form-control form-control-lg" id="popup-titre" required>
+                  </div>
+                  <div class="col-sm-6 col-xl-4">
+                    <label for="popup-statut-text" class="form-label">Statut *</label>
+                    <input type="text" class="form-control" id="popup-statut-text" readonly required>
+                  </div>
+                </div>
+                <div class="task-meta-grid mt-3">
+                  <div class="task-meta-item">
+                    <label for="popup-projet" class="form-label">Projet</label>
+                    <div class="input-group input-group-sm flex-nowrap">
+                      <select class="form-select" id="popup-projet"></select>
+                      <input type="text" class="form-control d-none" id="projet-ajout" placeholder="Ajouter projet">
+                      <button class="btn btn-outline-secondary d-none" type="button" id="btn-ajout-projet" disabled>
+                        <i class="bi bi-plus"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="task-meta-item">
+                    <label for="popup-urgence" class="form-label">Urgence</label>
+                    <select class="form-select" id="popup-urgence">
+                      <option value="">-- Urgence --</option>
+                    </select>
+                  </div>
+                  <div class="task-meta-item">
+                    <label for="popup-impact" class="form-label">Impact</label>
+                    <select class="form-select" id="popup-impact">
+                      <option value="">-- Impact --</option>
+                    </select>
+                  </div>
+                  <div class="task-meta-item">
+                    <label for="popup-delai" class="form-label">Date butoir</label>
+                    <div class="input-group">
+                      <input type="text" class="form-control" id="popup-delai" placeholder="Cliquer pour choisir une date..." aria-label="Date butoir" readonly>
+                      <button class="btn btn-outline-secondary" type="button" id="btn-clear-date" title="Supprimer la date" style="display: none;">
+                        <i class="bi bi-x-lg"></i>
+                      </button>
+                      <button class="btn btn-outline-primary" type="button" id="btn-pick-date" title="Choisir une date">
+                        <i class="bi bi-calendar3"></i>
+                      </button>
+                    </div>
+                    <div class="form-text">
+                      <span id="date-status" class="text-muted">Aucune date définie</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="task-section task-section-description">
+                <label for="popup-description" class="form-label">
+                  <i class="bi bi-chat-left-text section-icon"></i>Description / Commentaires
+                  <small class="text-muted ms-1 d-block">Les commentaires sont historisés automatiquement</small>
+                </label>
+                <textarea class="form-control" id="popup-description" rows="4" placeholder="Décrivez la tâche, les blocages, les actions réalisées..."></textarea>
+
+                <div class="card border-0 bg-light references-card mt-3">
+                  <div class="card-body p-3">
+                    <div class="form-text mb-2">
+                      <i class="bi bi-info-circle me-1"></i>
+                      Une référence par ligne. Formats supportés : URLs, chemins réseau, emails, références
+                    </div>
+                    <textarea class="form-control" id="popup-references" rows="4" placeholder="https://docs.example.com/procedure&#10;\\serveur\projets\migration-AD\&#10;GLPI-12345&#10;contact: expert@gouv.fr"></textarea>
+                    <div class="references-preview mt-2" id="references-preview"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="task-section task-section-strategy">
+                <label class="form-label">
+                  <i class="bi bi-bullseye me-2"></i>Stratégie
+                  <small class="text-muted">Alignement optionnel</small>
+                </label>
+                <div class="accordion" id="strategie-accordion">
+                  <div class="accordion-item">
+                    <h2 class="accordion-header" id="strategie-header">
+                      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#strategie-collapse" aria-expanded="false" aria-controls="strategie-collapse">
+                        <i class="bi bi-search me-2"></i>
+                        Parcourir et sélectionner une stratégie
+                        <span id="selected-strategy-preview" class="ms-auto text-muted small"></span>
+                      </button>
+                    </h2>
+                    <div id="strategie-collapse" class="accordion-collapse collapse" aria-labelledby="strategie-header" data-bs-parent="#strategie-accordion">
+                      <div class="accordion-body">
+                        <div id="strategy-browser" class="strategy-browser">
+                          <div class="text-center text-muted py-3">
+                            <i class="bi bi-hourglass-split"></i>
+                            <p class="mt-2">Chargement des stratégies...</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <select class="form-select d-none" id="popup-strategie-objectif"></select>
+                <select class="form-select d-none" id="popup-strategie-sous-objectif"></select>
+                <select class="form-select d-none" id="popup-strategie-action"></select>
+                <div class="selected-strategies mt-3" id="selected-strategies" style="display: none;">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="small text-muted mb-0">
+                      <i class="bi bi-tags me-1"></i>Stratégies contribuées par cette tâche :
+                      <span class="badge bg-primary ms-1" id="strategy-count">0</span>
+                    </h6>
+                    <button type="button" class="btn btn-sm btn-outline-danger" id="btn-clear-strategies" title="Tout désélectionner">
+                      <i class="bi bi-x-circle"></i>
+                    </button>
+                  </div>
+                  <div class="strategy-tags" id="strategy-tags"></div>
+                </div>
+                <div class="strategy-details bg-light p-2 rounded" id="strategy-details" style="display: none;">
+                  <div class="d-flex flex-wrap gap-3 small">
+                    <div>
+                      <strong class="text-muted">Échéance:</strong>
+                      <span id="strategy-echeance" class="text-primary ms-1">-</span>
+                    </div>
+                    <div>
+                      <strong class="text-muted">Responsable:</strong>
+                      <span id="strategy-responsable" class="text-primary ms-1">-</span>
+                    </div>
+                    <div>
+                      <strong class="text-muted">Portée:</strong>
+                      <span id="strategy-portee" class="text-primary ms-1">-</span>
+                    </div>
+                  </div>
+                </div>
+                <input type="hidden" id="popup-strategie-ids" />
+                <div class="form-text mt-2">
+                  <i class="bi bi-info-circle me-1"></i>
+                  Cliquez sur les actions pour les ajouter/retirer. Une tâche peut contribuer à plusieurs stratégies.
+                </div>
+              </div>
+
+              <div class="task-section task-section-jalons">
+                <label class="form-label">
+                  <i class="bi bi-calendar2-range me-2"></i>Jalons & Étapes
+                  <small class="text-muted">Optionnel</small>
+                </label>
+                <div class="card border-0 bg-light">
+                  <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                      <small class="text-muted fw-bold">
+                        <i class="bi bi-flag me-1"></i>Jalons planifiés
+                        <span class="badge bg-secondary ms-1" id="jalons-count">0</span>
+                      </small>
+                      <button type="button" class="btn btn-sm btn-outline-primary" id="btn-add-jalon">
+                        <i class="bi bi-plus-circle me-1"></i>Ajouter un jalon
+                      </button>
+                    </div>
+                    <div class="jalons-timeline" id="jalons-timeline">
+                      <div class="text-center text-muted py-3" id="jalons-empty">
+                        <i class="bi bi-calendar-x"></i>
+                        <p class="small mb-0 mt-2">Aucun jalon planifié. Cliquez sur « Ajouter un jalon » pour commencer.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <input type="hidden" id="popup-jalons" />
+              </div>
+
+              <div class="task-section task-section-assignments">
+                <div class="row g-4">
+                  <div class="col-md-6">
+                    <label class="form-label">Bureaux</label>
+                    <div id="popup-bureau-checkboxes" class="checkbox-group"></div>
+                    <select class="form-select d-none" id="popup-bureau" multiple></select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Responsables</label>
+                    <div id="popup-qui-checkboxes" class="checkbox-group"></div>
+                    <select class="form-select d-none" id="popup-qui" multiple></select>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <aside class="task-modal-aside" id="task-history-panel" aria-label="Historique et activité">
+              <div class="history-panel card border-0 shadow-sm">
+                <div class="history-panel-header d-flex justify-content-between align-items-center">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="history-icon rounded-circle">
+                      <i class="bi bi-clock-history"></i>
+                    </span>
+                    <div>
+                      <span class="fw-semibold">Historique & commentaires</span>
+                      <span class="badge bg-secondary ms-2" id="comment-count-badge">0</span>
+                    </div>
+                  </div>
+                  <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-secondary" id="btn-toggle-comment-history" data-bs-toggle="collapse" data-bs-target="#comment-history-accordion" aria-expanded="false" aria-controls="comment-history-accordion">
+                      <i class="bi bi-journal-text me-1"></i>Afficher
+                    </button>
+                  </div>
+                </div>
+                <div class="collapse" id="comment-history-accordion" data-bs-parent="#task-history-panel">
+                  <div class="history-panel-body" id="comment-history-content">
+                    <div class="text-center text-muted py-3">
+                      <i class="bi bi-clock-history fs-4"></i>
+                      <p class="mt-2 mb-0">Chargement de l'historique...</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="history-summary card border-0 bg-light">
+                <div class="card-body">
+                  <div class="d-flex align-items-center gap-3 mb-3">
+                    <i class="bi bi-activity text-primary fs-4"></i>
+                    <div>
+                      <h6 class="mb-0">Dernière activité</h6>
+                      <small class="text-muted" id="history-last-update">En attente de sélection</small>
+                    </div>
+                  </div>
+                  <dl class="history-summary-list">
+                    <div class="history-summary-item">
+                      <dt>Responsables</dt>
+                      <dd id="history-resume-owners">-</dd>
+                    </div>
+                    <div class="history-summary-item">
+                      <dt>Dernier statut</dt>
+                      <dd id="history-resume-status">-</dd>
+                    </div>
+                  </dl>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer task-modal-footer">
+        <button type="button" class="btn btn-danger me-auto" id="btn-delete-task" style="display: none;">
+          <i class="bi bi-trash me-2"></i>Supprimer
+        </button>
+        <button type="button" class="btn btn-outline-secondary" id="btn-toggle-history-panel">
+          <i class="bi bi-clock-history me-1"></i>Panneau historique
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-x-circle me-2"></i>Annuler
+        </button>
+        <button type="button" class="btn btn-primary" id="btn-save-task">
+          <i class="bi bi-check2-circle me-2"></i>Sauvegarder
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Aide Raccourcis -->
+<div class="modal fade" id="keyboard-shortcuts-modal" tabindex="-1" aria-labelledby="keyboard-shortcuts-label" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content keyboard-modal">
+      <div class="modal-header">
+        <h5 class="modal-title" id="keyboard-shortcuts-label">
+          <i class="bi bi-keyboard me-2"></i>Raccourcis clavier
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <div class="modal-body">
+        <ul class="list-unstyled keyboard-shortcuts-list mb-0">
+          <li><span><kbd>N</kbd></span><span>Nouvelle tâche</span></li>
+          <li><span><kbd>F</kbd></span><span>Focus recherche</span></li>
+          <li><span><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></span><span>Changer de mode de vue</span></li>
+          <li><span><kbd>R</kbd></span><span>Recharger le Kanban</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Historique (identique à l'original) -->
+  <div class="modal fade history-modal" id="task-history-modal" tabindex="-1" aria-labelledby="task-history-modal-label" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="task-history-modal-label">
+            <i class="bi bi-clock-history me-2"></i>Historique de la tâche
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        </div>
+        <div class="modal-body">
+          <div id="history-stats" class="history-stats"></div>
+          <div id="history-timeline" class="history-timeline"></div>
+          
+          <!-- Widget d'édition de commentaire supprimé - géré dynamiquement par HistoryManager -->
+          <!-- Voir HistoryManager.js:createCommentEditWidget() pour l'implémentation -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-info" id="btn-show-comments-only">
+            <i class="bi bi-chat-square-text me-2"></i>Voir tous les commentaires
+          </button>
+          <button type="button" class="btn btn-success" id="btn-export-task-history">
+            <i class="bi bi-download me-2"></i>Exporter cette tâche
+          </button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Fermer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Scripts externes -->
+  <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    // Mode noConflict pour éviter les conflits avec jQuery de Grist
+    window.kanbanJQuery = jQuery.noConflict(true);
+    // Réassigner $ pour notre usage
+    window.$ = window.kanbanJQuery;
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script>
+    // Fix SortableJS will-change error - ULTIMATE VERSION
+    (function() {
+      // Protection will-change activée
+      
+      // 1. Override setProperty
+      const originalSetProperty = CSSStyleDeclaration.prototype.setProperty;
+      CSSStyleDeclaration.prototype.setProperty = function(property, value, priority) {
+        if (property === 'will-change') {
+          if (!value || value === '' || value === '""' || value === "''") {
+            // will-change vide corrigé
+            value = 'auto';
+          }
+        }
+        return originalSetProperty.call(this, property, value, priority);
+      };
+      
+      // 2. Override cssText
+      const originalStyleSetter = Object.getOwnPropertyDescriptor(CSSStyleDeclaration.prototype, 'cssText').set;
+      Object.defineProperty(CSSStyleDeclaration.prototype, 'cssText', {
+        set: function(value) {
+          // Nettoyer toutes les variantes de will-change vides
+          value = value.replace(/will-change\s*:\s*['"]*\s*['"]*\s*;?/g, 'will-change: auto;');
+          value = value.replace(/will-change\s*:\s*;/g, 'will-change: auto;');
+          return originalStyleSetter.call(this, value);
+        },
+        get: Object.getOwnPropertyDescriptor(CSSStyleDeclaration.prototype, 'cssText').get
+      });
+      
+      // 3. Override direct style access
+      const originalStylePropertySetter = function(property) {
+        const descriptor = Object.getOwnPropertyDescriptor(CSSStyleDeclaration.prototype, property);
+        if (descriptor && descriptor.set) {
+          Object.defineProperty(CSSStyleDeclaration.prototype, property, {
+            set: function(value) {
+              if (property === 'willChange' && (!value || value === '')) {
+                value = 'auto';
+              }
+              return descriptor.set.call(this, value);
+            },
+            get: descriptor.get
+          });
+        }
+      };
+      originalStylePropertySetter('willChange');
+      
+      // 4. Surveillance MutationObserver pour nettoyer en continu
+      const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+            const element = mutation.target;
+            if (element.style && element.style.willChange === '') {
+              element.style.willChange = 'auto';
+            }
+          }
+        });
+      });
+      
+      observer.observe(document, {
+        attributes: true,
+        attributeFilter: ['style'],
+        subtree: true
+      });
+      
+      console.log('✅ Protection will-change ultra-renforcée activée');
+    })();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/fr.js"></script>
+  
+  <!-- Gestionnaire de clics simple -->
+  
+  <!-- Initialisateur principal -->
+  <script type="module" src="js/app-initializer.js"></script>
+  
+  
+  <!-- Script de debug (développement seulement) -->
+  <script>
+    // DIAGNOSTIC MODAL HISTORY IMMÉDIAT
+    console.log('=== DIAGNOSTIC MODAL HISTORY ===');
+    console.log('DOM ready state:', document.readyState);
+    console.log('task-history-modal au chargement:', !!document.getElementById('task-history-modal'));
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('DOMContentLoaded: task-history-modal existe:', !!document.getElementById('task-history-modal'));
+    });
+    
+    window.addEventListener('load', () => {
+      console.log('Window load: task-history-modal existe:', !!document.getElementById('task-history-modal'));
+    });
+    
+    // Script de diagnostic supprimé - modal techniquement OK mais invisible
+    
+    // Mise à jour du panneau de debug
+    // Debug info function (commenté avec le panel debug)
+    /*
+    function updateDebugInfo() {
+      if (window.kanbanManager) {
+        document.getElementById('current-mode').textContent = window.kanbanManager.viewMode || '-';
+        document.getElementById('task-count').textContent = window.kanbanManager.currentRecords?.length || '0';
+        document.getElementById('current-user').textContent = window.kanbanManager.currentUser || 'Non détecté';
+      }
+    }
+    
+    // Mise à jour périodique du debug
+    setInterval(updateDebugInfo, 2000);
+    */
+    
+    // Raccourcis clavier globaux
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'r' || e.key === 'R') {
+        if (!e.target.matches('input, textarea') && window.kanbanManager) {
+          e.preventDefault();
+          window.kanbanManager.refreshKanban();
+          console.log('🔄 Kanban rechargé manuellement');
+        }
+      }
+    });
+    
+    // Console helpers pour le développement
+    window.addEventListener('load', () => {
+      console.log('🚀 KANBAN MODULAIRE CHARGÉ');
+      console.log('📚 Modules disponibles:');
+      console.log('  - config/constants.js');
+      console.log('  - utils/dates.js');
+      console.log('  - utils/badges.js');
+      console.log('  - utils/dom.js');
+      console.log('  - core/KanbanManager.js');
+      console.log('');
+      console.log('🔧 Debug disponible:');
+      console.log('  - window.kanbanManager : Instance principale');
+      console.log('  - window.kanbanAppInitializer : Initialiseur courant');
+      console.log('  - logger.setLogLevel(\"INFO\") : Activer logs détaillés');
+      console.log('');
+      console.log('⌨️  Raccourcis:');
+      console.log('  - R : Recharger le kanban');
+      console.log('  - N : Nouvelle tâche');
+      console.log('  - F : Focus recherche');
+    });
+  </script>
+
+  <!-- MODAL JALON - Ajouter/Éditer un jalon -->
+  <div class="modal fade" id="jalonModal" tabindex="-1" aria-labelledby="jalonModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="jalonModalLabel">
+            <i class="bi bi-flag me-2"></i>
+            <span id="jalon-modal-title">Ajouter un jalon</span>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        </div>
+        <div class="modal-body">
+          
+          <!-- Sélection du type de jalon -->
+          <div class="jalon-form-group">
+            <label class="form-label fw-bold">Type de jalon</label>
+            <div class="jalon-type-cards" id="jalon-type-cards">
+              
+              <div class="jalon-type-card" data-type="reunion">
+                <div class="jalon-type-icon">📅</div>
+                <div class="fw-bold">Réunion</div>
+                <small class="text-muted">Rencontre obligatoire</small>
+              </div>
+              
+              <div class="jalon-type-card" data-type="echeance">
+                <div class="jalon-type-icon">⏰</div>
+                <div class="fw-bold">Échéance</div>
+                <small class="text-muted">Date butoir critique</small>
+              </div>
+              
+              <div class="jalon-type-card" data-type="validation">
+                <div class="jalon-type-icon">✅</div>
+                <div class="fw-bold">Validation</div>
+                <small class="text-muted">Approbation requise</small>
+              </div>
+              
+              <div class="jalon-type-card" data-type="livrable">
+                <div class="jalon-type-icon">📦</div>
+                <div class="fw-bold">Livrable</div>
+                <small class="text-muted">Résultat attendu</small>
+              </div>
+              
+            </div>
+          </div>
+
+          <!-- Champs communs -->
+          <div class="row">
+            <div class="col-md-8">
+              <div class="jalon-form-group">
+                <label for="jalon-titre" class="form-label">Titre du jalon *</label>
+                <input type="text" class="form-control" id="jalon-titre" 
+                       placeholder="ex: Réunion de validation technique">
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="jalon-form-group">
+                <label for="jalon-date" class="form-label">Date *</label>
+                <input type="date" class="form-control" id="jalon-date">
+              </div>
+            </div>
+          </div>
+
+          <div class="jalon-form-group">
+            <label for="jalon-commentaire" class="form-label">Description/Commentaire</label>
+            <textarea class="form-control" id="jalon-commentaire" rows="3" 
+                      placeholder="Décrivez les objectifs, attentes, préparatifs nécessaires..."></textarea>
+          </div>
+
+          <!-- Champs conditionnels pour réunion -->
+          <div class="jalon-conditional-fields" id="fields-reunion">
+            <h6 class="text-primary">
+              <i class="bi bi-people me-2"></i>Détails de la réunion
+            </h6>
+            
+            <div class="row">
+              <div class="col-md-6">
+                <label for="jalon-participants" class="form-label">Participants obligatoires</label>
+                <input type="text" class="form-control" id="jalon-participants" 
+                       placeholder="ex: Alex, Timothée, Chef SSIR">
+                <div class="form-text">Séparez les noms par des virgules</div>
+              </div>
+              <div class="col-md-6">
+                <label for="jalon-lieu" class="form-label">Lieu/Moyen</label>
+                <input type="text" class="form-control" id="jalon-lieu" 
+                       placeholder="ex: Salle de réunion, Teams, Téléphone">
+              </div>
+            </div>
+          </div>
+
+          <!-- Champs conditionnels pour échéance -->
+          <div class="jalon-conditional-fields" id="fields-echeance">
+            <h6 class="text-warning">
+              <i class="bi bi-alarm me-2"></i>Détails de l'échéance
+            </h6>
+            
+            <div class="row">
+              <div class="col-md-6">
+                <label for="jalon-criticite" class="form-label">Criticité</label>
+                <select class="form-select" id="jalon-criticite">
+                  <option value="normale">Normale</option>
+                  <option value="importante">Importante</option>
+                  <option value="critique">Critique</option>
+                  <option value="bloquante">Bloquante</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label for="jalon-consequences" class="form-label">Conséquences si non respectée</label>
+                <input type="text" class="form-control" id="jalon-consequences" 
+                       placeholder="ex: Retard projet, blocage équipe...">
+              </div>
+            </div>
+          </div>
+
+          <!-- Champs conditionnels pour validation -->
+          <div class="jalon-conditional-fields" id="fields-validation">
+            <h6 class="text-success">
+              <i class="bi bi-check-square me-2"></i>Détails de la validation
+            </h6>
+            
+            <div class="row">
+              <div class="col-md-6">
+                <label for="jalon-valideurs" class="form-label">Valideurs</label>
+                <input type="text" class="form-control" id="jalon-valideurs" 
+                       placeholder="ex: Chef SSIR, CGSSI">
+              </div>
+              <div class="col-md-6">
+                <label for="jalon-criteres" class="form-label">Critères de validation</label>
+                <input type="text" class="form-control" id="jalon-criteres" 
+                       placeholder="ex: Tests réussis, documentation complète">
+              </div>
+            </div>
+          </div>
+
+          <!-- Champs conditionnels pour livrable -->
+          <div class="jalon-conditional-fields" id="fields-livrable">
+            <h6 class="text-purple">
+              <i class="bi bi-box me-2"></i>Détails du livrable
+            </h6>
+            
+            <div class="row">
+              <div class="col-md-6">
+                <label for="jalon-format" class="form-label">Format du livrable</label>
+                <input type="text" class="form-control" id="jalon-format" 
+                       placeholder="ex: Document, Application, Configuration">
+              </div>
+              <div class="col-md-6">
+                <label for="jalon-destinataire" class="form-label">Destinataire</label>
+                <input type="text" class="form-control" id="jalon-destinataire" 
+                       placeholder="ex: Équipe métier, Direction">
+              </div>
+            </div>
+          </div>
+
+          <!-- Statut du jalon -->
+          <div class="jalon-form-group">
+            <label for="jalon-statut" class="form-label">Statut</label>
+            <select class="form-select" id="jalon-statut">
+              <option value="planifie">📋 Planifié</option>
+              <option value="en_preparation">🔄 En préparation</option>
+              <option value="en_cours">⚡ En cours</option>
+              <option value="termine">✅ Terminé</option>
+              <option value="reporte">📅 Reporté</option>
+              <option value="annule">❌ Annulé</option>
+            </select>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="btn-save-jalon">
+            <i class="bi bi-check-lg me-1"></i>Enregistrer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mini-modale pour afficher les stratégies -->
+  <div class="modal fade" id="strategy-mini-modal" tabindex="-1" aria-labelledby="strategy-mini-modal-label" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header py-2" style="background: linear-gradient(135deg, #0d6efd, #0056b3); color: white; border-bottom: none;">
+          <h6 class="modal-title" id="strategy-mini-modal-label" style="font-size: 0.95rem; font-weight: 600;">
+            <i class="bi bi-bullseye me-2"></i>Stratégies
+          </h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer" style="filter: invert(1);"></button>
+        </div>
+        <div class="modal-body p-3">
+          <div id="strategy-mini-content">
+            <!-- Contenu généré dynamiquement -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
