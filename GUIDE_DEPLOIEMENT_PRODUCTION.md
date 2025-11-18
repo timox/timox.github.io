@@ -1,65 +1,94 @@
 # 🚀 GUIDE DE DÉPLOIEMENT EN PRODUCTION
 
-## Version: 29 Juillet 2025
+## Version: 18 Novembre 2025
 
-### ✅ PRÉPARATIFS TERMINÉS
+### ✅ DERNIER DÉPLOIEMENT RÉALISÉ
 
-- **✅ Sauvegarde production**: `backup_avant_prod_20250729_022113/`
-- **✅ Intégrité vérifiée**: Tous les fichiers de production sont intègres
-- **✅ Script déploiement**: `deploy_to_production.sh` prêt
+- **📅 Date**: 18 Novembre 2025
+- **🔄 Source → Destination**: `kanbantest/` → `kanban/`
+- **💾 Sauvegarde**: `backup_kanban_avant_kanbantest_20251118_072058/`
+- **📝 Commits Git**:
+  - `bcd8042` - Déploiement de kanbantest vers kanban (production)
+  - `c294fcb` - Ajout du badge PRODUCTION dans le header
+- **🌿 Branche**: `claude/deploy-to-production-013sk6VHqxkwASCBWAYbCvLD`
+- **✅ Badge**: Badge "PRODUCTION" vert ajouté dans le header
 
 ---
 
-## 🔧 CORRECTIONS INCLUSES DANS CE DÉPLOIEMENT
+## 🔧 CONTENU DU DÉPLOIEMENT
 
-### 1. **Fix Lien Modal Historique** ⭐ CRITIQUE
-- **Problème**: Cliquer sur titre dans modal historique ouvrait création au lieu d'édition
-- **Solution**: Nouvelle méthode `openTaskModalById()` dans ModalManager
-- **Fichiers**: `js/managers/ModalManager.js`, `js/managers/HistoryManager.js`
+### Fichiers principaux déployés (17 fichiers modifiés)
 
-### 2. **Refactorisation saveCommentEdit()** ⭐ CRITIQUE  
-- **Problème**: Confusion des IDs de tâches (4 sources différentes)
-- **Solution**: Méthodes centralisées `getCurrentEditingTaskId()` et `restoreEditingCommentFromWidget()`
-- **Sécurité**: Validation de cohérence entre les sources d'IDs
-- **Fichier**: `js/managers/HistoryManager.js`
+**HTML:**
+- `index.html` (avec badge PRODUCTION)
+- `stats.html`
+- `history.html`
+- `timeline.html`
 
-### 3. **Fix Erreur parseMultipleValues** ⭐ CRITIQUE
-- **Problème**: `v.trim is not a function` sur page statistiques
-- **Solution**: Conversion String() avant appel trim() pour tous types
-- **Fichier**: `js/stats-app.js`
+**CSS:**
+- `css/kanban-base.css`
+- `css/kanban-modal.css`
+- `css/kanban-responsive.css`
 
-### 4. **Améliorations Robustesse**
-- Validation paramètres dans `openTaskModal()`
-- Logging structuré pour debug
-- Gestion d'erreurs améliorée
+**JavaScript - Core:**
+- `js/kanban-app.js`
+- `js/core/KanbanManager.js`
+- `js/core/EventCentralizer.js`
+
+**JavaScript - Managers:**
+- `js/managers/ModalManager.js`
+- `js/managers/HistoryManager.js`
+- `js/managers/FilterManager.js`
+- `js/managers/GristManager.js`
+- `js/managers/DatePickerManager.js`
+- `js/managers/JalonManager.js`
+- `js/managers/ViewManager.js`
+
+**JavaScript - Utils & Config:**
+- `js/utils/EventManager.js`
+- `js/config/constants.js`
+
+### Statistiques
+- **1548 lignes ajoutées**
+- **1313 lignes supprimées**
+- Architecture modulaire complète déployée
 
 ---
 
 ## 🚀 PROCÉDURE DE DÉPLOIEMENT
 
-### Option 1: Script Automatique (Recommandé)
+### Déploiement de kanbantest vers kanban (PRODUCTION)
+
 ```bash
-cd /home/timo/app/timox.github.io
-./deploy_to_production.sh
+# 1. Créer une sauvegarde
+mkdir -p backup_kanban_avant_kanbantest_$(date +%Y%m%d_%H%M%S)
+cp -r kanban backup_kanban_avant_kanbantest_$(date +%Y%m%d_%H%M%S)/
+
+# 2. Copier tous les fichiers de kanbantest vers kanban
+cp kanbantest/index.html kanban/
+cp kanbantest/stats.html kanban/
+cp kanbantest/history.html kanban/
+cp kanbantest/timeline.html kanban/
+cp -r kanbantest/css/* kanban/css/
+cp -r kanbantest/js/* kanban/js/
+
+# 3. Ajouter le badge PRODUCTION dans kanban/index.html
+# (ligne 33: ajouter le badge vert après "Tableau Kanban")
+
+# 4. Vérification
+git status
+git diff kanban/
+
+# 5. Commit et push
+git add kanban/
+git commit -m "Déploiement de kanbantest vers kanban (production)"
+git push origin <branche>
 ```
 
-### Option 2: Déploiement Manuel
-```bash
-# 1. Sauvegarde supplémentaire
-cp -r kanban backup_manuel_$(date +%Y%m%d_%H%M%S)
-
-# 2. Copier les fichiers critiques
-cp test/js/managers/ModalManager.js kanban/js/managers/
-cp test/js/managers/HistoryManager.js kanban/js/managers/  
-cp test/js/stats-app.js kanban/js/
-cp test/js/config/constants.js kanban/js/config/
-cp test/js/utils/badges.js kanban/js/utils/
-cp test/index.html kanban/
-cp test/stats.html kanban/
-
-# 3. Vérification
-echo "Vérification des fichiers déployés..."
-```
+### ⚠️ IMPORTANT
+- Toujours créer une sauvegarde avant déploiement
+- Vérifier les différences avec `git diff` avant de commiter
+- Tester en production après déploiement
 
 ---
 
@@ -83,14 +112,25 @@ echo "Vérification des fichiers déployés..."
 
 ## 🔄 PLAN DE RETOUR ARRIÈRE
 
-En cas de problème critique :
+En cas de problème critique avec le dernier déploiement :
 
 ```bash
-# Restauration complète depuis sauvegarde
-cd /home/timo/app/timox.github.io
+# Restauration complète depuis la dernière sauvegarde
 rm -rf kanban
-cp -r backup_avant_prod_20250729_022113/kanban_production_backup kanban
+cp -r backup_kanban_avant_kanbantest_20251118_072058/kanban kanban
+
+# Vérification
+ls -la kanban/
+
+# Commit du rollback
+git add kanban/
+git commit -m "Rollback: restauration depuis backup_kanban_avant_kanbantest_20251118_072058"
+git push origin <branche>
 ```
+
+### Sauvegardes disponibles
+- `backup_kanban_avant_kanbantest_20251118_072058/` (avant déploiement du 18/11/2025)
+- `backup_avant_deploy_20251118_060235/` (sauvegarde intermédiaire)
 
 ---
 
@@ -108,13 +148,29 @@ cp -r backup_avant_prod_20250729_022113/kanban_production_backup kanban
 
 ---
 
-## 📞 SUPPORT
+## 📞 SUPPORT ET RÉFÉRENCES
 
-En cas de problème :
-1. **Consulter le rapport**: `deployment_report_XXXXXX.txt`
-2. **Vérifier sauvegarde**: `backup_avant_prod_20250729_022113/`
-3. **Restaurer si nécessaire** avec la procédure ci-dessus
+### En cas de problème
+1. **Consulter les commits**: `bcd8042` et `c294fcb`
+2. **Vérifier sauvegarde**: `backup_kanban_avant_kanbantest_20251118_072058/`
+3. **Restaurer si nécessaire** avec la procédure de rollback ci-dessus
+
+### Références Git
+- **Branche de déploiement**: `claude/deploy-to-production-013sk6VHqxkwASCBWAYbCvLD`
+- **Commit principal**: `bcd8042` - Déploiement de kanbantest vers kanban (production)
+- **Commit badge**: `c294fcb` - Ajout du badge PRODUCTION dans le header
+
+### Historique des déploiements
+| Date | Source | Commits | Sauvegarde |
+|------|--------|---------|------------|
+| 18/11/2025 | kanbantest → kanban | bcd8042, c294fcb | backup_kanban_avant_kanbantest_20251118_072058 |
 
 ---
 
 **⚠️ IMPORTANT**: Ne pas supprimer les sauvegardes avant confirmation complète que tout fonctionne !
+
+## 🎯 STATUT ACTUEL
+
+✅ **Production active**: Badge "PRODUCTION" visible sur `/kanban/index.html`
+✅ **Architecture modulaire**: Déployée et fonctionnelle
+✅ **Sauvegardes**: Disponibles pour rollback si nécessaire
