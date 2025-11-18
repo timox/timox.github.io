@@ -97,36 +97,15 @@ export class ViewManager {
    * Configure les écouteurs d'événements
    */
   setupEventListeners() {
-    // Boutons de mode de vue
-    document.addEventListener('click', (e) => {
-      if (e.target.closest('[data-mode]')) {
-        const button = e.target.closest('[data-mode]');
-        const mode = button.dataset.mode;
-        this.setViewMode(mode);
-      }
-    });
-    
-    // Raccourcis clavier
-    document.addEventListener('keydown', (e) => {
-      if (!e.target.matches('input, textarea, select')) {
-        switch (e.key) {
-          case '1':
-            e.preventDefault();
-            this.setViewMode(VIEW_MODES.COMPACT);
-            break;
-          case '2':
-            e.preventDefault();
-            this.setViewMode(VIEW_MODES.DETAILED);
-            break;
-          case '3':
-            e.preventDefault();
-            this.setViewMode(VIEW_MODES.FOCUS);
-            break;
-        }
-      }
-    });
-    
-    // Navigation focus supprimée - le mode focus utilise maintenant le filtre statut directement
+    // NOTE: Les événements suivants sont gérés dans EventCentralizer.js :
+    // - [data-mode] (click) - boutons de mode de vue (DOUBLON SUPPRIMÉ)
+    // - document keydown (1,2,3) - raccourcis clavier modes (DOUBLON SUPPRIMÉ)
+    // - #kanban-container (scroll) - navigation horizontale
+    // - .scroll-arrow-left, .scroll-arrow-right (click) - flèches navigation
+    // - .board-count (click) - badges (via délégation)
+    //
+    // Les addEventListener sur éléments créés dynamiquement restent dans les méthodes
+    // de rendu (ex: renderFocusMode, attachCardEventListeners)
   }
 
   getKanbanWrapper() {
@@ -649,10 +628,9 @@ export class ViewManager {
    * Initialise le système de repliage des colonnes pour le mode détaillé
    */
   initColumnCollapse() {
-    // Supprimer les anciens écouteurs
-    this.removeColumnCollapseListeners();
+    // NOTE: Événements .btn-collapse gérés par EventCentralizer.js via délégation
+    // (pas besoin de removeColumnCollapseListeners car plus d'addEventListener direct)
 
-    // Ajouter les nouveaux écouteurs
     setTimeout(() => {
       const collapseButtons = Array.from(document.querySelectorAll('.btn-collapse-column'));
 
@@ -663,8 +641,8 @@ export class ViewManager {
 
       this.createCollapsedStack({ reset: true });
 
+      // Décorer les boutons (visuel seulement)
       collapseButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => this.handleColumnCollapse(e));
         this.decorateCollapseButton(btn);
       });
 
@@ -965,18 +943,8 @@ export class ViewManager {
       </button>
     `;
 
-    stackItem.querySelector('.btn-expand-from-stack').addEventListener('click', (e) => {
-      e.preventDefault();
-      const targetColumn = this.findColumnByStatus(statusId);
-      const originalButton = targetColumn?.querySelector('.btn-collapse-column');
-
-      if (targetColumn && originalButton) {
-        this.expandColumn(statusId, targetColumn, originalButton, { fromStack: true });
-      } else {
-        this.collapsedColumns.delete(statusId);
-        this.removeFromCollapsedStack(statusId);
-      }
-    });
+    // NOTE: Événement .btn-expand-from-stack géré par EventCentralizer.js ligne 414-432
+    // (supprimé pour éviter l'accumulation de handlers)
 
     stackContent.appendChild(stackItem);
 
@@ -1094,9 +1062,9 @@ export class ViewManager {
    * Supprime les écouteurs de repliage de colonnes
    */
   removeColumnCollapseListeners() {
-    document.querySelectorAll('.btn-collapse-column').forEach(btn => {
-      btn.replaceWith(btn.cloneNode(true));
-    });
+    // NOTE: Cette fonction n'est plus nécessaire car les événements .btn-collapse
+    // sont gérés par EventCentralizer.js via délégation (pas d'addEventListener direct).
+    // Conservée pour compatibilité mais peut être supprimée dans une future refactorisation.
   }
 
   onKanbanRendered() {
@@ -1376,44 +1344,14 @@ export class ViewManager {
   }
 
   attachCardEventListeners(container) {
-    container.querySelectorAll('.editable-zone').forEach(zone => {
-      zone.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-
-        const card = zone.closest('.kanban-item');
-        const taskId = parseInt(card?.dataset.id, 10);
-
-        if (!isNaN(taskId) && this.kanban.modalManager) {
-          const task = this.kanban.currentRecords?.find(r => r.id === taskId);
-          if (task) {
-            this.kanban.modalManager.openTaskModal(task);
-          }
-        }
-      });
-    });
-
-    container.querySelectorAll('.timeline-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-
-        const taskId = parseInt(btn.dataset.taskId, 10);
-        if (!isNaN(taskId)) {
-          window.open(`timeline.html?task=${taskId}`, '_blank');
-        }
-      });
-    });
-
-    container.querySelectorAll('.kanban-item').forEach(card => {
-      card.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          const editableZone = card.querySelector('.editable-zone');
-          editableZone?.click();
-        }
-      });
-    });
+    // NOTE: TOUS les événements des cartes sont maintenant gérés par EventCentralizer.js
+    // via délégation pour éviter l'accumulation de handlers (fuites mémoire) :
+    // - .editable-zone (click) → EventCentralizer ligne 342
+    // - .timeline-btn (click) → EventCentralizer ligne 361
+    // - .kanban-item (keydown) → EventCentralizer ligne 372
+    //
+    // Cette fonction est conservée vide pour compatibilité mais peut être supprimée
+    // dans une future refactorisation.
   }
 
   renderKanban(viewMode, records = [], options = {}) {
@@ -1923,15 +1861,8 @@ export class ViewManager {
       }
     };
 
-    kanbanContainer.addEventListener('scroll', updateArrows);
-
-    leftArrow.addEventListener('click', () => {
-      kanbanContainer.scrollBy({ left: -300, behavior: 'smooth' });
-    });
-
-    rightArrow.addEventListener('click', () => {
-      kanbanContainer.scrollBy({ left: 300, behavior: 'smooth' });
-    });
+    // NOTE: Événements de scroll et click sur flèches gérés par EventCentralizer.js
+    // (supprimés pour éviter les doublons)
 
     const resizeObserver = new ResizeObserver(updateArrows);
     resizeObserver.observe(kanbanContainer);
@@ -1942,28 +1873,9 @@ export class ViewManager {
   attachEventListeners(container) {
     this.attachCardEventListeners(container);
 
-    container.querySelectorAll('.board-count').forEach(badge => {
-      badge.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const statut = e.currentTarget.dataset.status;
-
-        if (this.kanban.filterManager) {
-          const currentStatut = this.kanban.filterManager.filters.statut;
-          const newStatut = currentStatut === statut ? '' : statut;
-
-          this.kanban.filterManager.setFilter('statut', newStatut);
-          this.updateBadgeStates(container, newStatut);
-        }
-      });
-    });
-
-    container.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-        this.handleKeyboardNavigation(e);
-      }
-    });
+    // NOTE: TOUS les événements gérés par EventCentralizer.js via délégation :
+    // - .board-count (click) → EventCentralizer ligne 362
+    // - #kanban-container (keydown ArrowLeft/Right) → EventCentralizer ligne 435
   }
 
   updateBadgeStates(container, activeStatut) {

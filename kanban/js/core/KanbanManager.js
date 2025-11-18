@@ -139,11 +139,11 @@ export class KanbanManager {
     // 5. Gestionnaire de filtres
     this.filterManager = new FilterManager(this);
 
-    // 6. Gestionnaire des jalons (doit être initialisé après ModalManager)
-    this.jalonManager = new JalonManager(this);
-
-    // 7. Gestionnaire de vues et de rendu
+    // 6. Gestionnaire de vues et de rendu
     this.viewManager = new ViewManager(this);
+
+    // 7. Gestionnaire des jalons
+    this.jalonManager = new JalonManager(this);
 
     console.log('KanbanManager: Gestionnaires initialisés');
   }
@@ -1121,7 +1121,8 @@ export class KanbanManager {
     eventCentralizer.registerManager('modal', this.modalManager);
     eventCentralizer.registerManager('jalon', this.jalonManager);
     eventCentralizer.registerManager('filter', this.filterManager);
-    
+    eventCentralizer.registerManager('datePicker', this.datePickerManager);
+
     this.eventCentralizer = eventCentralizer;
   }
 }

@@ -57,35 +57,11 @@ export class DatePickerManager {
    * Configure les écouteurs d'événements
    */
   setupEventListeners() {
-    // Bouton pour ouvrir le sélecteur
-    const btnPickDate = document.getElementById('btn-pick-date');
-    if (btnPickDate) {
-      btnPickDate.addEventListener('click', () => {
-        this.openDatePicker();
-      });
-    }
-    
-    // Bouton pour effacer la date
-    const btnClearDate = document.getElementById('btn-clear-date');
-    if (btnClearDate) {
-      btnClearDate.addEventListener('click', () => {
-        this.clearDate();
-      });
-    }
-    
-    // Raccourcis clavier dans le champ de date
-    const dateInput = document.getElementById('popup-delai');
-    if (dateInput) {
-      dateInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Delete' || e.key === 'Backspace') {
-          e.preventDefault();
-          this.clearDate();
-        } else if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          this.openDatePicker();
-        }
-      });
-    }
+    // NOTE: Tous les événements sont gérés dans EventCentralizer.js :
+    // - #btn-pick-date (click) - ouvrir le sélecteur
+    // - #btn-clear-date (click) - effacer la date
+    // - #popup-delai (keydown Delete/Backspace/Enter/Space) - raccourcis clavier
+    // - [data-preset] (click) - presets de date (via délégation)
   }
   
   /**
@@ -278,14 +254,8 @@ export class DatePickerManager {
     
     dateContainer.appendChild(quickButtonsDiv);
     
-    // Ajouter les écouteurs d'événements
-    quickButtonsDiv.querySelectorAll('[data-preset]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        const preset = e.target.dataset.preset;
-        this.setDatePreset(preset);
-      });
-    });
+    // NOTE: Les événements click sur [data-preset] sont gérés par EventCentralizer.js
+    // via délégation (supprimés pour éviter les doublons)
   }
   
   /**

@@ -22,6 +22,9 @@ export class HistoryManager {
     this.kanban = kanbanManager;
     this.currentTaskHistory = null;
     this.logger = createModuleLogger('HistoryManager');
+
+    // Widget d'édition de commentaire (accordéon modale)
+    this.activeModalFocusTrap = null;
     
     this.init();
   }
@@ -55,87 +58,8 @@ export class HistoryManager {
     }, 5000); // Vérifier toutes les 5 secondes
   }
   
-  /**
-   * SUPPRIMÉ - Configure les écouteurs d'événements  
-   * Event listeners maintenant gérés par SimpleClickHandler
-   */
-  setupEventListeners_DISABLED() {
-    // Bouton "Voir tous les commentaires"
-    const btnShowComments = document.getElementById('btn-show-comments-only');
-    if (btnShowComments) {
-      btnShowComments.addEventListener('click', () => {
-        if (!this.currentTaskHistory) {
-          this.logger.warn('Aucune tâche sélectionnée pour afficher les commentaires');
-          return;
-        }
-        this.showAllComments();
-      });
-    }
-    
-    // Bouton "Exporter cette tâche"
-    const btnExportTask = document.getElementById('btn-export-task-history');
-    if (btnExportTask) {
-      btnExportTask.addEventListener('click', () => {
-        if (!this.currentTaskHistory) {
-          this.logger.warn('Aucune tâche sélectionnée pour exporter');
-          return;
-        }
-        this.exportTaskHistory();
-      });
-    }
-    
-    // Widget d'édition de commentaire
-    this.setupCommentEditWidget();
-    
-    // Écouteurs pour les boutons d'historique sur les cartes (support des deux classes)
-    document.addEventListener('click', (e) => {
-      // Trouver le bouton parent si on a cliqué sur un enfant (icône, texte)
-      const button = e.target.closest('.btn-history, .btn-timeline');
-      
-      if (button) {
-        console.log('🔍 Click détecté sur bouton historique');
-        console.log('   Classes du bouton:', button.className);
-        console.log('   Task ID:', button.dataset.taskId);
-        this.logger.debug('Click détecté sur bouton historique', button);
-        
-        // Arrêter la propagation
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        
-        // Protection anti-spam: Éviter appels multiples rapides
-        if (this._historyOpening) {
-          this.logger.debug('ouverture déjà en cours - BLOQUÉ');
-          return;
-        }
-        
-        // Protection immédiate réduite
-        this._historyOpening = true;
-        setTimeout(() => { 
-          this._historyOpening = false; 
-          this.logger.debug('protection anti-spam levée');
-        }, 1000); // Reset après 1s
-        
-        // Récupérer l'ID de la tâche depuis les attributs data
-        const taskId = parseInt(button.dataset.taskId, 10);
-        
-        this.logger.debug('Debug bouton:', {
-          buttonElement: button,
-          buttonClass: button.className,
-          taskIdRaw: button.dataset.taskId,
-          taskIdParsed: taskId,
-          isValidId: !isNaN(taskId)
-        });
-        
-        if (!isNaN(taskId)) {
-          this.openTaskHistory(taskId);
-        }
-        
-        // Retourner false pour empêcher toute autre action
-        return false;
-      }
-    }, { capture: true }); // Capture en phase descendante pour priorité
-  }
+  // NOTE: setupEventListeners_DISABLED() supprimée - code mort jamais appelé.
+  // Tous les événements sont maintenant gérés par EventCentralizer.js
   
   /**
    * Rendre l'historique d'une tâche dans un élément donné
@@ -368,14 +292,9 @@ export class HistoryManager {
     document.body.appendChild(simpleModal);
     
     // Ajouter la gestion Escape
-    const escapeHandler = (e) => {
-      if (e.key === 'Escape') {
-        document.getElementById('simple-history-modal')?.remove();
-        document.removeEventListener('keydown', escapeHandler);
-      }
-    };
-    document.addEventListener('keydown', escapeHandler);
-    
+    // NOTE: Événement Escape géré par EventCentralizer.js ligne 510-515
+    // (détection de #simple-history-modal et fermeture automatique)
+
     this.logger.info('Modal simple créée avec succès');
   }
   
@@ -1209,13 +1128,12 @@ export class HistoryManager {
     commentsHTML += '</div>';
     
     timelineContainer.innerHTML = commentsHTML;
-    
-    // Ajouter l'écouteur pour le bouton retour
+
+    // NOTE: Événement #btn-back-to-timeline géré par EventCentralizer.js
+    // (restauration du contenu original via data attribute)
     const backBtn = document.getElementById('btn-back-to-timeline');
     if (backBtn) {
-      backBtn.addEventListener('click', () => {
-        timelineContainer.innerHTML = originalContent;
-      });
+      backBtn.dataset.originalContent = originalContent;
     }
   }
   
@@ -1337,76 +1255,19 @@ export class HistoryManager {
    */
   setupCommentEditWidget() {
     this.currentEditingComment = null;
-    
+
     // Créer le widget d'édition s'il n'existe pas
     this.createCommentEditWidget();
-    
-    // Écouteur pour les boutons d'édition (plus précis, sans logging)
-    document.addEventListener('click', (e) => {
-      // Ne traiter que les clics sur les boutons d'édition
-      if (e.target.matches('.btn-edit-comment, .btn-edit-comment *')) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const button = e.target.closest('.btn-edit-comment');
-        if (!button) {
-          return;
-        }
-        
-        const commentId = button.dataset.commentId;
-        this.openCommentEditWidget(commentId);
-      }
-    });
-    
-    // Bouton fermer (IDs uniques pour accordéon)
-    const btnClose = document.getElementById('accordion-btn-close-comment-edit');
-    if (btnClose) {
-      btnClose.addEventListener('click', () => {
-        this.closeCommentEditWidget();
-      });
-    }
-    
-    // Bouton annuler
-    const btnCancel = document.getElementById('accordion-btn-cancel-comment-edit');
-    if (btnCancel) {
-      btnCancel.addEventListener('click', () => {
-        this.closeCommentEditWidget();
-      });
-    }
-    
-    // Bouton sauvegarder
-    const btnSave = document.getElementById('accordion-btn-save-comment-edit');
-    if (btnSave) {
-      btnSave.addEventListener('click', () => {
-        this.logger.debug('Bouton sauvegarder cliqué', this);
-        this.saveCommentEdit();
-      });
-    } else {
-      this.logger.error('Bouton accordion-btn-save-comment-edit non trouvé');
-    }
-    
-    // Fermer avec l'overlay (seulement celui de l'accordéon)
-    setTimeout(() => {
-      const overlay = document.querySelector('#accordion-comment-edit-widget .comment-edit-overlay');
-      if (overlay) {
-        overlay.addEventListener('click', (e) => {
-          // Fermer si on clique directement sur l'overlay (pas sur le modal)
-          if (e.target === overlay) {
-            this.closeCommentEditWidget();
-          }
-        });
-      }
-    }, 100);
-    
-    // Fermer avec Escape (éviter les listeners multiples)
-    if (!this.escapeListenerAdded) {
-      this.escapeListenerAdded = true;
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && this.isCommentEditOpen()) {
-          this.closeCommentEditWidget();
-        }
-      });
-    }
+
+    // NOTE: Événement .btn-edit-comment géré par EventCentralizer.js ligne 48-75
+    // (supprimé pour éviter le doublon avec addEventListener sur document)
+
+    // NOTE: TOUS les événements du widget gérés par EventCentralizer.js via délégation :
+    // - #accordion-btn-close-comment-edit (click) → fermer widget
+    // - #accordion-btn-cancel-comment-edit (click) → fermer widget
+    // - #accordion-btn-save-comment-edit (click) → sauvegarder commentaire
+    // - .comment-edit-overlay (click) → fermer si click sur overlay direct
+    // - document (keydown Escape) → fermer widget
   }
   
   /**
@@ -1419,49 +1280,51 @@ export class HistoryManager {
       this.logger.debug('Suppression du widget existant');
       existingWidget.remove();
     }
-    
+
     this.logger.debug('Création du widget d\'édition de commentaires pour accordéon');
-    
+
     // Créer le HTML du widget avec structure corrigée
     const widgetHTML = `
       <div id="accordion-comment-edit-widget" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1070;">
-        <div class="comment-edit-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; pointer-events: none;">
+        <div class="comment-edit-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; pointer-events: auto;">
           <div class="comment-edit-modal-container" style="pointer-events: auto;">
-          <div class="comment-edit-modal" style="background: white; border-radius: 8px; max-width: 700px; width: 95%; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
-            <div class="comment-edit-header" style="padding: 1rem; border-bottom: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: center;">
-              <h5 style="margin: 0; color: #333;"><i class="bi bi-pencil me-2"></i>Édition de commentaire</h5>
-              <button type="button" id="accordion-btn-close-comment-edit" class="btn-close" aria-label="Fermer" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6c757d;">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-            
-            <div class="comment-edit-body" style="padding: 1rem;">
-              <div class="mb-2">
-                <small class="text-muted">Date: <span id="accordion-comment-edit-date"></span></small>
+            <div class="comment-edit-modal" style="background: white; border-radius: 8px; max-width: 700px; width: 95%; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+              <div class="comment-edit-header" style="padding: 1rem; border-bottom: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: center;">
+                <h5 style="margin: 0; color: #333;"><i class="bi bi-pencil me-2"></i>Édition de commentaire</h5>
+                <button type="button" id="accordion-btn-close-comment-edit" class="btn-close" aria-label="Fermer" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6c757d;">
+                  <span aria-hidden="true">&times;</span>
+                </button>
               </div>
-              <textarea id="accordion-comment-edit-text" rows="6" 
-                        placeholder="Modifiez votre commentaire..." 
-                        style="width: 100%; min-height: 120px; padding: 10px; border: 2px solid #007bff; background: white; font-family: inherit; font-size: 14px; line-height: 1.4; resize: vertical; outline: none;"
-                        ></textarea>
+
+              <div class="comment-edit-body" style="padding: 1rem;">
+                <div class="mb-2">
+                  <small class="text-muted">Date: <span id="accordion-comment-edit-date"></span></small>
+                </div>
+                <textarea id="accordion-comment-edit-text" rows="6"
+                          placeholder="Modifiez votre commentaire..."
+                          style="width: 100%; min-height: 120px; padding: 10px; border: 2px solid #007bff; background: white; font-family: inherit; font-size: 14px; line-height: 1.4; resize: vertical; outline: none;"
+                          ></textarea>
+              </div>
+
+              <div class="comment-edit-footer" style="padding: 1rem; border-top: 1px solid #dee2e6; display: flex; justify-content: flex-end; gap: 0.5rem;">
+                <button type="button" id="accordion-btn-cancel-comment-edit" class="btn btn-secondary">
+                  <i class="bi bi-x-circle me-1"></i>Annuler
+                </button>
+                <button type="button" id="accordion-btn-save-comment-edit" class="btn btn-primary">
+                  <i class="bi bi-check-circle me-1"></i>Sauvegarder
+                </button>
+              </div>
             </div>
-            
-            <div class="comment-edit-footer" style="padding: 1rem; border-top: 1px solid #dee2e6; display: flex; justify-content: flex-end; gap: 0.5rem;">
-              <button type="button" id="accordion-btn-cancel-comment-edit" class="btn btn-secondary">
-                <i class="bi bi-x-circle me-1"></i>Annuler
-              </button>
-              <button type="button" id="accordion-btn-save-comment-edit" class="btn btn-primary">
-                <i class="bi bi-check-circle me-1"></i>Sauvegarder
-              </button>
-            </div>
-          </div>
           </div>
         </div>
       </div>
     `;
-    
-    // Ajouter au body
-    document.body.insertAdjacentHTML('beforeend', widgetHTML);
-    
+
+    const container = document.getElementById('popup-tache') || document.body;
+    container.insertAdjacentHTML('beforeend', widgetHTML);
+
+    this.addCommentEditStyles();
+
     // Attacher les event listeners après création
     this.attachCommentEditListeners();
   }
@@ -1470,41 +1333,19 @@ export class HistoryManager {
    * Attache les event listeners au widget d'édition
    */
   attachCommentEditListeners() {
+    // NOTE: TOUS les événements gérés par EventCentralizer.js via délégation :
+    // - #accordion-btn-close-comment-edit (click)
+    // - #accordion-btn-cancel-comment-edit (click)
+    // - #accordion-btn-save-comment-edit (click)
+    // - #accordion-comment-edit-text (keydown/keyup pour stopPropagation)
+    // - #btn-back-to-timeline (click)
+    // - #simple-history-modal (Escape pour fermeture)
+    // - .comment-edit-overlay (click pour fermeture)
+
+    // Assurer que le textarea est focusable
     const textarea = document.getElementById('accordion-comment-edit-text');
-    const closeBtn = document.getElementById('accordion-btn-close-comment-edit');
-    const cancelBtn = document.getElementById('accordion-btn-cancel-comment-edit');
-    const saveBtn = document.getElementById('accordion-btn-save-comment-edit');
-    
-    this.logger.debug('Attachement des listeners:', {
-      textarea: !!textarea,
-      closeBtn: !!closeBtn,
-      cancelBtn: !!cancelBtn,
-      saveBtn: !!saveBtn
-    });
-    
-    // Event listeners pour les boutons
-    if (closeBtn) {
-      closeBtn.addEventListener('click', () => this.closeCommentEditWidget());
-    }
-    if (cancelBtn) {
-      cancelBtn.addEventListener('click', () => this.closeCommentEditWidget());
-    }
-    if (saveBtn) {
-      saveBtn.addEventListener('click', () => this.saveCommentEdit());
-    }
-    
-    // Textarea fonctionnel avec gestion des touches
     if (textarea) {
       textarea.tabIndex = 0;
-      
-      // Empêcher la propagation des touches pour éviter la fermeture de modales
-      textarea.addEventListener('keydown', (e) => {
-        e.stopPropagation(); // Empêche les listeners globaux
-      });
-      
-      textarea.addEventListener('keyup', (e) => {
-        e.stopPropagation(); // Empêche les listeners globaux
-      });
     }
   }
   
@@ -1686,7 +1527,9 @@ export class HistoryManager {
     textArea.dataset.commentId = commentId;
     textArea.setAttribute('data-comment-id', commentId);
     textArea.setAttribute('data-original', originalContent);
-    
+
+    this.disableTaskModalFocusTrap();
+
     widget.style.display = 'block';
     
     // Focus avec debugging
@@ -1713,7 +1556,9 @@ export class HistoryManager {
     if (widget) {
       widget.style.display = 'none';
     }
-    
+
+    this.restoreTaskModalFocusTrap();
+
     this.currentEditingComment = null;
     
     // Nettoyer le formulaire (IDs uniques pour accordéon)
@@ -1730,7 +1575,12 @@ export class HistoryManager {
    */
   isCommentEditOpen() {
     const widget = document.getElementById('accordion-comment-edit-widget');
-    return widget && widget.style.display === 'block';
+    if (!widget) {
+      return false;
+    }
+
+    const style = window.getComputedStyle(widget);
+    return style.display !== 'none' && widget.getAttribute('aria-hidden') !== 'true';
   }
   
   /**
@@ -1743,8 +1593,10 @@ export class HistoryManager {
     const widget = document.getElementById('accordion-comment-edit-widget');
     const textArea = document.getElementById('accordion-comment-edit-text');
     const dateSpan = document.getElementById('accordion-comment-edit-date');
-    
-    if (!widget || widget.style.display !== 'block' || !textArea) {
+
+    const widgetVisible = widget && window.getComputedStyle(widget).display !== 'none' && widget.getAttribute('aria-hidden') !== 'true';
+
+    if (!widget || !widgetVisible || !textArea) {
       this.logger.error('❌ Widget d\'édition non disponible ou invisible');
       displayError('Erreur: Aucun commentaire sélectionné pour édition');
       return false;
@@ -1778,8 +1630,80 @@ export class HistoryManager {
       id: commentId,
       hasOriginalContent: !!this.currentEditingComment.originalContent
     });
-    
+
     return true;
+  }
+
+  getBootstrapModalCandidates() {
+    const modalManager = this.kanban?.modalManager;
+    if (!modalManager) {
+      return [];
+    }
+
+    const candidates = [];
+    if (modalManager.taskModal) {
+      candidates.push(modalManager.taskModal);
+    }
+
+    if (modalManager.historyModal) {
+      candidates.push(modalManager.historyModal);
+    }
+
+    return candidates;
+  }
+
+  getActiveBootstrapModalInstance() {
+    const candidates = this.getBootstrapModalCandidates();
+    if (!candidates.length) {
+      return null;
+    }
+
+    const activeModal = candidates.find((modal) => modal?._element?.classList?.contains('show'));
+    return activeModal || candidates[0] || null;
+  }
+
+  /**
+   * Désactive temporairement le focus trap de la modale de tâche (Bootstrap)
+   */
+  disableTaskModalFocusTrap() {
+    const modalInstance = this.getActiveBootstrapModalInstance();
+    if (!modalInstance || !modalInstance._focustrap) {
+      return;
+    }
+
+    if (this.activeModalFocusTrap?.instance === modalInstance && this.activeModalFocusTrap.active) {
+      return;
+    }
+
+    try {
+      modalInstance._focustrap.deactivate();
+      this.activeModalFocusTrap = {
+        instance: modalInstance,
+        active: true
+      };
+      this.logger.debug('Focus trap de la modale active désactivé pour édition de commentaire');
+    } catch (error) {
+      this.logger.warn('Impossible de désactiver le focus trap de la modale active', error);
+    }
+  }
+
+  /**
+   * Restaure le focus trap de la modale de tâche (Bootstrap)
+   */
+  restoreTaskModalFocusTrap() {
+    if (!this.activeModalFocusTrap?.instance?._focustrap) {
+      this.activeModalFocusTrap = null;
+      return;
+    }
+
+    try {
+      this.activeModalFocusTrap.instance._focustrap.activate();
+      this.logger.debug('Focus trap de la modale active réactivé après édition de commentaire');
+    } catch (error) {
+      this.logger.warn('Impossible de réactiver le focus trap de la modale active', error);
+    }
+
+    this.activeModalFocusTrap = null;
   }
 
   /**
@@ -1987,28 +1911,97 @@ export class HistoryManager {
       }
       
       // Extraire le timestamp du commentId pour trouver l'entrée à modifier
+      const normalizeTimestampToDigits = (timestamp) => {
+        if (timestamp === null || typeof timestamp === 'undefined') {
+          return null;
+        }
+
+        try {
+          if (timestamp instanceof Date) {
+            if (Number.isNaN(timestamp.getTime())) {
+              return null;
+            }
+            return timestamp.toISOString().replace(/[^\d]/g, '');
+          }
+
+          if (typeof timestamp === 'number') {
+            const date = new Date(timestamp);
+            if (Number.isNaN(date.getTime())) {
+              return null;
+            }
+            return date.toISOString().replace(/[^\d]/g, '');
+          }
+
+          if (typeof timestamp === 'string') {
+            const trimmed = timestamp.trim();
+            if (!trimmed) {
+              return '';
+            }
+            // Tenter de détecter les timestamps en millisecondes stockés sous forme de chaîne numérique
+            if (/^\d{10,}$/.test(trimmed)) {
+              const asNumber = Number(trimmed);
+              if (Number.isFinite(asNumber)) {
+                const date = new Date(asNumber);
+                if (!Number.isNaN(date.getTime())) {
+                  return date.toISOString().replace(/[^\d]/g, '');
+                }
+              }
+            }
+            return trimmed.replace(/[^\d]/g, '');
+          }
+
+          // Dernier recours : convertir en string
+          return String(timestamp).replace(/[^\d]/g, '');
+        } catch (normalizationError) {
+          this.logger.warn('Impossible de normaliser le timestamp:', timestamp, normalizationError);
+          return null;
+        }
+      };
+
       const commentTimestamp = commentId.replace('comment-', '');
+      const commentTimestampDigits = normalizeTimestampToDigits(commentTimestamp);
       let entryFound = false;
-      
+
       this.logger.debug('updateCommentInGrist - Recherche du commentaire:', commentId);
-      this.logger.debug('updateCommentInGrist - Timestamp recherché:', commentTimestamp);
+      this.logger.debug('updateCommentInGrist - Timestamp recherché:', commentTimestampDigits);
       this.logger.debug('updateCommentInGrist - Entrées d\'historique disponibles:', notesData.history.length);
-      
+
+      if (commentTimestampDigits == null) {
+        this.logger.warn('updateCommentInGrist - Timestamp de commentaire invalide, fallback sans correspondance précise:', commentId);
+      }
+
       // CORRECTION: Gérer les commentaires anciens (dans content) ET nouveaux (dans history)
-      
+
       // 1. Chercher dans l'historique JSON (nouveau système)
       for (let i = 0; i < notesData.history.length; i++) {
         const entry = notesData.history[i];
-        const entryTimestamp = entry.timestamp.replace(/[^\d]/g, '');
-        
+        const entryTimestamp = normalizeTimestampToDigits(entry?.timestamp);
+
+        if (entryTimestamp == null) {
+          this.logger.warn('updateCommentInGrist - Entrée sans timestamp, ignorée:', entry);
+          continue;
+        }
+
         this.logger.debug(`updateCommentInGrist - Entrée ${i}: action=${entry.action}, timestamp=${entryTimestamp.substring(0, 12)}`);
-        
+
         // Comparer les timestamps (on prend les premiers caractères pour éviter les problèmes de précision)
-        if (entryTimestamp.substring(0, 12) === commentTimestamp.substring(0, 12)) {
+        const timestampsMatch = (() => {
+          if (commentTimestampDigits == null) {
+            return false;
+          }
+
+          if (entryTimestamp === '' || commentTimestampDigits === '') {
+            return entryTimestamp === commentTimestampDigits;
+          }
+
+          return entryTimestamp.substring(0, 12) === commentTimestampDigits.substring(0, 12);
+        })();
+
+        if (timestampsMatch) {
           // Vérifier que c'est bien un commentaire
           if (entry.action === 'comment' || entry.action === 'create' || entry.action === 'update') {
             this.logger.debug('Modification du commentaire trouvé dans history:', entry);
-            
+
             // Modifier le contenu selon le format
             if (entry.newValue) {
               notesData.history[i].newValue = newContent;

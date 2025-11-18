@@ -15,7 +15,7 @@ import {
   confirmAction
 } from '../utils/dom.js';
 
-import { TABLE_ID, PREVISIBILITE, TYPE_TACHES, DEFAULT_PREVISIBILITE, DEFAULT_TYPES_TACHES } from '../config/constants.js';
+import { TABLE_ID } from '../config/constants.js';
 import { getUserActionManager } from '../utils/UserActionManager.js';
 import { createModuleLogger } from '../utils/LoggerManager.js';
 import { referenceManager } from '../utils/ReferenceManager.js';
@@ -33,10 +33,11 @@ export class ModalManager {
     this.currentTaskId = null;
     this.currentTask = null;
     this.isNewTask = false;
-    
+    this.isPopulating = false; // Flag pour éviter la validation pendant le chargement
+
     // Approche stateless - pas de cache, reset complet à chaque tâche
     this.selectedStrategies = [];
-    
+
     this.init();
   }
   
@@ -112,10 +113,21 @@ export class ModalManager {
     }, 'modal');
 
     // Bouton ajouter projet
-    const btnAjoutProjet = document.getElementById('btn-ajout-projet');
-    if (btnAjoutProjet) {
-      btnAjoutProjet.addEventListener('click', () => {
-        this.addNewProject();
+    // === ÉVÉNEMENTS BOOTSTRAP LIFECYCLE (exception autorisée) ===
+
+    // Écouteur pour quand la modale de tâche est complètement affichée
+    const taskModalElement = document.getElementById('popup-tache');
+    if (taskModalElement) {
+      taskModalElement.addEventListener('shown.bs.modal', () => {
+        this.logger.debug('Task modal fully shown - refreshing jalons display');
+        // Rafraîchir l'affichage des jalons maintenant que le DOM est prêt
+        // Petit délai pour s'assurer que tout le contenu de la modale est rendu
+        setTimeout(() => {
+          if (this.kanban.jalonManager && !this.isNewTask) {
+            this.logger.debug(`Calling updateJalonsDisplay - isNewTask: ${this.isNewTask}`);
+            this.kanban.jalonManager.updateJalonsDisplay();
+          }
+        }, 50);
       });
     }
 
@@ -139,39 +151,16 @@ export class ModalManager {
         }
       }
     });
-    
-    // Calcul automatique de la priorité basé sur urgence + impact
-    const urgenceSelect = document.getElementById('popup-urgence');
-    const impactSelect = document.getElementById('popup-impact');
-    
-    if (urgenceSelect && impactSelect) {
-      const updatePriorite = () => {
-        const urgence = urgenceSelect.value;
-        const impact = impactSelect.value;
-        const prioriteField = document.getElementById('popup-priorite-calculee');
-        
-        if (prioriteField) {
-          prioriteField.value = this.calculatePriorite(urgence, impact);
-        }
-      };
-      
-      urgenceSelect.addEventListener('change', updatePriorite);
-      impactSelect.addEventListener('change', updatePriorite);
-    }
-    
-    // Raccourcis clavier - DÉSACTIVÉS (gérés centralement dans kanban-app.js)
-    // document.addEventListener('keydown', (e) => {
-    //   if ((e.key === 'n' || e.key === 'N') && !e.target.matches('input, textarea')) {
-    //     e.preventDefault();
-    //     this.openTaskModal();
-    //   }
-    // });
-    
-    // Auto-resize des textareas
-    const descriptionTextarea = document.getElementById('popup-description');
-    if (descriptionTextarea) {
-      descriptionTextarea.addEventListener('input', this.autoResizeTextarea);
-    }
+
+    // NOTE: Les événements suivants sont gérés dans EventCentralizer.js :
+    // - #btn-ajout-projet (click) - ajout de projet
+    // - #popup-urgence, #popup-impact (change) - calcul priorité
+    // - #popup-description (input) - auto-resize textarea
+    // - .strategy-tag-remove (click) - suppression tags stratégie (délégation)
+    //
+    // Les addEventListener sur éléments créés dynamiquement restent dans les méthodes
+    // de création (ex: createObjectiveSection, createActionDiv) car ils sont attachés
+    // au moment de la création de l'élément.
   }
   
   /**
@@ -279,38 +268,27 @@ export class ModalManager {
     // Header cliquable
     const header = document.createElement('div');
     header.className = 'strategy-objective-header';
+    header.dataset.toggleTarget = 'strategy-content'; // Pour délégation EventCentralizer
     header.innerHTML = `
       <h6 class="strategy-objective-title">${objectif}</h6>
       <i class="bi bi-chevron-right strategy-toggle-icon"></i>
     `;
-    
+
     // Contenu des sous-objectifs
     const content = document.createElement('div');
     content.className = 'strategy-sub-objectives';
     content.style.display = 'none';
-    
+
     // Générer les sous-objectifs
     const sousObjectifs = mappings.sousObjectifs[objectif] || [];
     sousObjectifs.forEach(sousObjectif => {
       const subObjectiveDiv = this.createSubObjectiveSection(objectif, sousObjectif, mappings);
       content.appendChild(subObjectiveDiv);
     });
-    
-    // Event listener pour toggle
-    header.addEventListener('click', () => {
-      const isExpanded = content.style.display !== 'none';
-      
-      if (isExpanded) {
-        content.style.display = 'none';
-        header.classList.remove('expanded');
-        header.querySelector('.strategy-toggle-icon').classList.remove('expanded');
-      } else {
-        content.style.display = 'block';
-        header.classList.add('expanded');
-        header.querySelector('.strategy-toggle-icon').classList.add('expanded');
-      }
-    });
-    
+
+    // NOTE: Événement click géré par EventCentralizer.js via délégation
+    // (supprimé pour éviter l'accumulation de handlers)
+
     objectiveDiv.appendChild(header);
     objectiveDiv.appendChild(content);
     
@@ -344,16 +322,19 @@ export class ModalManager {
    */
   createActionCard(objectif, sousObjectif, action) {
     // Trouver la stratégie correspondante dans les données Grist
-    const strategy = this.kanban.strategiesData.find(s => 
-      s.objectif === objectif && 
-      s.sous_objectif === sousObjectif && 
+    const strategy = this.kanban.strategiesData.find(s =>
+      s.objectif === objectif &&
+      s.sous_objectif === sousObjectif &&
       s.action === action
     );
-    
+
     const actionDiv = document.createElement('div');
     actionDiv.className = 'strategy-action';
     actionDiv.dataset.strategyId = strategy ? strategy.id : '';
-    
+    actionDiv.dataset.objectif = objectif;
+    actionDiv.dataset.sousObjectif = sousObjectif;
+    actionDiv.dataset.action = action;
+
     actionDiv.innerHTML = `
       <div class="strategy-action-title">${action}</div>
       <div class="strategy-action-details">
@@ -374,12 +355,10 @@ export class ModalManager {
       </div>
       <i class="bi bi-check-circle strategy-selected-indicator" style="display: none;"></i>
     `;
-    
-    // Event listener pour sélection
-    actionDiv.addEventListener('click', (evt) => {
-      this.selectStrategy(strategy, objectif, sousObjectif, action, evt);
-    });
-    
+
+    // NOTE: Événement .strategy-action géré par EventCentralizer.js ligne 304-324
+    // (supprimé pour éviter l'accumulation de handlers à chaque render)
+
     return actionDiv;
   }
 
@@ -501,17 +480,8 @@ export class ModalManager {
       </span>
     `).join('');
     
-    // Ajouter les événements de suppression
-    tagsContainer.querySelectorAll('.strategy-tag-remove').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const strategyId = parseInt(btn.dataset.strategyId);
-        this.removeStrategyFromSelection(strategyId);
-        this.updateStrategyTags();
-        this.updateStrategyPreview();
-        this.updateStrategyIds();
-      });
-    });
+    // NOTE: Les événements de suppression des tags sont gérés par EventCentralizer.js
+    // via délégation sur le sélecteur .strategy-tag-remove
   }
   
   /**
@@ -554,13 +524,8 @@ export class ModalManager {
    * Configure les événements pour la gestion multiple
    */
   setupMultiStrategyEvents() {
-    // Bouton "Tout désélectionner"
-    const clearBtn = document.getElementById('btn-clear-strategies');
-    if (clearBtn) {
-      clearBtn.addEventListener('click', () => {
-        this.clearAllStrategies();
-      });
-    }
+    // NOTE: Bouton "Tout désélectionner" géré par EventCentralizer.js
+    // (#btn-clear-strategies via délégation)
   }
   
   /**
@@ -963,45 +928,54 @@ export class ModalManager {
     if (this.kanban.historyManager?.cleanupOrphanBackdrops) {
       this.kanban.historyManager.cleanupOrphanBackdrops();
     }
-    
+
+    // Flag pour éviter la validation pendant le chargement
+    this.isPopulating = true;
+
     // ✅ RESET intelligent : seulement si nouvelle tâche ou changement de tâche
     const isChangingTask = !task || this.currentTaskId !== task?.id;
     if (isChangingTask) {
       this.resetTaskForm();
     }
-    
+
     this.isNewTask = !task || !task.id;
     this.currentTask = task;
     this.currentTaskId = task?.id || null;
-    
+
     this.logger.debug(`Opening task modal: ${this.isNewTask ? 'new task' : 'edit task ' + this.currentTaskId}`);
-    
+
     // Mettre à jour le titre de la modal
     const modalTitle = document.getElementById('popup-tache-label');
     if (modalTitle) {
-      modalTitle.innerHTML = this.isNewTask 
+      modalTitle.innerHTML = this.isNewTask
         ? '<i class="bi bi-plus-circle me-2"></i>Nouvelle Tâche'
         : '<i class="bi bi-pencil-square me-2"></i>Modifier Tâche';
     }
-    
-    
+
+
     // Informer le JalonManager de la tâche en cours
     if (this.kanban.jalonManager) {
       this.kanban.jalonManager.setCurrentTaskId(this.currentTaskId);
     }
-    
+
     // Peupler les options des selects d'abord
     this.populateSelectOptions();
-    
+
     // Peupler les champs APRÈS avoir configuré les caches
     this.populateTaskForm(task);
+
+    // Fin du chargement - activer la validation
+    this.isPopulating = false;
     
     // Afficher/masquer le bouton supprimer
     toggleVisibility('btn-delete-task', !this.isNewTask, 'inline-block');
-    
+
     // Ouvrir la modal
     this.taskModal.show();
-    
+
+    // NOTE: L'affichage des jalons est rafraîchi via l'événement 'shown.bs.modal'
+    // (voir setupEventListeners() ligne 121) pour garantir que le DOM est prêt
+
     // Focus sur le premier champ
     setTimeout(() => {
       const firstField = document.getElementById('popup-titre');
@@ -1019,16 +993,12 @@ export class ModalManager {
     // Liste des champs à vérifier
     const fieldIds = [
       'popup-titre',
-      'popup-description',
+      'popup-description', 
       'popup-urgence',
       'popup-impact',
-      'popup-previsibilite',
-      'popup-type-tache',
-      'popup-temps-estime',
       'popup-date-debut',
       'popup-date-echeance',
-      'popup-projet',
-      'popup-dette-technique'
+      'popup-projet'
     ];
     
     fieldIds.forEach(fieldId => {
@@ -1038,24 +1008,11 @@ export class ModalManager {
         field.removeAttribute('readonly');
         field.removeAttribute('disabled');
         field.tabIndex = 0;
-        
-        // Ajouter un gestionnaire de clic pour forcer le focus
-        if (!field.dataset.focusHandlerAdded) {
-          field.dataset.focusHandlerAdded = 'true';
-          field.addEventListener('click', function() {
-            setTimeout(() => {
-              this.focus();
-              if (this.tagName === 'TEXTAREA' || this.type === 'text') {
-                this.setSelectionRange(this.value.length, this.value.length);
-              }
-            }, 10);
-          });
-        }
       }
     });
-    
-    // Appeler la méthode spécifique pour la description
-    this.ensureDescriptionFocus();
+
+    // NOTE: Événements de focus/click gérés par EventCentralizer.js via délégation
+    // (plus besoin de listeners individuels - dataset.focusHandlerAdded supprimé)
   }
 
   /**
@@ -1064,37 +1021,16 @@ export class ModalManager {
   ensureDescriptionFocus() {
     const descriptionField = document.getElementById('popup-description');
     if (!descriptionField) return;
-    
+
     // Supprimer les attributs qui empêchent le focus
     descriptionField.removeAttribute('readonly');
     descriptionField.removeAttribute('disabled');
-    
+
     // Assurer que le champ est focusable
     descriptionField.tabIndex = 0;
-    
-    // Éviter de lier plusieurs fois les mêmes événements
-    if (descriptionField.dataset.focusHandlerAdded) return;
-    descriptionField.dataset.focusHandlerAdded = 'true';
-    
-    // Ajouter un gestionnaire de clic pour forcer le focus
-    descriptionField.addEventListener('click', function(e) {
-      e.stopPropagation();
-      setTimeout(() => {
-        this.focus();
-        this.setSelectionRange(this.value.length, this.value.length);
-      }, 10);
-    });
-    
-    // Ajouter un gestionnaire pour débugger les problèmes de focus
-    descriptionField.addEventListener('focus', function() {
-    });
-    
-    descriptionField.addEventListener('blur', function() {
-    });
-    
-    // Gestionnaire pour forcer le focus au survol
-    descriptionField.addEventListener('mouseenter', function() {
-    });
+
+    // NOTE: Événements gérés par EventCentralizer.js via délégation
+    // (addEventListener click/focus/blur/mouseenter supprimés - gérés globalement)
   }
   
   /**
@@ -1143,25 +1079,7 @@ export class ModalManager {
     // Urgence et Impact
     setFieldValue('popup-urgence', task.urgence || '');
     setFieldValue('popup-impact', task.impact || '');
-
-    const resolvedPrevisibilite = this.resolvePrevisibiliteValue(task.previsibilite, this.isNewTask);
-    setFieldValue('popup-previsibilite', resolvedPrevisibilite);
-
-    const resolvedTypeTache = this.resolveTypeTacheValue(task.type_tache, this.isNewTask);
-    setFieldValue('popup-type-tache', resolvedTypeTache);
-
-    const normalizedHours = this.normalizeEstimatedHoursValue(task.temps_estime_heures);
-    const estimatedInput = document.getElementById('popup-temps-estime');
-    if (estimatedInput) {
-      estimatedInput.value = this.formatEstimatedHoursForInput(normalizedHours);
-    }
-
-    const debtCheckbox = document.getElementById('popup-dette-technique');
-    if (debtCheckbox) {
-      const normalizedDebt = this.normalizeTechnicalDebtValue(task.est_dette_technique);
-      debtCheckbox.checked = normalizedDebt === true;
-    }
-
+    
     // Priorité calculée automatiquement
     const prioriteCalculee = this.calculatePriorite(task.urgence || '', task.impact || '');
     setFieldValue('popup-priorite-calculee', prioriteCalculee);
@@ -1198,7 +1116,12 @@ export class ModalManager {
     // Synchroniser avec les cases à cocher
     this.syncSelectToCheckbox('popup-bureau-checkboxes', 'popup-bureau');
     this.syncSelectToCheckbox('popup-qui-checkboxes', 'popup-qui');
-    
+
+    // IMPORTANT: Re-synchroniser dans l'autre sens pour s'assurer que le select caché est à jour
+    // (car cocher programmatiquement ne déclenche pas l'événement change)
+    this.syncCheckboxToSelect('popup-bureau-checkboxes', 'popup-bureau');
+    this.syncCheckboxToSelect('popup-qui-checkboxes', 'popup-qui');
+
     // Références et documentation (extraire depuis le champ notes)
     let referencesValue = '';
     if (task.notes) {
@@ -1474,132 +1397,15 @@ export class ModalManager {
   collectStrategyData() {
     
     if (!this.selectedStrategies || this.selectedStrategies.length === 0) {
-      console.log(`❌ No strategies to collect - returning null`);
+      this.logger.debug('No strategies to collect - returning null');
       return null;
     }
 
-    // Format Grist ReferenceList: ['L', id1, id2, id3, ...] comme bureau et qui  
-    const strategyIds = this.selectedStrategies.map(s => {
-      console.log(`   mapping strategy:`, s);
-      return s.id;
-    });
+    // Format Grist ReferenceList: ['L', id1, id2, id3, ...] comme bureau et qui
+    const strategyIds = this.selectedStrategies.map(s => s.id);
     const gristFormat = ['L', ...strategyIds];
-    console.log(`🎯 Strategies saved: ${strategyIds.length} items`, gristFormat);
+    this.logger.debug(`Strategies collected: ${strategyIds.length} items`, gristFormat);
     return gristFormat;
-  }
-
-  getPrevisibiliteOptions() {
-    const options = this.kanban?.gristOptions?.previsibilite || this.kanban?.gristOptions?.previsibilites;
-    if (Array.isArray(options) && options.length > 0) {
-      return options.slice();
-    }
-    return DEFAULT_PREVISIBILITE.slice();
-  }
-
-  getTypeTacheOptions() {
-    const options = this.kanban?.gristOptions?.type_tache || this.kanban?.gristOptions?.type_taches || this.kanban?.gristOptions?.types;
-    if (Array.isArray(options) && options.length > 0) {
-      return options.slice();
-    }
-    return DEFAULT_TYPES_TACHES.slice();
-  }
-
-  resolvePrevisibiliteValue(currentValue, shouldDefault = false) {
-    if (typeof currentValue === 'string' && currentValue.trim()) {
-      return currentValue.trim();
-    }
-    if (!shouldDefault) {
-      return '';
-    }
-    const options = this.getPrevisibiliteOptions();
-    return options.length > 0 ? options[0] : '';
-  }
-
-  resolveTypeTacheValue(currentValue, shouldDefault = false) {
-    if (typeof currentValue === 'string' && currentValue.trim()) {
-      return currentValue.trim();
-    }
-    if (!shouldDefault) {
-      return '';
-    }
-    const options = this.getTypeTacheOptions();
-    return options.length > 0 ? options[0] : '';
-  }
-
-  normalizeChoiceValue(value) {
-    if (value === null || typeof value === 'undefined') {
-      return null;
-    }
-    if (typeof value === 'string') {
-      const trimmed = value.trim();
-      return trimmed.length > 0 ? trimmed : null;
-    }
-    return String(value).trim() || null;
-  }
-
-  normalizeTechnicalDebtValue(value) {
-    if (value === null || typeof value === 'undefined') {
-      return null;
-    }
-    if (typeof value === 'boolean') {
-      return value;
-    }
-    if (typeof value === 'number') {
-      return value !== 0;
-    }
-    if (typeof value === 'string') {
-      const normalized = value.trim().toLowerCase();
-      if (!normalized) {
-        return null;
-      }
-      if (['true', '1', 'oui', 'yes', 'on', 'vrai'].includes(normalized)) {
-        return true;
-      }
-      if (['false', '0', 'non', 'no', 'off', 'faux'].includes(normalized)) {
-        return false;
-      }
-    }
-    return Boolean(value);
-  }
-
-  normalizeEstimatedHoursValue(value) {
-    if (value === null || typeof value === 'undefined') {
-      return null;
-    }
-    if (typeof value === 'number') {
-      return Number.isFinite(value) ? Math.round(value * 100) / 100 : null;
-    }
-    if (typeof value === 'string') {
-      return this.parseEstimatedHours(value);
-    }
-    return null;
-  }
-
-  parseEstimatedHours(rawValue) {
-    if (typeof rawValue !== 'string') {
-      return null;
-    }
-    const normalized = rawValue.replace(',', '.').trim();
-    if (!normalized) {
-      return null;
-    }
-    const numeric = Number(normalized);
-    if (!Number.isFinite(numeric)) {
-      return NaN;
-    }
-    return Math.round(numeric * 100) / 100;
-  }
-
-  formatEstimatedHoursForInput(value) {
-    if (typeof value !== 'number' || Number.isNaN(value)) {
-      return '';
-    }
-    return String(value);
-  }
-
-  getEstimatedHoursInputValue() {
-    const input = document.getElementById('popup-temps-estime');
-    return input ? input.value || '' : '';
   }
 
   collectFormData() {
@@ -1612,41 +1418,22 @@ export class ModalManager {
       bureau: getSelectedOptionsAsGristFormat('popup-bureau'),
       qui: getSelectedOptionsAsGristFormat('popup-qui'),
       strategie_id: this.collectStrategyData(), // Collecte spécialisée stratégies
-      jalons: null,
-      previsibilite: null,
-      type_tache: null,
-      temps_estime_heures: null,
-      est_dette_technique: false
+      jalons: this.kanban.jalonManager ? this.kanban.jalonManager.getJalonsForSave() : null
     };
-
+    
     this.logger.debug(`Collecting form data: ${data.titre || 'untitled'} (${data.statut})`);
-
-    const jalonsFromManager = this.kanban.jalonManager ? this.kanban.jalonManager.getJalonsForSave() : null;
-    const jalonsFromField = getFieldValue('popup-jalons');
-    data.jalons = jalonsFromManager !== null ? jalonsFromManager : (jalonsFromField || null);
-
-    data.previsibilite = this.normalizeChoiceValue(getFieldValue('popup-previsibilite'));
-
-    data.type_tache = this.normalizeChoiceValue(getFieldValue('popup-type-tache'));
-
-    const estimatedRaw = this.getEstimatedHoursInputValue();
-    const parsedHours = this.parseEstimatedHours(estimatedRaw);
-    data.temps_estime_heures = Number.isNaN(parsedHours) ? null : parsedHours;
-
-    const detteCheckbox = document.getElementById('popup-dette-technique');
-    data.est_dette_technique = detteCheckbox ? Boolean(detteCheckbox.checked) : false;
-
+    
     // CHAMP DESCRIPTION SUPPRIMÉ - Tous les commentaires sont maintenant dans notes.history
     // Le champ de saisie popup-description sert uniquement pour les nouveaux commentaires
-
+    
     // Date d'échéance
     if (this.kanban.datePickerManager) {
       data.date_echeance = this.kanban.datePickerManager.getDateForGrist();
     }
-
+    
     return data;
   }
-
+  
   /**
    * Prépare les données pour l'envoi à Grist
    * @param {object} taskData - Données de la tâche
@@ -1669,23 +1456,7 @@ export class ModalManager {
     if (!gristData.statut) {
       gristData.statut = 'Backlog';
     }
-
-    if (Object.prototype.hasOwnProperty.call(gristData, 'previsibilite')) {
-      gristData.previsibilite = this.normalizeChoiceValue(gristData.previsibilite);
-    }
-
-    if (Object.prototype.hasOwnProperty.call(gristData, 'type_tache')) {
-      gristData.type_tache = this.normalizeChoiceValue(gristData.type_tache);
-    }
-
-    if (Object.prototype.hasOwnProperty.call(gristData, 'temps_estime_heures')) {
-      gristData.temps_estime_heures = this.normalizeEstimatedHoursValue(gristData.temps_estime_heures);
-    }
-
-    if (Object.prototype.hasOwnProperty.call(gristData, 'est_dette_technique')) {
-      gristData.est_dette_technique = this.normalizeTechnicalDebtValue(gristData.est_dette_technique);
-    }
-
+    
     // Assurer que les listes sont dans le bon format - SEULEMENT si elles sont vides ou invalides
     if (!Array.isArray(gristData.bureau)) {
       gristData.bureau = ['L'];
@@ -1827,10 +1598,15 @@ export class ModalManager {
     
     // Gérer les références dans le champ notes
     const referencesText = referenceManager.cleanReferences(getFieldValue('popup-references'));
-    if (referencesText || this.currentTask?.notes) {
+    const existingReferences = this.extractReferencesFromNotes(this.currentTask?.notes);
+    const shouldUpdateReferences = this.isNewTask
+      ? Boolean(referencesText)
+      : referencesText !== existingReferences;
+
+    if (shouldUpdateReferences) {
       try {
         // Parser les notes existantes ou créer une nouvelle structure
-        let notesData = {};
+        let notesData;
         if (this.currentTask?.notes) {
           try {
             notesData = JSON.parse(this.currentTask.notes);
@@ -1841,10 +1617,14 @@ export class ModalManager {
         } else {
           notesData = { content: "", history: [] };
         }
-        
+
+        if (!Array.isArray(notesData.history)) {
+          notesData.history = [];
+        }
+
         // Ajouter les références
         notesData.references = referencesText || "";
-        
+
         // Sérialiser les notes mises à jour
         gristData.notes = JSON.stringify(notesData);
       } catch (error) {
@@ -2699,12 +2479,7 @@ export class ModalManager {
       responsables = [],
       qui = [],
       projet = [],
-      projets = [],
-      previsibilite = [],
-      previsibilites = [],
-      type_tache = [],
-      type_taches = [],
-      types = []
+      projets = []
     } = this.kanban.gristOptions;
 
     const sanitizeList = (values) => {
@@ -2721,33 +2496,19 @@ export class ModalManager {
     const responsableOptions = sanitizeList(responsables.length ? responsables : qui);
     const projetOptions = sanitizeList(projet.length ? projet : projets);
 
-    let previsibiliteOptions = sanitizeList(previsibilite.length ? previsibilite : previsibilites);
-    if (previsibiliteOptions.length === 0) {
-      previsibiliteOptions = this.getPrevisibiliteOptions();
-    }
-
-    let typeTacheOptions = sanitizeList(type_tache.length ? type_tache : (type_taches.length ? type_taches : types));
-    if (typeTacheOptions.length === 0) {
-      typeTacheOptions = this.getTypeTacheOptions();
-    }
-
     // Mémoriser une copie normalisée pour les opérations locales (ajout projet, etc.)
     this.gristOptions = {
       bureau: bureauOptions,
       responsables: responsableOptions,
       projet: projetOptions,
       urgence: urgenceOptions,
-      impact: impactOptions,
-      previsibilite: previsibiliteOptions.slice(),
-      type_tache: typeTacheOptions.slice()
+      impact: impactOptions
     };
 
     // Peupler les selects
     populateSelect('popup-urgence', urgenceOptions, true);
     populateSelect('popup-impact', impactOptions, true);
     populateSelect('popup-projet', projetOptions, true);
-    populateSelect('popup-previsibilite', previsibiliteOptions, true, '-- Prévisibilité --');
-    populateSelect('popup-type-tache', typeTacheOptions, true, '-- Type de tâche --');
 
     // Peupler les cases à cocher
     this.logger.debug(`Populating options: ${bureauOptions.length} bureau, ${responsableOptions.length} responsables`);
@@ -2810,11 +2571,11 @@ export class ModalManager {
       optionElement.value = option;
       optionElement.textContent = option;
       hiddenSelect.appendChild(optionElement);
-      
-      // Event listener pour synchroniser avec le select caché
-      checkbox.addEventListener('change', (e) => {
-        this.syncCheckboxToSelect(containerId, selectId);
-      });
+
+      // NOTE: Événement change géré par EventCentralizer.js via délégation
+      // (checkbox synchronisation gérée globalement)
+      checkbox.dataset.containerId = containerId;
+      checkbox.dataset.selectId = selectId;
     });
     
     
@@ -2880,11 +2641,7 @@ export class ModalManager {
     // Reset selects multiples
     $('#popup-bureau').val(['L']);
     $('#popup-qui').val(['L']);
-    $('#popup-previsibilite').val('');
-    $('#popup-type-tache').val('');
-    $('#popup-temps-estime').val('');
-    $('#popup-dette-technique').prop('checked', false);
-
+    
     // Reset checkboxes
     $('#popup-bureau-checkboxes input, #popup-qui-checkboxes input').prop('checked', false);
     
@@ -2927,35 +2684,24 @@ export class ModalManager {
    * @returns {boolean} True si valide
    */
   validateTaskData() {
+    // Ne pas valider pendant le chargement de la modale
+    if (this.isPopulating) {
+      return true;
+    }
+
     const titre = getFieldValue('popup-titre').trim();
-    
+
     if (!titre) {
       displayError('Le titre est obligatoire');
       return false;
     }
-    
+
     if (titre.length > 255) {
       displayError('Le titre ne peut pas dépasser 255 caractères');
       return false;
     }
-    
-    // Validation des bureaux
-    const bureaux = getSelectedOptionsAsGristFormat('popup-bureau');
-    if (bureaux.length <= 1) {
-      displayError('Veuillez sélectionner au moins un bureau');
-      return false;
-    }
 
-    const estimatedRaw = this.getEstimatedHoursInputValue();
-    const parsedHours = this.parseEstimatedHours(estimatedRaw);
-    if (Number.isNaN(parsedHours)) {
-      displayError('Le temps estimé doit être un nombre valide');
-      return false;
-    }
-    if (parsedHours !== null && parsedHours < 0) {
-      displayError('Le temps estimé ne peut pas être négatif');
-      return false;
-    }
+    // Note: Bureau n'est pas obligatoire (demande utilisateur)
 
     return true;
   }
@@ -3021,25 +2767,11 @@ export class ModalManager {
     // Comparer avec les données originales
     const currentData = this.collectFormData();
     
-    const currentPrevisibilite = this.normalizeChoiceValue(currentData.previsibilite);
-    const currentTypeTache = this.normalizeChoiceValue(currentData.type_tache);
-    const currentEstimatedHours = this.normalizeEstimatedHoursValue(currentData.temps_estime_heures);
-    const currentDebt = this.normalizeTechnicalDebtValue(currentData.est_dette_technique);
-
-    const originalPrevisibilite = this.normalizeChoiceValue(this.currentTask?.previsibilite);
-    const originalTypeTache = this.normalizeChoiceValue(this.currentTask?.type_tache);
-    const originalEstimatedHours = this.normalizeEstimatedHoursValue(this.currentTask?.temps_estime_heures);
-    const originalDebt = this.normalizeTechnicalDebtValue(this.currentTask?.est_dette_technique);
-
     return (
       currentData.titre !== (this.currentTask.titre || '') ||
       currentData.projet !== (this.currentTask.projet || '') ||
       currentData.urgence !== (this.currentTask.urgence || '') ||
-      currentData.impact !== (this.currentTask.impact || '') ||
-      currentPrevisibilite !== originalPrevisibilite ||
-      currentTypeTache !== originalTypeTache ||
-      currentEstimatedHours !== originalEstimatedHours ||
-      currentDebt !== originalDebt
+      currentData.impact !== (this.currentTask.impact || '')
       // Ajouter d'autres comparaisons selon les besoins
     );
   }
@@ -3048,17 +2780,8 @@ export class ModalManager {
    * Configure les écouteurs pour la détection de modifications
    */
   setupChangeDetection() {
-    const formElements = document.querySelectorAll('#task-form input, #task-form select, #task-form textarea');
-    
-    formElements.forEach(element => {
-      element.addEventListener('change', () => {
-        this.updateSaveButtonState();
-      });
-      
-      element.addEventListener('input', () => {
-        this.updateSaveButtonState();
-      });
-    });
+    // NOTE: Événements change/input gérés par EventCentralizer.js via délégation
+    // (sur #task-form input, select, textarea)
   }
   
   /**
@@ -3133,10 +2856,10 @@ export class ModalManager {
     if (!oldData || !newData) return false;
     
     const relevantFields = [
-      'titre', 'statut', 'projet', 'urgence', 'impact', 'bureau', 'qui',
-      'strategie_id', 'date_debut', 'date_echeance', 'jalons',
-      'previsibilite', 'type_tache', 'temps_estime_heures', 'est_dette_technique'
-    ];    
+      'titre', 'statut', 'projet', 'urgence', 'impact', 'bureau', 'qui', 
+      'strategie_id', 'date_debut', 'date_echeance', 'jalons'
+    ];
+    
     // Filtrer les champs exclus
     const fieldsToCheck = relevantFields.filter(field => !excludeFields.includes(field));
     
@@ -3149,30 +2872,6 @@ export class ModalManager {
         const oldJalonsStr = typeof oldValue === 'string' ? oldValue : JSON.stringify(oldValue || []);
         const newJalonsStr = typeof newValue === 'string' ? newValue : JSON.stringify(newValue || []);
         if (oldJalonsStr !== newJalonsStr) {
-          return true;
-        }
-      }
-      // Comparaison spéciale pour les champs de choix simples
-      else if (field === 'previsibilite' || field === 'type_tache') {
-        const normalizedOld = this.normalizeChoiceValue(oldValue);
-        const normalizedNew = this.normalizeChoiceValue(newValue);
-        if (normalizedOld !== normalizedNew) {
-          return true;
-        }
-      }
-      // Comparaison spéciale pour les heures estimées
-      else if (field === 'temps_estime_heures') {
-        const normalizedOld = this.normalizeEstimatedHoursValue(oldValue);
-        const normalizedNew = this.normalizeEstimatedHoursValue(newValue);
-        if (normalizedOld !== normalizedNew) {
-          return true;
-        }
-      }
-      // Comparaison spéciale pour la dette technique
-      else if (field === 'est_dette_technique') {
-        const normalizedOld = this.normalizeTechnicalDebtValue(oldValue);
-        const normalizedNew = this.normalizeTechnicalDebtValue(newValue);
-        if (normalizedOld !== normalizedNew) {
           return true;
         }
       }

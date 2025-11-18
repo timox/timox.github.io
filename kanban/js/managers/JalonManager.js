@@ -20,11 +20,65 @@ export class JalonManager {
   init() {
     this.logger = createModuleLogger('JalonManager');
     this.logger.debug('Initialisation JalonManager...');
-    
+
     // Initialiser la modale Bootstrap
-    this.jalonModal = new bootstrap.Modal(document.getElementById('jalonModal'));
-    
+    this.initializeModalInstance();
+
     this.setupEventListeners();
+  }
+
+  /**
+   * Retourne la librairie Bootstrap disponible, même en mode module
+   */
+  getBootstrapLibrary() {
+    if (typeof bootstrap !== 'undefined') {
+      return bootstrap;
+    }
+
+    if (typeof window !== 'undefined' && window.bootstrap) {
+      return window.bootstrap;
+    }
+
+    return null;
+  }
+
+  /**
+   * Initialise (ou réinitialise) l'instance de modale Bootstrap
+   */
+  initializeModalInstance() {
+    try {
+      const modalElement = document.getElementById('jalonModal');
+      const bootstrapLib = this.getBootstrapLibrary();
+
+      if (!bootstrapLib || !bootstrapLib.Modal) {
+        throw new Error('Librairie Bootstrap Modale indisponible');
+      }
+
+      if (!modalElement) {
+        throw new Error('Élément #jalonModal introuvable dans le DOM');
+      }
+
+      const existingInstance = bootstrapLib.Modal.getInstance?.(modalElement);
+      this.jalonModal = existingInstance || new bootstrapLib.Modal(modalElement);
+      this.logger.debug('Instance de modale jalon initialisée');
+    } catch (error) {
+      this.logger.error('Impossible d\'initialiser la modale des jalons:', error);
+      this.jalonModal = null;
+    }
+  }
+
+  /**
+   * Vérifie que la modale est prête avant usage
+   * @returns {boolean}
+   */
+  ensureModalReady() {
+    if (this.jalonModal) {
+      return true;
+    }
+
+    this.logger.warn('Modale de jalon non prête, nouvelle tentative d\'initialisation...');
+    this.initializeModalInstance();
+    return !!this.jalonModal;
   }
 
   /**
@@ -53,102 +107,19 @@ export class JalonManager {
   }
 
   setupEventListeners() {
-    // Bouton ajouter un jalon
-    const btnAddJalon = document.getElementById('btn-add-jalon');
-    if (btnAddJalon) {
-      btnAddJalon.addEventListener('click', () => {
-        this.openJalonModal();
-      });
-    }
-
-    // Sélection du type de jalon
-    const typeCards = document.querySelectorAll('.jalon-type-card');
-    typeCards.forEach(card => {
-      card.addEventListener('click', () => {
-        this.selectJalonType(card.dataset.type);
-      });
-    });
-
-    // Bouton sauvegarder
-    const btnSaveJalon = document.getElementById('btn-save-jalon');
-    if (btnSaveJalon) {
-      btnSaveJalon.addEventListener('click', () => {
-        this.saveJalon();
-      });
-    }
-
-    // Reset form à la fermeture de la modale
-    document.getElementById('jalonModal').addEventListener('hidden.bs.modal', () => {
+    // Reset form à la fermeture de la modale (événement Bootstrap lifecycle - exception autorisée)
+    const modalElement = document.getElementById('jalonModal');
+    modalElement?.addEventListener('hidden.bs.modal', () => {
       this.resetJalonForm();
     });
 
-    // Délégation d'événements pour les boutons de suppression et d'édition (éléments dynamiques)
-    document.addEventListener('click', (e) => {
-      // Gestion des boutons de suppression
-      if (e.target.closest('.btn-delete-jalon')) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const btn = e.target.closest('.btn-delete-jalon');
-        const jalonId = btn.dataset.jalonId;
-        
-        if (!jalonId) {
-          this.logger.error('ID de jalon manquant pour la suppression');
-          return;
-        }
-        
-        this.logger.debug('Suppression du jalon ID:', jalonId);
-        
-        if (confirm('Êtes-vous sûr de vouloir supprimer ce jalon ?')) {
-          try {
-            this.deleteJalon(jalonId);
-          } catch (error) {
-            this.logger.error('Erreur lors de la suppression du jalon:', error);
-          }
-        }
-      }
-      
-      // Gestion des boutons d'édition
-      if (e.target.closest('.btn-edit-jalon')) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const btn = e.target.closest('.btn-edit-jalon');
-        
-        try {
-          // Rechercher l'ID de jalon de manière plus robuste
-          let jalonId;
-          
-          // Méthode 1: depuis le bouton lui-même
-          if (btn.dataset.jalonId) {
-            jalonId = btn.dataset.jalonId;
-          }
-          // Méthode 2: depuis le parent avec data-jalon-id
-          else {
-            const jalonElement = btn.closest('[data-jalon-id]');
-            if (jalonElement) {
-              jalonId = jalonElement.dataset.jalonId;
-            }
-          }
-          
-          if (!jalonId) {
-            this.logger.error('Impossible de trouver l\'ID du jalon à éditer');
-            return;
-          }
-          
-          this.logger.debug('Édition du jalon ID:', jalonId);
-          
-          const jalon = this.jalons.find(j => j.id === jalonId);
-          if (jalon) {
-            this.openJalonModal(jalon);
-          } else {
-            this.logger.error('Jalon non trouvé pour édition. ID:', jalonId);
-          }
-        } catch (error) {
-          this.logger.error('Erreur lors de l\'édition du jalon:', error);
-        }
-      }
-    });
+    // NOTE: TOUS les événements utilisateur des jalons sont gérés de manière centralisée
+    // par EventCentralizer.js via jQuery/safeOn :
+    // - #btn-add-jalon (ajout)
+    // - .btn-delete-jalon (suppression)
+    // - .btn-edit-jalon (édition)
+    // - .jalon-type-card (sélection de type)
+    // - #btn-save-jalon (sauvegarde)
   }
 
   /**
@@ -156,6 +127,11 @@ export class JalonManager {
    * @param {object} jalon - Jalon à éditer (null pour nouveau)
    */
   openJalonModal(jalon = null) {
+    if (!this.ensureModalReady()) {
+      this.logger.error('Modale de jalon non initialisée');
+      return;
+    }
+
     const modalTitle = document.getElementById('jalon-modal-title');
     
     if (jalon) {
@@ -183,7 +159,12 @@ export class JalonManager {
     });
 
     // Sélectionner la carte cliquée
-    document.querySelector(`[data-type="${type}"]`).classList.add('selected');
+    const typeCard = document.querySelector(`[data-type="${type}"]`);
+    if (typeCard) {
+      typeCard.classList.add('selected');
+    } else {
+      this.logger.warn(`Carte de type ${type} non trouvée`);
+    }
 
     // Masquer tous les champs conditionnels
     document.querySelectorAll('.jalon-conditional-fields').forEach(fields => {
@@ -471,9 +452,9 @@ export class JalonManager {
     const emptyState = document.getElementById('jalons-empty');
     const countBadge = document.getElementById('jalons-count');
 
-    // Vérifier que les éléments existent
+    // Vérifier que les éléments existent (normal si la modale n'est pas ouverte)
     if (!timeline || !countBadge) {
-      this.logger.warn('Éléments DOM jalons non trouvés');
+      this.logger.debug('Éléments DOM jalons non trouvés - modale probablement fermée');
       return;
     }
 
@@ -630,15 +611,10 @@ export class JalonManager {
    * Lie les événements aux éléments des jalons
    */
   bindJalonEvents() {
-    // Changement de statut
-    document.querySelectorAll('.jalon-status-select').forEach(select => {
-      select.addEventListener('change', (e) => {
-        const jalonId = e.target.dataset.jalonId;
-        this.updateJalonStatus(jalonId, e.target.value);
-      });
-    });
+    // NOTE: Changement de statut géré par EventCentralizer.js via délégation
+    // (.jalon-status-select change event)
 
-    // Les boutons d'édition et de suppression sont gérés par délégation dans setupEventListeners()
+    // Les boutons d'édition et de suppression sont gérés par délégation dans EventCentralizer
   }
 
   /**
