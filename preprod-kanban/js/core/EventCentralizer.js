@@ -197,7 +197,7 @@ export class EventCentralizer {
     }, 'jalon');
 
     // === FILTRES ===
-    safeOn('#task-search', 'input', (e) => {
+    safeOn('#search-input', 'input', (e) => {
       const filterManager = this.managers.get('filter');
       if (!filterManager) return;
 
