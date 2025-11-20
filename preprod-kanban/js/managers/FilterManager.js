@@ -93,7 +93,7 @@ export class FilterManager {
   setupEventListeners() {
     // NOTE: TOUS les événements utilisateur des filtres sont gérés de manière centralisée
     // par EventCentralizer.js via jQuery/safeOn :
-    // - #task-search (input - recherche textuelle)
+    // - #search-input (input - recherche textuelle)
     // - #filter-bureau (change)
     // - #filter-qui (change)
     // - #filter-projet (change)
