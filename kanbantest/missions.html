@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Gestion des Missions</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/kanban-base.css">
+  <link rel="stylesheet" href="css/kanban-modal.css">
+
+  <style>
+    .mission-card {
+      border-left: 4px solid #3498db;
+      transition: all 0.3s;
+    }
+
+    .mission-card:hover {
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      transform: translateY(-2px);
+    }
+
+    .mission-card.priority-Critique {
+      border-left-color: #e74c3c;
+    }
+
+    .mission-card.priority-Haute {
+      border-left-color: #f39c12;
+    }
+
+    .mission-card.priority-Moyenne {
+      border-left-color: #3498db;
+    }
+
+    .mission-card.priority-Basse {
+      border-left-color: #95a5a6;
+    }
+
+    .sous-action-item {
+      border-left: 3px solid #ecf0f1;
+      padding-left: 12px;
+      margin-left: 8px;
+    }
+
+    .badge-categorie {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+    }
+
+    .badge-MCO {
+      background-color: #3498db;
+      color: white;
+    }
+
+    .badge-Projet {
+      background-color: #2ecc71;
+      color: white;
+    }
+
+    .badge-Imprévisible {
+      background-color: #e67e22;
+      color: white;
+    }
+
+    .stats-box {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .stats-item {
+      text-align: center;
+    }
+
+    .stats-number {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #95a5a6;
+    }
+
+    .empty-state i {
+      font-size: 4rem;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body class="bg-light">
+  <div class="view_data_pane_container flexvbox viewsection_type_custom">
+    <div class="container-fluid kanban-page px-3 px-lg-4">
+
+      <!-- Header -->
+      <div class="kanban-header">
+        <div class="container-fluid">
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <div class="flex-grow-1">
+              <h1 class="h3 mb-0 d-flex align-items-center">
+                <i class="bi bi-diagram-3 me-2"></i>
+                Gestion des Missions
+              </h1>
+            </div>
+            <div class="d-flex gap-2">
+              <a href="index.html" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-kanban me-1"></i>Kanban
+              </a>
+              <a href="stats.html" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-graph-up me-1"></i>Stats
+              </a>
+              <button type="button" class="btn btn-primary btn-sm" id="btn-nouvelle-mission">
+                <i class="bi bi-plus-lg me-1"></i>Nouvelle Mission
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats rapides -->
+      <div class="container-fluid mt-3">
+        <div class="stats-box">
+          <div class="row">
+            <div class="col-md-3 stats-item">
+              <div class="stats-number" id="stat-missions-total">0</div>
+              <div class="stats-label">Missions actives</div>
+            </div>
+            <div class="col-md-3 stats-item">
+              <div class="stats-number" id="stat-taches-total">0</div>
+              <div class="stats-label">Tâches total</div>
+            </div>
+            <div class="col-md-3 stats-item">
+              <div class="stats-number" id="stat-taches-non-classifiees">0</div>
+              <div class="stats-label text-warning">Non classifiées</div>
+            </div>
+            <div class="col-md-3 stats-item">
+              <div class="stats-number" id="stat-missions-en-retard">0</div>
+              <div class="stats-label text-danger">En retard</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filtres et vue -->
+      <div class="container-fluid">
+        <div class="card shadow-sm mb-3">
+          <div class="card-body">
+            <div class="row g-2 align-items-center">
+              <div class="col-md-3">
+                <input type="text" class="form-control" id="search-missions" placeholder="Rechercher missions...">
+              </div>
+              <div class="col-md-2">
+                <select class="form-select" id="filter-priorite">
+                  <option value="">Toutes priorités</option>
+                  <option value="Critique">Critique</option>
+                  <option value="Haute">Haute</option>
+                  <option value="Moyenne">Moyenne</option>
+                  <option value="Basse">Basse</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <select class="form-select" id="filter-categorie">
+                  <option value="">Toutes catégories</option>
+                  <option value="MCO">MCO</option>
+                  <option value="Projet">Projet</option>
+                  <option value="Imprévisible">Imprévisible</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <select class="form-select" id="vue-mode">
+                  <option value="missions">Vue Missions</option>
+                  <option value="categories">Vue Catégories</option>
+                  <option value="non-classifiees">Tâches non classifiées</option>
+                </select>
+              </div>
+              <div class="col-md-3 text-end">
+                <button class="btn btn-outline-secondary btn-sm" id="btn-refresh">
+                  <i class="bi bi-arrow-clockwise"></i> Actualiser
+                </button>
+                <button class="btn btn-outline-primary btn-sm" id="btn-export">
+                  <i class="bi bi-download"></i> Exporter
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contenu principal -->
+      <div class="container-fluid">
+        <!-- Loading -->
+        <div id="loading-missions" class="text-center py-5" style="display: none;">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Chargement...</span>
+          </div>
+          <p class="mt-2 text-muted">Chargement des missions...</p>
+        </div>
+
+        <!-- Empty state -->
+        <div id="empty-state" class="empty-state" style="display: none;">
+          <i class="bi bi-inbox"></i>
+          <h3>Aucune mission</h3>
+          <p>Commencez par créer votre première mission pour organiser vos tâches.</p>
+          <button class="btn btn-primary" id="btn-create-first-mission">
+            <i class="bi bi-plus-lg me-1"></i>Créer ma première mission
+          </button>
+        </div>
+
+        <!-- Liste des missions -->
+        <div id="missions-container" class="row g-3">
+          <!-- Les missions seront injectées ici par JS -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Modal: Nouvelle Mission -->
+  <div class="modal fade" id="modal-mission" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-diagram-3 me-2"></i>
+            <span id="modal-mission-title">Nouvelle Mission</span>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="form-mission">
+            <div class="row g-3">
+
+              <!-- Code Mission -->
+              <div class="col-md-4">
+                <label for="mission-code" class="form-label">
+                  Code Mission <span class="text-danger">*</span>
+                </label>
+                <input type="text" class="form-control" id="mission-code"
+                       placeholder="MIS-2025-001" required>
+                <small class="text-muted">Ex: MIS-2025-001</small>
+              </div>
+
+              <!-- Priorité -->
+              <div class="col-md-4">
+                <label for="mission-priorite" class="form-label">Priorité</label>
+                <select class="form-select" id="mission-priorite">
+                  <option value="Moyenne">Moyenne</option>
+                  <option value="Haute">Haute</option>
+                  <option value="Critique">Critique</option>
+                  <option value="Basse">Basse</option>
+                </select>
+              </div>
+
+              <!-- Bureau -->
+              <div class="col-md-4">
+                <label for="mission-bureau" class="form-label">Bureau</label>
+                <select class="form-select" id="mission-bureau">
+                  <option value="">Sélectionner...</option>
+                  <option value="Infrastructure">Infrastructure</option>
+                  <option value="Sécurité">Sécurité</option>
+                  <option value="Support">Support</option>
+                  <option value="Développement">Développement</option>
+                </select>
+              </div>
+
+              <!-- Nom Mission -->
+              <div class="col-12">
+                <label for="mission-nom" class="form-label">
+                  Nom de la mission <span class="text-danger">*</span>
+                </label>
+                <input type="text" class="form-control" id="mission-nom"
+                       placeholder="Ex: Migration cloud Azure" required>
+              </div>
+
+              <!-- Responsable -->
+              <div class="col-md-6">
+                <label for="mission-responsable" class="form-label">Responsable</label>
+                <input type="text" class="form-control" id="mission-responsable"
+                       placeholder="Nom du responsable">
+              </div>
+
+              <!-- Dates -->
+              <div class="col-md-3">
+                <label for="mission-date-debut" class="form-label">Date début</label>
+                <input type="date" class="form-control" id="mission-date-debut">
+              </div>
+
+              <div class="col-md-3">
+                <label for="mission-date-fin" class="form-label">Date fin</label>
+                <input type="date" class="form-control" id="mission-date-fin">
+              </div>
+
+            </div>
+
+            <!-- Section Sous-actions -->
+            <hr class="my-4">
+            <h6 class="mb-3">
+              <i class="bi bi-list-task me-2"></i>
+              Sous-actions initiales (optionnel)
+            </h6>
+            <div id="sous-actions-container">
+              <!-- Sous-actions seront ajoutées ici -->
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="btn-add-sous-action">
+              <i class="bi bi-plus-circle me-1"></i>Ajouter une sous-action
+            </button>
+
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="btn-save-mission">
+            <i class="bi bi-save me-1"></i>Enregistrer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Template: Carte Mission -->
+  <template id="template-mission-card">
+    <div class="col-12 mission-card-wrapper">
+      <div class="card shadow-sm mission-card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+              <h5 class="card-title mb-1">
+                <span class="badge bg-secondary me-2 mission-code">CODE</span>
+                <span class="mission-nom">Nom de la mission</span>
+              </h5>
+              <div class="text-muted small mission-responsable">
+                <i class="bi bi-person me-1"></i>Responsable
+              </div>
+            </div>
+            <div class="text-end">
+              <span class="badge mission-priorite">Priorité</span>
+            </div>
+          </div>
+
+          <div class="mission-meta small text-muted mb-3">
+            <span class="me-3">
+              <i class="bi bi-building me-1"></i>
+              <span class="mission-bureau">Bureau</span>
+            </span>
+            <span class="me-3">
+              <i class="bi bi-calendar me-1"></i>
+              <span class="mission-dates">Dates</span>
+            </span>
+          </div>
+
+          <div class="sous-actions-list mb-3">
+            <!-- Sous-actions -->
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="task-stats">
+              <span class="badge bg-info me-2">
+                <i class="bi bi-list-check me-1"></i>
+                <span class="tasks-count">0</span> tâches
+              </span>
+              <span class="badge bg-success">
+                <i class="bi bi-check-circle me-1"></i>
+                <span class="tasks-completed">0</span> terminées
+              </span>
+            </div>
+            <div class="btn-group btn-group-sm">
+              <button class="btn btn-outline-primary btn-voir-taches" title="Voir tâches">
+                <i class="bi bi-kanban"></i>
+              </button>
+              <button class="btn btn-outline-secondary btn-edit-mission" title="Modifier">
+                <i class="bi bi-pencil"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- Template: Sous-action dans carte -->
+  <template id="template-sous-action-badge">
+    <div class="sous-action-item mb-2">
+      <span class="badge badge-categorie me-2">CAT</span>
+      <span class="sous-action-nom">Nom sous-action</span>
+      <span class="badge bg-light text-dark ms-2 sous-action-code">CODE</span>
+    </div>
+  </template>
+
+  <!-- Template: Form Sous-action -->
+  <template id="template-sous-action-form">
+    <div class="card mb-2 sous-action-form">
+      <div class="card-body p-3">
+        <div class="row g-2">
+          <div class="col-md-4">
+            <input type="text" class="form-control form-control-sm sa-code"
+                   placeholder="Code (SA-001)">
+          </div>
+          <div class="col-md-8">
+            <input type="text" class="form-control form-control-sm sa-nom"
+                   placeholder="Nom de la sous-action">
+          </div>
+          <div class="col-md-4">
+            <select class="form-select form-select-sm sa-categorie">
+              <option value="MCO">🔧 MCO</option>
+              <option value="Projet" selected>🎯 Projet</option>
+              <option value="Imprévisible">⚡ Imprévisible</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <input type="number" class="form-control form-control-sm sa-charge"
+                   placeholder="Charge (j)" step="0.5">
+          </div>
+          <div class="col-md-4"></div>
+          <div class="col-md-1 text-end">
+            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-sa">
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- jQuery & Bootstrap -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- App JS -->
+  <script type="module" src="js/missions-app.js"></script>
+</body>
+</html>
