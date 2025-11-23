@@ -26,8 +26,8 @@ export class MissionsManager {
     try {
       this.logger.debug('Loading missions from tasks...');
 
-      // Récupérer toutes les tâches
-      const tasks = await this.grist.fetchAllTasks();
+      // Récupérer toutes les tâches depuis le cache du GristManager
+      const tasks = this.grist.currentRecords || [];
 
       // Agréger par mission
       this.missionsCache.clear();
@@ -131,7 +131,7 @@ export class MissionsManager {
    */
   async getUnclassifiedTasks() {
     try {
-      const tasks = await this.grist.fetchAllTasks();
+      const tasks = this.grist.currentRecords || [];
       return tasks.filter(task => !task.mission_code || task.mission_code === '');
     } catch (error) {
       this.logger.error('Failed to get unclassified tasks:', error);
@@ -155,7 +155,7 @@ export class MissionsManager {
       }
 
       // Vérifier si la mission existe déjà
-      const existingTasks = await this.grist.fetchAllTasks();
+      const existingTasks = this.grist.currentRecords || [];
       const missionExists = existingTasks.some(t => t.mission_code === missionData.code);
 
       if (!missionExists) {
@@ -177,7 +177,7 @@ export class MissionsManager {
           est_classifiee: true
         };
 
-        await this.grist.createTask(supportTask);
+        await this.grist.saveRecord(supportTask);
         this.logger.debug('Mission support task created');
       }
 
@@ -204,7 +204,7 @@ export class MissionsManager {
             est_classifiee: true
           };
 
-          await this.grist.createTask(saTask);
+          await this.grist.saveRecord(saTask);
           this.logger.debug('Sous-action task created:', sa.code);
         }
       }
@@ -249,7 +249,7 @@ export class MissionsManager {
         updates.sous_action_charge_estimee = sousActionData.charge_estimee || 0;
       }
 
-      await this.grist.updateTask(taskId, updates);
+      await this.grist.saveRecord(updates, taskId);
 
       // Recharger le cache
       await this.loadMissions();
@@ -286,7 +286,7 @@ export class MissionsManager {
         est_classifiee: false
       };
 
-      await this.grist.updateTask(taskId, updates);
+      await this.grist.saveRecord(updates, taskId);
 
       // Recharger le cache
       await this.loadMissions();

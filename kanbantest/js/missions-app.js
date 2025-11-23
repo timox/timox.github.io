@@ -48,8 +48,20 @@ async function initApp() {
     }
 
     // Initialiser les managers
-    gristManager = new GristManager();
-    await gristManager.init();
+    // Note: GristManager attend un kanbanManager, on lui passe null pour l'instant
+    gristManager = new GristManager(null);
+
+    // Attendre que Grist soit prêt et les données chargées
+    await new Promise((resolve) => {
+      const checkReady = () => {
+        if (gristManager.isConnected && gristManager.currentRecords.length >= 0) {
+          resolve();
+        } else {
+          setTimeout(checkReady, 100);
+        }
+      };
+      checkReady();
+    });
 
     missionsManager = new MissionsManager(gristManager);
 

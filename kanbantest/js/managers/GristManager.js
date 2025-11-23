@@ -518,10 +518,20 @@ export class GristManager {
    */
   prepareDataForGrist(recordData) {
     const gristData = {};
-    
-    // Copier les champs simples
-    const simpleFields = ['titre', 'description', 'statut', 'projet', 'urgence', 'impact', 'notes'];
-    
+
+    // Copier les champs simples (existants + nouveaux champs missions)
+    const simpleFields = [
+      'titre', 'description', 'statut', 'projet', 'urgence', 'impact', 'notes',
+      // Champs missions
+      'mission_code', 'mission_nom', 'mission_responsable', 'mission_bureau',
+      'mission_priorite', 'mission_date_debut', 'mission_date_fin',
+      // Champs sous-actions
+      'sous_action_code', 'sous_action_nom', 'categorie',
+      'sous_action_charge_estimee', 'sous_action_charge_reelle',
+      // Meta
+      'est_classifiee'
+    ];
+
     simpleFields.forEach(field => {
       if (recordData.hasOwnProperty(field)) {
         gristData[field] = recordData[field] || null;
