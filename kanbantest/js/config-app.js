@@ -2,6 +2,7 @@
 // Application pour la gestion des paramètres et constantes
 
 import { initConfigManager, getConfigManager } from './managers/ConfigManager.js';
+import { GristManager } from './managers/GristManager.js';
 
 /**
  * Application de configuration
@@ -9,6 +10,7 @@ import { initConfigManager, getConfigManager } from './managers/ConfigManager.js
 class ConfigApp {
   constructor() {
     this.configManager = null;
+    this.gristManager = null;
     this.currentTab = 'personnes';
   }
 
@@ -21,12 +23,35 @@ class ConfigApp {
     // Initialiser le ConfigManager
     this.configManager = initConfigManager();
 
+    // Initialiser le GristManager pour vérifier les usages
+    this.gristManager = new GristManager(null);
+
+    // Attendre que Grist soit prêt
+    await this.waitForGrist();
+
     // Charger l'interface
     this.setupEventListeners();
     this.loadAllData();
     this.updateStats();
 
     console.log('✅ ConfigApp: Ready');
+  }
+
+  /**
+   * Attend que Grist soit prêt
+   */
+  async waitForGrist() {
+    return new Promise((resolve) => {
+      const checkReady = () => {
+        if (this.gristManager.isConnected && this.gristManager.currentRecords.length >= 0) {
+          console.log('✅ Grist ready:', this.gristManager.currentRecords.length, 'tâches');
+          resolve();
+        } else {
+          setTimeout(checkReady, 100);
+        }
+      };
+      checkReady();
+    });
   }
 
   /**
@@ -144,8 +169,21 @@ class ConfigApp {
     }
   }
 
-  handleDeletePersonne(id) {
-    if (confirm('Supprimer cette personne ?')) {
+  async handleDeletePersonne(id) {
+    // Trouver le nom de la personne
+    const personnes = this.configManager.getPersonnes();
+    const personne = personnes.find(p => p.id === id);
+    if (!personne) return;
+
+    // Vérifier l'usage dans Grist (champ "qui")
+    const usage = this.checkUsageInGrist('qui', personne.nom);
+
+    if (usage.count > 0) {
+      await this.showImpactModal('Personne', personne.nom, usage);
+      return;
+    }
+
+    if (confirm(`Supprimer la personne "${personne.nom}" ?`)) {
       this.configManager.deletePersonne(id);
       this.renderPersonnes();
       this.updateStats();
@@ -196,7 +234,15 @@ class ConfigApp {
     }
   }
 
-  handleDeleteBureau(nom) {
+  async handleDeleteBureau(nom) {
+    // Vérifier l'usage dans Grist
+    const usage = this.checkUsageInGrist('bureau', nom);
+
+    if (usage.count > 0) {
+      await this.showImpactModal('Bureau', nom, usage);
+      return;
+    }
+
     if (confirm(`Supprimer le bureau "${nom}" ?`)) {
       this.configManager.deleteBureau(nom);
       this.renderBureaux();
@@ -208,6 +254,11 @@ class ConfigApp {
   renderBureaux() {
     const bureaux = this.configManager.getBureaux();
     this.renderSimpleList('#list-bureaux', bureaux, 'btn-delete-bureau', 'bureau');
+
+    // Mettre à jour le select dans le formulaire personne
+    const $select = $('#input-personne-bureau');
+    $select.html('<option value="">Bureau...</option>' +
+      bureaux.map(b => `<option value="${this.escapeHtml(b)}">${this.escapeHtml(b)}</option>`).join(''));
   }
 
   // === SERVICES ===
@@ -226,7 +277,15 @@ class ConfigApp {
     }
   }
 
-  handleDeleteService(nom) {
+  async handleDeleteService(nom) {
+    // Vérifier l'usage dans Grist
+    const usage = this.checkUsageInGrist('service', nom);
+
+    if (usage.count > 0) {
+      await this.showImpactModal('Service', nom, usage);
+      return;
+    }
+
     if (confirm(`Supprimer le service "${nom}" ?`)) {
       this.configManager.deleteService(nom);
       this.renderServices();
@@ -256,7 +315,15 @@ class ConfigApp {
     }
   }
 
-  handleDeleteGroupement(nom) {
+  async handleDeleteGroupement(nom) {
+    // Vérifier l'usage dans Grist
+    const usage = this.checkUsageInGrist('groupement', nom);
+
+    if (usage.count > 0) {
+      await this.showImpactModal('Groupement', nom, usage);
+      return;
+    }
+
     if (confirm(`Supprimer le groupement "${nom}" ?`)) {
       this.configManager.deleteGroupement(nom);
       this.renderGroupements();
@@ -288,12 +355,20 @@ class ConfigApp {
     }
   }
 
-  handleDeleteStrategie(id) {
-    if (confirm('Supprimer cette stratégie ?')) {
+  async handleDeleteStrategie(id) {
+    // Les stratégies sont dans une table séparée dans Grist
+    // On ne peut pas facilement vérifier l'usage direct
+    // Mais on peut vérifier si le code de la stratégie est utilisé
+
+    const strategies = this.configManager.getStrategies();
+    const strategie = strategies.find(s => s.id === id);
+    if (!strategie) return;
+
+    if (confirm(`⚠️ Supprimer la stratégie "${strategie.code}" ?\n\nNote: Cette suppression n'affecte que l'auto-complétion.\nLes stratégies existantes dans Grist restent inchangées.`)) {
       this.configManager.deleteStrategie(id);
       this.renderStrategies();
       this.updateStats();
-      this.showSuccess('Stratégie supprimée');
+      this.showSuccess('Stratégie supprimée de la configuration');
     }
   }
 
@@ -340,7 +415,15 @@ class ConfigApp {
     }
   }
 
-  handleDeleteProjet(nom) {
+  async handleDeleteProjet(nom) {
+    // Vérifier l'usage dans Grist
+    const usage = this.checkUsageInGrist('projet', nom);
+
+    if (usage.count > 0) {
+      await this.showImpactModal('Projet', nom, usage);
+      return;
+    }
+
     if (confirm(`Supprimer le projet "${nom}" ?`)) {
       this.configManager.deleteProjet(nom);
       this.renderProjets();
@@ -369,6 +452,103 @@ class ConfigApp {
   renderImpacts() {
     const impacts = this.configManager.getImpacts();
     this.renderReadOnlyList('#list-impacts', impacts);
+  }
+
+  // === VÉRIFICATION D'USAGE ===
+
+  /**
+   * Vérifie l'usage d'une valeur dans les tâches Grist
+   * @param {string} field - Champ à vérifier (bureau, service, projet, qui)
+   * @param {string} value - Valeur à rechercher
+   * @returns {Object} {count, tasks}
+   */
+  checkUsageInGrist(field, value) {
+    const tasks = this.gristManager.currentRecords || [];
+    const impactedTasks = tasks.filter(task => task[field] === value);
+
+    return {
+      count: impactedTasks.length,
+      tasks: impactedTasks.slice(0, 10), // Limiter à 10 pour l'affichage
+      totalCount: impactedTasks.length
+    };
+  }
+
+  /**
+   * Affiche un modal avec l'impact de la suppression
+   * @param {string} type - Type d'élément (Bureau, Service, etc.)
+   * @param {string} value - Valeur à supprimer
+   * @param {Object} usage - Résultat de checkUsageInGrist
+   */
+  async showImpactModal(type, value, usage) {
+    const modalHtml = `
+      <div class="modal fade" id="modal-impact" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header bg-warning">
+              <h5 class="modal-title">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                Suppression impossible
+              </h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div class="alert alert-warning">
+                <strong>${type} "${this.escapeHtml(value)}"</strong> est utilisé par <strong>${usage.count} tâche(s)</strong> dans Grist.
+              </div>
+
+              <p class="mb-3">
+                Vous devez d'abord modifier ou supprimer ces tâches avant de pouvoir supprimer ce ${type.toLowerCase()}.
+              </p>
+
+              <h6 class="mb-2">Tâches impactées ${usage.totalCount > 10 ? `(10 premières sur ${usage.totalCount})` : ''}:</h6>
+              <div class="list-group">
+                ${usage.tasks.map(task => `
+                  <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-start">
+                      <div>
+                        <strong>${this.escapeHtml(task.titre || 'Sans titre')}</strong>
+                        <div class="small text-muted">
+                          <span class="badge bg-secondary">${this.escapeHtml(task.statut || 'N/A')}</span>
+                          ${task.qui ? `<span class="ms-2"><i class="bi bi-person"></i> ${this.escapeHtml(task.qui)}</span>` : ''}
+                          ${task.projet ? `<span class="ms-2"><i class="bi bi-folder"></i> ${this.escapeHtml(task.projet)}</span>` : ''}
+                        </div>
+                      </div>
+                      <span class="badge bg-light text-dark">#${task.id}</span>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+
+              ${usage.totalCount > 10 ? `
+                <div class="alert alert-info mt-3">
+                  <i class="bi bi-info-circle me-2"></i>
+                  ${usage.totalCount - 10} autre(s) tâche(s) utilisent également ce ${type.toLowerCase()}.
+                </div>
+              ` : ''}
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+              <a href="index.html" class="btn btn-primary">
+                <i class="bi bi-kanban me-1"></i>Aller au Kanban
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Supprimer le modal existant si présent
+    $('#modal-impact').remove();
+
+    // Ajouter et afficher le nouveau modal
+    $('body').append(modalHtml);
+    const modal = new bootstrap.Modal($('#modal-impact')[0]);
+    modal.show();
+
+    // Nettoyer après fermeture
+    $('#modal-impact').on('hidden.bs.modal', () => {
+      $('#modal-impact').remove();
+    });
   }
 
   // === HELPERS ===
