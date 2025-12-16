@@ -86,6 +86,26 @@ class Ssir_principale_task:
   id_task = grist.Int()
   jalons = grist.Text()
 
+  # === COLONNES MISSIONS (ajoutées Nov 2025) ===
+  # Mission (7 colonnes)
+  mission_code = grist.Text()              # Code unique ex: MIS-2025-001
+  mission_nom = grist.Text()               # Nom descriptif de la mission
+  mission_responsable = grist.Text()       # Responsable de la mission
+  mission_bureau = grist.Choice()          # Bureau/équipe
+  mission_priorite = grist.Choice()        # Critique, Haute, Moyenne, Basse
+  mission_date_debut = grist.Date()        # Date de début
+  mission_date_fin = grist.Date()          # Date de fin
+
+  # Sous-action (5 colonnes)
+  sous_action_code = grist.Text()          # Code ex: SA-001
+  sous_action_nom = grist.Text()           # Nom de la sous-action
+  categorie = grist.Choice()               # MCO, Projet, Imprévisible
+  sous_action_charge_estimee = grist.Numeric()  # Charge estimée (jours)
+  sous_action_charge_reelle = grist.Numeric()   # Charge réelle (jours)
+
+  # Meta (1 colonne)
+  est_classifiee = grist.Bool()            # Tâche rattachée à une mission?
+
 
 ```
 
