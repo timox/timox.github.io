@@ -54,7 +54,9 @@ export const OPTIONAL_COLUMNS = [
   // Colonnes de prod actives
   'type_tache_id', 'priorite', 'historique_statuts', 'datenow',
   'str_statut', 'str_urgence', 'str_qui', 'str_bureau', 'str_impact',
-  'date_creation', 'date_modif', 'Créé par'
+  'date_creation', 'date_modif', 'Créé par',
+  // Colonnes temps et liaisons (Dec 2025)
+  'temps_estime_heures', 'temps_reel_heures', 'tache_liens'
 ];
 
 // === CONSTANTES DE L'INTERFACE ===
@@ -447,7 +449,212 @@ export const LOG_CONFIG = {
   }
 };
 
+// === TYPES DE TACHES ===
+// Nomenclature explicite des types de tâches avec catégories
+export const TASK_TYPES = {
+  // === PRODUCTION DOCUMENTAIRE ===
+  DOC: {
+    code: 'DOC',
+    nom: 'Documentation',
+    description: 'Rédaction, mise à jour de documentation technique ou fonctionnelle',
+    categorie: 'production',
+    couleur: '#3b82f6', // blue
+    icone: 'bi-file-earmark-text'
+  },
+  ANA: {
+    code: 'ANA',
+    nom: 'Analyse',
+    description: 'Analyse de besoins, de problèmes, études préalables',
+    categorie: 'production',
+    couleur: '#8b5cf6', // violet
+    icone: 'bi-graph-up'
+  },
+  CON: {
+    code: 'CON',
+    nom: 'Conception',
+    description: 'Conception technique ou fonctionnelle, architecture',
+    categorie: 'production',
+    couleur: '#6366f1', // indigo
+    icone: 'bi-lightbulb'
+  },
+  RCH: {
+    code: 'RCH',
+    nom: 'Recherche',
+    description: 'Recherche de solutions, investigation, POC',
+    categorie: 'production',
+    couleur: '#a855f7', // purple
+    icone: 'bi-search'
+  },
+
+  // === QUALITE / VERIFICATION ===
+  VAL: {
+    code: 'VAL',
+    nom: 'Validation',
+    description: 'Validation fonctionnelle, recette, approbation',
+    categorie: 'qualite',
+    couleur: '#22c55e', // green
+    icone: 'bi-check-circle'
+  },
+  TST: {
+    code: 'TST',
+    nom: 'Test',
+    description: 'Tests techniques, tests unitaires, tests d\'intégration',
+    categorie: 'qualite',
+    couleur: '#10b981', // emerald
+    icone: 'bi-bug'
+  },
+  VER: {
+    code: 'VER',
+    nom: 'Vérification',
+    description: 'Contrôle de conformité, audit interne, vérification',
+    categorie: 'qualite',
+    couleur: '#14b8a6', // teal
+    icone: 'bi-clipboard-check'
+  },
+  COR: {
+    code: 'COR',
+    nom: 'Correction',
+    description: 'Correction de bugs, résolution d\'anomalies',
+    categorie: 'qualite',
+    couleur: '#ef4444', // red
+    icone: 'bi-wrench'
+  },
+
+  // === OPERATIONNEL ===
+  INV: {
+    code: 'INV',
+    nom: 'Inventaire',
+    description: 'Inventaire matériel, logiciel, recensement',
+    categorie: 'operationnel',
+    couleur: '#f59e0b', // amber
+    icone: 'bi-box-seam'
+  },
+  PRE: {
+    code: 'PRE',
+    nom: 'Préparation matériel',
+    description: 'Préparation, configuration de matériel',
+    categorie: 'operationnel',
+    couleur: '#f97316', // orange
+    icone: 'bi-tools'
+  },
+  ADM: {
+    code: 'ADM',
+    nom: 'Administration',
+    description: 'Tâches administratives, gestion documentaire',
+    categorie: 'operationnel',
+    couleur: '#64748b', // slate
+    icone: 'bi-folder2'
+  },
+  SEC: {
+    code: 'SEC',
+    nom: 'Sécurisation',
+    description: 'Actions de sécurisation, durcissement, mise en conformité sécurité',
+    categorie: 'operationnel',
+    couleur: '#dc2626', // red-600
+    icone: 'bi-shield-lock'
+  },
+
+  // === COLLABORATION ===
+  REU: {
+    code: 'REU',
+    nom: 'Réunion',
+    description: 'Réunion, point d\'équipe, comité, atelier',
+    categorie: 'collaboration',
+    couleur: '#0ea5e9', // sky
+    icone: 'bi-people'
+  },
+  PST: {
+    code: 'PST',
+    nom: 'Prestation',
+    description: 'Intervention prestataire, support externe',
+    categorie: 'collaboration',
+    couleur: '#06b6d4', // cyan
+    icone: 'bi-person-badge'
+  },
+
+  // === SUIVI / VEILLE ===
+  SUI: {
+    code: 'SUI',
+    nom: 'Suivi',
+    description: 'Suivi de projet, suivi d\'indicateurs, reporting',
+    categorie: 'suivi',
+    couleur: '#eab308', // yellow
+    icone: 'bi-bar-chart'
+  },
+  VEI: {
+    code: 'VEI',
+    nom: 'Veille',
+    description: 'Veille technologique, veille sécurité, surveillance',
+    categorie: 'suivi',
+    couleur: '#84cc16', // lime
+    icone: 'bi-eye'
+  }
+};
+
+// Catégories de types de tâches
+export const TASK_TYPE_CATEGORIES = {
+  production: { nom: 'Production', couleur: '#6366f1', icone: 'bi-gear' },
+  qualite: { nom: 'Qualité', couleur: '#22c55e', icone: 'bi-check2-all' },
+  operationnel: { nom: 'Opérationnel', couleur: '#f59e0b', icone: 'bi-wrench-adjustable' },
+  collaboration: { nom: 'Collaboration', couleur: '#0ea5e9', icone: 'bi-people-fill' },
+  suivi: { nom: 'Suivi & Veille', couleur: '#eab308', icone: 'bi-binoculars' }
+};
+
+// Types de liaisons entre tâches
+export const TASK_LINK_TYPES = {
+  DEPENDS_ON: {
+    code: 'DEPENDS_ON',
+    nom: 'Dépend de',
+    nomInverse: 'Bloque',
+    description: 'Cette tâche dépend de la complétion d\'une autre',
+    couleur: '#ef4444',
+    style: 'solid'
+  },
+  BLOCKS: {
+    code: 'BLOCKS',
+    nom: 'Bloque',
+    nomInverse: 'Dépend de',
+    description: 'Cette tâche bloque une autre tâche',
+    couleur: '#f97316',
+    style: 'solid'
+  },
+  RELATED_TO: {
+    code: 'RELATED_TO',
+    nom: 'Liée à',
+    nomInverse: 'Liée à',
+    description: 'Tâches liées sans dépendance',
+    couleur: '#3b82f6',
+    style: 'dashed'
+  },
+  SUBTASK_OF: {
+    code: 'SUBTASK_OF',
+    nom: 'Sous-tâche de',
+    nomInverse: 'Parent de',
+    description: 'Relation hiérarchique parent/enfant',
+    couleur: '#8b5cf6',
+    style: 'solid'
+  },
+  DUPLICATES: {
+    code: 'DUPLICATES',
+    nom: 'Duplique',
+    nomInverse: 'Dupliquée par',
+    description: 'Tâche en doublon',
+    couleur: '#64748b',
+    style: 'dotted'
+  }
+};
+
+// Utilitaires pour les types de tâches
+export const getTaskType = (code) => TASK_TYPES[code] || null;
+export const getTaskTypesByCategory = (categorie) =>
+  Object.values(TASK_TYPES).filter(t => t.categorie === categorie);
+export const getAllTaskTypes = () => Object.values(TASK_TYPES);
+export const getTaskTypesList = () => Object.keys(TASK_TYPES);
+export const getLinkType = (code) => TASK_LINK_TYPES[code] || null;
+
 // === VALIDATION ===
 export const isValidStatut = (statut) => STATUTS.some(s => s.id === statut);
 export const isValidPriority = (priority) => Object.values(PRIORITY_LEVELS).includes(priority);
 export const isValidViewMode = (mode) => Object.values(VIEW_MODES).includes(mode);
+export const isValidTaskType = (code) => code in TASK_TYPES;
+export const isValidLinkType = (code) => code in TASK_LINK_TYPES;

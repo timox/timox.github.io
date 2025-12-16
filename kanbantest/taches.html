@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestion des Tâches - Kanban SSIR</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+
+  <!-- Vis.js Network CSS -->
+  <link href="https://unpkg.com/vis-network@latest/styles/vis-network.min.css" rel="stylesheet" type="text/css" />
+
+  <!-- CSS Kanban -->
+  <link href="css/kanban-responsive.css" rel="stylesheet">
+
+  <style>
+    /* === VARIABLES === */
+    :root {
+      --color-production: #6366f1;
+      --color-qualite: #22c55e;
+      --color-operationnel: #f59e0b;
+      --color-collaboration: #0ea5e9;
+      --color-suivi: #eab308;
+    }
+
+    /* === LAYOUT === */
+    .main-container {
+      display: grid;
+      grid-template-columns: 350px 1fr;
+      gap: 1rem;
+      height: calc(100vh - 70px);
+      padding: 1rem;
+    }
+
+    @media (max-width: 992px) {
+      .main-container {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+    }
+
+    /* === SIDEBAR === */
+    .sidebar {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      overflow-y: auto;
+      max-height: calc(100vh - 90px);
+    }
+
+    .sidebar-header {
+      position: sticky;
+      top: 0;
+      background: white;
+      padding: 1rem;
+      border-bottom: 1px solid #e5e7eb;
+      z-index: 10;
+    }
+
+    /* === GRAPH CONTAINER === */
+    .graph-container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .graph-header {
+      padding: 1rem;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    #task-graph {
+      flex: 1;
+      min-height: 500px;
+    }
+
+    /* === TASK TYPE BADGE === */
+    .task-type-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: white;
+    }
+
+    .task-type-badge.production { background-color: var(--color-production); }
+    .task-type-badge.qualite { background-color: var(--color-qualite); }
+    .task-type-badge.operationnel { background-color: var(--color-operationnel); }
+    .task-type-badge.collaboration { background-color: var(--color-collaboration); }
+    .task-type-badge.suivi { background-color: var(--color-suivi); }
+
+    /* === TASK CARD === */
+    .task-card {
+      padding: 0.75rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .task-card:hover {
+      border-color: #3b82f6;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+    }
+
+    .task-card.selected {
+      border-color: #3b82f6;
+      background-color: #eff6ff;
+    }
+
+    .task-card-title {
+      font-weight: 500;
+      font-size: 0.9rem;
+      margin-bottom: 0.25rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .task-card-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+
+    /* === TIME INPUT === */
+    .time-input-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .time-input {
+      width: 70px;
+      text-align: center;
+    }
+
+    /* === LINK TYPE SELECTOR === */
+    .link-type-btn {
+      padding: 0.5rem 1rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .link-type-btn:hover {
+      border-color: #3b82f6;
+    }
+
+    .link-type-btn.selected {
+      border-color: #3b82f6;
+      background-color: #eff6ff;
+    }
+
+    .link-type-btn i {
+      font-size: 1.5rem;
+    }
+
+    .link-type-btn span {
+      font-size: 0.75rem;
+    }
+
+    /* === LEGEND === */
+    .legend-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      padding: 0.5rem;
+      background: #f9fafb;
+      border-radius: 8px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.75rem;
+    }
+
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    /* === STATS BAR === */
+    .stats-bar {
+      display: flex;
+      gap: 1rem;
+      padding: 0.5rem 1rem;
+      background: #f3f4f6;
+      border-radius: 8px;
+      font-size: 0.85rem;
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .stat-value {
+      font-weight: 600;
+      color: #3b82f6;
+    }
+
+    /* === MODAL ADJUSTMENTS === */
+    .modal-task-detail .modal-body {
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    .link-list-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem;
+      background: #f9fafb;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+    }
+
+    .link-list-item .link-info {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .link-arrow {
+      font-size: 1.25rem;
+      color: #6b7280;
+    }
+  </style>
+</head>
+
+<body class="bg-light">
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="index.html">
+        <i class="bi bi-arrow-left me-2"></i>
+        Retour au Kanban
+      </a>
+      <div class="d-flex gap-2">
+        <a href="missions.html" class="btn btn-outline-light btn-sm">
+          <i class="bi bi-flag me-1"></i>
+          Missions
+        </a>
+        <a href="stats.html" class="btn btn-outline-light btn-sm">
+          <i class="bi bi-graph-up me-1"></i>
+          Stats
+        </a>
+        <a href="config.html" class="btn btn-outline-light btn-sm">
+          <i class="bi bi-gear me-1"></i>
+          Config
+        </a>
+      </div>
+      <span class="navbar-text">
+        <i class="bi bi-diagram-3 me-2"></i>
+        Gestion des Tâches
+      </span>
+    </div>
+  </nav>
+
+  <div class="main-container">
+    <!-- Sidebar: Liste des tâches -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h5 class="mb-3">
+          <i class="bi bi-list-task me-2"></i>
+          Tâches
+        </h5>
+
+        <!-- Recherche -->
+        <div class="input-group mb-3">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input type="text" class="form-control" id="search-tasks" placeholder="Rechercher...">
+        </div>
+
+        <!-- Filtres -->
+        <div class="d-flex gap-2 mb-2">
+          <select class="form-select form-select-sm" id="filter-type">
+            <option value="">Tous types</option>
+          </select>
+          <select class="form-select form-select-sm" id="filter-status">
+            <option value="">Tous statuts</option>
+          </select>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-bar">
+          <div class="stat-item">
+            <i class="bi bi-check2-circle"></i>
+            <span id="stat-tasks-count" class="stat-value">0</span> tâches
+          </div>
+          <div class="stat-item">
+            <i class="bi bi-link-45deg"></i>
+            <span id="stat-links-count" class="stat-value">0</span> liaisons
+          </div>
+          <div class="stat-item">
+            <i class="bi bi-clock"></i>
+            <span id="stat-hours-total" class="stat-value">0</span>h estimées
+          </div>
+        </div>
+      </div>
+
+      <!-- Liste des tâches -->
+      <div class="p-3" id="tasks-list">
+        <div class="text-center text-muted py-4">
+          <i class="bi bi-hourglass-split fs-1"></i>
+          <p class="mt-2">Chargement des tâches...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Zone principale: Graphe -->
+    <div class="graph-container">
+      <div class="graph-header">
+        <h5 class="mb-0">
+          <i class="bi bi-diagram-2 me-2"></i>
+          Graphe des liaisons
+        </h5>
+
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-primary btn-sm" id="btn-zoom-fit" title="Ajuster la vue">
+            <i class="bi bi-arrows-fullscreen"></i>
+          </button>
+          <button class="btn btn-outline-primary btn-sm" id="btn-toggle-physics" title="Activer/désactiver physique">
+            <i class="bi bi-snow3"></i>
+          </button>
+          <div class="btn-group">
+            <button class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" id="btn-add-link">
+              <i class="bi bi-plus-lg me-1"></i>
+              Ajouter liaison
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="#" data-link-type="DEPENDS_ON">
+                <i class="bi bi-arrow-right-circle text-danger me-2"></i>Dépend de
+              </a></li>
+              <li><a class="dropdown-item" href="#" data-link-type="BLOCKS">
+                <i class="bi bi-sign-stop text-warning me-2"></i>Bloque
+              </a></li>
+              <li><a class="dropdown-item" href="#" data-link-type="RELATED_TO">
+                <i class="bi bi-link text-primary me-2"></i>Liée à
+              </a></li>
+              <li><a class="dropdown-item" href="#" data-link-type="SUBTASK_OF">
+                <i class="bi bi-box-arrow-in-down text-purple me-2"></i>Sous-tâche de
+              </a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="#" data-link-type="DUPLICATES">
+                <i class="bi bi-files text-secondary me-2"></i>Duplique
+              </a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Légende -->
+      <div class="px-3 py-2 border-bottom">
+        <div class="legend-container">
+          <div class="legend-item">
+            <div class="legend-color" style="background: #ef4444;"></div>
+            <span>Dépend de</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #f97316;"></div>
+            <span>Bloque</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #3b82f6;"></div>
+            <span>Liée à</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #8b5cf6;"></div>
+            <span>Sous-tâche</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #64748b;"></div>
+            <span>Duplique</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Graphe Vis.js -->
+      <div id="task-graph"></div>
+    </div>
+  </div>
+
+  <!-- Modal: Détail tâche -->
+  <div class="modal fade modal-task-detail" id="modal-task-detail" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-card-checklist me-2"></i>
+            Détail de la tâche
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            <!-- Info tâche -->
+            <div class="col-md-6">
+              <h6 class="text-muted mb-2">Informations</h6>
+              <div class="mb-3">
+                <label class="form-label small">Titre</label>
+                <p class="fw-medium" id="detail-title"></p>
+              </div>
+              <div class="mb-3">
+                <label class="form-label small">Type de tâche</label>
+                <div id="detail-type"></div>
+              </div>
+              <div class="row">
+                <div class="col-6">
+                  <label class="form-label small">Statut</label>
+                  <p id="detail-status"></p>
+                </div>
+                <div class="col-6">
+                  <label class="form-label small">Responsable</label>
+                  <p id="detail-responsable"></p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Temps -->
+            <div class="col-md-6">
+              <h6 class="text-muted mb-2">Volume horaire</h6>
+              <div class="row mb-3">
+                <div class="col-6">
+                  <label class="form-label small">Temps estimé (h)</label>
+                  <input type="number" class="form-control" id="detail-temps-estime" min="0" step="0.5">
+                </div>
+                <div class="col-6">
+                  <label class="form-label small">Temps réel (h)</label>
+                  <input type="number" class="form-control" id="detail-temps-reel" min="0" step="0.5">
+                </div>
+              </div>
+
+              <div class="alert alert-info py-2">
+                <small>
+                  <i class="bi bi-info-circle me-1"></i>
+                  Temps total sous-tâches: <strong id="detail-temps-total">0h</strong>
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <hr>
+
+          <!-- Liaisons -->
+          <h6 class="text-muted mb-3">
+            <i class="bi bi-link-45deg me-1"></i>
+            Liaisons (<span id="detail-links-count">0</span>)
+          </h6>
+
+          <div id="detail-links-list">
+            <p class="text-muted small">Aucune liaison</p>
+          </div>
+
+          <!-- Bouton ajouter liaison -->
+          <button class="btn btn-outline-primary btn-sm mt-2" id="btn-add-link-from-detail">
+            <i class="bi bi-plus-lg me-1"></i>
+            Ajouter une liaison
+          </button>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+          <button type="button" class="btn btn-primary" id="btn-save-task-detail">
+            <i class="bi bi-check-lg me-1"></i>
+            Enregistrer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Ajouter liaison -->
+  <div class="modal fade" id="modal-add-link" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-link-45deg me-2"></i>
+            Créer une liaison
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Tâche source</label>
+            <select class="form-select" id="link-source-task">
+              <option value="">Sélectionner...</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Type de liaison</label>
+            <div class="d-flex flex-wrap gap-2" id="link-type-selector">
+              <!-- Rempli par JS -->
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Tâche cible</label>
+            <select class="form-select" id="link-target-task">
+              <option value="">Sélectionner...</option>
+            </select>
+          </div>
+
+          <div class="alert alert-secondary py-2" id="link-preview">
+            <small class="d-flex align-items-center gap-2">
+              <span id="link-preview-source">?</span>
+              <i class="bi bi-arrow-right"></i>
+              <span id="link-preview-type" class="badge bg-secondary">?</span>
+              <i class="bi bi-arrow-right"></i>
+              <span id="link-preview-target">?</span>
+            </small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="btn-confirm-add-link">
+            <i class="bi bi-link-45deg me-1"></i>
+            Créer la liaison
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Vis.js Network -->
+  <script src="https://unpkg.com/vis-network@latest/standalone/umd/vis-network.min.js"></script>
+
+  <!-- Application -->
+  <script type="module" src="js/taches-app.js"></script>
+</body>
+</html>
