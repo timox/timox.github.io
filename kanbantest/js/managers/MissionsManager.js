@@ -164,13 +164,17 @@ export class MissionsManager {
         const bureauArray = this._toArray(missionData.bureau, ['L']);
         const quiArray = this._toArray(missionData.responsable, ['L']);
 
+        this.logger.debug('Formatted bureau:', bureauArray);
+        this.logger.debug('Formatted qui:', quiArray);
+
         const supportTask = {
           titre: `[MISSION] ${missionData.nom}`,
           description: `Mission: ${missionData.nom}\nCode: ${missionData.code}`,
           statut: 'En cours',
           qui: quiArray,
           bureau: bureauArray,
-          priorite: missionData.priorite || 'Moyenne',
+          urgence: 'Moyenne',
+          impact: 'Modéré',
           mission_code: missionData.code,
           mission_nom: missionData.nom,
           mission_responsable: missionData.responsable || '',
@@ -181,39 +185,45 @@ export class MissionsManager {
           est_classifiee: true
         };
 
-        await this.grist.saveRecord(supportTask);
-        this.logger.debug('Mission support task created');
+        this.logger.debug('Creating support task:', JSON.stringify(supportTask, null, 2));
+
+        const result = await this.grist.saveRecord(supportTask);
+        this.logger.info('Mission support task created with ID:', result?.id);
       }
 
       // Créer les sous-actions si fournies
-      // Réutiliser les tableaux formatés ou les recalculer
-      const saBureauArray = this._toArray(missionData.bureau, ['L']);
-      const saQuiArray = this._toArray(missionData.responsable, ['L']);
+      if (sousActions.length > 0) {
+        const saBureauArray = this._toArray(missionData.bureau, ['L']);
+        const saQuiArray = this._toArray(missionData.responsable, ['L']);
 
-      for (const sa of sousActions) {
-        if (sa.code && sa.nom) {
-          const saTask = {
-            titre: `[SA] ${sa.nom}`,
-            description: `Sous-action: ${sa.nom}\nCode: ${sa.code}\nCatégorie: ${sa.categorie}`,
-            statut: 'À faire',
-            qui: saQuiArray,
-            bureau: saBureauArray,
-            mission_code: missionData.code,
-            mission_nom: missionData.nom,
-            mission_responsable: missionData.responsable || '',
-            mission_bureau: missionData.bureau || '',
-            mission_priorite: missionData.priorite || 'Moyenne',
-            mission_date_debut: missionData.date_debut || null,
-            mission_date_fin: missionData.date_fin || null,
-            sous_action_code: sa.code,
-            sous_action_nom: sa.nom,
-            categorie: sa.categorie || 'Projet',
-            sous_action_charge_estimee: sa.charge || 0,
-            est_classifiee: true
-          };
+        for (const sa of sousActions) {
+          if (sa.code && sa.nom) {
+            const saTask = {
+              titre: `[SA] ${sa.nom}`,
+              description: `Sous-action: ${sa.nom}\nCode: ${sa.code}\nCatégorie: ${sa.categorie}`,
+              statut: 'À faire',
+              qui: saQuiArray,
+              bureau: saBureauArray,
+              urgence: 'Moyenne',
+              impact: 'Modéré',
+              mission_code: missionData.code,
+              mission_nom: missionData.nom,
+              mission_responsable: missionData.responsable || '',
+              mission_bureau: missionData.bureau || '',
+              mission_priorite: missionData.priorite || 'Moyenne',
+              mission_date_debut: missionData.date_debut || null,
+              mission_date_fin: missionData.date_fin || null,
+              sous_action_code: sa.code,
+              sous_action_nom: sa.nom,
+              categorie: sa.categorie || 'Projet',
+              sous_action_charge_estimee: sa.charge || 0,
+              est_classifiee: true
+            };
 
-          await this.grist.saveRecord(saTask);
-          this.logger.debug('Sous-action task created:', sa.code);
+            this.logger.debug('Creating sous-action task:', sa.code);
+            const result = await this.grist.saveRecord(saTask);
+            this.logger.info('Sous-action task created:', sa.code, 'ID:', result?.id);
+          }
         }
       }
 
@@ -450,20 +460,25 @@ export class MissionsManager {
   }
 
   /**
-   * Convertit une valeur en tableau (pour les champs ChoiceList/RefList de Grist)
+   * Convertit une valeur en tableau format Grist ChoiceList ['L', val1, val2, ...]
    * @param {*} value - Valeur à convertir
    * @param {Array} defaultValue - Valeur par défaut si null/undefined/vide
-   * @returns {Array} Tableau formaté
+   * @returns {Array} Tableau formaté pour Grist ChoiceList
    * @private
    */
   _toArray(value, defaultValue = ['L']) {
     if (!value || value === '') {
       return defaultValue;
     }
-    if (Array.isArray(value)) {
+    // Si c'est déjà au format Grist ['L', ...]
+    if (Array.isArray(value) && value[0] === 'L') {
       return value;
     }
-    // Si c'est une string, la mettre dans un tableau
-    return [value];
+    // Si c'est un tableau simple, ajouter le 'L' au début
+    if (Array.isArray(value)) {
+      return ['L', ...value];
+    }
+    // Si c'est une string, la mettre dans un tableau avec 'L'
+    return ['L', value];
   }
 }
