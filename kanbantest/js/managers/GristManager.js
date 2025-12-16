@@ -423,15 +423,30 @@ export class GristManager {
         const actionResult = await gristApi.docApi.applyUserActions([
           ['AddRecord', TABLE_ID, null, gristData]
         ]);
-        
-        if (actionResult && actionResult[0] && actionResult[0].id) {
-          const newId = actionResult[0].id;
+
+        this.logger.debug('actionResult:', actionResult);
+
+        // Grist retourne [rowId] pour AddRecord (pas {id: rowId})
+        let newId = null;
+        if (actionResult && actionResult.retValues && actionResult.retValues[0]) {
+          // Format: {retValues: [rowId]}
+          newId = actionResult.retValues[0];
+        } else if (actionResult && Array.isArray(actionResult) && typeof actionResult[0] === 'number') {
+          // Format: [rowId]
+          newId = actionResult[0];
+        } else if (actionResult && actionResult[0] && actionResult[0].id) {
+          // Format legacy: [{id: rowId}]
+          newId = actionResult[0].id;
+        }
+
+        if (newId) {
           const newRecord = { id: newId, ...gristData };
-          
+
           // Ajouter localement
           this.addLocalRecord(newRecord);
           result = newRecord;
         } else {
+          this.logger.error('Format actionResult inattendu:', actionResult);
           throw new Error('Impossible de récupérer l\'ID du nouvel enregistrement');
         }
       }
