@@ -132,13 +132,19 @@ export class GristManager {
     return new Promise((resolve, reject) => {
       try {
         const gristApi = this.getGristApi();
+
         // Éviter les appels multiples à window.grist.ready()
         if (!window._gristReadyInitialized) {
           gristApi.ready({
             requiredAccess: 'full',
             onEditOptions: () => this.handleEditOptions()
           });
+          window._gristReadyInitialized = true;
+        }
 
+        // Les callbacks sont toujours enregistrés (même si ready() a déjà été appelé)
+        // car ils sont spécifiques à cette instance de GristManager
+        if (!window._gristCallbacksInitialized) {
           gristApi.onRecords((records, mappings) => {
             this.handleRecordsUpdate(records, mappings);
           });
@@ -147,9 +153,9 @@ export class GristManager {
             this.handleOptionsUpdate(options);
           });
 
-          window._gristReadyInitialized = true;
+          window._gristCallbacksInitialized = true;
         }
-        
+
         setTimeout(resolve, 100);
       } catch (error) {
         reject(error);
