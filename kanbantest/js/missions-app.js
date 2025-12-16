@@ -25,8 +25,8 @@ async function initApp() {
   try {
     logger.debug('Initializing Missions App...');
 
-    // Initialiser Grist
-    if (typeof grist !== 'undefined') {
+    // Initialiser Grist (si non déjà initialisé)
+    if (typeof grist !== 'undefined' && !window._gristReadyInitialized) {
       grist.ready({
         requiredAccess: 'full',
         columns: [
@@ -45,6 +45,7 @@ async function initApp() {
           { name: 'est_classifiee', title: 'Classifiée', optional: true }
         ]
       });
+      window._gristReadyInitialized = true;
     }
 
     // Initialiser les managers
