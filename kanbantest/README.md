@@ -241,6 +241,54 @@ export const DEFAULT_BUREAUX = [
 ];
 ```
 
+---
+
+## 🎯 Système de Missions (Nouveau)
+
+Le système de missions permet de classifier et organiser les tâches selon une hiérarchie:
+
+```
+Stratégie → Mission → Sous-action → Tâche
+```
+
+### Pages disponibles
+
+| Page | URL | Description |
+|------|-----|-------------|
+| Kanban | `index.html` | Tableau Kanban principal |
+| **Missions** | `missions.html` | Gestion des missions et sous-actions |
+| Stats | `stats.html` | Statistiques et graphiques |
+| Config | `config.html` | Configuration (personnes, bureaux) |
+| Timeline | `timeline.html` | Vue timeline |
+| Historique | `history.html` | Historique des modifications |
+
+### Colonnes Grist requises (13 nouvelles)
+
+Pour utiliser le système de missions, ajouter ces colonnes à `Ssir_principale_task`:
+
+**Mission (7 colonnes):**
+- `mission_code` (Text) - Code unique ex: MIS-2025-001
+- `mission_nom` (Text) - Nom de la mission
+- `mission_responsable` (Text) - Responsable
+- `mission_bureau` (Choice) - Bureau/équipe
+- `mission_priorite` (Choice) - Critique, Haute, Moyenne, Basse
+- `mission_date_debut` (Date)
+- `mission_date_fin` (Date)
+
+**Sous-action (5 colonnes):**
+- `sous_action_code` (Text) - Code ex: SA-001
+- `sous_action_nom` (Text) - Nom
+- `categorie` (Choice) - MCO, Projet, Imprévisible
+- `sous_action_charge_estimee` (Numeric)
+- `sous_action_charge_reelle` (Numeric)
+
+**Meta (1 colonne):**
+- `est_classifiee` (Bool) - Tâche rattachée à une mission?
+
+> 📖 Documentation complète: [MISSIONS_ARCHITECTURE.md](MISSIONS_ARCHITECTURE.md)
+
+---
+
 ## 🎮 Utilisation
 
 ### Créer une Tâche
