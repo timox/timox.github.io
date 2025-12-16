@@ -63,7 +63,7 @@ class ConfigApp {
    */
   setupEventListeners() {
     // === PERSONNES ===
-    $('#form-personne').on('submit', (e) => {
+    $('#btn-add-personne').on('click', (e) => {
       e.preventDefault();
       this.handleAddPersonne();
     });
@@ -74,7 +74,7 @@ class ConfigApp {
     });
 
     // === BUREAUX ===
-    $('#form-bureau').on('submit', (e) => {
+    $('#btn-add-bureau').on('click', (e) => {
       e.preventDefault();
       this.handleAddBureau();
     });
@@ -85,7 +85,7 @@ class ConfigApp {
     });
 
     // === SERVICES ===
-    $('#form-service').on('submit', (e) => {
+    $('#btn-add-service').on('click', (e) => {
       e.preventDefault();
       this.handleAddService();
     });
@@ -96,7 +96,7 @@ class ConfigApp {
     });
 
     // === GROUPEMENTS ===
-    $('#form-groupement').on('submit', (e) => {
+    $('#btn-add-groupement').on('click', (e) => {
       e.preventDefault();
       this.handleAddGroupement();
     });
@@ -107,7 +107,7 @@ class ConfigApp {
     });
 
     // === STRATÉGIES ===
-    $('#form-strategie').on('submit', (e) => {
+    $('#btn-add-strategie').on('click', (e) => {
       e.preventDefault();
       this.handleAddStrategie();
     });
@@ -118,7 +118,7 @@ class ConfigApp {
     });
 
     // === PROJETS ===
-    $('#form-projet').on('submit', (e) => {
+    $('#btn-add-projet').on('click', (e) => {
       e.preventDefault();
       this.handleAddProjet();
     });
@@ -138,6 +138,40 @@ class ConfigApp {
     $('button[data-bs-toggle="pill"]').on('shown.bs.tab', (e) => {
       this.currentTab = $(e.target).data('bs-target').replace('#', '');
     });
+
+    // === ENTRÉE CLAVIER (Enter pour valider) ===
+    $('#input-personne-nom').on('keypress', (e) => {
+      if (e.which === 13) {
+        e.preventDefault();
+        this.handleAddPersonne();
+      }
+    });
+    $('#input-bureau').on('keypress', (e) => {
+      if (e.which === 13) {
+        e.preventDefault();
+        this.handleAddBureau();
+      }
+    });
+    $('#input-service').on('keypress', (e) => {
+      if (e.which === 13) {
+        e.preventDefault();
+        this.handleAddService();
+      }
+    });
+    $('#input-groupement').on('keypress', (e) => {
+      if (e.which === 13) {
+        e.preventDefault();
+        this.handleAddGroupement();
+      }
+    });
+    $('#input-projet').on('keypress', (e) => {
+      if (e.which === 13) {
+        e.preventDefault();
+        this.handleAddProjet();
+      }
+    });
+
+    console.log('ConfigApp: Event listeners configured');
   }
 
   /**
@@ -164,7 +198,10 @@ class ConfigApp {
 
     try {
       this.configManager.addPersonne({ nom, bureau, service });
-      $('#form-personne')[0].reset();
+      // Vider les champs
+      $('#input-personne-nom').val('');
+      $('#input-personne-bureau').val('');
+      $('#input-personne-service').val('');
       this.renderPersonnes();
       this.updateStats();
       this.showSuccess('Personne ajoutée');
@@ -229,7 +266,7 @@ class ConfigApp {
 
     try {
       this.configManager.addBureau(nom);
-      $('#form-bureau')[0].reset();
+      $('#input-bureau').val('');
       this.renderBureaux();
       this.updateStats();
       this.showSuccess('Bureau ajouté');
@@ -272,7 +309,7 @@ class ConfigApp {
 
     try {
       this.configManager.addService(nom);
-      $('#form-service')[0].reset();
+      $('#input-service').val('');
       this.renderServices();
       this.updateStats();
       this.showSuccess('Service ajouté');
@@ -310,7 +347,7 @@ class ConfigApp {
 
     try {
       this.configManager.addGroupement(nom);
-      $('#form-groupement')[0].reset();
+      $('#input-groupement').val('');
       this.renderGroupements();
       this.updateStats();
       this.showSuccess('Groupement ajouté');
@@ -350,7 +387,9 @@ class ConfigApp {
 
     try {
       this.configManager.addStrategie({ code, objectif, sousObjectif });
-      $('#form-strategie')[0].reset();
+      $('#input-strategie-code').val('');
+      $('#input-strategie-objectif').val('');
+      $('#input-strategie-sous-objectif').val('');
       this.renderStrategies();
       this.updateStats();
       this.showSuccess('Stratégie ajoutée');
@@ -410,7 +449,7 @@ class ConfigApp {
 
     try {
       this.configManager.addProjet(nom);
-      $('#form-projet')[0].reset();
+      $('#input-projet').val('');
       this.renderProjets();
       this.updateStats();
       this.showSuccess('Projet ajouté');
