@@ -160,12 +160,16 @@ export class MissionsManager {
 
       if (!missionExists) {
         // Créer une tâche "support" pour la mission
+        // Formater bureau et qui en tableaux (requis par Grist ChoiceList/RefList)
+        const bureauArray = this._toArray(missionData.bureau, ['L']);
+        const quiArray = this._toArray(missionData.responsable, ['L']);
+
         const supportTask = {
           titre: `[MISSION] ${missionData.nom}`,
           description: `Mission: ${missionData.nom}\nCode: ${missionData.code}`,
           statut: 'En cours',
-          qui: missionData.responsable || '',
-          bureau: missionData.bureau || '',
+          qui: quiArray,
+          bureau: bureauArray,
           priorite: missionData.priorite || 'Moyenne',
           mission_code: missionData.code,
           mission_nom: missionData.nom,
@@ -182,14 +186,18 @@ export class MissionsManager {
       }
 
       // Créer les sous-actions si fournies
+      // Réutiliser les tableaux formatés ou les recalculer
+      const saBureauArray = this._toArray(missionData.bureau, ['L']);
+      const saQuiArray = this._toArray(missionData.responsable, ['L']);
+
       for (const sa of sousActions) {
         if (sa.code && sa.nom) {
           const saTask = {
             titre: `[SA] ${sa.nom}`,
             description: `Sous-action: ${sa.nom}\nCode: ${sa.code}\nCatégorie: ${sa.categorie}`,
             statut: 'À faire',
-            qui: missionData.responsable || '',
-            bureau: missionData.bureau || '',
+            qui: saQuiArray,
+            bureau: saBureauArray,
             mission_code: missionData.code,
             mission_nom: missionData.nom,
             mission_responsable: missionData.responsable || '',
@@ -439,5 +447,23 @@ export class MissionsManager {
     this.missionsCache.clear();
     await this.loadMissions();
     this.logger.debug('Missions cache refreshed');
+  }
+
+  /**
+   * Convertit une valeur en tableau (pour les champs ChoiceList/RefList de Grist)
+   * @param {*} value - Valeur à convertir
+   * @param {Array} defaultValue - Valeur par défaut si null/undefined/vide
+   * @returns {Array} Tableau formaté
+   * @private
+   */
+  _toArray(value, defaultValue = ['L']) {
+    if (!value || value === '') {
+      return defaultValue;
+    }
+    if (Array.isArray(value)) {
+      return value;
+    }
+    // Si c'est une string, la mettre dans un tableau
+    return [value];
   }
 }
