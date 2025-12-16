@@ -379,6 +379,81 @@ export class ConfigManager {
       projets: this.config.projets.length
     };
   }
+
+  /**
+   * Synchronise la configuration depuis les données Grist existantes
+   * Extrait les valeurs uniques de bureau, qui (responsables), projet
+   * @param {Array} gristRecords - Enregistrements Grist
+   */
+  syncFromGrist(gristRecords) {
+    if (!gristRecords || !Array.isArray(gristRecords)) {
+      this.logger.warn('syncFromGrist: No records provided');
+      return;
+    }
+
+    this.logger.info(`Syncing config from ${gristRecords.length} Grist records...`);
+
+    // Extraire les bureaux uniques (excluant 'L' qui est un marqueur technique)
+    const bureauxSet = new Set(this.config.bureaux);
+    gristRecords.forEach(record => {
+      if (record.bureau && Array.isArray(record.bureau)) {
+        record.bureau.forEach(b => {
+          if (b && b !== 'L' && b.trim()) {
+            bureauxSet.add(b.trim());
+          }
+        });
+      } else if (record.bureau && typeof record.bureau === 'string' && record.bureau !== 'L') {
+        bureauxSet.add(record.bureau.trim());
+      }
+    });
+    this.config.bureaux = Array.from(bureauxSet).sort();
+
+    // Extraire les responsables uniques (champ "qui")
+    const responsablesSet = new Set(this.getPersonnesNames());
+    gristRecords.forEach(record => {
+      if (record.qui && Array.isArray(record.qui)) {
+        record.qui.forEach(q => {
+          if (q && q !== 'L' && q.trim() && q !== 'non affecté') {
+            responsablesSet.add(q.trim());
+          }
+        });
+      } else if (record.qui && typeof record.qui === 'string' && record.qui !== 'L' && record.qui !== 'non affecté') {
+        responsablesSet.add(record.qui.trim());
+      }
+    });
+    // Ajouter comme personnes si pas déjà présentes
+    responsablesSet.forEach(nom => {
+      const exists = this.config.personnes.some(p => p.nom === nom);
+      if (!exists) {
+        this.config.personnes.push({
+          id: Date.now() + Math.random(),
+          nom: nom,
+          bureau: '',
+          service: '',
+          createdAt: new Date().toISOString(),
+          source: 'grist'
+        });
+      }
+    });
+
+    // Extraire les projets uniques
+    const projetsSet = new Set(this.config.projets);
+    gristRecords.forEach(record => {
+      if (record.projet && record.projet.trim()) {
+        projetsSet.add(record.projet.trim());
+      }
+    });
+    this.config.projets = Array.from(projetsSet).sort();
+
+    // Sauvegarder
+    this.saveConfig();
+
+    this.logger.info('Config synced from Grist:', {
+      bureaux: this.config.bureaux.length,
+      personnes: this.config.personnes.length,
+      projets: this.config.projets.length
+    });
+  }
 }
 
 // Instance singleton

@@ -582,7 +582,21 @@ export class GristManager {
     if (this.availableColumns.has('date_derniere_maj')) {
       gristData.date_derniere_maj = new Date().toISOString();
     }
-    
+
+    // Filtrer les champs qui n'existent pas dans Grist (évite KeyError)
+    // Ne garder que les colonnes connues
+    if (this.availableColumns.size > 0) {
+      const filteredData = {};
+      for (const [key, value] of Object.entries(gristData)) {
+        if (this.availableColumns.has(key)) {
+          filteredData[key] = value;
+        } else {
+          this.logger.debug(`Champ ignoré (colonne inexistante): ${key}`);
+        }
+      }
+      return filteredData;
+    }
+
     return gristData;
   }
   

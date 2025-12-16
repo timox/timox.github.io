@@ -29,6 +29,10 @@ class ConfigApp {
     // Attendre que Grist soit prêt
     await this.waitForGrist();
 
+    // Synchroniser la config depuis les données Grist existantes
+    // (extrait bureaux, responsables, projets des tâches)
+    this.configManager.syncFromGrist(this.gristManager.currentRecords);
+
     // Charger l'interface
     this.setupEventListeners();
     this.loadAllData();
