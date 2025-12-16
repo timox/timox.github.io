@@ -106,6 +106,15 @@ class Ssir_principale_task:
   # Meta (1 colonne)
   est_classifiee = grist.Bool()            # Tâche rattachée à une mission?
 
+  # === COLONNES TYPES DE TACHES ET LIAISONS (ajoutées Déc 2025) ===
+  # Temps (2 colonnes)
+  temps_estime_heures = grist.Numeric()    # Temps estimé en heures
+  temps_reel_heures = grist.Numeric()      # Temps réel passé en heures
+
+  # Liaisons (1 colonne JSON)
+  tache_liens = grist.Text()               # JSON: [{targetId, type, createdAt}]
+  # Types de liaisons: DEPENDS_ON, BLOCKS, RELATED_TO, SUBTASK_OF, DUPLICATES
+
 
 ```
 
