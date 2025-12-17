@@ -543,7 +543,23 @@ class ConfigApp {
    */
   checkUsageInGrist(field, value) {
     const tasks = this.gristManager.currentRecords || [];
-    const impactedTasks = tasks.filter(task => task[field] === value);
+
+    // Fonction pour vérifier si une valeur est présente dans un champ
+    // Gère les ChoiceList (['L', 'val1', 'val2']) et les strings simples
+    const fieldContainsValue = (taskFieldValue, searchValue) => {
+      if (!taskFieldValue) return false;
+
+      // Si c'est un tableau (ChoiceList Grist format ['L', ...])
+      if (Array.isArray(taskFieldValue)) {
+        // Ignorer le 'L' au début et chercher dans le reste
+        return taskFieldValue.slice(1).includes(searchValue);
+      }
+
+      // Comparaison string simple
+      return taskFieldValue === searchValue;
+    };
+
+    const impactedTasks = tasks.filter(task => fieldContainsValue(task[field], value));
 
     return {
       count: impactedTasks.length,
