@@ -80,7 +80,7 @@ class ConfigApp {
     });
 
     $(document).on('click', '.btn-delete-bureau', (e) => {
-      const nom = $(e.currentTarget).data('nom');
+      const nom = $(e.currentTarget).data('bureau');
       this.handleDeleteBureau(nom);
     });
 
@@ -91,7 +91,7 @@ class ConfigApp {
     });
 
     $(document).on('click', '.btn-delete-service', (e) => {
-      const nom = $(e.currentTarget).data('nom');
+      const nom = $(e.currentTarget).data('service');
       this.handleDeleteService(nom);
     });
 
@@ -102,7 +102,7 @@ class ConfigApp {
     });
 
     $(document).on('click', '.btn-delete-groupement', (e) => {
-      const nom = $(e.currentTarget).data('nom');
+      const nom = $(e.currentTarget).data('groupement');
       this.handleDeleteGroupement(nom);
     });
 
@@ -124,7 +124,7 @@ class ConfigApp {
     });
 
     $(document).on('click', '.btn-delete-projet', (e) => {
-      const nom = $(e.currentTarget).data('nom');
+      const nom = $(e.currentTarget).data('projet');
       this.handleDeleteProjet(nom);
     });
 
