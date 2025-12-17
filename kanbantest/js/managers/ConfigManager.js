@@ -61,6 +61,20 @@ export class ConfigManager {
       // Fusionner avec valeurs par défaut pour nouvelles clés
       this.config = { ...this.defaultConfig, ...this.config };
 
+      // Normaliser les IDs des personnes et stratégies (corriger les décimales)
+      if (this.config.personnes) {
+        this.config.personnes = this.config.personnes.map(p => ({
+          ...p,
+          id: Math.floor(p.id)
+        }));
+      }
+      if (this.config.strategies) {
+        this.config.strategies = this.config.strategies.map(s => ({
+          ...s,
+          id: Math.floor(s.id)
+        }));
+      }
+
     } catch (error) {
       this.logger.error('Failed to load config:', error);
       this.config = { ...this.defaultConfig };
@@ -426,7 +440,7 @@ export class ConfigManager {
       const exists = this.config.personnes.some(p => p.nom === nom);
       if (!exists) {
         this.config.personnes.push({
-          id: Date.now() + Math.random(),
+          id: Math.floor(Date.now() + Math.random() * 1000),
           nom: nom,
           bureau: '',
           service: '',
