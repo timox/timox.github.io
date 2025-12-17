@@ -68,9 +68,15 @@ class ConfigApp {
       this.handleAddPersonne();
     });
 
-    $(document).on('click', '.btn-delete-personne', (e) => {
-      const id = parseInt($(e.currentTarget).data('id'));
-      this.handleDeletePersonne(id);
+    $(document).on('click', '.btn-delete-personne, .btn-delete-personne *', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const $btn = $(e.target).closest('.btn-delete-personne');
+      const id = parseInt($btn.attr('data-id'));
+      console.log('Delete personne clicked, id:', id, 'btn:', $btn.length);
+      if (id) {
+        this.handleDeletePersonne(id);
+      }
     });
 
     // === BUREAUX ===
@@ -79,9 +85,15 @@ class ConfigApp {
       this.handleAddBureau();
     });
 
-    $(document).on('click', '.btn-delete-bureau', (e) => {
-      const nom = $(e.currentTarget).data('bureau');
-      this.handleDeleteBureau(nom);
+    $(document).on('click', '.btn-delete-bureau, .btn-delete-bureau *', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const $btn = $(e.target).closest('.btn-delete-bureau');
+      const nom = $btn.attr('data-bureau');
+      console.log('Delete bureau clicked, nom:', nom, 'btn:', $btn.length);
+      if (nom) {
+        this.handleDeleteBureau(nom);
+      }
     });
 
     // === SERVICES ===
@@ -90,9 +102,15 @@ class ConfigApp {
       this.handleAddService();
     });
 
-    $(document).on('click', '.btn-delete-service', (e) => {
-      const nom = $(e.currentTarget).data('service');
-      this.handleDeleteService(nom);
+    $(document).on('click', '.btn-delete-service, .btn-delete-service *', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const $btn = $(e.target).closest('.btn-delete-service');
+      const nom = $btn.attr('data-service');
+      console.log('Delete service clicked, nom:', nom, 'btn:', $btn.length);
+      if (nom) {
+        this.handleDeleteService(nom);
+      }
     });
 
     // === GROUPEMENTS ===
@@ -101,9 +119,15 @@ class ConfigApp {
       this.handleAddGroupement();
     });
 
-    $(document).on('click', '.btn-delete-groupement', (e) => {
-      const nom = $(e.currentTarget).data('groupement');
-      this.handleDeleteGroupement(nom);
+    $(document).on('click', '.btn-delete-groupement, .btn-delete-groupement *', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const $btn = $(e.target).closest('.btn-delete-groupement');
+      const nom = $btn.attr('data-groupement');
+      console.log('Delete groupement clicked, nom:', nom, 'btn:', $btn.length);
+      if (nom) {
+        this.handleDeleteGroupement(nom);
+      }
     });
 
     // === STRATÉGIES ===
@@ -112,9 +136,15 @@ class ConfigApp {
       this.handleAddStrategie();
     });
 
-    $(document).on('click', '.btn-delete-strategie', (e) => {
-      const id = parseInt($(e.currentTarget).data('id'));
-      this.handleDeleteStrategie(id);
+    $(document).on('click', '.btn-delete-strategie, .btn-delete-strategie *', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const $btn = $(e.target).closest('.btn-delete-strategie');
+      const id = parseInt($btn.attr('data-id'));
+      console.log('Delete strategie clicked, id:', id, 'btn:', $btn.length);
+      if (id) {
+        this.handleDeleteStrategie(id);
+      }
     });
 
     // === PROJETS ===
@@ -123,9 +153,15 @@ class ConfigApp {
       this.handleAddProjet();
     });
 
-    $(document).on('click', '.btn-delete-projet', (e) => {
-      const nom = $(e.currentTarget).data('projet');
-      this.handleDeleteProjet(nom);
+    $(document).on('click', '.btn-delete-projet, .btn-delete-projet *', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const $btn = $(e.target).closest('.btn-delete-projet');
+      const nom = $btn.attr('data-projet');
+      console.log('Delete projet clicked, nom:', nom, 'btn:', $btn.length);
+      if (nom) {
+        this.handleDeleteProjet(nom);
+      }
     });
 
     // === ACTIONS GLOBALES ===
