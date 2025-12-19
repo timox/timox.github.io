@@ -249,11 +249,20 @@ class ConfigApp {
   async handleDeletePersonne(id) {
     // Trouver le nom de la personne
     const personnes = this.configManager.getPersonnes();
+    console.log('handleDeletePersonne - id reçu:', id, 'type:', typeof id);
+    console.log('handleDeletePersonne - personnes:', personnes.map(p => ({ id: p.id, type: typeof p.id, nom: p.nom })));
+
     const personne = personnes.find(p => p.id === id);
-    if (!personne) return;
+    console.log('handleDeletePersonne - personne trouvée:', personne);
+
+    if (!personne) {
+      console.log('handleDeletePersonne - AUCUNE PERSONNE TROUVÉE!');
+      return;
+    }
 
     // Vérifier l'usage dans Grist (champ "qui")
     const usage = this.checkUsageInGrist('qui', personne.nom);
+    console.log('handleDeletePersonne - usage pour', personne.nom, ':', usage);
 
     if (usage.count > 0) {
       await this.showImpactModal('Personne', personne.nom, usage);
