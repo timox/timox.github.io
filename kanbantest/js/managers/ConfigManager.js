@@ -61,18 +61,30 @@ export class ConfigManager {
       // Fusionner avec valeurs par défaut pour nouvelles clés
       this.config = { ...this.defaultConfig, ...this.config };
 
-      // Normaliser les IDs des personnes et stratégies (corriger les décimales)
+      // Régénérer des IDs uniques pour les personnes (corrige les doublons)
       if (this.config.personnes) {
-        this.config.personnes = this.config.personnes.map(p => ({
-          ...p,
-          id: Math.floor(p.id)
-        }));
+        const seenIds = new Set();
+        this.config.personnes = this.config.personnes.map((p, index) => {
+          let newId = Math.floor(p.id) || Date.now();
+          // Si l'ID existe déjà, générer un nouveau unique
+          while (seenIds.has(newId)) {
+            newId = Date.now() + index + Math.floor(Math.random() * 10000);
+          }
+          seenIds.add(newId);
+          return { ...p, id: newId };
+        });
       }
+      // Régénérer des IDs uniques pour les stratégies
       if (this.config.strategies) {
-        this.config.strategies = this.config.strategies.map(s => ({
-          ...s,
-          id: Math.floor(s.id)
-        }));
+        const seenIds = new Set();
+        this.config.strategies = this.config.strategies.map((s, index) => {
+          let newId = Math.floor(s.id) || Date.now();
+          while (seenIds.has(newId)) {
+            newId = Date.now() + index + Math.floor(Math.random() * 10000);
+          }
+          seenIds.add(newId);
+          return { ...s, id: newId };
+        });
       }
 
     } catch (error) {
@@ -436,11 +448,15 @@ export class ConfigManager {
       }
     });
     // Ajouter comme personnes si pas déjà présentes
+    let personneIndex = 0;
     responsablesSet.forEach(nom => {
       const exists = this.config.personnes.some(p => p.nom === nom);
       if (!exists) {
+        // Générer un ID unique : timestamp + index + random pour éviter les collisions
+        const uniqueId = Date.now() + (personneIndex * 1000) + Math.floor(Math.random() * 100);
+        personneIndex++;
         this.config.personnes.push({
-          id: Math.floor(Date.now() + Math.random() * 1000),
+          id: uniqueId,
           nom: nom,
           bureau: '',
           service: '',
