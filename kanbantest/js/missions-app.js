@@ -111,23 +111,25 @@ function setupEventListeners() {
 /**
  * Gère le changement de stratégie sélectionnée
  * Pré-remplit le nom de la mission et le responsable
+ * Note: Une stratégie = objectif + sous_objectif + action (une ligne de Ssir_strategie2)
  */
 function handleStrategyChange() {
   const $selected = $('#mission-strategie option:selected');
   const strategyId = $('#mission-strategie').val();
 
   if (!strategyId) {
-    // Aucune stratégie sélectionnée, vider les champs pré-remplis
+    // Aucune stratégie sélectionnée
     $('#strategy-preview').hide();
     return;
   }
 
   // Récupérer les données de l'option sélectionnée
+  const objectif = $selected.data('objectif') || '';
+  const sousObjectif = $selected.data('sous-objectif') || '';
   const action = $selected.data('action') || '';
   const responsable = $selected.data('responsable') || '';
-  const sousObjectif = $selected.data('sous-objectif') || '';
 
-  // Pré-remplir le nom de la mission si vide
+  // Pré-remplir le nom de la mission si vide (avec l'action qui est le niveau le plus précis)
   const $missionNom = $('#mission-nom');
   if (!$missionNom.val().trim()) {
     $missionNom.val(action);
@@ -139,20 +141,30 @@ function handleStrategyChange() {
     $missionResponsable.val(responsable);
   }
 
-  // Afficher l'aperçu de la stratégie
+  // Afficher l'aperçu de la stratégie complète (objectif > sous_objectif > action)
+  let hierarchyHtml = '';
+  if (objectif) {
+    hierarchyHtml += `<span class="text-primary">${escapeHtml(objectif)}</span>`;
+  }
+  if (sousObjectif) {
+    hierarchyHtml += ` <i class="bi bi-chevron-right small"></i> <span class="text-secondary">${escapeHtml(sousObjectif)}</span>`;
+  }
+  if (action) {
+    hierarchyHtml += ` <i class="bi bi-chevron-right small"></i> <strong>${escapeHtml(action)}</strong>`;
+  }
+
   const previewHtml = `
     <div class="alert alert-info py-2 mb-0">
       <small>
         <strong><i class="bi bi-link-45deg me-1"></i>Stratégie liée :</strong><br>
-        ${sousObjectif ? `<span class="text-muted">${escapeHtml(sousObjectif)} →</span> ` : ''}
-        <strong>${escapeHtml(action)}</strong>
+        ${hierarchyHtml}
         ${responsable ? `<br><i class="bi bi-person me-1"></i>${escapeHtml(responsable)}` : ''}
       </small>
     </div>
   `;
   $('#strategy-preview').html(previewHtml).show();
 
-  logger.debug('Strategy selected:', { strategyId, action, responsable });
+  logger.debug('Strategy selected:', { strategyId, objectif, sousObjectif, action, responsable });
 }
 
 /**
@@ -225,6 +237,7 @@ async function loadStrategies() {
 
 /**
  * Peuple le sélecteur de stratégie avec les données chargées
+ * Une stratégie = objectif + sous_objectif + action (une ligne complète)
  */
 function populateStrategySelector() {
   const $selector = $('#mission-strategie');
@@ -233,7 +246,7 @@ function populateStrategySelector() {
   // Option par défaut
   $selector.append('<option value="">-- Créer sans lien stratégique --</option>');
 
-  // Grouper par objectif
+  // Grouper par objectif pour une meilleure lisibilité
   const objectifs = [...new Set(strategies.map(s => s.objectif))];
 
   for (const objectif of objectifs) {
@@ -242,15 +255,17 @@ function populateStrategySelector() {
     const strategiesForObjectif = strategies.filter(s => s.objectif === objectif);
 
     for (const strat of strategiesForObjectif) {
+      // Afficher sous_objectif > action pour identifier la stratégie
       const label = strat.sous_objectif
-        ? `${strat.sous_objectif} → ${strat.action}`
+        ? `${strat.sous_objectif} > ${strat.action}`
         : strat.action;
 
       $optgroup.append(`<option value="${strat.id}"
+        data-objectif="${escapeHtml(strat.objectif)}"
+        data-sous-objectif="${escapeHtml(strat.sous_objectif)}"
         data-action="${escapeHtml(strat.action)}"
         data-responsable="${escapeHtml(strat.responsable)}"
-        data-echeance="${escapeHtml(strat.echeance)}"
-        data-sous-objectif="${escapeHtml(strat.sous_objectif)}">
+        data-echeance="${escapeHtml(strat.echeance)}">
         ${escapeHtml(label)}
       </option>`);
     }
@@ -258,7 +273,7 @@ function populateStrategySelector() {
     $selector.append($optgroup);
   }
 
-  logger.debug('Strategy selector populated');
+  logger.debug('Strategy selector populated with', strategies.length, 'strategies');
 }
 
 /**
