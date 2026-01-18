@@ -10,6 +10,7 @@ const logger = createModuleLogger('MissionsApp');
 // Variables globales
 let gristManager = null;
 let missionsManager = null;
+let strategies = []; // Liste des stratégies chargées depuis Ssir_strategie2
 let currentFilters = {
   search: '',
   priorite: '',
@@ -90,6 +91,9 @@ function setupEventListeners() {
   // Sous-actions
   $('#btn-add-sous-action').on('click', addSousActionForm);
 
+  // Sélecteur de stratégie - pré-remplir le nom de la mission
+  $('#mission-strategie').on('change', handleStrategyChange);
+
   // Filtres et recherche
   $('#search-missions').on('input', debounce(handleSearch, 300));
   $('#filter-priorite').on('change', handleFilterChange);
@@ -105,11 +109,61 @@ function setupEventListeners() {
 }
 
 /**
+ * Gère le changement de stratégie sélectionnée
+ * Pré-remplit le nom de la mission et le responsable
+ */
+function handleStrategyChange() {
+  const $selected = $('#mission-strategie option:selected');
+  const strategyId = $('#mission-strategie').val();
+
+  if (!strategyId) {
+    // Aucune stratégie sélectionnée, vider les champs pré-remplis
+    $('#strategy-preview').hide();
+    return;
+  }
+
+  // Récupérer les données de l'option sélectionnée
+  const action = $selected.data('action') || '';
+  const responsable = $selected.data('responsable') || '';
+  const sousObjectif = $selected.data('sous-objectif') || '';
+
+  // Pré-remplir le nom de la mission si vide
+  const $missionNom = $('#mission-nom');
+  if (!$missionNom.val().trim()) {
+    $missionNom.val(action);
+  }
+
+  // Pré-remplir le responsable si vide
+  const $missionResponsable = $('#mission-responsable');
+  if (!$missionResponsable.val().trim() && responsable) {
+    $missionResponsable.val(responsable);
+  }
+
+  // Afficher l'aperçu de la stratégie
+  const previewHtml = `
+    <div class="alert alert-info py-2 mb-0">
+      <small>
+        <strong><i class="bi bi-link-45deg me-1"></i>Stratégie liée :</strong><br>
+        ${sousObjectif ? `<span class="text-muted">${escapeHtml(sousObjectif)} →</span> ` : ''}
+        <strong>${escapeHtml(action)}</strong>
+        ${responsable ? `<br><i class="bi bi-person me-1"></i>${escapeHtml(responsable)}` : ''}
+      </small>
+    </div>
+  `;
+  $('#strategy-preview').html(previewHtml).show();
+
+  logger.debug('Strategy selected:', { strategyId, action, responsable });
+}
+
+/**
  * Charge les données
  */
 async function loadData() {
   try {
     showLoading(true);
+
+    // Charger les stratégies depuis Ssir_strategie2
+    await loadStrategies();
 
     // Charger les statistiques
     await updateStats();
@@ -123,6 +177,98 @@ async function loadData() {
     showError('Erreur de chargement des données');
     showLoading(false);
   }
+}
+
+/**
+ * Charge les stratégies depuis la table Ssir_strategie2
+ */
+async function loadStrategies() {
+  try {
+    logger.debug('Loading strategies from Ssir_strategie2...');
+
+    const gristData = await window.grist.docApi.fetchTable('Ssir_strategie2');
+
+    // Convertir les données Grist en tableau d'objets
+    strategies = [];
+    const count = gristData.id.length;
+
+    for (let i = 0; i < count; i++) {
+      strategies.push({
+        id: gristData.id[i],
+        id2: gristData.id2 ? gristData.id2[i] : gristData.id[i],
+        objectif: gristData.objectif ? gristData.objectif[i] : '',
+        sous_objectif: gristData.sous_objectif ? gristData.sous_objectif[i] : '',
+        action: gristData.action ? gristData.action[i] : '',
+        responsable: gristData.responsable ? gristData.responsable[i] : '',
+        echeance: gristData.echeance ? gristData.echeance[i] : '',
+        portee: gristData.portee ? gristData.portee[i] : ''
+      });
+    }
+
+    // Trier par objectif puis sous_objectif puis action
+    strategies.sort((a, b) => {
+      if (a.objectif !== b.objectif) return a.objectif.localeCompare(b.objectif);
+      if (a.sous_objectif !== b.sous_objectif) return a.sous_objectif.localeCompare(b.sous_objectif);
+      return a.action.localeCompare(b.action);
+    });
+
+    logger.debug(`Loaded ${strategies.length} strategies`);
+
+    // Peupler le sélecteur de stratégie
+    populateStrategySelector();
+
+  } catch (error) {
+    logger.error('Failed to load strategies:', error);
+    strategies = [];
+  }
+}
+
+/**
+ * Peuple le sélecteur de stratégie avec les données chargées
+ */
+function populateStrategySelector() {
+  const $selector = $('#mission-strategie');
+  $selector.empty();
+
+  // Option par défaut
+  $selector.append('<option value="">-- Créer sans lien stratégique --</option>');
+
+  // Grouper par objectif
+  const objectifs = [...new Set(strategies.map(s => s.objectif))];
+
+  for (const objectif of objectifs) {
+    const $optgroup = $(`<optgroup label="${escapeHtml(objectif)}"></optgroup>`);
+
+    const strategiesForObjectif = strategies.filter(s => s.objectif === objectif);
+
+    for (const strat of strategiesForObjectif) {
+      const label = strat.sous_objectif
+        ? `${strat.sous_objectif} → ${strat.action}`
+        : strat.action;
+
+      $optgroup.append(`<option value="${strat.id}"
+        data-action="${escapeHtml(strat.action)}"
+        data-responsable="${escapeHtml(strat.responsable)}"
+        data-echeance="${escapeHtml(strat.echeance)}"
+        data-sous-objectif="${escapeHtml(strat.sous_objectif)}">
+        ${escapeHtml(label)}
+      </option>`);
+    }
+
+    $selector.append($optgroup);
+  }
+
+  logger.debug('Strategy selector populated');
+}
+
+/**
+ * Échappe les caractères HTML
+ */
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 /**
@@ -392,6 +538,8 @@ function openNewMissionModal() {
   $('#form-mission')[0].reset();
   $('#sous-actions-container').empty();
   $('#mission-code').val(generateMissionCode());
+  $('#mission-strategie').val(''); // Réinitialiser le sélecteur de stratégie
+  $('#strategy-preview').hide(); // Masquer l'aperçu
   $('#modal-mission').modal('show');
 }
 
@@ -417,6 +565,10 @@ function handleRemoveSousAction(e) {
  */
 async function saveMission() {
   try {
+    // Récupérer la stratégie sélectionnée
+    const strategyId = $('#mission-strategie').val();
+    const selectedStrategy = strategyId ? strategies.find(s => s.id === parseInt(strategyId)) : null;
+
     // Récupérer les données du formulaire
     const missionData = {
       code: $('#mission-code').val().trim(),
@@ -425,7 +577,12 @@ async function saveMission() {
       bureau: $('#mission-bureau').val(),
       priorite: $('#mission-priorite').val(),
       date_debut: $('#mission-date-debut').val() || null,
-      date_fin: $('#mission-date-fin').val() || null
+      date_fin: $('#mission-date-fin').val() || null,
+      // Données de liaison stratégique
+      strategie_id: strategyId ? parseInt(strategyId) : null,
+      strategie_objectif: selectedStrategy ? selectedStrategy.objectif : null,
+      strategie_sous_objectif: selectedStrategy ? selectedStrategy.sous_objectif : null,
+      strategie_action: selectedStrategy ? selectedStrategy.action : null
     };
 
     // Valider

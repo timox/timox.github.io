@@ -237,6 +237,26 @@
           <form id="form-mission">
             <div class="row g-3">
 
+              <!-- Sélecteur de stratégie -->
+              <div class="col-12">
+                <label for="mission-strategie" class="form-label">
+                  <i class="bi bi-diagram-3 me-1"></i>
+                  Lier à une action stratégique existante
+                </label>
+                <select class="form-select" id="mission-strategie">
+                  <option value="">-- Créer sans lien stratégique --</option>
+                  <!-- Options chargées dynamiquement depuis Ssir_strategie2 -->
+                </select>
+                <small class="text-muted">
+                  Sélectionnez une action de la table stratégie pour créer une mission liée
+                </small>
+                <div id="strategy-preview" class="mt-2" style="display: none;">
+                  <!-- Aperçu de la stratégie sélectionnée -->
+                </div>
+              </div>
+
+              <div class="col-12"><hr class="my-2"></div>
+
               <!-- Code Mission -->
               <div class="col-md-4">
                 <label for="mission-code" class="form-label">
@@ -263,10 +283,15 @@
                 <label for="mission-bureau" class="form-label">Bureau</label>
                 <select class="form-select" id="mission-bureau">
                   <option value="">Sélectionner...</option>
-                  <option value="Infrastructure">Infrastructure</option>
-                  <option value="Sécurité">Sécurité</option>
-                  <option value="Support">Support</option>
-                  <option value="Développement">Développement</option>
+                  <option value="Exploit">Exploit</option>
+                  <option value="Réseau">Réseau</option>
+                  <option value="BDD">BDD</option>
+                  <option value="Chef SSIR">Chef SSIR</option>
+                  <option value="SIG">SIG</option>
+                  <option value="NEXSIS-RRF">NEXSIS-RRF</option>
+                  <option value="COMSIC">COMSIC</option>
+                  <option value="RSSI">RSSI</option>
+                  <option value="DPO">DPO</option>
                 </select>
               </div>
 
