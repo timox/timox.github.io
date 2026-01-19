@@ -1340,6 +1340,28 @@ body {
   font-style: italic;
 }
 
+.dashboard-notice {
+  background: #fff7ed;
+  color: #9a3412;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+}
+
+.dashboard-footer {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.dashboard-missing {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: #64748b;
+}
+
 .focus-column .kanban-board-header {
   padding: 1.2rem;
   border-bottom: 2px solid #e9ecef;

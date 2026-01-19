@@ -91,6 +91,7 @@ export const CSS_CLASSES = {
     'À faire': 'board-a-faire',
     'En cours': 'board-en-cours',
     'En attente': 'board-en-attente',
+    'En pause': 'board-en-pause',
     'Bloqué': 'board-bloque',
     'Validation': 'board-validation',
     'Terminé': 'board-termine'

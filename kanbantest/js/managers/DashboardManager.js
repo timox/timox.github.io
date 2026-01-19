@@ -48,6 +48,11 @@ export class DashboardManager {
       CIBLES_POURCENTAGES.type
     );
 
+    const taxonomieManquante = {
+      previsibilite: this.countMissingField(activeRecords, 'previsibilite'),
+      type_tache: this.countMissingField(activeRecords, 'type_tache')
+    };
+
     const tempsEstime = this.computeTempsEstime(activeRecords);
     const dettesTechniques = this.countDettesTechniques(activeRecords);
 
@@ -56,6 +61,7 @@ export class DashboardManager {
       enPause,
       parPrevisibilite,
       parType,
+      taxonomieManquante,
       tempsEstime,
       dettesTechniques
     };
@@ -92,6 +98,7 @@ export class DashboardManager {
   }
 
   genererDashboardHTML(stats, alertes) {
+    const colonnesManquantes = this.getMissingColumnsNotice();
     const alertesHTML = alertes.length > 0
       ? `<div class="dashboard-alertes">${alertes.map(alerte => this.renderAlerte(alerte)).join('')}</div>`
       : '';
@@ -109,9 +116,12 @@ export class DashboardManager {
     const projetEcart = projetActuel - projetCible;
     const capacitePerdue = Math.max(0, (stats.parPrevisibilite['Imprévisible']?.pourcent ?? 0) - (SEMAINE_TYPE.repartition['Imprévisible'] / SEMAINE_TYPE.heures_totales * 100));
 
+    const taxonomieHTML = this.renderTaxonomieManquante(stats.taxonomieManquante);
+
     return `
       <div class="dashboard-container">
         ${alertesHTML}
+        ${colonnesManquantes}
         <div class="dashboard-header">
           <div>
             <h3>Dashboard Kanban</h3>
@@ -157,6 +167,7 @@ export class DashboardManager {
           <h4>Semaine type (temps estimé)</h4>
           ${semaineTypeHTML}
         </div>
+        ${taxonomieHTML}
       </div>
     `;
   }
@@ -311,6 +322,27 @@ export class DashboardManager {
     `;
   }
 
+  renderTaxonomieManquante(taxonomieManquante) {
+    if (!taxonomieManquante) {
+      return '';
+    }
+
+    const hasMissing = Object.values(taxonomieManquante).some(value => value > 0);
+    if (!hasMissing) {
+      return '';
+    }
+
+    return `
+      <div class="dashboard-footer">
+        <h4>Données à compléter</h4>
+        <div class="dashboard-missing">
+          <span>${taxonomieManquante.previsibilite} tâche(s) sans prévisibilité</span>
+          <span>${taxonomieManquante.type_tache} tâche(s) sans type</span>
+        </div>
+      </div>
+    `;
+  }
+
   buildAlerte(niveau, icone, titre, message) {
     return { niveau, icone, titre, message };
   }
@@ -336,8 +368,33 @@ export class DashboardManager {
     return `${rounded}%`;
   }
 
+  getMissingColumnsNotice() {
+    const missing = [];
+    if (!this.hasColumn('previsibilite')) missing.push('previsibilite');
+    if (!this.hasColumn('type_tache')) missing.push('type_tache');
+    if (!this.hasColumn('est_dette_technique')) missing.push('est_dette_technique');
+    if (!this.hasColumn('temps_estime_heures')) missing.push('temps_estime_heures');
+
+    if (missing.length === 0) {
+      return '';
+    }
+
+    return `
+      <div class="dashboard-notice">
+        Certaines colonnes V3 sont absentes dans Grist : ${missing.join(', ')}.
+      </div>
+    `;
+  }
+
   hasColumn(columnName) {
     const availableColumns = this.kanban?.gristManager?.availableColumns || this.kanban?.availableColumns;
     return availableColumns instanceof Set ? availableColumns.has(columnName) : false;
+  }
+
+  countMissingField(records, field) {
+    if (!this.hasColumn(field)) {
+      return 0;
+    }
+    return records.filter(record => !record[field]).length;
   }
 }
