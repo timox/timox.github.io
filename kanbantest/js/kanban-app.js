@@ -62,6 +62,7 @@ import { HistoryManager } from './managers/HistoryManager.js';
 import { DatePickerManager } from './managers/DatePickerManager.js';
 import { GristManager } from './managers/GristManager.js';
 import { JalonManager } from './managers/JalonManager.js';
+import { DashboardManager } from './managers/DashboardManager.js';
 
 // === CONSTANTES ===
 const STRATEGIES_TABLE_ID = "Ssir_strategie2";
@@ -121,6 +122,8 @@ class KanbanManager {
     this.historyManager = null;
     this.datePickerManager = null;
     this.gristManager = null;
+    this.jalonManager = null;
+    this.dashboardManager = null;
     
     this.init();
   }
@@ -209,6 +212,9 @@ class KanbanManager {
 
     // Manager des jalons
     this.jalonManager = new JalonManager(this);
+
+    // Manager du dashboard
+    this.dashboardManager = new DashboardManager(this);
 
     console.log('✅ Managers initialisés');
   }
@@ -1026,6 +1032,10 @@ class KanbanManager {
     // Filtrer les enregistrements
     const filteredRecords = this.filterRecords(this.currentRecords || []);
     this.logger.debug(`Filtrage: ${filteredRecords.length} enregistrements retenus`);
+
+    if (this.dashboardManager) {
+      this.dashboardManager.renderDashboard(filteredRecords);
+    }
     
     // Debug spécial pour la tâche 124
     const task124 = this.currentRecords?.find(r => r.id === 124);
@@ -1171,6 +1181,7 @@ class KanbanManager {
       'À faire': '<i class="bi bi-calendar-plus"></i>',
       'En cours': '<i class="bi bi-play-circle"></i>',
       'En attente': '<i class="bi bi-pause-circle"></i>',
+      'En pause': '<i class="bi bi-pause-btn"></i>',
       'Bloqué': '<i class="bi bi-x-octagon"></i>',
       'Validation': '<i class="bi bi-check-circle"></i>',
       'Terminé': '<i class="bi bi-check-circle-fill"></i>'
@@ -1185,6 +1196,7 @@ class KanbanManager {
       'À faire': 'status-todo', 
       'En cours': 'status-progress',
       'En attente': 'status-waiting',
+      'En pause': 'status-paused',
       'Bloqué': 'status-blocked',
       'Validation': 'status-validation',
       'Terminé': 'status-done'

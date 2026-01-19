@@ -7,6 +7,7 @@ export const STATUTS = [
   { id: 'À faire', libelle: 'À faire', classe: 'a-faire', icone: '<i class="bi bi-tools text-primary"></i>' },
   { id: 'En cours', libelle: 'En cours', classe: 'en-cours', icone: '<i class="bi bi-lightning text-warning"></i>' },
   { id: 'En attente', libelle: 'En attente', classe: 'en-attente', icone: '<i class="bi bi-pause-circle text-info"></i>' },
+  { id: 'En pause', libelle: 'En pause', classe: 'en-pause', icone: '<i class="bi bi-pause-btn text-secondary"></i>' },
   { id: 'Bloqué', libelle: 'Bloqué', classe: 'bloque', icone: '<i class="bi bi-x-circle text-danger"></i>' },
   { id: 'Validation', libelle: 'Validation', classe: 'validation', icone: '<i class="bi bi-clipboard-check text-warning"></i>' },
   { id: 'Terminé', libelle: 'Terminé', classe: 'termine', icone: '<i class="bi bi-check-circle text-success"></i>' }
@@ -17,6 +18,7 @@ export const STATUS_ACCENTS = {
   'À faire': '#0ea5e9',
   'En cours': '#f97316',
   'En attente': '#eab308',
+  'En pause': '#94a3b8',
   'Bloqué': '#ef4444',
   'Validation': '#8b5cf6',
   'Terminé': '#22c55e',
@@ -56,7 +58,9 @@ export const OPTIONAL_COLUMNS = [
   'str_statut', 'str_urgence', 'str_qui', 'str_bureau', 'str_impact',
   'date_creation', 'date_modif', 'Créé par',
   // Colonnes temps et liaisons (Dec 2025)
-  'temps_estime_heures', 'temps_reel_heures', 'tache_liens'
+  'temps_estime_heures', 'temps_reel_heures', 'tache_liens',
+  // Colonnes V3 (Kanban)
+  'previsibilite', 'type_tache', 'est_dette_technique'
 ];
 
 // === CONSTANTES DE L'INTERFACE ===
@@ -111,6 +115,58 @@ export const TIME_THRESHOLDS = {
   URGENT_DAYS: 3,
   SOON_DAYS: 7,
   ANIMATION_DURATION: 150
+};
+
+// === TAXONOMIE V3 ===
+export const PREVISIBILITE = [
+  { id: 'Imprévisible', emoji: '⚡', couleur: '#dc3545', classe: 'imprevisible' },
+  { id: 'Prévisible', emoji: '📅', couleur: '#198754', classe: 'previsible' }
+];
+
+export const TYPE_TACHES = [
+  { id: 'Incident', emoji: '🔥', couleur: '#dc3545', classe: 'type-incident' },
+  { id: 'Support', emoji: '💬', couleur: '#0d6efd', classe: 'type-support' },
+  { id: 'MCO', emoji: '🔧', couleur: '#6f42c1', classe: 'type-mco' },
+  { id: 'Projet', emoji: '🚀', couleur: '#198754', classe: 'type-projet' },
+  { id: 'Overhead', emoji: '📋', couleur: '#6c757d', classe: 'type-overhead' }
+];
+
+export const CIBLES_POURCENTAGES = {
+  previsibilite: {
+    'Imprévisible': { min: 0, max: 45, ideal: 40 },
+    'Prévisible': { min: 55, max: 100, ideal: 60 }
+  },
+  type: {
+    'Incident': { min: 5, max: 30, ideal: 15 },
+    'Support': { min: 20, max: 50, ideal: 35 },
+    'MCO': { min: 10, max: 40, ideal: 25 },
+    'Projet': { min: 20, max: 60, ideal: 40 },
+    'Overhead': { min: 5, max: 25, ideal: 15 }
+  }
+};
+
+export const SEMAINE_TYPE = {
+  heures_totales: 40,
+  repartition: {
+    'Imprévisible': 16,
+    'Prévisible': 24
+  }
+};
+
+export const SEUILS_AGE = {
+  FRESH: 3,
+  NORMAL: 7,
+  WARNING: 14,
+  CRITICAL: 999
+};
+
+export const SEUILS_ALERTES = {
+  imprevisible_warning: 45,
+  imprevisible_critique: 50,
+  projet_warning: 20,
+  projet_critique: 15,
+  dette_technique_jours: 90,
+  bloque_jours: 7
 };
 
 // === DONNÉES STRATÉGIQUES INTÉGRÉES ===

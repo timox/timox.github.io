@@ -1027,6 +1027,7 @@ body {
 .board-a-faire { border-top: 4px solid #0dcaf0; }
 .board-en-cours { border-top: 4px solid #fd7e14; }
 .board-en-attente { border-top: 4px solid #ffc107; }
+.board-en-pause { border-top: 4px solid #94a3b8; }
 .board-bloque { border-top: 4px solid #dc3545; }
 .board-validation { border-top: 4px solid #6f42c1; }
 .board-termine { border-top: 4px solid #198754; }
@@ -1052,6 +1053,10 @@ body {
   color: #eab308; 
   font-weight: 700;
 }
+.status-paused .board-title { 
+  color: #64748b; 
+  font-weight: 700;
+}
 .status-blocked .board-title { 
   color: #ef4444; 
   font-weight: 700;
@@ -1074,6 +1079,7 @@ body {
 .status-todo { border-top: 4px solid #0ea5e9; }
 .status-progress { border-top: 4px solid #f97316; }
 .status-waiting { border-top: 4px solid #eab308; }
+.status-paused { border-top: 4px solid #94a3b8; }
 .status-blocked { border-top: 4px solid #ef4444; }
 .status-validation { border-top: 4px solid #8b5cf6; }
 .status-done { border-top: 4px solid #22c55e; }
@@ -1099,6 +1105,11 @@ body {
   background: #fff2cc; 
   color: #b3a000; 
   border-top: 4px solid #eab308; 
+}
+.status-paused { 
+  background: #e2e8f0; 
+  color: #475569; 
+  border-top: 4px solid #94a3b8; 
 }
 .status-blocked { 
   background: #ffcccc; 
@@ -1137,6 +1148,196 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
+}
+
+/* === Dashboard Kanban V3 === */
+.dashboard-container {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+  margin-bottom: 20px;
+}
+
+.dashboard-alertes {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.dashboard-alerte {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+}
+
+.dashboard-alerte-critical {
+  background: rgba(220, 53, 69, 0.12);
+  color: #b02a37;
+}
+
+.dashboard-alerte-warning {
+  background: rgba(255, 193, 7, 0.2);
+  color: #a16207;
+}
+
+.dashboard-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.dashboard-header h3 {
+  margin: 0;
+  font-weight: 700;
+}
+
+.dashboard-header p {
+  margin: 4px 0 0;
+  color: #64748b;
+}
+
+.dashboard-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dashboard-pill {
+  background: #f1f5f9;
+  color: #475569;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.dashboard-section h4 {
+  margin-bottom: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.dashboard-list {
+  display: grid;
+  gap: 10px;
+}
+
+.dashboard-stat-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.dashboard-stat-item.dashboard-stat-ok {
+  border-left: 4px solid #198754;
+}
+
+.dashboard-stat-item.dashboard-stat-warning {
+  border-left: 4px solid #f59e0b;
+}
+
+.dashboard-stat-item.dashboard-stat-critical {
+  border-left: 4px solid #dc3545;
+}
+
+.dashboard-stat-item.dashboard-stat-neutral {
+  border-left: 4px solid #94a3b8;
+}
+
+.dashboard-stat-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dashboard-stat-emoji {
+  font-size: 1.3rem;
+}
+
+.dashboard-stat-title {
+  font-weight: 600;
+}
+
+.dashboard-stat-meta {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.dashboard-stat-values {
+  text-align: right;
+  font-weight: 600;
+}
+
+.dashboard-stat-values small {
+  display: block;
+  font-weight: 400;
+  color: #64748b;
+}
+
+.dashboard-capacite {
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.dashboard-capacite-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.dashboard-capacite .label {
+  display: block;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.dashboard-semaine-type {
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+
+.dashboard-semaine-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.dashboard-semaine-item {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+}
+
+.dashboard-semaine-item.total {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 8px;
+}
+
+.dashboard-semaine-item .label {
+  color: #475569;
+  font-weight: 500;
+}
+
+.dashboard-empty {
+  color: #94a3b8;
+  font-style: italic;
 }
 
 .focus-column .kanban-board-header {
