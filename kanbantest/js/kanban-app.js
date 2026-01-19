@@ -63,6 +63,7 @@ import { DatePickerManager } from './managers/DatePickerManager.js';
 import { GristManager } from './managers/GristManager.js';
 import { JalonManager } from './managers/JalonManager.js';
 import { DashboardManager } from './managers/DashboardManager.js';
+import { TimelineManager } from './managers/TimelineManager.js';
 
 // === CONSTANTES ===
 const STRATEGIES_TABLE_ID = "Ssir_strategie2";
@@ -124,6 +125,7 @@ class KanbanManager {
     this.gristManager = null;
     this.jalonManager = null;
     this.dashboardManager = null;
+    this.timelineManager = null;
     
     this.init();
   }
@@ -215,6 +217,9 @@ class KanbanManager {
 
     // Manager du dashboard
     this.dashboardManager = new DashboardManager(this);
+
+    // Manager timeline
+    this.timelineManager = new TimelineManager(this);
 
     console.log('✅ Managers initialisés');
   }
@@ -1035,6 +1040,10 @@ class KanbanManager {
 
     if (this.dashboardManager) {
       this.dashboardManager.renderDashboard(filteredRecords);
+    }
+
+    if (this.timelineManager?.currentView === 'timeline') {
+      this.timelineManager.initTimeline();
     }
     
     // Debug spécial pour la tâche 124

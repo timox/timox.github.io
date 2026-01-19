@@ -11,6 +11,11 @@
 - Affichage d’un avertissement si les colonnes V3 sont absentes.
 - Indication des tâches sans prévisibilité/type.
 
+### ✅ **Timeline V3 (planification)**
+- Ajout d’une vue Timeline intégrée au Kanban.
+- Groupements par personne, type, prévisibilité, bureau ou projet.
+- Drag & drop des dates et des groupements vers Grist.
+
 ---
 
 # 📈 Changelog - 2025-07-25

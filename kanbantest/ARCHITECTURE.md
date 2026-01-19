@@ -16,6 +16,7 @@ js/
 ├── managers/                  # 🔧 Gestionnaires spécialisés
 │   ├── FilterManager.js       # Filtres et recherche
 │   ├── DashboardManager.js    # Dashboard V3 (statistiques & alertes)
+│   ├── TimelineManager.js     # Timeline V3 (planification)
 │   ├── ModalManager.js        # Modales et formulaires
 │   ├── HistoryManager.js      # Historique et commentaires
 │   ├── DatePickerManager.js   # Sélection de dates

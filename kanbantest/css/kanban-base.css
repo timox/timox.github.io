@@ -1362,6 +1362,62 @@ body {
   color: #64748b;
 }
 
+/* === Timeline V3 === */
+.view-selector {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.view-selector .btn.active {
+  background: #0d6efd;
+  color: #fff;
+}
+
+.timeline-controls {
+  min-width: 160px;
+}
+
+.timeline-container {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+  min-height: 420px;
+  margin-bottom: 20px;
+}
+
+.timeline-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.timeline-item-title {
+  font-weight: 600;
+}
+
+.timeline-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: #475569;
+}
+
+.timeline-badge {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+}
+
+.timeline-imprevisible { border-left: 4px solid #dc3545 !important; }
+.timeline-previsible { border-left: 4px solid #198754 !important; }
+
+.vis-current-time { background-color: #dc3545 !important; }
+.vis-item:hover { box-shadow: 0 6px 12px rgba(15, 23, 42, 0.15); }
+.vis-item.vis-selected { border-width: 2px; }
+
 .focus-column .kanban-board-header {
   padding: 1.2rem;
   border-bottom: 2px solid #e9ecef;
