@@ -10,12 +10,18 @@
 - Ajout du dashboard V3 (statistiques, alertes, capacité).
 - Affichage d’un avertissement si les colonnes V3 sont absentes.
 - Indication des tâches sans prévisibilité/type.
+- Support de la colonne `previsibilité` (accent) pour les données existantes.
 
 ### ✅ **Timeline V3 (planification)**
 - Ajout d’une vue Timeline intégrée au Kanban.
 - Groupements par personne, type, prévisibilité, bureau ou projet.
 - Drag & drop des dates et des groupements vers Grist.
 - Correction du bouton Timeline (initialisation côté KanbanManager core).
+- Fallback sur date de création quand date de début/échéance manquantes.
+
+### ✅ **Configuration**
+- Édition des axes stratégiques directement depuis l’onglet Configuration.
+- Renommage / suppression des projets avec mise à jour en masse des tâches.
 
 ---
 

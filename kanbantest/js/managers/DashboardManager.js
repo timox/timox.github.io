@@ -38,18 +38,20 @@ export class DashboardManager {
       PREVISIBILITE,
       activeRecords,
       'previsibilite',
-      CIBLES_POURCENTAGES.previsibilite
+      CIBLES_POURCENTAGES.previsibilite,
+      (record) => this.getPrevisibiliteValue(record)
     );
 
     const parType = this.computeStatsByCategory(
       TYPE_TACHES,
       activeRecords,
       'type_tache',
-      CIBLES_POURCENTAGES.type
+      CIBLES_POURCENTAGES.type,
+      (record) => record.type_tache || record.type_tache_id
     );
 
     const taxonomieManquante = {
-      previsibilite: this.countMissingField(activeRecords, 'previsibilite'),
+      previsibilite: this.countMissingField(activeRecords, 'previsibilite') + this.countMissingField(activeRecords, 'previsibilité'),
       type_tache: this.countMissingField(activeRecords, 'type_tache')
     };
 
@@ -172,13 +174,16 @@ export class DashboardManager {
     `;
   }
 
-  computeStatsByCategory(categories, records, field, targets = {}) {
+  computeStatsByCategory(categories, records, field, targets = {}, valueGetter = null) {
     const stats = {};
-    const hasField = this.hasColumn(field);
+    const hasField = this.hasColumn(field) || (field === 'previsibilite' && this.hasColumn('previsibilité'));
     const total = hasField ? records.length : 0;
 
     categories.forEach(category => {
-      const count = hasField ? records.filter(record => record[field] === category.id).length : 0;
+      const count = hasField ? records.filter(record => {
+        const value = valueGetter ? valueGetter(record) : record[field];
+        return value === category.id;
+      }).length : 0;
       const pourcent = total > 0 ? (count / total) * 100 : 0;
       const cible = targets?.[category.id] || null;
       const statut = this.getStatutFromCible(pourcent, cible, total);
@@ -215,8 +220,11 @@ export class DashboardManager {
       const hours = Number(record.temps_estime_heures);
       if (!Number.isFinite(hours)) return;
       temps.total += hours;
-      if (this.hasColumn('previsibilite') && record.previsibilite && temps.parPrevisibilite[record.previsibilite] !== undefined) {
-        temps.parPrevisibilite[record.previsibilite] += hours;
+      const previsibiliteValue = this.getPrevisibiliteValue(record);
+      if (this.hasColumn('previsibilite') || this.hasColumn('previsibilité')) {
+        if (previsibiliteValue && temps.parPrevisibilite[previsibiliteValue] !== undefined) {
+          temps.parPrevisibilite[previsibiliteValue] += hours;
+        }
       }
     });
 
@@ -370,7 +378,9 @@ export class DashboardManager {
 
   getMissingColumnsNotice() {
     const missing = [];
-    if (!this.hasColumn('previsibilite')) missing.push('previsibilite');
+    if (!this.hasColumn('previsibilite') && !this.hasColumn('previsibilité')) {
+      missing.push('previsibilite/previsibilité');
+    }
     if (!this.hasColumn('type_tache')) missing.push('type_tache');
     if (!this.hasColumn('est_dette_technique')) missing.push('est_dette_technique');
     if (!this.hasColumn('temps_estime_heures')) missing.push('temps_estime_heures');
@@ -396,5 +406,9 @@ export class DashboardManager {
       return 0;
     }
     return records.filter(record => !record[field]).length;
+  }
+
+  getPrevisibiliteValue(record) {
+    return record.previsibilite || record['previsibilité'] || '';
   }
 }

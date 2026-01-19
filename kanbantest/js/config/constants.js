@@ -60,7 +60,7 @@ export const OPTIONAL_COLUMNS = [
   // Colonnes temps et liaisons (Dec 2025)
   'temps_estime_heures', 'temps_reel_heures', 'tache_liens',
   // Colonnes V3 (Kanban)
-  'previsibilite', 'type_tache', 'est_dette_technique'
+  'previsibilite', 'previsibilité', 'type_tache', 'est_dette_technique'
 ];
 
 // === CONSTANTES DE L'INTERFACE ===

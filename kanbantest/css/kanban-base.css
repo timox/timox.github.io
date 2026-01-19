@@ -1387,6 +1387,15 @@ body {
   margin-bottom: 20px;
 }
 
+.timeline-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 380px;
+  color: #64748b;
+  font-weight: 600;
+}
+
 .timeline-item-content {
   display: flex;
   flex-direction: column;

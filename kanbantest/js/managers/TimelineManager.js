@@ -72,6 +72,17 @@ export class TimelineManager {
 
     const records = this.kanban?.currentRecords || [];
     const items = this.convertRecordsToTimelineItems(records);
+
+    if (items.length === 0) {
+      this.timelineContainer.innerHTML = `
+        <div class="timeline-empty">
+          <i class="bi bi-calendar-x me-2"></i>
+          Aucune tâche avec date disponible pour la timeline.
+        </div>
+      `;
+      this.timeline = null;
+      return;
+    }
     const groups = this.createTimelineGroups(items);
 
     const options = {
@@ -105,15 +116,19 @@ export class TimelineManager {
     const activeRecords = records.filter(record => !['Terminé', 'En pause'].includes(record.statut));
 
     activeRecords.forEach(record => {
-      const startDate = normalizeDate(record.date_debut || record.date_echeance);
+      const startDate = normalizeDate(
+        record.date_debut || record.date_echeance || record.date_creation || record.datenow
+      );
       const endDate = normalizeDate(record.date_echeance);
 
       if (!startDate) return;
 
       const group = this.getTimelineGroup(record);
+      const typeValue = this.getTypeValue(record);
+      const previsibiliteValue = this.getPrevisibiliteValue(record);
       const type = startDate && endDate && startDate !== endDate ? 'range' : 'point';
-      const color = this.getTypeColor(record.type_tache);
-      const previsibiliteClass = this.getPrevisibiliteClass(record.previsibilite);
+      const color = this.getTypeColor(typeValue);
+      const previsibiliteClass = this.getPrevisibiliteClass(previsibiliteValue);
 
       items.push({
         id: record.id,
@@ -126,8 +141,8 @@ export class TimelineManager {
         style: `background-color: ${color}; border-color: ${color};`,
         customData: {
           priorite: record.priorite,
-          type: record.type_tache,
-          previsibilite: record.previsibilite,
+          type: typeValue,
+          previsibilite: previsibiliteValue,
           statut: record.statut,
           projet: record.projet,
           est_dette: record.est_dette_technique,
@@ -144,9 +159,9 @@ export class TimelineManager {
       case 'personne':
         return this.getFirstListValue(record.qui);
       case 'type':
-        return record.type_tache || 'Non défini';
+        return this.getTypeValue(record) || 'Non défini';
       case 'previsibilite':
-        return record.previsibilite || 'Non défini';
+        return this.getPrevisibiliteValue(record) || 'Non défini';
       case 'bureau':
         return this.getFirstListValue(record.bureau);
       case 'projet':
@@ -246,9 +261,9 @@ export class TimelineManager {
       case 'personne':
         return 'qui';
       case 'type':
-        return 'type_tache';
+        return this.hasColumn('type_tache') ? 'type_tache' : null;
       case 'previsibilite':
-        return 'previsibilite';
+        return this.hasColumn('previsibilite') ? 'previsibilite' : (this.hasColumn('previsibilité') ? 'previsibilité' : null);
       case 'bureau':
         return 'bureau';
       case 'projet':
@@ -284,6 +299,14 @@ export class TimelineManager {
     const prev = PREVISIBILITE.find(item => item.id === previsibilite);
     if (!prev) return '';
     return prev.id === 'Imprévisible' ? 'timeline-imprevisible' : 'timeline-previsible';
+  }
+
+  getTypeValue(record) {
+    return record.type_tache || record.type_tache_id || '';
+  }
+
+  getPrevisibiliteValue(record) {
+    return record.previsibilite || record['previsibilité'] || '';
   }
 
   getAgeBadge(dateDebut) {
