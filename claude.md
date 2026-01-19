@@ -202,7 +202,7 @@ class Ssir_strategie2:
   id_old_neplus_utiliser = grist.Text()
   objectif = grist.Text()
   sous_objectif = grist.Text()
-  action = grist.Text()
+  axe_strategique = grist.Text()
   responsable = grist.Text()
   echeance = grist.Text()
   portee = grist.Text()
