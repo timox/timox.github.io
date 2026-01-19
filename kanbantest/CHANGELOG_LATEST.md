@@ -15,6 +15,7 @@
 - Ajout d’une vue Timeline intégrée au Kanban.
 - Groupements par personne, type, prévisibilité, bureau ou projet.
 - Drag & drop des dates et des groupements vers Grist.
+- Correction du bouton Timeline (initialisation côté KanbanManager core).
 
 ---
 

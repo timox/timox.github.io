@@ -884,7 +884,16 @@ export class GristManager {
   async getUserInfo() {
     try {
       const gristApi = this.getGristApi();
-      const docInfo = await gristApi.docApi.getDocInfo();
+      let docInfo = null;
+
+      if (gristApi?.docApi?.getDocInfo) {
+        docInfo = await gristApi.docApi.getDocInfo();
+      } else if (gristApi?.getDocInfo) {
+        docInfo = await gristApi.getDocInfo();
+      } else {
+        this.logger.warn('GristManager: getDocInfo indisponible sur cette API');
+        return null;
+      }
       return {
         user: docInfo.user || null,
         permissions: docInfo.permissions || {},
