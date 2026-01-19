@@ -1,7 +1,7 @@
 // === managers/TimelineManager.js ===
 // Timeline V3 pour la planification des tâches
 
-import { PREVISIBILITE, TYPE_TACHES, SEUILS_AGE } from '../config/constants.js';
+import { PREVISIBILITE, TYPE_TACHES, SEUILS_AGE, STATUS_ACCENTS } from '../config/constants.js';
 import { normalizeDate } from '../utils/dates.js';
 import { createModuleLogger } from '../utils/LoggerManager.js';
 
@@ -18,6 +18,9 @@ export class TimelineManager {
     this.btnKanban = document.getElementById('btn-view-kanban');
     this.btnTimeline = document.getElementById('btn-view-timeline');
     this.groupSelect = document.getElementById('timeline-groupby');
+    this.lastSelectedTaskId = null;
+    this.highlightedTaskId = null;
+    this.timelineListenersAttached = false;
     this.initListeners();
   }
 
@@ -38,6 +41,7 @@ export class TimelineManager {
     if (!this.timelineContainer) return;
 
     if (view === 'timeline') {
+      document.body.classList.add('timeline-active');
       this.timelineContainer.style.display = 'block';
       if (this.kanbanWrapper) {
         this.kanbanWrapper.style.display = 'none';
@@ -47,6 +51,7 @@ export class TimelineManager {
       this.btnKanban?.classList.remove('active');
       this.initTimeline();
     } else {
+      document.body.classList.remove('timeline-active');
       this.timelineContainer.style.display = 'none';
       if (this.kanbanWrapper) {
         this.kanbanWrapper.style.display = '';
@@ -54,6 +59,7 @@ export class TimelineManager {
       this.timelineControls?.style.setProperty('display', 'none');
       this.btnTimeline?.classList.remove('active');
       this.btnKanban?.classList.add('active');
+      this.highlightKanbanCard(this.lastSelectedTaskId, { scroll: true });
     }
   }
 
@@ -91,6 +97,7 @@ export class TimelineManager {
       moveable: true,
       horizontalScroll: true,
       verticalScroll: true,
+      height: '70vh',
       orientation: 'top',
       margin: { item: 8, axis: 8 },
       start: new Date(Date.now() - 7 * 86400000),
@@ -111,6 +118,46 @@ export class TimelineManager {
       this.timeline.setOptions(options);
     } else {
       this.timeline = new vis.Timeline(this.timelineContainer, items, groups, options);
+    }
+
+    this.attachTimelineListeners();
+  }
+
+  attachTimelineListeners() {
+    if (!this.timeline || this.timelineListenersAttached) return;
+    this.timeline.on('select', (props) => this.handleTimelineSelect(props));
+    this.timeline.on('doubleClick', (props) => this.handleTimelineOpen(props));
+    this.timelineListenersAttached = true;
+  }
+
+  handleTimelineSelect(props) {
+    const taskId = props?.items?.[0];
+    if (!taskId) return;
+    this.lastSelectedTaskId = taskId;
+    this.highlightKanbanCard(taskId);
+  }
+
+  handleTimelineOpen(props) {
+    const taskId = props?.item;
+    if (!taskId) return;
+    const record = (this.kanban?.currentRecords || []).find(rec => rec.id === taskId);
+    if (record && typeof this.kanban?.openPopup === 'function') {
+      this.kanban.openPopup(record);
+    }
+  }
+
+  highlightKanbanCard(taskId, { scroll = false } = {}) {
+    if (!taskId) return;
+    if (this.highlightedTaskId && this.highlightedTaskId !== taskId) {
+      const previous = document.querySelector(`.kanban-item[data-id="${this.highlightedTaskId}"]`);
+      previous?.classList.remove('timeline-highlight');
+    }
+    const element = document.querySelector(`.kanban-item[data-id="${taskId}"]`);
+    if (!element) return;
+    element.classList.add('timeline-highlight');
+    this.highlightedTaskId = taskId;
+    if (scroll) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
     }
   }
 
@@ -150,6 +197,7 @@ export class TimelineManager {
           type: typeValue,
           previsibilite: previsibiliteValue,
           statut: record.statut,
+          statut_color: this.getStatusColor(record.statut),
           projet: record.projet,
           est_dette: record.est_dette_technique,
           age: this.getAgeBadge(record.date_debut),
@@ -219,6 +267,12 @@ export class TimelineManager {
     }
     if (data.age) {
       badges.push(`<span class="timeline-meta-pill timeline-meta-age">${data.age} Âge</span>`);
+    }
+    if (data.statut) {
+      const statusColor = data.statut_color || '#64748b';
+      badges.push(
+        `<span class="timeline-meta-pill timeline-meta-status" style="--status-color: ${statusColor};">${data.statut}</span>`
+      );
     }
     if (Number.isFinite(data.temps_estime) && data.temps_estime > 0) {
       const hours = data.temps_estime.toString().replace('.', ',');
@@ -331,6 +385,11 @@ export class TimelineManager {
   getTypeClass(typeValue) {
     const type = TYPE_TACHES.find(item => item.id === typeValue);
     return type ? `timeline-${type.classe}` : 'timeline-type-default';
+  }
+
+  getStatusColor(status) {
+    if (!status) return STATUS_ACCENTS.default;
+    return STATUS_ACCENTS[status] || STATUS_ACCENTS.default;
   }
 
   getItemTitle(record, startDate, endDate) {

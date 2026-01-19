@@ -1381,12 +1381,18 @@ body {
 .timeline-container {
   background: #f8fafc;
   border-radius: 16px;
-  padding: 16px;
+  padding: 10px;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
-  min-height: 480px;
-  margin: 16px auto 24px;
-  max-width: 1200px;
+  min-height: 420px;
+  margin: 12px auto 20px;
+  max-width: 100%;
   border: 1px solid #e2e8f0;
+}
+
+.timeline-active .timeline-container {
+  width: 100%;
+  margin: 10px 0 16px;
+  padding: 8px;
 }
 
 .timeline-empty {
@@ -1410,7 +1416,7 @@ body {
 }
 
 .timeline-item-subtitle {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   color: #64748b;
 }
 
@@ -1418,7 +1424,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   color: #475569;
 }
 
@@ -1429,7 +1435,7 @@ body {
 }
 
 .timeline-meta-pill {
-  padding: 2px 8px;
+  padding: 1px 8px;
   border-radius: 999px;
   border: 1px solid rgba(148, 163, 184, 0.6);
   background: #ffffff;
@@ -1462,6 +1468,11 @@ body {
   color: #047857;
 }
 
+.timeline-meta-status {
+  border-color: color-mix(in srgb, var(--status-color, #64748b), transparent 65%);
+  color: var(--status-color, #64748b);
+}
+
 .timeline-imprevisible { border-left: 4px solid #dc3545 !important; }
 .timeline-previsible { border-left: 4px solid #198754 !important; }
 
@@ -1474,7 +1485,7 @@ body {
 }
 
 .vis-item .vis-item-content {
-  padding: 8px 10px;
+  padding: 6px 8px;
 }
 
 .vis-item:hover { box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18); }
@@ -1484,6 +1495,14 @@ body {
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   background: #ffffff;
+}
+
+.timeline-container .vis-labelset .vis-label {
+  padding: 6px 8px;
+}
+
+.timeline-container .vis-time-axis .vis-text {
+  font-size: 0.72rem;
 }
 
 .timeline-container .vis-panel.vis-center {
@@ -1501,11 +1520,11 @@ body {
   align-items: center;
   justify-content: center;
   margin-left: 8px;
-  padding: 2px 8px;
+  padding: 1px 6px;
   border-radius: 999px;
   background: #e2e8f0;
   color: #1e293b;
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   font-weight: 600;
 }
 
@@ -1515,6 +1534,12 @@ body {
 .timeline-type-projet { border-top-color: #198754; }
 .timeline-type-overhead { border-top-color: #6c757d; }
 .timeline-type-default { border-top-color: #94a3b8; }
+
+.kanban-item.timeline-highlight {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
 
 .focus-column .kanban-board-header {
   padding: 1.2rem;
