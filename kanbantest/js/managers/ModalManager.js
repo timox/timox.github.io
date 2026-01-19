@@ -325,7 +325,7 @@ export class ModalManager {
     const strategy = this.kanban.strategiesData.find(s =>
       s.objectif === objectif &&
       s.sous_objectif === sousObjectif &&
-      s.action === action
+      s.axe_strategique === action
     );
 
     const actionDiv = document.createElement('div');
@@ -471,8 +471,8 @@ export class ModalManager {
     // Générer les tags
     tagsContainer.innerHTML = this.selectedStrategies.map(strategy => `
       <span class="badge bg-primary me-2 mb-2 strategy-tag" data-strategy-id="${strategy.id}">
-        <span class="strategy-tag-text" title="${strategy.objectif} → ${strategy.sous_objectif} → ${strategy.action}">
-          ${strategy.action}
+        <span class="strategy-tag-text" title="${strategy.objectif} → ${strategy.sous_objectif} → ${strategy.axe_strategique}">
+          ${strategy.axe_strategique}
         </span>
         <button type="button" class="btn-close btn-close-white ms-2 strategy-tag-remove" 
                 data-strategy-id="${strategy.id}" title="Retirer cette stratégie">
@@ -495,7 +495,7 @@ export class ModalManager {
       preview.textContent = '';
     } else if (this.selectedStrategies.length === 1) {
       const strategy = this.selectedStrategies[0];
-      preview.textContent = `${strategy.objectif} → ${strategy.action}`;
+      preview.textContent = `${strategy.objectif} → ${strategy.axe_strategique}`;
     } else {
       preview.textContent = `${this.selectedStrategies.length} stratégies sélectionnées`;
     }
@@ -588,7 +588,7 @@ export class ModalManager {
       // Pour chaque sous-objectif, trouver les actions
       sousObjectifsList.forEach(sousObjectif => {
         const strategiesForSousObjectif = strategiesForObjectif.filter(s => s.sous_objectif === sousObjectif);
-        const actionsList = [...new Set(strategiesForSousObjectif.map(s => s.action))].sort();
+        const actionsList = [...new Set(strategiesForSousObjectif.map(s => s.axe_strategique))].sort();
         actions[sousObjectif] = actionsList;
       });
     });
@@ -3070,7 +3070,7 @@ export class ModalManager {
       // Chercher les stratégies correspondantes
       const getStrategyInfo = (id) => {
         const strategy = this.kanban.strategiesData?.find(s => s.id === id);
-        return strategy ? `${strategy.objectif} → ${strategy.action}` : `Stratégie ID ${id}`;
+        return strategy ? `${strategy.objectif} → ${strategy.axe_strategique}` : `Stratégie ID ${id}`;
       };
       
       const added = newIdsArray.filter(id => !oldIdsArray.includes(id));

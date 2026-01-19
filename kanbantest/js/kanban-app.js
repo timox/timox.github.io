@@ -62,6 +62,7 @@ import { HistoryManager } from './managers/HistoryManager.js';
 import { DatePickerManager } from './managers/DatePickerManager.js';
 import { GristManager } from './managers/GristManager.js';
 import { JalonManager } from './managers/JalonManager.js';
+import { DashboardManager } from './managers/DashboardManager.js';
 
 // === CONSTANTES ===
 const STRATEGIES_TABLE_ID = "Ssir_strategie2";
@@ -121,6 +122,8 @@ class KanbanManager {
     this.historyManager = null;
     this.datePickerManager = null;
     this.gristManager = null;
+    this.jalonManager = null;
+    this.dashboardManager = null;
     
     this.init();
   }
@@ -209,6 +212,9 @@ class KanbanManager {
 
     // Manager des jalons
     this.jalonManager = new JalonManager(this);
+
+    // Manager du dashboard
+    this.dashboardManager = new DashboardManager(this);
 
     console.log('✅ Managers initialisés');
   }
@@ -434,7 +440,7 @@ class KanbanManager {
         id2: strategy.id,
         objectif: strategy.objectif || '',
         sous_objectif: strategy.sous_objectif || '',
-        action: strategy.action || '',
+        axe_strategique: strategy.axe_strategique || '',
         echeance: strategy.echeance || '',
         responsable: strategy.responsable || '',
         portee: strategy.portee || ''
@@ -465,14 +471,14 @@ class KanbanManager {
           id: records.id[id],
           objectif: records.objectif?.[id] || '',
           sous_objectif: records.sous_objectif?.[id] || '',
-          action: records.action?.[id] || '',
+          axe_strategique: records.axe_strategique?.[id] || '',
           echeance: records.echeance?.[id] || '',
           responsable: records.responsable?.[id] || '',
           portee: records.portee?.[id] || ''
         };
         
         // Ne garder que les stratégies complètes
-        if (strategy.objectif && strategy.sous_objectif && strategy.action) {
+        if (strategy.objectif && strategy.sous_objectif && strategy.axe_strategique) {
           mapped.push(strategy);
         }
         
@@ -709,7 +715,7 @@ class KanbanManager {
     // Debug stratégies désactivé
     
     const strategiesText = strategiesInfo.length > 0 
-      ? strategiesInfo.map(s => `${s.objectif} → ${s.action}`).join(' | ')
+      ? strategiesInfo.map(s => `${s.objectif} → ${s.axe_strategique}`).join(' | ')
       : '';
     const strategyTooltip = strategiesText ? 
       `data-toggle="tooltip" data-placement="top" title="Stratégies: ${strategiesText}"` : '';
@@ -724,7 +730,7 @@ class KanbanManager {
         projet: record.projet,
         strategie_objectif: strategiesInfo[0]?.objectif,
         strategie_sous_objectif: strategiesInfo[0]?.sous_objectif,
-        strategie_action: strategiesInfo[0]?.action
+        strategie_action: strategiesInfo[0]?.axe_strategique
       }) : '';
 
     // Description résumée depuis notes.content
@@ -977,7 +983,7 @@ class KanbanManager {
     this.strategiesData.forEach(strategy => {
       const option = document.createElement('option');
       option.value = strategy.id;
-      option.textContent = `${strategy.objectif} - ${strategy.action}`;
+      option.textContent = `${strategy.objectif} - ${strategy.axe_strategique}`;
       strategySelect.appendChild(option);
     });
     
@@ -997,12 +1003,12 @@ class KanbanManager {
     
     if (objectifEl) objectifEl.textContent = strategy?.objectif || '';
     if (sousObjectifEl) sousObjectifEl.textContent = strategy?.sous_objectif || '';
-    if (actionEl) actionEl.textContent = strategy?.action || '';
+    if (actionEl) actionEl.textContent = strategy?.axe_strategique || '';
     
     // Mettre à jour les champs cachés
     setFieldValue('popup-strategie-objectif-hidden', strategy?.objectif || '');
     setFieldValue('popup-strategie-sous-objectif-hidden', strategy?.sous_objectif || '');
-    setFieldValue('popup-strategie-action-hidden', strategy?.action || '');
+    setFieldValue('popup-strategie-action-hidden', strategy?.axe_strategique || '');
   }
 
   // === RENDU DU KANBAN CORRIGÉ ===
@@ -1026,6 +1032,10 @@ class KanbanManager {
     // Filtrer les enregistrements
     const filteredRecords = this.filterRecords(this.currentRecords || []);
     this.logger.debug(`Filtrage: ${filteredRecords.length} enregistrements retenus`);
+
+    if (this.dashboardManager) {
+      this.dashboardManager.renderDashboard(filteredRecords);
+    }
     
     // Debug spécial pour la tâche 124
     const task124 = this.currentRecords?.find(r => r.id === 124);
@@ -1171,6 +1181,7 @@ class KanbanManager {
       'À faire': '<i class="bi bi-calendar-plus"></i>',
       'En cours': '<i class="bi bi-play-circle"></i>',
       'En attente': '<i class="bi bi-pause-circle"></i>',
+      'En pause': '<i class="bi bi-pause-btn"></i>',
       'Bloqué': '<i class="bi bi-x-octagon"></i>',
       'Validation': '<i class="bi bi-check-circle"></i>',
       'Terminé': '<i class="bi bi-check-circle-fill"></i>'
@@ -1185,6 +1196,7 @@ class KanbanManager {
       'À faire': 'status-todo', 
       'En cours': 'status-progress',
       'En attente': 'status-waiting',
+      'En pause': 'status-paused',
       'Bloqué': 'status-blocked',
       'Validation': 'status-validation',
       'Terminé': 'status-done'
@@ -1884,7 +1896,7 @@ class KanbanManager {
         `"${bureaux}"`,
         `"${responsables}"`,
         record.date_echeance || '',
-        `"${strategy ? `${strategy.objectif} - ${strategy.action}` : ''}"`
+        `"${strategy ? `${strategy.objectif} - ${strategy.axe_strategique}` : ''}"`
       ];
 
       csv += row.join(',') + '\n';
