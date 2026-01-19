@@ -241,7 +241,7 @@ export class KanbanManager {
     const ids = normalizeColumn(records.id);
     const objectifs = normalizeColumn(records.objectif);
     const sousObjectifs = normalizeColumn(records.sous_objectif);
-    const actions = normalizeColumn(records.action);
+    const axesStrategiques = normalizeColumn(records.axe_strategique);
     const echeances = normalizeColumn(records.echeance);
     const responsables = normalizeColumn(records.responsable);
     const portees = normalizeColumn(records.portee);
@@ -257,13 +257,13 @@ export class KanbanManager {
           id: normalizedId,
           objectif: objectifs[index] || '',
           sous_objectif: sousObjectifs[index] || '',
-          action: actions[index] || '',
+          axe_strategique: axesStrategiques[index] || '',
           echeance: echeances[index] || '',
           responsable: responsables[index] || '',
           portee: portees[index] || ''
         };
 
-        if (strategy.objectif && strategy.action) {
+        if (strategy.objectif && strategy.axe_strategique) {
           mapped.push(strategy);
         }
       } catch (error) {
