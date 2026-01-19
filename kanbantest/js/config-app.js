@@ -30,8 +30,11 @@ class ConfigApp {
     await this.waitForGrist();
 
     // Synchroniser la config depuis les données Grist existantes
-    // (extrait bureaux, responsables, projets des tâches)
+    // (extrait bureaux, responsables)
     this.configManager.syncFromGrist(this.gristManager.currentRecords);
+
+    await this.loadStrategiesFromGrist();
+    this.projects = this.getProjectsFromGrist();
 
     // Charger l'interface
     this.setupEventListeners();
@@ -147,6 +150,16 @@ class ConfigApp {
       }
     });
 
+    $(document).on('click', '.btn-edit-strategie, .btn-edit-strategie *', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const $btn = $(e.target).closest('.btn-edit-strategie');
+      const id = parseInt($btn.attr('data-id'));
+      if (id) {
+        this.handleEditStrategie(id);
+      }
+    });
+
     // === PROJETS ===
     $('#btn-add-projet').on('click', (e) => {
       e.preventDefault();
@@ -161,6 +174,16 @@ class ConfigApp {
       console.log('Delete projet clicked, nom:', nom, 'btn:', $btn.length);
       if (nom) {
         this.handleDeleteProjet(nom);
+      }
+    });
+
+    $(document).on('click', '.btn-edit-projet, .btn-edit-projet *', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const $btn = $(e.target).closest('.btn-edit-projet');
+      const nom = $btn.attr('data-projet');
+      if (nom) {
+        this.handleEditProjet(nom);
       }
     });
 
@@ -204,6 +227,13 @@ class ConfigApp {
       if (e.which === 13) {
         e.preventDefault();
         this.handleAddProjet();
+      }
+    });
+
+    $('#input-strategie-axe').on('keypress', (e) => {
+      if (e.which === 13) {
+        e.preventDefault();
+        this.handleAddStrategie();
       }
     });
 
@@ -426,43 +456,67 @@ class ConfigApp {
   // === STRATÉGIES ===
 
   handleAddStrategie() {
-    const code = $('#input-strategie-code').val();
     const objectif = $('#input-strategie-objectif').val();
     const sousObjectif = $('#input-strategie-sous-objectif').val();
+    const axeStrategique = $('#input-strategie-axe').val();
 
     try {
-      this.configManager.addStrategie({ code, objectif, sousObjectif });
-      $('#input-strategie-code').val('');
-      $('#input-strategie-objectif').val('');
-      $('#input-strategie-sous-objectif').val('');
-      this.renderStrategies();
-      this.updateStats();
-      this.showSuccess('Stratégie ajoutée');
+      this.addStrategieToGrist({ objectif, sousObjectif, axeStrategique });
     } catch (error) {
       this.showError(error.message);
     }
   }
 
   async handleDeleteStrategie(id) {
-    // Les stratégies sont dans une table séparée dans Grist
-    // On ne peut pas facilement vérifier l'usage direct
-    // Mais on peut vérifier si le code de la stratégie est utilisé
-
-    const strategies = this.configManager.getStrategies();
-    const strategie = strategies.find(s => s.id === id);
+    const strategie = (this.strategies || []).find(s => s.id === id);
     if (!strategie) return;
 
-    if (confirm(`⚠️ Supprimer la stratégie "${strategie.code}" ?\n\nNote: Cette suppression n'affecte que l'auto-complétion.\nLes stratégies existantes dans Grist restent inchangées.`)) {
-      this.configManager.deleteStrategie(id);
+    if (!confirm(`Supprimer l'axe stratégique "${strategie.axe_strategique}" ?`)) return;
+
+    try {
+      await window.grist.docApi.applyUserActions([
+        ['RemoveRecord', 'Ssir_strategie2', id]
+      ]);
+      await this.loadStrategiesFromGrist();
       this.renderStrategies();
       this.updateStats();
-      this.showSuccess('Stratégie supprimée de la configuration');
+      this.showSuccess('Stratégie supprimée');
+    } catch (error) {
+      this.showError('Suppression impossible: ' + error.message);
+    }
+  }
+
+  async handleEditStrategie(id) {
+    const strategie = (this.strategies || []).find(s => s.id === id);
+    if (!strategie) return;
+
+    const objectif = prompt('Objectif', strategie.objectif || '');
+    if (objectif === null) return;
+    const sousObjectif = prompt('Sous-objectif', strategie.sous_objectif || '');
+    if (sousObjectif === null) return;
+    const axeStrategique = prompt('Axe stratégique', strategie.axe_strategique || '');
+    if (axeStrategique === null) return;
+
+    try {
+      await window.grist.docApi.applyUserActions([
+        ['UpdateRecord', 'Ssir_strategie2', id, {
+          objectif: objectif.trim(),
+          sous_objectif: sousObjectif.trim(),
+          axe_strategique: axeStrategique.trim()
+        }]
+      ]);
+      await this.loadStrategiesFromGrist();
+      this.renderStrategies();
+      this.showSuccess('Stratégie mise à jour');
+    } catch (error) {
+      this.showError('Mise à jour impossible: ' + error.message);
     }
   }
 
   renderStrategies() {
-    const strategies = this.configManager.getStrategies();
+    const strategies = this.strategies || [];
     const $list = $('#list-strategies');
+    $('#count-strategies').text(strategies.length);
 
     if (strategies.length === 0) {
       $list.html('<div class="text-muted text-center py-3">Aucune stratégie enregistrée</div>');
@@ -473,14 +527,19 @@ class ConfigApp {
       <div class="list-group-item d-flex justify-content-between align-items-start">
         <div class="flex-grow-1">
           <div class="d-flex align-items-center mb-1">
-            <span class="badge bg-primary me-2">${this.escapeHtml(s.code)}</span>
             <strong>${this.escapeHtml(s.objectif)}</strong>
           </div>
-          ${s.sousObjectif ? `<div class="small text-muted ms-4">${this.escapeHtml(s.sousObjectif)}</div>` : ''}
+          ${s.sous_objectif ? `<div class="small text-muted ms-4">${this.escapeHtml(s.sous_objectif)}</div>` : ''}
+          ${s.axe_strategique ? `<div class="small ms-4">${this.escapeHtml(s.axe_strategique)}</div>` : ''}
         </div>
-        <button class="btn btn-sm btn-outline-danger btn-delete-strategie" data-id="${s.id}">
-          <i class="bi bi-trash"></i>
-        </button>
+        <div class="d-flex gap-1">
+          <button class="btn btn-sm btn-outline-secondary btn-edit-strategie" data-id="${s.id}">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-danger btn-delete-strategie" data-id="${s.id}">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
       </div>
     `).join('');
 
@@ -493,11 +552,7 @@ class ConfigApp {
     const nom = $('#input-projet').val();
 
     try {
-      this.configManager.addProjet(nom);
-      $('#input-projet').val('');
-      this.renderProjets();
-      this.updateStats();
-      this.showSuccess('Projet ajouté');
+      this.addProjetToGrist(nom);
     } catch (error) {
       this.showError(error.message);
     }
@@ -512,17 +567,132 @@ class ConfigApp {
       return;
     }
 
-    if (confirm(`Supprimer le projet "${nom}" ?`)) {
-      this.configManager.deleteProjet(nom);
-      this.renderProjets();
-      this.updateStats();
-      this.showSuccess('Projet supprimé');
+    if (!confirm(`Supprimer le projet "${nom}" ?`)) return;
+
+    await this.bulkUpdateProjects(nom, '');
+    this.projects = this.getProjectsFromGrist();
+    this.renderProjets();
+    this.updateStats();
+    this.showSuccess('Projet supprimé');
+  }
+
+  async handleEditProjet(nom) {
+    const nouveauNom = prompt('Nouveau nom du projet', nom);
+    if (nouveauNom === null) return;
+    const trimmed = nouveauNom.trim();
+    if (!trimmed) {
+      this.showError('Le nom du projet est obligatoire');
+      return;
     }
+    await this.bulkUpdateProjects(nom, trimmed);
+    this.projects = this.getProjectsFromGrist();
+    this.renderProjets();
+    this.updateStats();
+    this.showSuccess('Projet mis à jour');
   }
 
   renderProjets() {
-    const projets = this.configManager.getProjets();
-    this.renderSimpleList('#list-projets', projets, 'btn-delete-projet', 'projet');
+    const projets = this.projects || [];
+    const $list = $('#list-projets');
+    $('#count-projets').text(projets.length);
+
+    if (projets.length === 0) {
+      $list.html('<div class="text-muted text-center py-3">Aucun projet enregistré</div>');
+      return;
+    }
+
+    const html = projets.map(projet => `
+      <div class="list-group-item d-flex justify-content-between align-items-center">
+        <span>${this.escapeHtml(projet)}</span>
+        <div class="d-flex gap-1">
+          <button class="btn btn-sm btn-outline-secondary btn-edit-projet" data-projet="${this.escapeHtml(projet)}">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-danger btn-delete-projet" data-projet="${this.escapeHtml(projet)}">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+      </div>
+    `).join('');
+
+    $list.html(html);
+  }
+
+  async addStrategieToGrist({ objectif, sousObjectif, axeStrategique }) {
+    if (!objectif || !objectif.trim()) throw new Error('Objectif obligatoire');
+    if (!axeStrategique || !axeStrategique.trim()) throw new Error('Axe stratégique obligatoire');
+
+    await window.grist.docApi.applyUserActions([
+      ['AddRecord', 'Ssir_strategie2', null, {
+        objectif: objectif.trim(),
+        sous_objectif: (sousObjectif || '').trim(),
+        axe_strategique: axeStrategique.trim()
+      }]
+    ]);
+
+    $('#input-strategie-objectif').val('');
+    $('#input-strategie-sous-objectif').val('');
+    $('#input-strategie-axe').val('');
+    await this.loadStrategiesFromGrist();
+    this.renderStrategies();
+    this.updateStats();
+    this.showSuccess('Stratégie ajoutée');
+  }
+
+  async loadStrategiesFromGrist() {
+    try {
+      const data = await window.grist.docApi.fetchTable('Ssir_strategie2');
+      this.strategies = [];
+      if (!data?.id) return;
+      const count = data.id.length;
+      for (let i = 0; i < count; i++) {
+        this.strategies.push({
+          id: data.id[i],
+          objectif: data.objectif?.[i] || '',
+          sous_objectif: data.sous_objectif?.[i] || '',
+          axe_strategique: data.axe_strategique?.[i] || ''
+        });
+      }
+      $('#count-strategies').text(this.strategies.length);
+    } catch (error) {
+      this.showError('Chargement stratégies impossible: ' + error.message);
+      this.strategies = [];
+    }
+  }
+
+  getProjectsFromGrist() {
+    const projects = new Set();
+    (this.gristManager.currentRecords || []).forEach(record => {
+      if (record.projet) {
+        projects.add(String(record.projet).trim());
+      }
+    });
+    return Array.from(projects).filter(Boolean).sort((a, b) => a.localeCompare(b));
+  }
+
+  async addProjetToGrist(nom) {
+    const trimmed = (nom || '').trim();
+    if (!trimmed) throw new Error('Le nom du projet est obligatoire');
+    if ((this.projects || []).includes(trimmed)) {
+      throw new Error('Ce projet existe déjà');
+    }
+    this.projects = [...(this.projects || []), trimmed].sort();
+    $('#input-projet').val('');
+    this.renderProjets();
+    this.updateStats();
+    this.showSuccess('Projet ajouté (liste locale)');
+  }
+
+  async bulkUpdateProjects(oldValue, newValue) {
+    const updates = [];
+    (this.gristManager.currentRecords || []).forEach(record => {
+      if (record.projet === oldValue) {
+        updates.push(['UpdateRecord', 'Ssir_principale_task', record.id, { projet: newValue }]);
+      }
+    });
+    if (updates.length > 0) {
+      await window.grist.docApi.applyUserActions(updates);
+    }
   }
 
   // === PRIORITÉS, URGENCES, IMPACTS (lecture seule) ===
@@ -704,8 +874,8 @@ class ConfigApp {
     $('#stat-bureaux').text(stats.bureaux);
     $('#stat-services').text(stats.services);
     $('#stat-groupements').text(stats.groupements);
-    $('#stat-strategies').text(stats.strategies);
-    $('#stat-projets').text(stats.projets);
+    $('#stat-strategies').text((this.strategies || []).length);
+    $('#stat-projets').text((this.projects || []).length);
   }
 
   // === EXPORT / IMPORT / RESET ===
