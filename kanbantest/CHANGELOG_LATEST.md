@@ -1,3 +1,24 @@
+# 📈 Changelog - 2025-08-20
+
+## 🧭 **Mise à jour V3 : stratégie & dashboard**
+
+### ✅ **Renommage stratégie**
+- Le champ stratégique est désormais **`axe_strategique`** (remplace `action`) dans les mappings et l’UI.
+- Les libellés UI parlent d’**axe stratégique** pour éviter toute confusion métier.
+
+### ✅ **Dashboard V3**
+- Ajout du dashboard V3 (statistiques, alertes, capacité).
+- Affichage d’un avertissement si les colonnes V3 sont absentes.
+- Indication des tâches sans prévisibilité/type.
+
+### ✅ **Timeline V3 (planification)**
+- Ajout d’une vue Timeline intégrée au Kanban.
+- Groupements par personne, type, prévisibilité, bureau ou projet.
+- Drag & drop des dates et des groupements vers Grist.
+- Correction du bouton Timeline (initialisation côté KanbanManager core).
+
+---
+
 # 📈 Changelog - 2025-07-25
 
 ## 🎯 **Corrections Critiques Appliquées**
