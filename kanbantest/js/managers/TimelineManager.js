@@ -203,13 +203,15 @@ export class TimelineManager {
       }
 
       const updates = {};
-      const start = normalizeDate(item.start);
-      const end = normalizeDate(item.end);
+      const startValue = item.start instanceof Date ? item.start.getTime() : item.start;
+      const endValue = item.end instanceof Date ? item.end.getTime() : item.end;
+      const start = normalizeDate(startValue);
+      const end = normalizeDate(endValue);
 
-      if (this.hasColumn('date_debut')) {
+      if (this.hasColumn('date_debut') && start !== null) {
         updates.date_debut = start;
       }
-      if (this.hasColumn('date_echeance')) {
+      if (this.hasColumn('date_echeance') && end !== null) {
         updates.date_echeance = end;
       }
 
