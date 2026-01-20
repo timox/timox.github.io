@@ -646,6 +646,14 @@ body {
   row-gap: 0.5rem;
 }
 
+.kanban-controls-row {
+  align-items: flex-start;
+}
+
+.kanban-controls-row > [class*="col-"] {
+  min-width: 160px;
+}
+
 .kanban-controls .form-control,
 .kanban-controls .form-select {
   padding: 0.4rem 0.7rem;
@@ -1154,9 +1162,9 @@ body {
 .dashboard-container {
   background: #ffffff;
   border-radius: 12px;
-  padding: 14px;
+  padding: 10px;
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 
 .dashboard-container.dashboard-collapsed .dashboard-body {
@@ -1173,16 +1181,16 @@ body {
 .dashboard-alertes {
   display: grid;
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .dashboard-alerte {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 8px 12px;
+  padding: 6px 10px;
   border-radius: 10px;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
 }
 
 .dashboard-alerte-critical {
@@ -1200,7 +1208,7 @@ body {
   flex-wrap: wrap;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
 .dashboard-header h3 {
@@ -1222,34 +1230,34 @@ body {
 .dashboard-pill {
   background: #f1f5f9;
   color: #475569;
-  padding: 4px 10px;
+  padding: 3px 8px;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
 }
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
-  margin-bottom: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
 .dashboard-section h4 {
-  margin-bottom: 6px;
-  font-size: 0.9rem;
+  margin-bottom: 4px;
+  font-size: 0.85rem;
   font-weight: 700;
 }
 
 .dashboard-list {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .dashboard-stat-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 10px;
+  padding: 6px 8px;
   border-radius: 10px;
   background: #f8fafc;
 }
@@ -1277,7 +1285,7 @@ body {
 }
 
 .dashboard-stat-emoji {
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
 .dashboard-stat-title {
@@ -1285,7 +1293,7 @@ body {
 }
 
 .dashboard-stat-meta {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   color: #64748b;
 }
 
@@ -1303,15 +1311,15 @@ body {
 .dashboard-capacite {
   background: #f8fafc;
   border-radius: 10px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   margin-bottom: 0;
 }
 
 .dashboard-secondary-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
-  margin-bottom: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
 .dashboard-capacite-grid {
@@ -1329,7 +1337,7 @@ body {
 .dashboard-semaine-type {
   background: #f8fafc;
   border-radius: 10px;
-  padding: 10px 12px;
+  padding: 8px 10px;
 }
 
 .dashboard-semaine-grid {
@@ -1452,10 +1460,16 @@ body {
 .timeline-item-title {
   font-weight: 600;
   color: #0f172a;
+  font-size: 0.82rem;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .timeline-item-subtitle {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   color: #64748b;
 }
 
@@ -1524,7 +1538,7 @@ body {
 }
 
 .vis-item .vis-item-content {
-  padding: 6px 8px;
+  padding: 4px 6px;
 }
 
 .vis-item:hover { box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18); }
@@ -1544,6 +1558,14 @@ body {
   font-size: 0.72rem;
 }
 
+.timeline-container .vis-labelset .vis-label:nth-child(even) {
+  background: #f8fafc;
+}
+
+.timeline-container .vis-panel.vis-center .vis-group:nth-child(even) {
+  background: #f8fafc;
+}
+
 .timeline-container .vis-panel.vis-center {
   background-image: linear-gradient(to right, rgba(148, 163, 184, 0.12) 1px, transparent 1px);
   background-size: 80px 100%;
@@ -1552,6 +1574,13 @@ body {
 .timeline-group-label {
   font-weight: 600;
   color: #0f172a;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .timeline-group-count {

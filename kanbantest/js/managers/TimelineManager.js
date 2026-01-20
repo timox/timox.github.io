@@ -351,7 +351,7 @@ export class TimelineManager {
     const groupLabel = this.getGroupLabelText();
     return Array.from(uniqueGroups.values()).map(group => ({
       id: group.id,
-      content: `<span class="timeline-group-label" title="Ligne = ${groupLabel}">${group.content}</span><span class="timeline-group-count">${group.count}</span>`,
+      content: `<span class="timeline-group-label" title="Ligne = ${groupLabel}">${group.content}</span>&nbsp;<span class="timeline-group-count">${group.count}</span>`,
       order: group.order
     }));
   }

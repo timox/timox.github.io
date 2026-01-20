@@ -63,7 +63,7 @@
     <!-- Controls -->
     <div class="container-fluid">
       <div class="kanban-controls">
-        <div class="row g-2 align-items-center" style="min-height: auto;">
+        <div class="row g-2 align-items-center kanban-controls-row" style="min-height: auto;">
           <div class="col-auto">
             <div class="view-selector">
               <button id="btn-view-kanban" class="btn btn-outline-primary btn-sm active" type="button">Kanban</button>
@@ -88,7 +88,7 @@
             </div>
           </div>
           <!-- Boutons de mode de vue (sera injecté par JS) -->
-          <div class="col-md-3">
+          <div class="col-lg-3 col-md-4 col-sm-6">
             <div class="input-group">
               <input type="text" class="form-control" id="search-input" placeholder="Rechercher..." aria-label="Rechercher des tâches">
               <button class="btn btn-outline-secondary" type="button" id="btn-clear-filters" title="Effacer tous les filtres">
@@ -96,19 +96,19 @@
               </button>
             </div>
           </div>
-          <div class="col-md-2">
+          <div class="col-lg-2 col-md-3 col-sm-6">
             <select class="form-select" id="filter-bureau" aria-label="Filtrer par bureau"></select>
           </div>
-          <div class="col-md-2">
+          <div class="col-lg-2 col-md-3 col-sm-6">
             <select class="form-select" id="filter-qui" aria-label="Filtrer par responsable"></select>
           </div>
-          <div class="col-md-2">
+          <div class="col-lg-2 col-md-3 col-sm-6">
             <select class="form-select" id="filter-projet" aria-label="Filtrer par projet"></select>
           </div>
-          <div class="col-md-2">
+          <div class="col-lg-2 col-md-3 col-sm-6">
             <select class="form-select" id="filter-statut" aria-label="Filtrer par statut"></select>
           </div>
-          <div class="col-md-1">
+          <div class="col-auto">
             <div class="form-check">
               <input class="form-check-input" type="checkbox" id="show-termine" checked>
               <label class="form-check-label" for="show-termine">Terminés</label>
