@@ -18,6 +18,7 @@ let currentFilters = {
   bureau: ''
 };
 let currentViewMode = 'missions';
+let currentEditingMissionCode = null;
 
 /**
  * Initialise l'application
@@ -111,7 +112,7 @@ function setupEventListeners() {
 /**
  * Gère le changement de stratégie sélectionnée
  * Pré-remplit le nom de la mission et le responsable
- * Note: Une stratégie = objectif + sous_objectif + action (une ligne de Ssir_strategie2)
+ * Note: Une stratégie = objectif + sous_objectif + axe_strategique (une ligne de Ssir_strategie2)
  */
 function handleStrategyChange() {
   const $selected = $('#mission-strategie option:selected');
@@ -129,7 +130,7 @@ function handleStrategyChange() {
   const action = $selected.data('action') || '';
   const responsable = $selected.data('responsable') || '';
 
-  // Pré-remplir le nom de la mission si vide (avec l'action qui est le niveau le plus précis)
+  // Pré-remplir le nom de la mission si vide (avec l'axe stratégique qui est le niveau le plus précis)
   const $missionNom = $('#mission-nom');
   if (!$missionNom.val().trim()) {
     $missionNom.val(action);
@@ -141,7 +142,7 @@ function handleStrategyChange() {
     $missionResponsable.val(responsable);
   }
 
-  // Afficher l'aperçu de la stratégie complète (objectif > sous_objectif > action)
+  // Afficher l'aperçu de la stratégie complète (objectif > sous_objectif > axe stratégique)
   let hierarchyHtml = '';
   if (objectif) {
     hierarchyHtml += `<span class="text-primary">${escapeHtml(objectif)}</span>`;
@@ -210,18 +211,18 @@ async function loadStrategies() {
         id2: gristData.id2 ? gristData.id2[i] : gristData.id[i],
         objectif: gristData.objectif ? gristData.objectif[i] : '',
         sous_objectif: gristData.sous_objectif ? gristData.sous_objectif[i] : '',
-        action: gristData.action ? gristData.action[i] : '',
+        axe_strategique: gristData.axe_strategique ? gristData.axe_strategique[i] : '',
         responsable: gristData.responsable ? gristData.responsable[i] : '',
         echeance: gristData.echeance ? gristData.echeance[i] : '',
         portee: gristData.portee ? gristData.portee[i] : ''
       });
     }
 
-    // Trier par objectif puis sous_objectif puis action
+    // Trier par objectif puis sous_objectif puis axe stratégique
     strategies.sort((a, b) => {
       if (a.objectif !== b.objectif) return a.objectif.localeCompare(b.objectif);
       if (a.sous_objectif !== b.sous_objectif) return a.sous_objectif.localeCompare(b.sous_objectif);
-      return a.action.localeCompare(b.action);
+      return a.axe_strategique.localeCompare(b.axe_strategique);
     });
 
     logger.debug(`Loaded ${strategies.length} strategies`);
@@ -237,7 +238,7 @@ async function loadStrategies() {
 
 /**
  * Peuple le sélecteur de stratégie avec les données chargées
- * Une stratégie = objectif + sous_objectif + action (une ligne complète)
+ * Une stratégie = objectif + sous_objectif + axe stratégique (une ligne complète)
  */
 function populateStrategySelector() {
   const $selector = $('#mission-strategie');
@@ -255,15 +256,15 @@ function populateStrategySelector() {
     const strategiesForObjectif = strategies.filter(s => s.objectif === objectif);
 
     for (const strat of strategiesForObjectif) {
-      // Afficher sous_objectif > action pour identifier la stratégie
+      // Afficher sous_objectif > axe stratégique pour identifier la stratégie
       const label = strat.sous_objectif
-        ? `${strat.sous_objectif} > ${strat.action}`
-        : strat.action;
+        ? `${strat.sous_objectif} > ${strat.axe_strategique}`
+        : strat.axe_strategique;
 
       $optgroup.append(`<option value="${strat.id}"
         data-objectif="${escapeHtml(strat.objectif)}"
         data-sous-objectif="${escapeHtml(strat.sous_objectif)}"
-        data-action="${escapeHtml(strat.action)}"
+        data-action="${escapeHtml(strat.axe_strategique)}"
         data-responsable="${escapeHtml(strat.responsable)}"
         data-echeance="${escapeHtml(strat.echeance)}">
         ${escapeHtml(label)}
@@ -555,16 +556,23 @@ function openNewMissionModal() {
   $('#mission-code').val(generateMissionCode());
   $('#mission-strategie').val(''); // Réinitialiser le sélecteur de stratégie
   $('#strategy-preview').hide(); // Masquer l'aperçu
+  $('#mission-code').prop('disabled', false);
+  currentEditingMissionCode = null;
   $('#modal-mission').modal('show');
 }
 
 /**
  * Ajoute un formulaire de sous-action
  */
-function addSousActionForm() {
+function addSousActionForm(initialData = {}) {
   const $template = $($('#template-sous-action-form').html());
   const count = $('#sous-actions-container .sous-action-form').length + 1;
-  $template.find('.sa-code').val(`SA-${String(count).padStart(3, '0')}`);
+  $template.find('.sa-code').val(initialData.code || `SA-${String(count).padStart(3, '0')}`);
+  $template.find('.sa-nom').val(initialData.nom || '');
+  $template.find('.sa-categorie').val(initialData.categorie || 'Projet');
+  if (initialData.charge !== undefined && initialData.charge !== null) {
+    $template.find('.sa-charge').val(initialData.charge);
+  }
   $('#sous-actions-container').append($template);
 }
 
@@ -586,7 +594,7 @@ async function saveMission() {
 
     // Récupérer les données du formulaire
     const missionData = {
-      code: $('#mission-code').val().trim(),
+      code: ($('#mission-code').val().trim()) || currentEditingMissionCode,
       nom: $('#mission-nom').val().trim(),
       responsable: $('#mission-responsable').val().trim(),
       bureau: $('#mission-bureau').val(),
@@ -597,7 +605,7 @@ async function saveMission() {
       strategie_id: strategyId ? parseInt(strategyId) : null,
       strategie_objectif: selectedStrategy ? selectedStrategy.objectif : null,
       strategie_sous_objectif: selectedStrategy ? selectedStrategy.sous_objectif : null,
-      strategie_action: selectedStrategy ? selectedStrategy.action : null
+      strategie_action: selectedStrategy ? selectedStrategy.axe_strategique : null
     };
 
     // Valider
@@ -711,9 +719,53 @@ function handleVoirTaches(e) {
 function handleEditMission(e) {
   const mission = $(e.currentTarget).closest('.mission-card-wrapper').data('mission');
   if (mission) {
-    // TODO: Implémenter l'édition
-    alert('Fonctionnalité d\'édition à venir');
+    $('#modal-mission-title').text('Modifier la Mission');
+    $('#form-mission')[0].reset();
+    $('#sous-actions-container').empty();
+    $('#mission-code').val(mission.code).prop('disabled', true);
+    $('#mission-nom').val(mission.nom);
+    $('#mission-responsable').val(mission.responsable || '');
+    $('#mission-bureau').val(mission.bureau || '');
+    $('#mission-priorite').val(mission.priorite || 'Moyenne');
+    $('#mission-date-debut').val(mission.date_debut || '');
+    $('#mission-date-fin').val(mission.date_fin || '');
+    currentEditingMissionCode = mission.code;
+
+    const strategyOption = findStrategyOption(mission);
+    if (strategyOption) {
+      $('#mission-strategie').val(String(strategyOption.id));
+      handleStrategyChange();
+    } else {
+      $('#mission-strategie').val('');
+      $('#strategy-preview').hide();
+    }
+
+    if (mission.sous_actions && mission.sous_actions.size > 0) {
+      for (const sa of mission.sous_actions.values()) {
+        addSousActionForm({
+          code: sa.code,
+          nom: sa.nom,
+          categorie: sa.categorie,
+          charge: sa.charge_estimee
+        });
+      }
+    }
+
+    $('#modal-mission').modal('show');
   }
+}
+
+function findStrategyOption(mission) {
+  if (!mission || strategies.length === 0) return null;
+  if (mission.strategie_id) {
+    const direct = strategies.find(s => s.id === mission.strategie_id);
+    if (direct) return direct;
+  }
+  return strategies.find(s =>
+    s.objectif === mission.strategie_objectif &&
+    s.sous_objectif === mission.strategie_sous_objectif &&
+    s.axe_strategique === mission.strategie_action
+  );
 }
 
 /**
