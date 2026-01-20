@@ -1541,11 +1541,9 @@ export class HistoryManager {
       visible: textArea.offsetParent !== null
     });
     
-    // Focus avec sélection automatique du texte
-    setTimeout(() => {
-      textArea.focus();
-      textArea.select(); // Sélectionne tout le texte
-    }, 150);
+    // Focus direct avec sélection automatique du texte
+    textArea.focus();
+    textArea.select(); // Sélectionne tout le texte
   }
   
   /**
