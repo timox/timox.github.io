@@ -12,6 +12,8 @@ import { HistoryManager } from '../managers/HistoryManager.js';
 import { FilterManager } from '../managers/FilterManager.js';
 import { ViewManager } from '../managers/ViewManager.js';
 import { JalonManager } from '../managers/JalonManager.js';
+import { DashboardManager } from '../managers/DashboardManager.js';
+import { TimelineManager } from '../managers/TimelineManager.js';
 
 // Importation du gestionnaire Grist
 import { GristManager } from '../managers/GristManager.js';
@@ -36,6 +38,8 @@ export class KanbanManager {
     this.filterManager = null;
     this.viewManager = null;
     this.jalonManager = null;
+    this.dashboardManager = null;
+    this.timelineManager = null;
     
     // �tat des donn�es
     this.currentRecords = [];
@@ -145,6 +149,12 @@ export class KanbanManager {
     // 7. Gestionnaire des jalons
     this.jalonManager = new JalonManager(this);
 
+    // 8. Dashboard V3
+    this.dashboardManager = new DashboardManager(this);
+
+    // 9. Timeline V3
+    this.timelineManager = new TimelineManager(this);
+
     console.log('KanbanManager: Gestionnaires initialisés');
   }
   
@@ -241,7 +251,7 @@ export class KanbanManager {
     const ids = normalizeColumn(records.id);
     const objectifs = normalizeColumn(records.objectif);
     const sousObjectifs = normalizeColumn(records.sous_objectif);
-    const actions = normalizeColumn(records.action);
+    const axesStrategiques = normalizeColumn(records.axe_strategique);
     const echeances = normalizeColumn(records.echeance);
     const responsables = normalizeColumn(records.responsable);
     const portees = normalizeColumn(records.portee);
@@ -257,13 +267,13 @@ export class KanbanManager {
           id: normalizedId,
           objectif: objectifs[index] || '',
           sous_objectif: sousObjectifs[index] || '',
-          action: actions[index] || '',
+          axe_strategique: axesStrategiques[index] || '',
           echeance: echeances[index] || '',
           responsable: responsables[index] || '',
           portee: portees[index] || ''
         };
 
-        if (strategy.objectif && strategy.action) {
+        if (strategy.objectif && strategy.axe_strategique) {
           mapped.push(strategy);
         }
       } catch (error) {
@@ -450,6 +460,14 @@ export class KanbanManager {
         if (typeof this.viewManager.onKanbanRendered === 'function') {
           this.viewManager.onKanbanRendered();
         }
+      }
+
+      if (this.dashboardManager) {
+        this.dashboardManager.renderDashboard(filteredRecords);
+      }
+
+      if (this.timelineManager?.currentView === 'timeline') {
+        this.timelineManager.initTimeline();
       }
       
     } catch (error) {
