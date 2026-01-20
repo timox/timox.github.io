@@ -71,7 +71,7 @@ class StatsAppManager {
             id: gristData.id[i],
             objectif: gristData.objectif?.[i] || '',
             sous_objectif: gristData.sous_objectif?.[i] || '',
-            action: gristData.action?.[i] || ''
+            axe_strategique: gristData.axe_strategique?.[i] || ''
           });
         }
       }

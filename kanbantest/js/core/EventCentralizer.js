@@ -331,7 +331,7 @@ export class EventCentralizer {
           // Extraire les données nécessaires depuis les attributs data
           const objectif = actionDiv.dataset.objectif || strategy.objectif;
           const sousObjectif = actionDiv.dataset.sousObjectif || strategy['sous-objectif'];
-          const action = actionDiv.dataset.action || strategy.action;
+          const action = actionDiv.dataset.action || strategy.axe_strategique;
 
           modalManager.selectStrategy(strategy, objectif, sousObjectif, action, e);
         }
