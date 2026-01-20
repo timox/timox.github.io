@@ -159,13 +159,16 @@ export class MissionsManager {
       const missionExists = existingTasks.some(t => t.mission_code === missionData.code);
 
       if (!missionExists) {
+        const responsableList = this.normalizeListValue(missionData.responsable);
+        const bureauList = this.normalizeListValue(missionData.bureau);
+
         // Créer une tâche "support" pour la mission
         const supportTask = {
           titre: `[MISSION] ${missionData.nom}`,
           description: `Mission: ${missionData.nom}\nCode: ${missionData.code}`,
           statut: 'En cours',
-          qui: missionData.responsable || '',
-          bureau: missionData.bureau || '',
+          qui: responsableList,
+          bureau: bureauList,
           priorite: missionData.priorite || 'Moyenne',
           mission_code: missionData.code,
           mission_nom: missionData.nom,
@@ -184,12 +187,15 @@ export class MissionsManager {
       // Créer les sous-actions si fournies
       for (const sa of sousActions) {
         if (sa.code && sa.nom) {
+          const responsableList = this.normalizeListValue(missionData.responsable);
+          const bureauList = this.normalizeListValue(missionData.bureau);
+
           const saTask = {
             titre: `[SA] ${sa.nom}`,
             description: `Sous-action: ${sa.nom}\nCode: ${sa.code}\nCatégorie: ${sa.categorie}`,
             statut: 'À faire',
-            qui: missionData.responsable || '',
-            bureau: missionData.bureau || '',
+            qui: responsableList,
+            bureau: bureauList,
             mission_code: missionData.code,
             mission_nom: missionData.nom,
             mission_responsable: missionData.responsable || '',
@@ -217,6 +223,18 @@ export class MissionsManager {
       this.logger.error('Failed to save mission:', error);
       throw error;
     }
+  }
+
+  normalizeListValue(value) {
+    if (Array.isArray(value)) {
+      return value.length ? value : ['L'];
+    }
+
+    if (typeof value === 'string' && value.trim()) {
+      return ['L', value.trim()];
+    }
+
+    return ['L'];
   }
 
   /**

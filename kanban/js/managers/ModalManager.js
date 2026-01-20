@@ -853,22 +853,21 @@ export class ModalManager {
     $('.strategy-selected-indicator').hide();
     
     // Force le nettoyage DOM des stratégies
-    const strategiesContainer = document.querySelector('.strategies-list, [class*="strategy"]');
-    if (strategiesContainer) {
+    const strategiesContainer = $('.strategies-list, [class*="strategy"]');
+    if (strategiesContainer.length) {
       // Ne pas vider complètement mais reset les sélections
-      document.querySelectorAll('.strategy-tag, .selected-strategies-tags').forEach(el => {
-        if (el.closest('.selected-strategies-container, .strategy-tags-container')) {
-          el.remove();
-        }
-      });
+      $('.strategy-tag, .selected-strategies-tags')
+        .filter((_, el) => $(el).closest('.selected-strategies-container, .strategy-tags-container').length > 0)
+        .remove();
     }
     
     // Nettoyer tous les éléments stratégies sélectionnées visibles
-    document.querySelectorAll('.strategy-tag, .selected-strategies-container [style*="display: block"]').forEach(el => {
-      if (el.classList.contains('strategy-tag')) {
-        el.remove();
-      } else if (el.classList.contains('selected-strategies-container')) {
-        el.style.display = 'none';
+    $('.strategy-tag, .selected-strategies-container [style*="display: block"]').each((_, el) => {
+      const element = $(el);
+      if (element.hasClass('strategy-tag')) {
+        element.remove();
+      } else if (element.hasClass('selected-strategies-container')) {
+        element.hide();
       }
     });
     
