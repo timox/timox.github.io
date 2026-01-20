@@ -293,7 +293,7 @@ export class MissionsManager {
       };
 
       for (const task of missionTasks) {
-        const updates = { ...baseUpdates };
+        const updates = { ...baseUpdates, statut: task.statut || 'En cours' };
         const sousAction = sousActionsMap.get(task.sous_action_code);
 
         if (task.titre?.startsWith('[MISSION]')) {
