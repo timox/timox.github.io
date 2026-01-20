@@ -17,6 +17,7 @@ export class DashboardManager {
     this.kanban = kanban;
     this.logger = createModuleLogger('DashboardManager');
     this.container = document.getElementById('dashboard-container');
+    this.isCollapsed = localStorage.getItem('kanban_dashboard_collapsed') === 'true';
   }
 
   renderDashboard(records = []) {
@@ -27,6 +28,7 @@ export class DashboardManager {
     const stats = this.calculerStatistiquesDetaillees(records);
     const alertes = this.genererAlertes(stats, records);
     this.container.innerHTML = this.genererDashboardHTML(stats, alertes);
+    this.bindDashboardToggle();
   }
 
   calculerStatistiquesDetaillees(records) {
@@ -121,9 +123,7 @@ export class DashboardManager {
     const taxonomieHTML = this.renderTaxonomieManquante(stats.taxonomieManquante);
 
     return `
-      <div class="dashboard-container">
-        ${alertesHTML}
-        ${colonnesManquantes}
+      <div class="dashboard-container ${this.isCollapsed ? 'dashboard-collapsed' : ''}">
         <div class="dashboard-header">
           <div>
             <h3>Dashboard Kanban</h3>
@@ -132,46 +132,68 @@ export class DashboardManager {
           <div class="dashboard-meta">
             <span class="dashboard-pill">En pause: ${stats.enPause}</span>
             <span class="dashboard-pill">Dettes: ${stats.dettesTechniques}</span>
+            <button type="button" class="btn btn-outline-secondary btn-sm dashboard-toggle" data-dashboard-toggle>
+              <i class="bi bi-arrows-collapse"></i>
+              ${this.isCollapsed ? 'Déplier' : 'Replier'}
+            </button>
           </div>
         </div>
-        <div class="dashboard-grid">
-          <div class="dashboard-section">
-            <h4>Prévisibilité</h4>
-            <div class="dashboard-list">${previsibiliteHTML}</div>
-          </div>
-          <div class="dashboard-section">
-            <h4>Type de tâches</h4>
-            <div class="dashboard-list">${typeHTML}</div>
-          </div>
-        </div>
-        <div class="dashboard-capacite">
-          <h4>Capacité Projet</h4>
-          <div class="dashboard-capacite-grid">
-            <div>
-              <span class="label">Théorique</span>
-              <strong>${this.formatPourcent(projetCible)}</strong>
+        <div class="dashboard-body">
+          ${alertesHTML}
+          ${colonnesManquantes}
+          <div class="dashboard-grid">
+            <div class="dashboard-section">
+              <h4>Prévisibilité</h4>
+              <div class="dashboard-list">${previsibiliteHTML}</div>
             </div>
-            <div>
-              <span class="label">Réel</span>
-              <strong>${this.formatPourcent(projetActuel)}</strong>
-            </div>
-            <div>
-              <span class="label">Écart</span>
-              <strong class="${projetEcart < 0 ? 'text-warning' : 'text-success'}">${this.formatPourcent(projetEcart, true)}</strong>
-            </div>
-            <div>
-              <span class="label">Capacité perdue</span>
-              <strong>${this.formatPourcent(capacitePerdue)}</strong>
+            <div class="dashboard-section">
+              <h4>Type de tâches</h4>
+              <div class="dashboard-list">${typeHTML}</div>
             </div>
           </div>
+          <div class="dashboard-secondary-grid">
+            <div class="dashboard-capacite">
+              <h4>Capacité Projet</h4>
+              <div class="dashboard-capacite-grid">
+                <div>
+                  <span class="label">Théorique</span>
+                  <strong>${this.formatPourcent(projetCible)}</strong>
+                </div>
+                <div>
+                  <span class="label">Réel</span>
+                  <strong>${this.formatPourcent(projetActuel)}</strong>
+                </div>
+                <div>
+                  <span class="label">Écart</span>
+                  <strong class="${projetEcart < 0 ? 'text-warning' : 'text-success'}">${this.formatPourcent(projetEcart, true)}</strong>
+                </div>
+                <div>
+                  <span class="label">Capacité perdue</span>
+                  <strong>${this.formatPourcent(capacitePerdue)}</strong>
+                </div>
+              </div>
+            </div>
+            <div class="dashboard-semaine-type">
+              <h4>Semaine type (temps estimé)</h4>
+              ${semaineTypeHTML}
+            </div>
+          </div>
+          ${taxonomieHTML}
         </div>
-        <div class="dashboard-semaine-type">
-          <h4>Semaine type (temps estimé)</h4>
-          ${semaineTypeHTML}
-        </div>
-        ${taxonomieHTML}
       </div>
     `;
+  }
+
+  bindDashboardToggle() {
+    const toggle = this.container?.querySelector('[data-dashboard-toggle]');
+    if (!toggle) return;
+    toggle.addEventListener('click', () => {
+      this.isCollapsed = !this.isCollapsed;
+      localStorage.setItem('kanban_dashboard_collapsed', String(this.isCollapsed));
+      const container = this.container.querySelector('.dashboard-container');
+      container?.classList.toggle('dashboard-collapsed', this.isCollapsed);
+      toggle.innerHTML = `${this.isCollapsed ? '<i class="bi bi-arrows-expand"></i> Déplier' : '<i class="bi bi-arrows-collapse"></i> Replier'}`;
+    });
   }
 
   computeStatsByCategory(categories, records, field, targets = {}, valueGetter = null) {

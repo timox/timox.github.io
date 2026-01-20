@@ -638,18 +638,18 @@ body {
 
 /* Organisation du bandeau de filtres */
 .kanban-controls {
-  padding: 1.25rem 1.5rem;
+  padding: 0.75rem 1rem;
 }
 
 .kanban-controls .row {
   margin-bottom: 0;
-  row-gap: 0.75rem;
+  row-gap: 0.5rem;
 }
 
 .kanban-controls .form-control,
 .kanban-controls .form-select {
-  padding: 0.5rem 0.85rem;
-  font-size: 0.9rem;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.82rem;
   border-radius: 10px;
   border: 1px solid rgba(148, 163, 184, 0.25);
   box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.06);
@@ -1154,24 +1154,35 @@ body {
 .dashboard-container {
   background: #ffffff;
   border-radius: 12px;
-  padding: 20px;
+  padding: 14px;
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
-  margin-bottom: 20px;
+  margin-bottom: 14px;
+}
+
+.dashboard-container.dashboard-collapsed .dashboard-body {
+  display: none;
+}
+
+.dashboard-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
 }
 
 .dashboard-alertes {
   display: grid;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
 .dashboard-alerte {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 12px 16px;
+  padding: 8px 12px;
   border-radius: 10px;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
 }
 
 .dashboard-alerte-critical {
@@ -1188,8 +1199,8 @@ body {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 18px;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
 .dashboard-header h3 {
@@ -1211,34 +1222,34 @@ body {
 .dashboard-pill {
   background: #f1f5f9;
   color: #475569;
-  padding: 6px 12px;
+  padding: 4px 10px;
   border-radius: 999px;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
 }
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
-  margin-bottom: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .dashboard-section h4 {
-  margin-bottom: 10px;
-  font-size: 1rem;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
   font-weight: 700;
 }
 
 .dashboard-list {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .dashboard-stat-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border-radius: 10px;
   background: #f8fafc;
 }
@@ -1266,7 +1277,7 @@ body {
 }
 
 .dashboard-stat-emoji {
-  font-size: 1.3rem;
+  font-size: 1.1rem;
 }
 
 .dashboard-stat-title {
@@ -1274,7 +1285,7 @@ body {
 }
 
 .dashboard-stat-meta {
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   color: #64748b;
 }
 
@@ -1292,8 +1303,15 @@ body {
 .dashboard-capacite {
   background: #f8fafc;
   border-radius: 10px;
-  padding: 12px 16px;
-  margin-bottom: 16px;
+  padding: 10px 12px;
+  margin-bottom: 0;
+}
+
+.dashboard-secondary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .dashboard-capacite-grid {
@@ -1311,7 +1329,7 @@ body {
 .dashboard-semaine-type {
   background: #f8fafc;
   border-radius: 10px;
-  padding: 12px 16px;
+  padding: 10px 12px;
 }
 
 .dashboard-semaine-grid {
@@ -1555,6 +1573,40 @@ body {
 .timeline-type-projet { border-top-color: #198754; }
 .timeline-type-overhead { border-top-color: #6c757d; }
 .timeline-type-default { border-top-color: #94a3b8; }
+
+.timeline-context-menu {
+  position: absolute;
+  z-index: 1055;
+  display: none;
+  flex-direction: column;
+  min-width: 200px;
+  padding: 6px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.18);
+}
+
+.timeline-context-menu.is-visible {
+  display: flex;
+}
+
+.timeline-context-menu button {
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.timeline-context-menu button:hover {
+  background: #f1f5f9;
+}
 
 .kanban-item.timeline-highlight {
   outline: 2px solid #2563eb;

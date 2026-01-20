@@ -23,6 +23,7 @@ export class TimelineManager {
     this.timelineListenersAttached = false;
     this.currentRangeDays = 7;
     this.zoomButtons = Array.from(document.querySelectorAll('[data-timeline-range]'));
+    this.contextMenu = this.createContextMenu();
     this.initListeners();
   }
 
@@ -168,6 +169,8 @@ export class TimelineManager {
     if (!this.timeline || this.timelineListenersAttached) return;
     this.timeline.on('select', (props) => this.handleTimelineSelect(props));
     this.timeline.on('doubleClick', (props) => this.handleTimelineOpen(props));
+    this.timeline.on('click', (props) => this.handleTimelineClick(props));
+    this.timeline.on('contextmenu', (props) => this.handleTimelineContextMenu(props));
     this.timelineListenersAttached = true;
   }
 
@@ -185,6 +188,64 @@ export class TimelineManager {
     if (record && typeof this.kanban?.openPopup === 'function') {
       this.kanban.openPopup(record);
     }
+  }
+
+  handleTimelineClick(props) {
+    const taskId = props?.item;
+    if (!taskId) return;
+    const record = (this.kanban?.currentRecords || []).find(rec => rec.id === taskId);
+    if (record && typeof this.kanban?.openPopup === 'function') {
+      this.kanban.openPopup(record);
+    }
+  }
+
+  handleTimelineContextMenu(props) {
+    const event = props?.event;
+    if (!event?.preventDefault) return;
+    event.preventDefault();
+    const taskId = props?.item;
+    if (!taskId || !this.contextMenu) return;
+    const record = (this.kanban?.currentRecords || []).find(rec => rec.id === taskId);
+    if (!record) return;
+    this.contextMenu.dataset.taskId = String(taskId);
+    this.contextMenu.dataset.taskTitle = record.titre || `Tâche ${taskId}`;
+    this.contextMenu.style.top = `${event.pageY}px`;
+    this.contextMenu.style.left = `${event.pageX}px`;
+    this.contextMenu.classList.add('is-visible');
+  }
+
+  createContextMenu() {
+    if (document.querySelector('.timeline-context-menu')) {
+      return document.querySelector('.timeline-context-menu');
+    }
+    const menu = document.createElement('div');
+    menu.className = 'timeline-context-menu';
+    menu.innerHTML = `
+      <button type="button" data-action="open">
+        <i class="bi bi-pencil-square"></i> Modifier la tâche
+      </button>
+      <button type="button" data-action="kanban">
+        <i class="bi bi-columns-gap"></i> Voir dans le Kanban
+      </button>
+    `;
+    document.body.appendChild(menu);
+    menu.addEventListener('click', (event) => {
+      const action = event.target.closest('button')?.dataset?.action;
+      if (!action) return;
+      const taskId = Number(menu.dataset.taskId);
+      const record = (this.kanban?.currentRecords || []).find(rec => rec.id === taskId);
+      if (!record) return;
+      if (action === 'open') {
+        this.kanban?.openPopup?.(record);
+      }
+      if (action === 'kanban') {
+        this.switchView('kanban');
+      }
+      menu.classList.remove('is-visible');
+    });
+    document.addEventListener('click', () => menu.classList.remove('is-visible'));
+    window.addEventListener('scroll', () => menu.classList.remove('is-visible'), true);
+    return menu;
   }
 
   highlightKanbanCard(taskId, { scroll = false } = {}) {
