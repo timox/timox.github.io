@@ -278,12 +278,17 @@ export class TimelineManager {
       const group = this.getTimelineGroup(record);
       const typeValue = this.getTypeValue(record);
       const previsibiliteValue = this.getPrevisibiliteValue(record);
+      const assignee = this.getFirstListValue(record.qui);
+      const strategySummary = this.getStrategySummary(record);
       const tempsEstime = this.hasColumn('temps_estime_heures')
         ? Number(record.temps_estime_heures || 0)
         : null;
       const type = startDate && endDate && startDate !== endDate ? 'range' : 'point';
       const previsibiliteClass = this.getPrevisibiliteClass(previsibiliteValue);
       const typeClass = this.getTypeClass(typeValue);
+      const classList = [previsibiliteClass, typeClass];
+      if (!strategySummary) classList.push('timeline-dimmed-strategy');
+      if (!assignee || assignee === 'Non défini') classList.push('timeline-dimmed-assignee');
 
       items.push({
         id: record.id,
@@ -292,7 +297,7 @@ export class TimelineManager {
         end: endDate ? new Date(endDate) : null,
         type,
         group,
-        className: `${previsibiliteClass} ${typeClass}`.trim(),
+        className: classList.filter(Boolean).join(' ').trim(),
         title: this.getItemTitle(record, startDate, endDate),
         customData: {
           priorite: record.priorite,
@@ -301,6 +306,8 @@ export class TimelineManager {
           statut: record.statut,
           statut_color: this.getStatusColor(record.statut),
           projet: record.projet,
+          assignee,
+          strategy_summary: strategySummary,
           est_dette: record.est_dette_technique,
           age: this.getAgeBadge(record.date_debut),
           temps_estime: tempsEstime
@@ -377,16 +384,23 @@ export class TimelineManager {
         `<span class="timeline-meta-pill timeline-meta-status" style="--status-color: ${statusColor};">${data.statut}</span>`
       );
     }
+    if (data.assignee && data.assignee !== 'Non défini') {
+      badges.push(`<span class="timeline-meta-pill timeline-meta-assignee">👤 ${data.assignee}</span>`);
+    }
     if (Number.isFinite(data.temps_estime) && data.temps_estime > 0) {
       const hours = data.temps_estime.toString().replace('.', ',');
       badges.push(`<span class="timeline-meta-pill timeline-meta-charge">⏱ ${hours}h</span>`);
     }
     const projectLine = data.projet ? `<div class="timeline-item-subtitle">Projet : ${data.projet}</div>` : '';
+    const strategyLine = data.strategy_summary
+      ? `<div class="timeline-item-subtitle">Mission : ${data.strategy_summary}</div>`
+      : '';
 
     return `
       <div class="timeline-item-content">
         <div class="timeline-item-title">${item.content}</div>
         ${projectLine}
+        ${strategyLine}
         <div class="timeline-item-meta">
           ${badges.join('')}
         </div>
@@ -512,12 +526,61 @@ export class TimelineManager {
     return STATUS_ACCENTS[status] || STATUS_ACCENTS.default;
   }
 
+  getStrategySummary(record) {
+    const strategies = this.getStrategiesForRecord(record);
+    if (strategies.length === 0) return '';
+    const [first] = strategies;
+    const parts = [first.objectif, first.sous_objectif, first.axe_strategique].filter(Boolean);
+    const label = parts.join(' → ');
+    if (strategies.length > 1) {
+      return `${label} (+${strategies.length - 1})`;
+    }
+    return label;
+  }
+
+  getStrategiesForRecord(record) {
+    const strategiesData = this.kanban?.strategiesData || [];
+    const ids = this.parseStrategyIds(record.strategie_id);
+    if (ids.length > 0 && strategiesData.length > 0) {
+      return ids
+        .map(id => strategiesData.find(strategy => strategy.id === id))
+        .filter(Boolean);
+    }
+    if (record.strategie_objectif || record.strategie_sous_objectif || record.strategie_action) {
+      return [{
+        objectif: record.strategie_objectif || '',
+        sous_objectif: record.strategie_sous_objectif || '',
+        axe_strategique: record.strategie_action || ''
+      }];
+    }
+    return [];
+  }
+
+  parseStrategyIds(strategieId) {
+    if (!strategieId) return [];
+    if (Array.isArray(strategieId)) {
+      if (strategieId[0] === 'L') return strategieId.slice(1).filter(id => typeof id === 'number');
+      return strategieId.filter(id => typeof id === 'number');
+    }
+    if (typeof strategieId === 'string' && strategieId.startsWith('L,')) {
+      return strategieId
+        .split(',')
+        .slice(1)
+        .map(value => Number(value))
+        .filter(Number.isFinite);
+    }
+    if (typeof strategieId === 'number') return [strategieId];
+    return [];
+  }
+
   getItemTitle(record, startDate, endDate) {
     const dateLabel = endDate ? `${startDate} → ${endDate}` : startDate;
     const projet = record.projet ? `Projet: ${record.projet}` : 'Projet: -';
     const type = this.getTypeValue(record);
     const previsibilite = this.getPrevisibiliteValue(record);
-    return `${record.titre || record.id}\n${dateLabel}\n${projet}\n${previsibilite || '-'} • ${type || '-'}`;
+    const strategySummary = this.getStrategySummary(record);
+    const strategyLine = strategySummary ? `\nMission: ${strategySummary}` : '';
+    return `${record.titre || record.id}\n${dateLabel}\n${projet}${strategyLine}\n${previsibilite || '-'} • ${type || '-'}`;
   }
 
   getTypeValue(record) {

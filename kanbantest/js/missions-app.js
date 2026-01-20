@@ -18,6 +18,7 @@ let currentFilters = {
   bureau: ''
 };
 let currentViewMode = 'missions';
+let currentEditingMissionCode = null;
 
 /**
  * Initialise l'application
@@ -555,16 +556,23 @@ function openNewMissionModal() {
   $('#mission-code').val(generateMissionCode());
   $('#mission-strategie').val(''); // Réinitialiser le sélecteur de stratégie
   $('#strategy-preview').hide(); // Masquer l'aperçu
+  $('#mission-code').prop('disabled', false);
+  currentEditingMissionCode = null;
   $('#modal-mission').modal('show');
 }
 
 /**
  * Ajoute un formulaire de sous-action
  */
-function addSousActionForm() {
+function addSousActionForm(initialData = {}) {
   const $template = $($('#template-sous-action-form').html());
   const count = $('#sous-actions-container .sous-action-form').length + 1;
-  $template.find('.sa-code').val(`SA-${String(count).padStart(3, '0')}`);
+  $template.find('.sa-code').val(initialData.code || `SA-${String(count).padStart(3, '0')}`);
+  $template.find('.sa-nom').val(initialData.nom || '');
+  $template.find('.sa-categorie').val(initialData.categorie || 'Projet');
+  if (initialData.charge !== undefined && initialData.charge !== null) {
+    $template.find('.sa-charge').val(initialData.charge);
+  }
   $('#sous-actions-container').append($template);
 }
 
@@ -586,7 +594,7 @@ async function saveMission() {
 
     // Récupérer les données du formulaire
     const missionData = {
-      code: $('#mission-code').val().trim(),
+      code: ($('#mission-code').val().trim()) || currentEditingMissionCode,
       nom: $('#mission-nom').val().trim(),
       responsable: $('#mission-responsable').val().trim(),
       bureau: $('#mission-bureau').val(),
@@ -711,9 +719,53 @@ function handleVoirTaches(e) {
 function handleEditMission(e) {
   const mission = $(e.currentTarget).closest('.mission-card-wrapper').data('mission');
   if (mission) {
-    // TODO: Implémenter l'édition
-    alert('Fonctionnalité d\'édition à venir');
+    $('#modal-mission-title').text('Modifier la Mission');
+    $('#form-mission')[0].reset();
+    $('#sous-actions-container').empty();
+    $('#mission-code').val(mission.code).prop('disabled', true);
+    $('#mission-nom').val(mission.nom);
+    $('#mission-responsable').val(mission.responsable || '');
+    $('#mission-bureau').val(mission.bureau || '');
+    $('#mission-priorite').val(mission.priorite || 'Moyenne');
+    $('#mission-date-debut').val(mission.date_debut || '');
+    $('#mission-date-fin').val(mission.date_fin || '');
+    currentEditingMissionCode = mission.code;
+
+    const strategyOption = findStrategyOption(mission);
+    if (strategyOption) {
+      $('#mission-strategie').val(String(strategyOption.id));
+      handleStrategyChange();
+    } else {
+      $('#mission-strategie').val('');
+      $('#strategy-preview').hide();
+    }
+
+    if (mission.sous_actions && mission.sous_actions.size > 0) {
+      for (const sa of mission.sous_actions.values()) {
+        addSousActionForm({
+          code: sa.code,
+          nom: sa.nom,
+          categorie: sa.categorie,
+          charge: sa.charge_estimee
+        });
+      }
+    }
+
+    $('#modal-mission').modal('show');
   }
+}
+
+function findStrategyOption(mission) {
+  if (!mission || strategies.length === 0) return null;
+  if (mission.strategie_id) {
+    const direct = strategies.find(s => s.id === mission.strategie_id);
+    if (direct) return direct;
+  }
+  return strategies.find(s =>
+    s.objectif === mission.strategie_objectif &&
+    s.sous_objectif === mission.strategie_sous_objectif &&
+    s.axe_strategique === mission.strategie_action
+  );
 }
 
 /**

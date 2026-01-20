@@ -50,6 +50,10 @@ export class MissionsManager {
             priorite: task.mission_priorite || 'Moyenne',
             date_debut: task.mission_date_debut || null,
             date_fin: task.mission_date_fin || null,
+            strategie_id: task.strategie_id || null,
+            strategie_objectif: task.strategie_objectif || '',
+            strategie_sous_objectif: task.strategie_sous_objectif || '',
+            strategie_action: task.strategie_action || '',
             sous_actions: new Map(),
             taches: [],
             stats: {
@@ -182,6 +186,10 @@ export class MissionsManager {
           mission_priorite: missionData.priorite || 'Moyenne',
           mission_date_debut: missionData.date_debut || null,
           mission_date_fin: missionData.date_fin || null,
+          strategie_id: missionData.strategie_id || null,
+          strategie_objectif: missionData.strategie_objectif || null,
+          strategie_sous_objectif: missionData.strategie_sous_objectif || null,
+          strategie_action: missionData.strategie_action || null,
           est_classifiee: true
         };
 
@@ -189,42 +197,47 @@ export class MissionsManager {
 
         const result = await this.grist.saveRecord(supportTask);
         this.logger.info('Mission support task created with ID:', result?.id);
-      }
+        // Créer les sous-actions si fournies
+        if (sousActions.length > 0) {
+          const saBureauArray = this._toArray(missionData.bureau, ['L']);
+          const saQuiArray = this._toArray(missionData.responsable, ['L']);
 
-      // Créer les sous-actions si fournies
-      if (sousActions.length > 0) {
-        const saBureauArray = this._toArray(missionData.bureau, ['L']);
-        const saQuiArray = this._toArray(missionData.responsable, ['L']);
+          for (const sa of sousActions) {
+            if (sa.code && sa.nom) {
+              const saTask = {
+                titre: `[SA] ${sa.nom}`,
+                description: `Sous-action: ${sa.nom}\nCode: ${sa.code}\nCatégorie: ${sa.categorie}`,
+                statut: 'À faire',
+                qui: saQuiArray,
+                bureau: saBureauArray,
+                urgence: 'Moyenne',
+                impact: 'Modéré',
+                mission_code: missionData.code,
+                mission_nom: missionData.nom,
+                mission_responsable: missionData.responsable || '',
+                mission_bureau: missionData.bureau || '',
+                mission_priorite: missionData.priorite || 'Moyenne',
+                mission_date_debut: missionData.date_debut || null,
+                mission_date_fin: missionData.date_fin || null,
+                strategie_id: missionData.strategie_id || null,
+                strategie_objectif: missionData.strategie_objectif || null,
+                strategie_sous_objectif: missionData.strategie_sous_objectif || null,
+                strategie_action: missionData.strategie_action || null,
+                sous_action_code: sa.code,
+                sous_action_nom: sa.nom,
+                categorie: sa.categorie || 'Projet',
+                sous_action_charge_estimee: sa.charge || 0,
+                est_classifiee: true
+              };
 
-        for (const sa of sousActions) {
-          if (sa.code && sa.nom) {
-            const saTask = {
-              titre: `[SA] ${sa.nom}`,
-              description: `Sous-action: ${sa.nom}\nCode: ${sa.code}\nCatégorie: ${sa.categorie}`,
-              statut: 'À faire',
-              qui: saQuiArray,
-              bureau: saBureauArray,
-              urgence: 'Moyenne',
-              impact: 'Modéré',
-              mission_code: missionData.code,
-              mission_nom: missionData.nom,
-              mission_responsable: missionData.responsable || '',
-              mission_bureau: missionData.bureau || '',
-              mission_priorite: missionData.priorite || 'Moyenne',
-              mission_date_debut: missionData.date_debut || null,
-              mission_date_fin: missionData.date_fin || null,
-              sous_action_code: sa.code,
-              sous_action_nom: sa.nom,
-              categorie: sa.categorie || 'Projet',
-              sous_action_charge_estimee: sa.charge || 0,
-              est_classifiee: true
-            };
-
-            this.logger.debug('Creating sous-action task:', sa.code);
-            const result = await this.grist.saveRecord(saTask);
-            this.logger.info('Sous-action task created:', sa.code, 'ID:', result?.id);
+              this.logger.debug('Creating sous-action task:', sa.code);
+              const result = await this.grist.saveRecord(saTask);
+              this.logger.info('Sous-action task created:', sa.code, 'ID:', result?.id);
+            }
           }
         }
+      } else {
+        await this.updateMission(missionData, sousActions);
       }
 
       // Recharger le cache
@@ -233,6 +246,108 @@ export class MissionsManager {
       return this.missionsCache.get(missionData.code);
     } catch (error) {
       this.logger.error('Failed to save mission:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Met à jour une mission existante et ses sous-actions
+   * @param {Object} missionData - Données de la mission
+   * @param {Array} sousActions - Liste des sous-actions
+   * @returns {Promise<void>}
+   */
+  async updateMission(missionData, sousActions = []) {
+    try {
+      const tasks = this.grist.currentRecords || [];
+      const missionTasks = tasks.filter(task => task.mission_code === missionData.code);
+      const sousActionsMap = new Map(
+        sousActions
+          .filter(sa => sa.code && sa.nom)
+          .map(sa => [sa.code, sa])
+      );
+
+      const baseUpdates = {
+        mission_nom: missionData.nom,
+        mission_responsable: missionData.responsable || '',
+        mission_bureau: missionData.bureau || '',
+        mission_priorite: missionData.priorite || 'Moyenne',
+        mission_date_debut: missionData.date_debut || null,
+        mission_date_fin: missionData.date_fin || null,
+        strategie_id: missionData.strategie_id || null,
+        strategie_objectif: missionData.strategie_objectif || null,
+        strategie_sous_objectif: missionData.strategie_sous_objectif || null,
+        strategie_action: missionData.strategie_action || null
+      };
+
+      for (const task of missionTasks) {
+        const updates = { ...baseUpdates };
+        const sousAction = sousActionsMap.get(task.sous_action_code);
+
+        if (task.titre?.startsWith('[MISSION]')) {
+          updates.titre = `[MISSION] ${missionData.nom}`;
+          updates.description = `Mission: ${missionData.nom}\nCode: ${missionData.code}`;
+        }
+
+        if (sousAction) {
+          updates.sous_action_code = sousAction.code;
+          updates.sous_action_nom = sousAction.nom;
+          updates.categorie = sousAction.categorie || 'Projet';
+          updates.sous_action_charge_estimee = sousAction.charge || 0;
+          if (task.titre?.startsWith('[SA]')) {
+            updates.titre = `[SA] ${sousAction.nom}`;
+            updates.description = `Sous-action: ${sousAction.nom}\nCode: ${sousAction.code}\nCatégorie: ${sousAction.categorie}`;
+          }
+        }
+
+        await this.grist.saveRecord(updates, task.id);
+      }
+
+      const existingSousActionCodes = new Set(
+        missionTasks
+          .map(task => task.sous_action_code)
+          .filter(Boolean)
+      );
+
+      if (sousActions.length > 0) {
+        const saBureauArray = this._toArray(missionData.bureau, ['L']);
+        const saQuiArray = this._toArray(missionData.responsable, ['L']);
+
+        for (const sa of sousActions) {
+          if (!sa.code || !sa.nom || existingSousActionCodes.has(sa.code)) {
+            continue;
+          }
+          const saTask = {
+            titre: `[SA] ${sa.nom}`,
+            description: `Sous-action: ${sa.nom}\nCode: ${sa.code}\nCatégorie: ${sa.categorie}`,
+            statut: 'À faire',
+            qui: saQuiArray,
+            bureau: saBureauArray,
+            urgence: 'Moyenne',
+            impact: 'Modéré',
+            mission_code: missionData.code,
+            mission_nom: missionData.nom,
+            mission_responsable: missionData.responsable || '',
+            mission_bureau: missionData.bureau || '',
+            mission_priorite: missionData.priorite || 'Moyenne',
+            mission_date_debut: missionData.date_debut || null,
+            mission_date_fin: missionData.date_fin || null,
+            strategie_id: missionData.strategie_id || null,
+            strategie_objectif: missionData.strategie_objectif || null,
+            strategie_sous_objectif: missionData.strategie_sous_objectif || null,
+            strategie_action: missionData.strategie_action || null,
+            sous_action_code: sa.code,
+            sous_action_nom: sa.nom,
+            categorie: sa.categorie || 'Projet',
+            sous_action_charge_estimee: sa.charge || 0,
+            est_classifiee: true
+          };
+          await this.grist.saveRecord(saTask);
+        }
+      }
+
+      await this.loadMissions();
+    } catch (error) {
+      this.logger.error('Failed to update mission:', error);
       throw error;
     }
   }
@@ -257,6 +372,10 @@ export class MissionsManager {
         mission_priorite: missionData.priorite || 'Moyenne',
         mission_date_debut: missionData.date_debut || null,
         mission_date_fin: missionData.date_fin || null,
+        strategie_id: missionData.strategie_id || null,
+        strategie_objectif: missionData.strategie_objectif || null,
+        strategie_sous_objectif: missionData.strategie_sous_objectif || null,
+        strategie_action: missionData.strategie_action || null,
         est_classifiee: true
       };
 
@@ -296,6 +415,10 @@ export class MissionsManager {
         mission_priorite: '',
         mission_date_debut: null,
         mission_date_fin: null,
+        strategie_id: null,
+        strategie_objectif: '',
+        strategie_sous_objectif: '',
+        strategie_action: '',
         sous_action_code: '',
         sous_action_nom: '',
         categorie: '',

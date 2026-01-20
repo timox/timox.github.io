@@ -1521,9 +1521,22 @@ body {
   color: #047857;
 }
 
+.timeline-meta-assignee {
+  border-color: rgba(59, 130, 246, 0.35);
+  color: #1d4ed8;
+}
+
 .timeline-meta-status {
   border-color: color-mix(in srgb, var(--status-color, #64748b), transparent 65%);
   color: var(--status-color, #64748b);
+}
+
+.timeline-dimmed-strategy {
+  opacity: 0.72;
+}
+
+.timeline-dimmed-assignee {
+  opacity: 0.72;
 }
 
 .timeline-imprevisible { border-left: 4px solid #dc3545 !important; }
