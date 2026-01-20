@@ -1181,7 +1181,7 @@ export class ViewManager {
           projet: record.projet,
           strategie_objectif: strategiesInfo[0]?.objectif,
           strategie_sous_objectif: strategiesInfo[0]?.sous_objectif,
-          strategie_action: strategiesInfo[0]?.action
+          strategie_action: strategiesInfo[0]?.axe_strategique
         })
       : '';
 
@@ -1294,7 +1294,7 @@ export class ViewManager {
         <div class="expanded-strategies">
           <h6><i class="bi bi-crosshair me-1"></i>Stratégies:</h6>
           <ul class="list-unstyled ms-3">
-            ${strategiesInfo.map(s => `<li>• ${s.objectif} → ${s.action}</li>`).join('')}
+            ${strategiesInfo.map(s => `<li>• ${s.objectif} → ${s.axe_strategique}</li>`).join('')}
           </ul>
         </div>`;
     }

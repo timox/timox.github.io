@@ -142,7 +142,7 @@ export function generateStrategyBadge(record) {
   // Support stratégies multiples (nouveau format)
   if (strategiesInfo && Array.isArray(strategiesInfo) && strategiesInfo.length > 0) {
     const count = strategiesInfo.length;
-    const tooltip = strategiesInfo.map(s => `• ${s.objectif} → ${s.action}`).join('\n');
+    const tooltip = strategiesInfo.map(s => `• ${s.objectif} → ${s.axe_strategique}`).join('\n');
     
     return `
       <span class="badge strategy-badge" title="${tooltip.replace(/"/g, '&quot;')}">
