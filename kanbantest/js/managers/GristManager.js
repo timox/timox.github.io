@@ -549,6 +549,8 @@ export class GristManager {
       // Champs sous-actions
       'sous_action_code', 'sous_action_nom', 'categorie',
       'sous_action_charge_estimee', 'sous_action_charge_reelle',
+      // Champs stratégie (pour missions)
+      'strategie_objectif', 'strategie_sous_objectif', 'strategie_action',
       // Meta
       'est_classifiee'
     ];

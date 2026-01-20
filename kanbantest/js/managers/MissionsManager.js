@@ -10,6 +10,17 @@ export class MissionsManager {
   constructor(gristManager) {
     this.grist = gristManager;
     this.logger = createModuleLogger('MissionsManager');
+    this.requiredMissionColumns = [
+      'mission_code',
+      'mission_nom',
+      'mission_responsable',
+      'mission_bureau',
+      'mission_priorite',
+      'mission_date_debut',
+      'mission_date_fin',
+      'sous_action_code',
+      'sous_action_nom'
+    ];
 
     // Cache des missions agrégées
     this.missionsCache = new Map();
@@ -152,6 +163,7 @@ export class MissionsManager {
   async saveMission(missionData, sousActions = []) {
     try {
       this.logger.debug('Saving mission:', missionData);
+      this.ensureMissionColumns();
 
       // Valider les données
       if (!missionData.code || !missionData.nom) {
@@ -258,6 +270,7 @@ export class MissionsManager {
    */
   async updateMission(missionData, sousActions = []) {
     try {
+      this.ensureMissionColumns();
       const tasks = this.grist.currentRecords || [];
       const missionTasks = tasks.filter(task => task.mission_code === missionData.code);
       const sousActionsMap = new Map(
@@ -363,6 +376,7 @@ export class MissionsManager {
   async attachTaskToMission(taskId, missionCode, missionData, sousActionData = null) {
     try {
       this.logger.debug(`Attaching task ${taskId} to mission ${missionCode}`);
+      this.ensureMissionColumns();
 
       const updates = {
         mission_code: missionCode,
@@ -406,6 +420,7 @@ export class MissionsManager {
   async detachTaskFromMission(taskId) {
     try {
       this.logger.debug(`Detaching task ${taskId} from mission`);
+      this.ensureMissionColumns();
 
       const updates = {
         mission_code: '',
@@ -580,6 +595,19 @@ export class MissionsManager {
     this.missionsCache.clear();
     await this.loadMissions();
     this.logger.debug('Missions cache refreshed');
+  }
+
+  ensureMissionColumns() {
+    const availableColumns = this.grist?.availableColumns;
+    if (!availableColumns || !(availableColumns instanceof Set)) {
+      return;
+    }
+    const missing = this.requiredMissionColumns.filter(col => !availableColumns.has(col));
+    if (missing.length > 0) {
+      const message = `Colonnes missions manquantes dans Grist: ${missing.join(', ')}`;
+      this.logger.error(message);
+      throw new Error(message);
+    }
   }
 
   /**
