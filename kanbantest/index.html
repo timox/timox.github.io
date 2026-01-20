@@ -71,13 +71,21 @@
             </div>
           </div>
           <div class="col-auto timeline-controls" style="display:none">
-            <select id="timeline-groupby" class="form-select form-select-sm" aria-label="Groupement timeline">
-              <option value="personne">Personne</option>
-              <option value="type">Type</option>
-              <option value="previsibilite">Prévisibilité</option>
-              <option value="bureau">Bureau</option>
-              <option value="projet">Projet</option>
-            </select>
+            <div class="timeline-controls-row">
+              <span class="timeline-controls-label">Groupé par</span>
+              <select id="timeline-groupby" class="form-select form-select-sm" aria-label="Groupement timeline">
+                <option value="personne">Personne</option>
+                <option value="type">Type</option>
+                <option value="previsibilite">Prévisibilité</option>
+                <option value="bureau">Bureau</option>
+                <option value="projet">Projet</option>
+              </select>
+              <div class="btn-group btn-group-sm timeline-zoom" role="group" aria-label="Zoom timeline">
+                <button class="btn btn-outline-secondary timeline-zoom-btn" type="button" data-timeline-range="1">Jour</button>
+                <button class="btn btn-outline-secondary timeline-zoom-btn active" type="button" data-timeline-range="7">Semaine</button>
+                <button class="btn btn-outline-secondary timeline-zoom-btn" type="button" data-timeline-range="30">Mois</button>
+              </div>
+            </div>
           </div>
           <!-- Boutons de mode de vue (sera injecté par JS) -->
           <div class="col-md-3">

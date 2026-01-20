@@ -21,6 +21,8 @@ export class TimelineManager {
     this.lastSelectedTaskId = null;
     this.highlightedTaskId = null;
     this.timelineListenersAttached = false;
+    this.currentRangeDays = 7;
+    this.zoomButtons = Array.from(document.querySelectorAll('[data-timeline-range]'));
     this.initListeners();
   }
 
@@ -33,6 +35,16 @@ export class TimelineManager {
     }
     if (this.groupSelect) {
       this.groupSelect.addEventListener('change', (event) => this.changeTimelineGroupement(event.target.value));
+    }
+    if (this.zoomButtons.length > 0) {
+      this.zoomButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const range = Number(button.dataset.timelineRange);
+          if (Number.isFinite(range)) {
+            this.setTimelineRange(range, button);
+          }
+        });
+      });
     }
   }
 
@@ -120,7 +132,36 @@ export class TimelineManager {
       this.timeline = new vis.Timeline(this.timelineContainer, items, groups, options);
     }
 
+    this.applyTimelineRange({ animate: false });
     this.attachTimelineListeners();
+  }
+
+  setTimelineRange(rangeDays, button) {
+    this.currentRangeDays = rangeDays;
+    this.updateZoomButtons(button);
+    this.applyTimelineRange();
+  }
+
+  applyTimelineRange({ animate = true } = {}) {
+    if (!this.timeline) return;
+    const now = new Date();
+    const halfRange = (this.currentRangeDays / 2) * 86400000;
+    const start = new Date(now.getTime() - halfRange);
+    const end = new Date(now.getTime() + halfRange);
+    this.timeline.setWindow(start, end, {
+      animation: animate ? { duration: 350, easingFunction: 'easeInOutQuad' } : false
+    });
+  }
+
+  updateZoomButtons(activeButton) {
+    if (this.zoomButtons.length === 0) return;
+    this.zoomButtons.forEach(button => button.classList.remove('active'));
+    if (activeButton) {
+      activeButton.classList.add('active');
+    } else {
+      const match = this.zoomButtons.find(button => Number(button.dataset.timelineRange) === this.currentRangeDays);
+      match?.classList.add('active');
+    }
   }
 
   attachTimelineListeners() {
@@ -246,9 +287,10 @@ export class TimelineManager {
       uniqueGroups.set('Non défini', { id: 'Non défini', content: 'Non défini', order: 0, count: 0 });
     }
 
+    const groupLabel = this.getGroupLabelText();
     return Array.from(uniqueGroups.values()).map(group => ({
       id: group.id,
-      content: `<span class="timeline-group-label">${group.content}</span><span class="timeline-group-count">${group.count}</span>`,
+      content: `<span class="timeline-group-label" title="Ligne = ${groupLabel}">${group.content}</span><span class="timeline-group-count">${group.count}</span>`,
       order: group.order
     }));
   }
@@ -385,6 +427,23 @@ export class TimelineManager {
   getTypeClass(typeValue) {
     const type = TYPE_TACHES.find(item => item.id === typeValue);
     return type ? `timeline-${type.classe}` : 'timeline-type-default';
+  }
+
+  getGroupLabelText() {
+    switch (this.timelineGroupement) {
+      case 'personne':
+        return 'personne assignée';
+      case 'type':
+        return 'type de tâche';
+      case 'previsibilite':
+        return 'prévisibilité';
+      case 'bureau':
+        return 'bureau';
+      case 'projet':
+        return 'projet';
+      default:
+        return 'valeur';
+    }
   }
 
   getStatusColor(status) {
