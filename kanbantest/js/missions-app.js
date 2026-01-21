@@ -147,7 +147,7 @@ function setupEventListeners() {
 async function loadData() {
   try {
     await loadMissions();
-    tasks = gristManager.currentRecords || [];
+    await reloadTasks();
 
     renderMissionsList();
     updateCounts();
@@ -156,6 +156,34 @@ async function loadData() {
   } catch (error) {
     logger.error('Failed to load data:', error);
     showToast('Erreur de chargement', 'danger');
+  }
+}
+
+/**
+ * Recharge les tâches depuis Grist
+ */
+async function reloadTasks() {
+  try {
+    const data = await window.grist.docApi.fetchTable('Ssir_principale_task');
+    tasks = [];
+
+    if (data?.id) {
+      for (let i = 0; i < data.id.length; i++) {
+        const task = { id: data.id[i] };
+        Object.keys(data).forEach(key => {
+          if (key !== 'id') {
+            task[key] = data[key][i];
+          }
+        });
+        tasks.push(task);
+      }
+    }
+
+    logger.debug(`Reloaded ${tasks.length} tasks`);
+  } catch (error) {
+    logger.error('Failed to reload tasks:', error);
+    // Fallback sur gristManager
+    tasks = gristManager.currentRecords || [];
   }
 }
 
@@ -746,41 +774,33 @@ async function saveMeo() {
         est_classifiee: true
       };
 
-      await window.grist.docApi.applyUserActions([
+      logger.debug('Creating MEO task:', newTask);
+
+      const result = await window.grist.docApi.applyUserActions([
         ['AddRecord', 'Ssir_principale_task', null, newTask]
       ]);
 
+      logger.debug('MEO task created, result:', result);
       showToast('Mise en œuvre créée', 'success');
     }
 
     $('#modal-meo').modal('hide');
 
-    // Recharger les données
-    tasks = gristManager.currentRecords || [];
+    // Attendre un peu pour que Grist synchronise
+    await new Promise(r => setTimeout(r, 500));
+
     // Forcer le rechargement via Grist
-    const data = await window.grist.docApi.fetchTable('Ssir_principale_task');
-    if (data?.id) {
-      tasks = [];
-      for (let i = 0; i < data.id.length; i++) {
-        const task = { id: data.id[i] };
-        Object.keys(data).forEach(key => {
-          if (key !== 'id') {
-            task[key] = data[key][i];
-          }
-        });
-        tasks.push(task);
-      }
-    }
+    await reloadTasks();
 
     renderMeoList();
     renderTasksList();
     updateCounts();
+    renderMissionsList(); // Aussi rafraîchir les stats des missions
 
-    // Resélectionner la MEO si en mode édition
-    if (editingMeoCode) {
-      selectMeo(editingMeoCode);
-    } else {
-      selectMeo(code);
+    // Resélectionner la MEO
+    const meoCodeToSelect = editingMeoCode || code;
+    if (meoCodeToSelect) {
+      selectMeo(meoCodeToSelect);
     }
 
   } catch (error) {

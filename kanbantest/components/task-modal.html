@@ -109,33 +109,41 @@
               <i class="bi bi-diagram-3 me-2"></i>Rattachement
             </div>
             <div class="card-body">
-              <div class="row g-3">
-                <div class="col-md-4">
-                  <label for="stm-programme" class="form-label small">Programme</label>
-                  <select class="form-select" id="stm-programme">
-                    <option value="">-- Aucun programme --</option>
-                    <!-- Options chargées dynamiquement -->
-                  </select>
-                </div>
-                <div class="col-md-4">
-                  <label for="stm-mission-code" class="form-label small">Code Mission</label>
-                  <input type="text" class="form-control" id="stm-mission-code" placeholder="MIS-2025-001">
-                </div>
-                <div class="col-md-4">
-                  <label for="stm-mission-nom" class="form-label small">Nom Mission</label>
-                  <input type="text" class="form-control" id="stm-mission-nom" placeholder="Nom de la mission">
-                </div>
-              </div>
-              <div class="row g-3 mt-2">
+              <!-- Mise en œuvre (sélecteur principal) -->
+              <div class="row g-3 mb-3">
                 <div class="col-12">
-                  <label for="stm-strategie" class="form-label small">Stratégie</label>
-                  <select class="form-select" id="stm-strategie">
-                    <option value="">-- Aucune stratégie --</option>
-                    <!-- Options chargées dynamiquement -->
+                  <label for="stm-meo" class="form-label small fw-bold">
+                    <i class="bi bi-collection me-1" style="color: #8b5cf6;"></i>Mise en œuvre
+                  </label>
+                  <select class="form-select" id="stm-meo">
+                    <option value="">-- Sélectionner une mise en œuvre --</option>
+                    <!-- Options chargées dynamiquement, groupées par Mission -->
                   </select>
-                  <div id="stm-strategie-preview" class="mt-2 small text-muted" style="display: none;"></div>
+                  <div class="form-text small">Sélectionner une MEO remplit automatiquement la Mission</div>
                 </div>
               </div>
+              <!-- Info déduite (lecture seule) -->
+              <div class="row g-3" id="stm-hierarchy-info" style="display: none;">
+                <div class="col-md-4">
+                  <label class="form-label small text-muted">Programme</label>
+                  <div class="form-control-plaintext bg-light rounded px-2 py-1 small" id="stm-programme-display">-</div>
+                  <input type="hidden" id="stm-programme" value="">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small text-muted">Stratégie</label>
+                  <div class="form-control-plaintext bg-light rounded px-2 py-1 small" id="stm-strategie-display">-</div>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small text-muted">Mission</label>
+                  <div class="form-control-plaintext bg-light rounded px-2 py-1 small" id="stm-mission-display">-</div>
+                </div>
+              </div>
+              <!-- Champs cachés pour les valeurs -->
+              <input type="hidden" id="stm-strategie" value="">
+              <input type="hidden" id="stm-meo-code" value="">
+              <input type="hidden" id="stm-meo-nom" value="">
+              <input type="hidden" id="stm-mission-code" value="">
+              <input type="hidden" id="stm-mission-nom" value="">
             </div>
           </div>
 
