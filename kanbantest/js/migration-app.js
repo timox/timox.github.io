@@ -115,10 +115,6 @@ class MigrationApp {
     this.log('=== ANALYSE DES DONNEES ===', 'info');
 
     try {
-      // S'assurer que les colonnes V3 existent avant l'analyse
-      this.log('Vérification des colonnes V3...', 'info');
-      await this.ensureV3Columns();
-
       // Charger les donnees
       const data = await grist.docApi.fetchTable(TABLE_ID);
 
@@ -132,7 +128,19 @@ class MigrationApp {
       this.log(`Colonnes disponibles: ${availableCols.join(', ')}`, 'info');
 
       // Convertir en tableau d'objets (avec conversion string securisee)
-      // Utiliser des valeurs par défaut si les colonnes n'existent pas
+      // Gérer les variantes de noms de colonnes (avec/sans accents)
+      const getNatureActivite = (idx) => {
+        if (data.nature_activite) return toStr(data.nature_activite[idx]);
+        if (data['nature_activité']) return toStr(data['nature_activité'][idx]);
+        return '';
+      };
+      const getPrevisibilite = (idx) => {
+        if (data.previsibilite) return toStr(data.previsibilite[idx]);
+        if (data['previsibilité']) return toStr(data['previsibilité'][idx]);
+        if (data['prévisibilité']) return toStr(data['prévisibilité'][idx]);
+        return '';
+      };
+
       this.records = [];
       for (let i = 0; i < data.id.length; i++) {
         this.records.push({
@@ -140,10 +148,10 @@ class MigrationApp {
           titre: toStr(data.titre?.[i]),
           type_tache_id: toStr(data.type_tache_id?.[i]),
           type_tache: toStr(data.type_tache?.[i]),
-          nature_activite: availableCols.includes('nature_activite') ? toStr(data.nature_activite?.[i]) : '',
-          genre_action: availableCols.includes('genre_action') ? toStr(data.genre_action?.[i]) : '',
-          etape_code: availableCols.includes('etape_code') ? toStr(data.etape_code?.[i]) : '',
-          previsibilite: availableCols.includes('previsibilite') ? toStr(data.previsibilite?.[i]) : (availableCols.includes('previsibilité') ? toStr(data['previsibilité']?.[i]) : '')
+          nature_activite: getNatureActivite(i),
+          genre_action: toStr(data.genre_action?.[i]),
+          etape_code: toStr(data.etape_code?.[i]),
+          previsibilite: getPrevisibilite(i)
         });
       }
 
@@ -556,12 +564,26 @@ class MigrationApp {
     this.log(`Migration de ${this.toMigrate.length} taches...`, 'info');
     $('#btn-migrate').prop('disabled', true).html('<i class="bi bi-hourglass-split me-1"></i>Migration...');
 
-    // Les colonnes V3 sont déjà créées lors de l'analyse
+    // Vérifier que les colonnes V3 existent
+    const existingCols = await this.getExistingColumns();
+    this.log(`Colonnes disponibles: ${existingCols.join(', ')}`, 'info');
+
+    // Vérifier quelles colonnes V3 existent
+    const v3Cols = ['nature_activite', 'genre_action', 'etape_code', 'previsibilite'];
+    const missingCols = v3Cols.filter(c => !existingCols.includes(c));
+    if (missingCols.length > 0) {
+      this.log(`Colonnes manquantes: ${missingCols.join(', ')} - création...`, 'warning');
+      await this.ensureV3Columns();
+    }
+
     let migrated = 0;
     let errors = 0;
 
     for (const { record, updates } of this.toMigrate) {
       try {
+        // Log les updates pour debug
+        this.log(`  Migration #${record.id}: ${JSON.stringify(updates)}`, 'info');
+
         await grist.docApi.applyUserActions([
           ['UpdateRecord', TABLE_ID, record.id, updates]
         ]);
@@ -615,20 +637,20 @@ class MigrationApp {
   async ensureColumn(colId, config) {
     const existingCols = await this.getExistingColumns();
 
-    if (existingCols.includes(colId)) {
-      // La colonne existe déjà - mettre à jour
-      try {
-        await grist.docApi.applyUserActions([
-          ['ModifyColumn', TABLE_ID, colId, {
-            type: config.type,
-            label: config.label,
-            widgetOptions: config.widgetOptions
-          }]
-        ]);
-        return { success: true, action: 'updated', message: `${colId} existe (mise à jour)` };
-      } catch (e) {
-        return { success: true, action: 'exists', message: `${colId} existe déjà` };
-      }
+    // Vérifier aussi les variantes avec accents
+    const variants = {
+      'nature_activite': ['nature_activite', 'nature_activité'],
+      'previsibilite': ['previsibilite', 'previsibilité', 'prévisibilité']
+    };
+
+    const colVariants = variants[colId] || [colId];
+    const existingVariant = colVariants.find(v => existingCols.includes(v));
+
+    if (existingVariant) {
+      // La colonne existe déjà (peut-être avec un nom différent)
+      // Ne pas essayer de modifier, juste confirmer qu'elle existe
+      this.log(`  Colonne trouvée: ${existingVariant}`, 'info');
+      return { success: true, action: 'exists', message: `${existingVariant} existe déjà` };
     } else {
       // La colonne n'existe pas - la créer
       try {
