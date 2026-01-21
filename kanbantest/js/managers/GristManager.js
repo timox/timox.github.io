@@ -656,20 +656,20 @@ export class GristManager {
       return filteredData;
     }
 
-    // Si availableColumns est vide, filtrer les champs V3 potentiellement absents
-    // pour éviter les KeyError (approche conservative)
-    const safeFields = ['titre', 'description', 'statut', 'projet', 'urgence', 'impact',
-                        'notes', 'bureau', 'qui', 'date_echeance', 'date_debut',
-                        'mission_code', 'mission_nom'];
+    // Si availableColumns est vide, envoyer tous les champs SAUF les champs V3
+    // qui peuvent ne pas exister - ils seront créés par setup.html ou migration.html
+    const v3Fields = ['nature_activite', 'genre_action', 'etape_code', 'previsibilite'];
     const safeData = {};
     for (const [key, value] of Object.entries(gristData)) {
-      if (safeFields.includes(key)) {
+      // Exclure les champs V3 quand on ne peut pas vérifier leur existence
+      if (!v3Fields.includes(key)) {
         safeData[key] = value;
       } else {
-        this.logger.warn(`Champ ignoré (colonnes non détectées, mode safe): ${key}`);
+        this.logger.debug(`Champ V3 ignoré (colonnes non détectées): ${key}`);
       }
     }
     this.logger.warn('Mode safe actif - availableColumns vide. Champs envoyés:', Object.keys(safeData));
+    this.logger.info('Pour activer les champs V3, exécutez setup.html puis rechargez la page.');
     return safeData;
   }
   
