@@ -1,10 +1,10 @@
 // === managers/MissionsManager.js ===
-// Gestionnaire pour les missions et sous-actions
+// Gestionnaire pour les missions et mises en œuvre
 
 import { createModuleLogger } from '../utils/LoggerManager.js';
 
 /**
- * Gestionnaire pour les missions et sous-actions (approche dénormalisée)
+ * Gestionnaire pour les missions et mises en œuvre (approche dénormalisée)
  */
 export class MissionsManager {
   constructor(gristManager) {
@@ -18,8 +18,8 @@ export class MissionsManager {
       'mission_priorite',
       'mission_date_debut',
       'mission_date_fin',
-      'sous_action_code',
-      'sous_action_nom'
+      'mise_en_oeuvre_code',
+      'mise_en_oeuvre_nom'
     ];
 
     // Cache des missions agrégées
@@ -65,7 +65,7 @@ export class MissionsManager {
             strategie_objectif: task.strategie_objectif || '',
             strategie_sous_objectif: task.strategie_sous_objectif || '',
             strategie_action: task.strategie_action || '',
-            sous_actions: new Map(),
+            mises_en_oeuvre: new Map(),
             taches: [],
             stats: {
               total: 0,
@@ -87,21 +87,21 @@ export class MissionsManager {
           mission.stats.inProgress++;
         }
 
-        // Gérer les sous-actions
-        const sousActionCode = task.sous_action_code;
+        // Gérer les mise en œuvres
+        const sousActionCode = task.mise_en_oeuvre_code;
         if (sousActionCode) {
-          if (!mission.sous_actions.has(sousActionCode)) {
-            mission.sous_actions.set(sousActionCode, {
+          if (!mission.mises_en_oeuvre.has(sousActionCode)) {
+            mission.mises_en_oeuvre.set(sousActionCode, {
               code: sousActionCode,
-              nom: task.sous_action_nom || 'Sans nom',
+              nom: task.mise_en_oeuvre_nom || 'Sans nom',
               categorie: task.categorie || '',
-              charge_estimee: task.sous_action_charge_estimee || 0,
-              charge_reelle: task.sous_action_charge_reelle || 0,
+              charge_estimee: task.mise_en_oeuvre_charge_estimee || 0,
+              charge_reelle: task.mise_en_oeuvre_charge_reelle || 0,
               taches: []
             });
           }
 
-          mission.sous_actions.get(sousActionCode).taches.push(task);
+          mission.mises_en_oeuvre.get(sousActionCode).taches.push(task);
         }
       }
 
@@ -157,7 +157,7 @@ export class MissionsManager {
   /**
    * Crée ou met à jour une mission (en créant une tâche support)
    * @param {Object} missionData - Données de la mission
-   * @param {Array} sousActions - Liste des sous-actions
+   * @param {Array} sousActions - Liste des mise en œuvres
    * @returns {Promise<Object>} Mission créée
    */
   async saveMission(missionData, sousActions = []) {
@@ -209,7 +209,7 @@ export class MissionsManager {
 
         const result = await this.grist.saveRecord(supportTask);
         this.logger.info('Mission support task created with ID:', result?.id);
-        // Créer les sous-actions si fournies
+        // Créer les mise en œuvres si fournies
         if (sousActions.length > 0) {
           const saBureauArray = this._toArray(missionData.bureau, ['L']);
           const saQuiArray = this._toArray(missionData.responsable, ['L']);
@@ -217,8 +217,8 @@ export class MissionsManager {
           for (const sa of sousActions) {
             if (sa.code && sa.nom) {
               const saTask = {
-                titre: `[SA] ${sa.nom}`,
-                description: `Sous-action: ${sa.nom}\nCode: ${sa.code}\nCatégorie: ${sa.categorie}`,
+                titre: `[MEO] ${sa.nom}`,
+                description: `Mise en œuvre: ${sa.nom}\nCode: ${sa.code}\nCatégorie: ${sa.categorie}`,
                 statut: 'À faire',
                 qui: saQuiArray,
                 bureau: saBureauArray,
@@ -235,16 +235,16 @@ export class MissionsManager {
                 strategie_objectif: missionData.strategie_objectif || null,
                 strategie_sous_objectif: missionData.strategie_sous_objectif || null,
                 strategie_action: missionData.strategie_action || null,
-                sous_action_code: sa.code,
-                sous_action_nom: sa.nom,
+                mise_en_oeuvre_code: sa.code,
+                mise_en_oeuvre_nom: sa.nom,
                 categorie: sa.categorie || 'Projet',
-                sous_action_charge_estimee: sa.charge || 0,
+                mise_en_oeuvre_charge_estimee: sa.charge || 0,
                 est_classifiee: true
               };
 
-              this.logger.debug('Creating sous-action task:', sa.code);
+              this.logger.debug('Creating mise en œuvre task:', sa.code);
               const result = await this.grist.saveRecord(saTask);
-              this.logger.info('Sous-action task created:', sa.code, 'ID:', result?.id);
+              this.logger.info('Mise en œuvre task created:', sa.code, 'ID:', result?.id);
             }
           }
         }
@@ -263,9 +263,9 @@ export class MissionsManager {
   }
 
   /**
-   * Met à jour une mission existante et ses sous-actions
+   * Met à jour une mission existante et ses mise en œuvres
    * @param {Object} missionData - Données de la mission
-   * @param {Array} sousActions - Liste des sous-actions
+   * @param {Array} sousActions - Liste des mise en œuvres
    * @returns {Promise<void>}
    */
   async updateMission(missionData, sousActions = []) {
@@ -294,7 +294,7 @@ export class MissionsManager {
 
       for (const task of missionTasks) {
         const updates = { ...baseUpdates, statut: task.statut || 'En cours' };
-        const sousAction = sousActionsMap.get(task.sous_action_code);
+        const sousAction = sousActionsMap.get(task.mise_en_oeuvre_code);
 
         if (task.titre?.startsWith('[MISSION]')) {
           updates.titre = `[MISSION] ${missionData.nom}`;
@@ -302,13 +302,13 @@ export class MissionsManager {
         }
 
         if (sousAction) {
-          updates.sous_action_code = sousAction.code;
-          updates.sous_action_nom = sousAction.nom;
+          updates.mise_en_oeuvre_code = sousAction.code;
+          updates.mise_en_oeuvre_nom = sousAction.nom;
           updates.categorie = sousAction.categorie || 'Projet';
-          updates.sous_action_charge_estimee = sousAction.charge || 0;
-          if (task.titre?.startsWith('[SA]')) {
-            updates.titre = `[SA] ${sousAction.nom}`;
-            updates.description = `Sous-action: ${sousAction.nom}\nCode: ${sousAction.code}\nCatégorie: ${sousAction.categorie}`;
+          updates.mise_en_oeuvre_charge_estimee = sousAction.charge || 0;
+          if (task.titre?.startsWith('[MEO]')) {
+            updates.titre = `[MEO] ${sousAction.nom}`;
+            updates.description = `Mise en œuvre: ${sousAction.nom}\nCode: ${sousAction.code}\nCatégorie: ${sousAction.categorie}`;
           }
         }
 
@@ -317,7 +317,7 @@ export class MissionsManager {
 
       const existingSousActionCodes = new Set(
         missionTasks
-          .map(task => task.sous_action_code)
+          .map(task => task.mise_en_oeuvre_code)
           .filter(Boolean)
       );
 
@@ -330,8 +330,8 @@ export class MissionsManager {
             continue;
           }
           const saTask = {
-            titre: `[SA] ${sa.nom}`,
-            description: `Sous-action: ${sa.nom}\nCode: ${sa.code}\nCatégorie: ${sa.categorie}`,
+            titre: `[MEO] ${sa.nom}`,
+            description: `Mise en œuvre: ${sa.nom}\nCode: ${sa.code}\nCatégorie: ${sa.categorie}`,
             statut: 'À faire',
             qui: saQuiArray,
             bureau: saBureauArray,
@@ -348,10 +348,10 @@ export class MissionsManager {
             strategie_objectif: missionData.strategie_objectif || null,
             strategie_sous_objectif: missionData.strategie_sous_objectif || null,
             strategie_action: missionData.strategie_action || null,
-            sous_action_code: sa.code,
-            sous_action_nom: sa.nom,
+            mise_en_oeuvre_code: sa.code,
+            mise_en_oeuvre_nom: sa.nom,
             categorie: sa.categorie || 'Projet',
-            sous_action_charge_estimee: sa.charge || 0,
+            mise_en_oeuvre_charge_estimee: sa.charge || 0,
             est_classifiee: true
           };
           await this.grist.saveRecord(saTask);
@@ -366,11 +366,11 @@ export class MissionsManager {
   }
 
   /**
-   * Rattache une tâche existante à une mission/sous-action
+   * Rattache une tâche existante à une mission/mise en œuvre
    * @param {number} taskId - ID de la tâche
    * @param {string} missionCode - Code de la mission
    * @param {Object} missionData - Données complètes de la mission
-   * @param {Object} sousActionData - Données de la sous-action (optionnel)
+   * @param {Object} sousActionData - Données de la mise en œuvre (optionnel)
    * @returns {Promise<void>}
    */
   async attachTaskToMission(taskId, missionCode, missionData, sousActionData = null) {
@@ -394,10 +394,10 @@ export class MissionsManager {
       };
 
       if (sousActionData) {
-        updates.sous_action_code = sousActionData.code;
-        updates.sous_action_nom = sousActionData.nom;
+        updates.mise_en_oeuvre_code = sousActionData.code;
+        updates.mise_en_oeuvre_nom = sousActionData.nom;
         updates.categorie = sousActionData.categorie;
-        updates.sous_action_charge_estimee = sousActionData.charge_estimee || 0;
+        updates.mise_en_oeuvre_charge_estimee = sousActionData.charge_estimee || 0;
       }
 
       await this.grist.saveRecord(updates, taskId);
@@ -434,11 +434,11 @@ export class MissionsManager {
         strategie_objectif: '',
         strategie_sous_objectif: '',
         strategie_action: '',
-        sous_action_code: '',
-        sous_action_nom: '',
+        mise_en_oeuvre_code: '',
+        mise_en_oeuvre_nom: '',
         categorie: '',
-        sous_action_charge_estimee: 0,
-        sous_action_charge_reelle: 0,
+        mise_en_oeuvre_charge_estimee: 0,
+        mise_en_oeuvre_charge_reelle: 0,
         est_classifiee: false
       };
 
@@ -490,7 +490,7 @@ export class MissionsManager {
         }
 
         // Compter par catégorie
-        for (const sa of mission.sous_actions.values()) {
+        for (const sa of mission.mises_en_oeuvre.values()) {
           if (sa.categorie && stats.par_categorie[sa.categorie] !== undefined) {
             stats.par_categorie[sa.categorie] += sa.taches.length;
           }
@@ -541,8 +541,8 @@ export class MissionsManager {
 
     if (filters.categorie) {
       missions = missions.filter(m => {
-        // Vérifier si au moins une sous-action a cette catégorie
-        for (const sa of m.sous_actions.values()) {
+        // Vérifier si au moins une mise en œuvre a cette catégorie
+        for (const sa of m.mises_en_oeuvre.values()) {
           if (sa.categorie === filters.categorie) {
             return true;
           }
@@ -574,7 +574,7 @@ export class MissionsManager {
       date_debut: mission.date_debut,
       date_fin: mission.date_fin,
       stats: mission.stats,
-      sous_actions: Array.from(mission.sous_actions.values()).map(sa => ({
+      mises_en_oeuvre: Array.from(mission.mises_en_oeuvre.values()).map(sa => ({
         code: sa.code,
         nom: sa.nom,
         categorie: sa.categorie,

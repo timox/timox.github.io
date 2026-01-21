@@ -256,9 +256,9 @@
       <div class="card-body">
         <div class="row">
           <div class="col-md-6">
-            <h5>Principes du modèle V3 simplifié</h5>
+            <h5>Principes du modèle V3</h5>
             <ul>
-              <li><strong>Hiérarchie stratégique</strong> : Programme → Stratégie → Mission → Tâche</li>
+              <li><strong>Hiérarchie stratégique</strong> : Programme → Stratégie → Mission → Mise en œuvre → Tâche</li>
               <li><strong>Source unique</strong> : Toute la hiérarchie dans <code>Ssir_strategie2</code></li>
               <li><strong>Classification 3 axes</strong> : Chaque tâche classifiée selon 3 dimensions orthogonales</li>
               <li><strong>Liaison directe</strong> : <code>strategie_id</code> lie la tâche à sa Mission</li>
@@ -267,30 +267,33 @@
           <div class="col-md-6">
             <h5>Avantages</h5>
             <ul>
-              <li><i class="bi bi-check-circle text-success me-1"></i>Modèle simplifié sans sous-actions</li>
+              <li><i class="bi bi-check-circle text-success me-1"></i>Mise en œuvre pour regrouper les tâches</li>
               <li><i class="bi bi-check-circle text-success me-1"></i>Une seule source de vérité</li>
-              <li><i class="bi bi-check-circle text-success me-1"></i>Pas de doublons [MISSION]/[SA]</li>
+              <li><i class="bi bi-check-circle text-success me-1"></i>Structure hiérarchique claire</li>
               <li><i class="bi bi-check-circle text-success me-1"></i>Analyses multidimensionnelles via les 3 axes</li>
             </ul>
           </div>
         </div>
 
-        <div class="alert alert-danger mt-3 mb-0">
-          <h6 class="alert-heading"><i class="bi bi-exclamation-octagon me-2"></i>Champs obsolètes (à ignorer)</h6>
+        <div class="alert alert-info mt-3 mb-0">
+          <h6 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Niveau intermédiaire : Mise en œuvre</h6>
+          <p class="small mb-2">
+            Une <strong>Mise en œuvre</strong> regroupe plusieurs tâches au sein d'une Mission.
+            Elle permet d'organiser le travail en phases ou lots cohérents.
+          </p>
           <div class="row">
             <div class="col-md-6">
               <ul class="mb-0 small">
-                <li><code>mission_code</code> - remplacé par <code>strategie_id</code></li>
-                <li><code>mission_nom</code> - info dans Ssir_strategie2.action</li>
-                <li><code>sous_action_code</code> - concept supprimé</li>
-                <li><code>sous_action_nom</code> - concept supprimé</li>
+                <li><code>mise_en_oeuvre_code</code> - Code unique (ex: MEO-001)</li>
+                <li><code>mise_en_oeuvre_nom</code> - Nom descriptif</li>
+                <li><code>categorie</code> - MCO, Projet ou Imprévisible</li>
               </ul>
             </div>
             <div class="col-md-6">
               <ul class="mb-0 small">
-                <li><code>programme_id</code> - remplacé par <code>strategie_id</code></li>
-                <li>Préfixe <code>[MISSION]</code> - plus nécessaire</li>
-                <li>Préfixe <code>[SA]</code> - concept supprimé</li>
+                <li><code>mise_en_oeuvre_charge_estimee</code> - Charge prévue (jours)</li>
+                <li><code>mise_en_oeuvre_charge_reelle</code> - Charge réelle (jours)</li>
+                <li>Préfixe <code>[MEO]</code> - pour les tâches support</li>
               </ul>
             </div>
           </div>
@@ -323,24 +326,31 @@
               </div>
               <div class="hierarchy-level">
                 <div class="hierarchy-item">
-                  <span class="hierarchy-badge badge-tache">TÂCHE</span>
-                  <span class="text-muted">Table: Ssir_principale_task</span>
+                  <span class="hierarchy-badge" style="background: #8b5cf6;">MISE EN ŒUVRE</span>
+                  <span class="text-muted">mise_en_oeuvre_code / mise_en_oeuvre_nom</span>
+                  <span class="badge bg-secondary">1:n</span>
                 </div>
-                <div class="hierarchy-level" style="border-color: #6366f1;">
+                <div class="hierarchy-level" style="border-color: #8b5cf6;">
                   <div class="hierarchy-item">
-                    <i class="bi bi-tag text-danger"></i>
-                    <code>nature_activite</code>
-                    <span class="text-muted">WHY - Pourquoi ?</span>
+                    <span class="hierarchy-badge badge-tache">TÂCHE</span>
+                    <span class="text-muted">Table: Ssir_principale_task</span>
                   </div>
-                  <div class="hierarchy-item">
-                    <i class="bi bi-tag text-primary"></i>
-                    <code>genre_action</code>
-                    <span class="text-muted">HOW - Comment ?</span>
-                  </div>
-                  <div class="hierarchy-item">
-                    <i class="bi bi-tag text-info"></i>
-                    <code>etape_code</code>
-                    <span class="text-muted">WHERE - Où dans le cycle ?</span>
+                  <div class="hierarchy-level" style="border-color: #6366f1;">
+                    <div class="hierarchy-item">
+                      <i class="bi bi-tag text-danger"></i>
+                      <code>nature_activite</code>
+                      <span class="text-muted">WHY - Pourquoi ?</span>
+                    </div>
+                    <div class="hierarchy-item">
+                      <i class="bi bi-tag text-primary"></i>
+                      <code>genre_action</code>
+                      <span class="text-muted">HOW - Comment ?</span>
+                    </div>
+                    <div class="hierarchy-item">
+                      <i class="bi bi-tag text-info"></i>
+                      <code>etape_code</code>
+                      <span class="text-muted">WHERE - Où dans le cycle ?</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -539,7 +549,7 @@
                 <tr>
                   <td><code class="field-name">titre</code> <span class="field-required">*</span></td>
                   <td><span class="field-type">Text</span></td>
-                  <td>Titre de la tâche. Préfixes spéciaux : [MISSION], [SA]</td>
+                  <td>Titre de la tâche. Préfixes spéciaux : [MISSION], [MEO]</td>
                 </tr>
                 <tr>
                   <td><code class="field-name">description</code></td>
@@ -596,10 +606,15 @@
                   <td><span class="field-type">Text</span></td>
                   <td><del>Remplacé par strategie_id</del></td>
                 </tr>
-                <tr class="table-secondary">
-                  <td><code class="field-name">sous_action_code</code> <span class="badge bg-secondary">OBSOLÈTE</span></td>
+                <tr class="table-warning">
+                  <td><code class="field-name">mise_en_oeuvre_code</code></td>
                   <td><span class="field-type">Text</span></td>
-                  <td><del>Concept supprimé - sous-actions n'existent plus</del></td>
+                  <td><strong>Mise en œuvre</strong> - Code unique (ex: MEO-001)</td>
+                </tr>
+                <tr class="table-warning">
+                  <td><code class="field-name">mise_en_oeuvre_nom</code></td>
+                  <td><span class="field-type">Text</span></td>
+                  <td><strong>Mise en œuvre</strong> - Nom descriptif</td>
                 </tr>
                 <tr class="table-secondary">
                   <td><code class="field-name">programme_id</code> <span class="badge bg-secondary">OBSOLÈTE</span></td>
