@@ -62,6 +62,8 @@ class MigrationApp {
     this.toMigrate = [];
     this.toDelete = [];
     this.duplicates = []; // Doublons [MISSION] et [SA]
+    this.obsoletePrefixes = []; // Tâches avec préfixes obsolètes à nettoyer
+    this.existingColumns = []; // Cache des colonnes existantes
     this.isAnalyzed = false;
   }
 
@@ -78,6 +80,7 @@ class MigrationApp {
     $('#btn-analyze').on('click', () => this.analyze());
     $('#btn-delete-temp').on('click', () => this.deleteTemp());
     $('#btn-delete-duplicates').on('click', () => this.deleteDuplicates());
+    $('#btn-clean-prefixes').on('click', () => this.cleanObsoletePrefixes());
     $('#btn-migrate').on('click', () => this.migrate());
 
     this.log('Application prete. Cliquez sur "Analyser".', 'success');
@@ -141,6 +144,7 @@ class MigrationApp {
       this.toDelete = [];
       this.toMigrate = [];
       this.duplicates = [];
+      this.obsoletePrefixes = [];
       let alreadyMigrated = 0;
 
       // Détection des doublons par titre pour [MISSION] et [SA]
@@ -161,6 +165,16 @@ class MigrationApp {
           for (let i = 1; i < records.length; i++) {
             this.duplicates.push(records[i]);
           }
+        }
+      }
+
+      // Identifier les tâches avec préfixes obsolètes [MISSION] ou [SA] (non doublons)
+      for (const record of this.records) {
+        // Ne pas inclure les doublons
+        if (this.duplicates.some(d => d.id === record.id)) continue;
+
+        if (record.titre && (record.titre.startsWith('[MISSION]') || record.titre.startsWith('[SA]'))) {
+          this.obsoletePrefixes.push(record);
         }
       }
 
@@ -215,13 +229,16 @@ class MigrationApp {
       $('#stat-migrated').text(alreadyMigrated);
       $('#stat-to-migrate').text(this.toMigrate.length);
       $('#stat-duplicates').text(this.duplicates.length);
+      $('#stat-prefixes').text(this.obsoletePrefixes.length);
       $('#count-temp').text(this.toDelete.length);
       $('#count-migrate').text(this.toMigrate.length);
       $('#count-duplicates').text(this.duplicates.length);
+      $('#count-prefixes').text(this.obsoletePrefixes.length);
 
       // Activer/desactiver boutons
       $('#btn-delete-temp').prop('disabled', this.toDelete.length === 0);
       $('#btn-delete-duplicates').prop('disabled', this.duplicates.length === 0);
+      $('#btn-clean-prefixes').prop('disabled', this.obsoletePrefixes.length === 0);
       $('#btn-migrate').prop('disabled', this.toMigrate.length === 0);
 
       // Afficher apercu
@@ -230,6 +247,7 @@ class MigrationApp {
       // Log resume
       this.log(`TEMP a supprimer: ${this.toDelete.length}`, this.toDelete.length > 0 ? 'warning' : 'info');
       this.log(`Doublons [MISSION]/[SA]: ${this.duplicates.length}`, this.duplicates.length > 0 ? 'error' : 'success');
+      this.log(`Préfixes obsolètes à nettoyer: ${this.obsoletePrefixes.length}`, this.obsoletePrefixes.length > 0 ? 'warning' : 'success');
       this.log(`Deja migrees: ${alreadyMigrated}`, 'success');
       this.log(`A migrer: ${this.toMigrate.length}`, this.toMigrate.length > 0 ? 'info' : 'success');
 
@@ -278,8 +296,8 @@ class MigrationApp {
   renderPreview() {
     const $container = $('#preview-container');
 
-    if (this.toMigrate.length === 0 && this.toDelete.length === 0 && this.duplicates.length === 0) {
-      $container.html('<p class="text-success"><i class="bi bi-check-circle me-2"></i>Toutes les taches sont deja migrees et pas de doublons!</p>');
+    if (this.toMigrate.length === 0 && this.toDelete.length === 0 && this.duplicates.length === 0 && this.obsoletePrefixes.length === 0) {
+      $container.html('<p class="text-success"><i class="bi bi-check-circle me-2"></i>Toutes les taches sont deja migrees, pas de doublons et pas de préfixes obsolètes!</p>');
       return;
     }
 
@@ -294,6 +312,24 @@ class MigrationApp {
       });
       if (this.duplicates.length > 5) {
         html += `<li class="list-group-item text-muted">... et ${this.duplicates.length - 5} autres doublons</li>`;
+      }
+      html += '</ul>';
+    }
+
+    // Préfixes obsolètes [MISSION] et [SA]
+    if (this.obsoletePrefixes.length > 0) {
+      html += '<h6 class="text-warning"><i class="bi bi-tag me-2"></i>Préfixes obsolètes [MISSION]/[SA]</h6>';
+      html += '<p class="small text-muted">Ces tâches ont des préfixes [MISSION] ou [SA] qui seront supprimés du titre.</p>';
+      html += '<ul class="list-group mb-3">';
+      this.obsoletePrefixes.slice(0, 5).forEach(r => {
+        const cleanedTitle = r.titre.replace(/^\[MISSION\]\s*/, '').replace(/^\[SA\]\s*/, '');
+        html += `<li class="list-group-item list-group-item-warning small">
+          <div><strong>Avant:</strong> ${this.escapeHtml(r.titre.substring(0, 50))}...</div>
+          <div class="text-success"><strong>Après:</strong> ${this.escapeHtml(cleanedTitle.substring(0, 50))}...</div>
+        </li>`;
+      });
+      if (this.obsoletePrefixes.length > 5) {
+        html += `<li class="list-group-item text-muted">... et ${this.obsoletePrefixes.length - 5} autres</li>`;
       }
       html += '</ul>';
     }
@@ -444,6 +480,57 @@ class MigrationApp {
   }
 
   /**
+   * Nettoie les préfixes obsolètes [MISSION] et [SA] des titres
+   */
+  async cleanObsoletePrefixes() {
+    if (this.obsoletePrefixes.length === 0) {
+      this.log('Aucun préfixe obsolète à nettoyer', 'info');
+      return;
+    }
+
+    if (!confirm(`Nettoyer ${this.obsoletePrefixes.length} titres avec préfixes obsolètes ([MISSION] et [SA]) ?\n\nLes préfixes seront supprimés des titres.\n\nCette action est irreversible!`)) {
+      this.log('Nettoyage annulé', 'warning');
+      return;
+    }
+
+    this.log(`Nettoyage de ${this.obsoletePrefixes.length} préfixes obsolètes...`, 'info');
+    $('#btn-clean-prefixes').prop('disabled', true).html('<i class="bi bi-hourglass-split me-1"></i>Nettoyage...');
+
+    let cleaned = 0;
+    let errors = 0;
+
+    for (const record of this.obsoletePrefixes) {
+      try {
+        // Nettoyer le titre en enlevant les préfixes [MISSION] et [SA]
+        const cleanedTitle = record.titre
+          .replace(/^\[MISSION\]\s*/i, '')
+          .replace(/^\[SA\]\s*/i, '');
+
+        await grist.docApi.applyUserActions([
+          ['UpdateRecord', TABLE_ID, record.id, { titre: cleanedTitle }]
+        ]);
+        cleaned++;
+
+        if (cleaned % 10 === 0) {
+          this.log(`  Progression: ${cleaned}/${this.obsoletePrefixes.length}`, 'info');
+          await this.sleep(100);
+        }
+      } catch (error) {
+        errors++;
+        this.log(`  Erreur ${record.id}: ${error.message}`, 'error');
+      }
+    }
+
+    this.log(`Nettoyage terminé: ${cleaned} OK, ${errors} erreurs`, cleaned === this.obsoletePrefixes.length ? 'success' : 'warning');
+
+    // Remettre le bouton
+    $('#btn-clean-prefixes').html('<i class="bi bi-tag me-1"></i>Nettoyer préfixes (<span id="count-prefixes">0</span>)');
+
+    // Re-analyser
+    await this.analyze();
+  }
+
+  /**
    * Execute la migration
    */
   async migrate() {
@@ -497,10 +584,72 @@ class MigrationApp {
   }
 
   /**
+   * Récupère la liste des colonnes existantes dans la table
+   */
+  async getExistingColumns() {
+    if (this.existingColumns.length > 0) {
+      return this.existingColumns;
+    }
+
+    try {
+      const tableData = await grist.docApi.fetchTable(TABLE_ID);
+      this.existingColumns = Object.keys(tableData).filter(k => k !== 'id' && k !== 'manualSort');
+      this.log(`Colonnes existantes: ${this.existingColumns.length}`, 'info');
+      return this.existingColumns;
+    } catch (e) {
+      this.log(`Erreur lecture colonnes: ${e.message}`, 'error');
+      return [];
+    }
+  }
+
+  /**
+   * Ajoute ou met à jour une colonne de manière sécurisée
+   */
+  async ensureColumn(colId, config) {
+    const existingCols = await this.getExistingColumns();
+
+    if (existingCols.includes(colId)) {
+      // La colonne existe déjà - mettre à jour
+      try {
+        await grist.docApi.applyUserActions([
+          ['ModifyColumn', TABLE_ID, colId, {
+            type: config.type,
+            label: config.label,
+            widgetOptions: config.widgetOptions
+          }]
+        ]);
+        return { success: true, action: 'updated', message: `${colId} existe (mise à jour)` };
+      } catch (e) {
+        return { success: true, action: 'exists', message: `${colId} existe déjà` };
+      }
+    } else {
+      // La colonne n'existe pas - la créer
+      try {
+        await grist.docApi.applyUserActions([
+          ['AddColumn', TABLE_ID, colId, {
+            type: config.type,
+            label: config.label,
+            widgetOptions: config.widgetOptions
+          }]
+        ]);
+        // Mettre à jour le cache
+        this.existingColumns.push(colId);
+        return { success: true, action: 'created', message: `${colId} créée` };
+      } catch (e) {
+        return { success: false, action: 'error', message: `${colId}: ${e.message}` };
+      }
+    }
+  }
+
+  /**
    * S'assure que les colonnes V3 existent, les cree si necessaire
    */
   async ensureV3Columns() {
     this.log('Vérification des colonnes V3...', 'info');
+
+    // Forcer le rechargement du cache des colonnes
+    this.existingColumns = [];
+    await this.getExistingColumns();
 
     const columns = {
       nature_activite: {
@@ -573,34 +722,11 @@ class MigrationApp {
     };
 
     for (const [colId, config] of Object.entries(columns)) {
-      try {
-        // Essayer d'abord de créer la colonne (plus fiable)
-        await grist.docApi.applyUserActions([
-          ['AddColumn', TABLE_ID, colId, {
-            type: config.type,
-            label: config.label,
-            widgetOptions: config.widgetOptions
-          }]
-        ]);
-        this.log(`  ✓ ${colId} créée`, 'success');
-      } catch (addError) {
-        // Si la colonne existe déjà, la modifier
-        if (addError.message && addError.message.includes('already exists')) {
-          try {
-            await grist.docApi.applyUserActions([
-              ['ModifyColumn', TABLE_ID, colId, {
-                type: config.type,
-                label: config.label,
-                widgetOptions: config.widgetOptions
-              }]
-            ]);
-            this.log(`  ✓ ${colId} existe (mise à jour)`, 'success');
-          } catch (modError) {
-            this.log(`  ⚠ ${colId}: ${modError.message}`, 'warning');
-          }
-        } else {
-          this.log(`  ✗ ${colId}: ${addError.message}`, 'error');
-        }
+      const result = await this.ensureColumn(colId, config);
+      if (result.success) {
+        this.log(`  ✓ ${result.message}`, 'success');
+      } else {
+        this.log(`  ✗ ${result.message}`, 'error');
       }
     }
 

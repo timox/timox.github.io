@@ -460,6 +460,87 @@
     // Stockage des doublons détectés
     let detectedDuplicates = [];
 
+    // Cache des colonnes existantes par table
+    let existingColumnsCache = {};
+
+    /**
+     * Récupère la liste des colonnes existantes d'une table
+     * @param {string} tableName - Nom de la table
+     * @param {boolean} forceRefresh - Forcer le rechargement du cache
+     * @returns {Promise<string[]>} Liste des noms de colonnes
+     */
+    async function getExistingColumns(tableName, forceRefresh = false) {
+      if (!forceRefresh && existingColumnsCache[tableName]) {
+        return existingColumnsCache[tableName];
+      }
+
+      try {
+        const tableData = await grist.docApi.fetchTable(tableName);
+        const columns = Object.keys(tableData).filter(k => k !== 'id' && k !== 'manualSort');
+        existingColumnsCache[tableName] = columns;
+        log(`Colonnes existantes dans ${tableName}: ${columns.length}`, 'info');
+        return columns;
+      } catch (e) {
+        log(`Erreur lecture colonnes ${tableName}: ${e.message}`, 'error');
+        return [];
+      }
+    }
+
+    /**
+     * Ajoute ou met à jour une colonne de manière sécurisée
+     * Vérifie d'abord si la colonne existe avant de tenter de la créer
+     * @param {string} tableName - Nom de la table
+     * @param {string} colId - Identifiant de la colonne
+     * @param {object} config - Configuration de la colonne {type, label, widgetOptions}
+     * @returns {Promise<{success: boolean, action: string, message: string}>}
+     */
+    async function ensureColumn(tableName, colId, config) {
+      // Récupérer les colonnes existantes
+      const existingCols = await getExistingColumns(tableName);
+
+      if (existingCols.includes(colId)) {
+        // La colonne existe déjà - mettre à jour si nécessaire
+        try {
+          const updateData = {
+            type: config.type,
+            label: config.label
+          };
+          if (config.widgetOptions) {
+            updateData.widgetOptions = JSON.stringify(config.widgetOptions);
+          }
+
+          await grist.docApi.applyUserActions([
+            ['ModifyColumn', tableName, colId, updateData]
+          ]);
+          return { success: true, action: 'updated', message: `${colId} existe déjà (mise à jour)` };
+        } catch (e) {
+          return { success: true, action: 'exists', message: `${colId} existe déjà` };
+        }
+      } else {
+        // La colonne n'existe pas - la créer
+        try {
+          const createData = {
+            type: config.type,
+            label: config.label
+          };
+          if (config.widgetOptions) {
+            createData.widgetOptions = JSON.stringify(config.widgetOptions);
+          }
+
+          await grist.docApi.applyUserActions([
+            ['AddColumn', tableName, colId, createData]
+          ]);
+
+          // Mettre à jour le cache
+          existingColumnsCache[tableName] = [...existingCols, colId];
+
+          return { success: true, action: 'created', message: `${colId} créé` };
+        } catch (e) {
+          return { success: false, action: 'error', message: `${colId}: ${e.message}` };
+        }
+      }
+    }
+
     // Logging
     function log(message, type = 'info') {
       const time = new Date().toLocaleTimeString();
@@ -521,35 +602,15 @@
       try {
         // Étape 1: Colonnes V3
         log('--- Étape 1: Colonnes V3 ---', 'info');
+        // Forcer le rechargement du cache des colonnes au début
+        await getExistingColumns(TABLE_NAME, true);
+
         for (const [colId, config] of Object.entries(COLUMNS_CONFIG)) {
-          try {
-            // Essayer d'abord de créer la colonne (plus fiable)
-            await grist.docApi.applyUserActions([
-              ['AddColumn', TABLE_NAME, colId, {
-                type: config.type,
-                label: config.label,
-                widgetOptions: JSON.stringify(config.widgetOptions)
-              }]
-            ]);
-            log(`✓ ${colId} créé`, 'success');
-          } catch (addError) {
-            // Si la colonne existe déjà, la modifier
-            if (addError.message && addError.message.includes('already exists')) {
-              try {
-                await grist.docApi.applyUserActions([
-                  ['ModifyColumn', TABLE_NAME, colId, {
-                    type: config.type,
-                    label: config.label,
-                    widgetOptions: JSON.stringify(config.widgetOptions)
-                  }]
-                ]);
-                log(`✓ ${colId} existe (mise à jour)`, 'success');
-              } catch (modError) {
-                log(`⚠ ${colId}: ${modError.message}`, 'error');
-              }
-            } else {
-              log(`✗ ${colId}: ${addError.message}`, 'error');
-            }
+          const result = await ensureColumn(TABLE_NAME, colId, config);
+          if (result.success) {
+            log(`✓ ${result.message}`, 'success');
+          } else {
+            log(`✗ ${result.message}`, 'error');
           }
         }
         setStatus('status-columns', 'done');
@@ -669,32 +730,15 @@
 
         // Étape 4: Colonnes hiérarchiques
         log('--- Étape 4: Colonnes hiérarchiques ---', 'info');
+        // Rafraîchir le cache après création des tables
+        await getExistingColumns(TABLE_NAME, true);
+
         for (const [colId, config] of Object.entries(HIERARCHY_COLUMNS)) {
-          try {
-            // Essayer d'abord de créer la colonne
-            await grist.docApi.applyUserActions([
-              ['AddColumn', TABLE_NAME, colId, {
-                type: config.type,
-                label: config.label
-              }]
-            ]);
-            log(`✓ ${colId} créé`, 'success');
-          } catch (addError) {
-            if (addError.message && addError.message.includes('already exists')) {
-              try {
-                await grist.docApi.applyUserActions([
-                  ['ModifyColumn', TABLE_NAME, colId, {
-                    type: config.type,
-                    label: config.label
-                  }]
-                ]);
-                log(`✓ ${colId} existe (mise à jour)`, 'success');
-              } catch (modError) {
-                log(`⚠ ${colId}: ${modError.message}`, 'error');
-              }
-            } else {
-              log(`✗ ${colId}: ${addError.message}`, 'error');
-            }
+          const result = await ensureColumn(TABLE_NAME, colId, config);
+          if (result.success) {
+            log(`✓ ${result.message}`, 'success');
+          } else {
+            log(`✗ ${result.message}`, 'error');
           }
         }
         setStatus('status-programme-ref', 'done');
@@ -722,33 +766,16 @@
       log('Démarrage de la configuration...', 'info');
 
       try {
+        // Charger les colonnes existantes avant toute création
+        await getExistingColumns(TABLE_NAME, true);
+
         for (const [colId, config] of Object.entries(COLUMNS_CONFIG)) {
           log(`Configuration de ${colId}...`, 'info');
-
-          try {
-            // Essayer d'abord de créer la colonne
-            await grist.docApi.applyUserActions([
-              ['AddColumn', TABLE_NAME, colId, {
-                type: config.type,
-                label: config.label,
-                widgetOptions: JSON.stringify(config.widgetOptions)
-              }]
-            ]);
-            log(`✓ ${colId} créé`, 'success');
-          } catch (addError) {
-            // Si la colonne existe déjà, la modifier
-            if (addError.message && addError.message.includes('already exists')) {
-              await grist.docApi.applyUserActions([
-                ['ModifyColumn', TABLE_NAME, colId, {
-                  type: config.type,
-                  label: config.label,
-                  widgetOptions: JSON.stringify(config.widgetOptions)
-                }]
-              ]);
-              log(`✓ ${colId} existe (mise à jour)`, 'success');
-            } else {
-              throw addError;
-            }
+          const result = await ensureColumn(TABLE_NAME, colId, config);
+          if (result.success) {
+            log(`✓ ${result.message}`, 'success');
+          } else {
+            log(`✗ ${result.message}`, 'error');
           }
         }
 
@@ -956,31 +983,16 @@
       log('Ajout des colonnes hiérarchiques...', 'info');
 
       try {
+        // Charger les colonnes existantes avant toute création
+        await getExistingColumns(TABLE_NAME, true);
+
         for (const [colId, config] of Object.entries(HIERARCHY_COLUMNS)) {
           log(`Configuration de ${colId}...`, 'info');
-
-          try {
-            // Essayer d'abord de créer la colonne
-            await grist.docApi.applyUserActions([
-              ['AddColumn', TABLE_NAME, colId, {
-                type: config.type,
-                label: config.label
-              }]
-            ]);
-            log(`✓ ${colId} créée`, 'success');
-          } catch (addError) {
-            if (addError.message && addError.message.includes('already exists')) {
-              // La colonne existe déjà, la modifier
-              await grist.docApi.applyUserActions([
-                ['ModifyColumn', TABLE_NAME, colId, {
-                  type: config.type,
-                  label: config.label
-                }]
-              ]);
-              log(`✓ ${colId} existe (mise à jour)`, 'success');
-            } else {
-              throw addError;
-            }
+          const result = await ensureColumn(TABLE_NAME, colId, config);
+          if (result.success) {
+            log(`✓ ${result.message}`, 'success');
+          } else {
+            log(`✗ ${result.message}`, 'error');
           }
         }
 
