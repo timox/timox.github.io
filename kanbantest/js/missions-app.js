@@ -179,7 +179,18 @@ async function reloadTasks() {
       }
     }
 
-    logger.debug(`Reloaded ${tasks.length} tasks`);
+    console.log(`[MEO] Reloaded ${tasks.length} tasks`);
+    // Compter les tâches avec mise_en_oeuvre_code
+    const tasksWithMeo = tasks.filter(t => t.mise_en_oeuvre_code);
+    console.log(`[MEO] Tasks with mise_en_oeuvre_code: ${tasksWithMeo.length}`);
+    if (tasksWithMeo.length > 0) {
+      console.log('[MEO] Sample tasks with MEO:', tasksWithMeo.slice(0, 3).map(t => ({
+        id: t.id,
+        titre: t.titre,
+        strategie_id: t.strategie_id,
+        mise_en_oeuvre_code: t.mise_en_oeuvre_code
+      })));
+    }
   } catch (error) {
     logger.error('Failed to reload tasks:', error);
     // Fallback sur gristManager
@@ -217,7 +228,8 @@ async function loadMissions() {
       return a.axe_strategique.localeCompare(b.axe_strategique);
     });
 
-    logger.debug(`Loaded ${missions.length} missions from Ssir_strategie2`);
+    console.log(`[MEO] Loaded ${missions.length} missions from Ssir_strategie2`);
+    console.log('[MEO] Sample missions:', missions.slice(0, 3).map(m => ({ id: m.id, nom: m.axe_strategique })));
   } catch (error) {
     logger.error('Failed to load missions:', error);
     missions = [];
@@ -256,10 +268,18 @@ function updateCounts() {
 function getMeosForMission(missionId) {
   const meoMap = new Map();
 
-  logger.debug(`getMeosForMission: Looking for missionId=${missionId} in ${tasks.length} tasks`);
+  console.log(`[MEO] getMeosForMission: Looking for missionId=${missionId} (type: ${typeof missionId}) in ${tasks.length} tasks`);
+
+  // Log quelques tâches pour voir les valeurs de strategie_id
+  const sampleTasks = tasks.slice(0, 5);
+  sampleTasks.forEach((t, i) => {
+    console.log(`[MEO] Task ${i}: strategie_id=${t.strategie_id} (type: ${typeof t.strategie_id}), mise_en_oeuvre_code=${t.mise_en_oeuvre_code}`);
+  });
 
   tasks.forEach(task => {
-    if (task.strategie_id === missionId && task.mise_en_oeuvre_code) {
+    // Comparaison souple pour gérer les différences de types
+    const matchesMission = String(task.strategie_id) === String(missionId);
+    if (matchesMission && task.mise_en_oeuvre_code) {
       const code = task.mise_en_oeuvre_code;
       if (!meoMap.has(code)) {
         meoMap.set(code, {
@@ -281,7 +301,7 @@ function getMeosForMission(missionId) {
   });
 
   const result = Array.from(meoMap.values()).sort((a, b) => a.code.localeCompare(b.code));
-  logger.debug(`getMeosForMission: Found ${result.length} MEOs`, result.map(m => m.code));
+  console.log(`[MEO] getMeosForMission: Found ${result.length} MEOs`, result.map(m => m.code));
   return result;
 }
 
@@ -413,7 +433,7 @@ function selectMission(missionId) {
  */
 function renderMeoList() {
   const $list = $('#meo-list');
-  logger.debug('renderMeoList called, selectedMission:', selectedMission?.id, selectedMission?.axe_strategique);
+  console.log('[MEO] renderMeoList called, selectedMission:', selectedMission?.id, selectedMission?.axe_strategique);
 
   if (!selectedMission) {
     $list.html(`
@@ -426,7 +446,7 @@ function renderMeoList() {
   }
 
   const meos = getMeosForMission(selectedMission.id);
-  logger.debug('renderMeoList: meos to render:', meos.length);
+  console.log('[MEO] renderMeoList: meos to render:', meos.length);
 
   if (meos.length === 0) {
     $list.html(`
