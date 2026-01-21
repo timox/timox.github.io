@@ -1531,6 +1531,27 @@ body {
   color: var(--status-color, #64748b);
 }
 
+/* === BADGES V3 === */
+.timeline-meta-nature,
+.timeline-meta-genre,
+.timeline-meta-etape {
+  border-color: color-mix(in srgb, var(--pill-color, #64748b), transparent 65%);
+  color: var(--pill-color, #64748b);
+  font-weight: 500;
+}
+
+.timeline-meta-nature {
+  background: color-mix(in srgb, var(--pill-color, #64748b), transparent 92%);
+}
+
+.timeline-meta-genre {
+  background: color-mix(in srgb, var(--pill-color, #64748b), transparent 92%);
+}
+
+.timeline-meta-etape {
+  background: color-mix(in srgb, var(--pill-color, #8b5cf6), transparent 92%);
+}
+
 .timeline-dimmed-strategy {
   opacity: 0.72;
 }

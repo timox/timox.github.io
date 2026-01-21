@@ -1,7 +1,20 @@
 // === managers/TimelineManager.js ===
 // Timeline V3 pour la planification des tâches
 
-import { PREVISIBILITE, TYPE_TACHES, SEUILS_AGE, STATUS_ACCENTS } from '../config/constants.js';
+import {
+  PREVISIBILITE,
+  TYPE_TACHES,
+  SEUILS_AGE,
+  STATUS_ACCENTS,
+  NATURE_ACTIVITE,
+  GENRE_ACTION,
+  ETAPE_CYCLE,
+  FAMILLE_ACTION,
+  getNatureActiviteByLegacyId,
+  getGenreAction,
+  getEtapeCycle,
+  calculerPrevisibilite
+} from '../config/constants.js';
 import { normalizeDate } from '../utils/dates.js';
 import { createModuleLogger } from '../utils/LoggerManager.js';
 
@@ -290,6 +303,13 @@ export class TimelineManager {
       if (!strategySummary) classList.push('timeline-dimmed-strategy');
       if (!assignee || assignee === 'Non défini') classList.push('timeline-dimmed-assignee');
 
+      // Données V3
+      const natureValue = this.getNatureActiviteValue(record);
+      const genreValue = this.getGenreActionValue(record);
+      const etapeValue = this.getEtapeCycleValue(record);
+      const familleValue = this.getFamilleActionValue(record);
+      const calculatedPrevisibilite = this.getCalculatedPrevisibilite(record);
+
       items.push({
         id: record.id,
         content: record.titre || `Tâche ${record.id}`,
@@ -302,7 +322,7 @@ export class TimelineManager {
         customData: {
           priorite: record.priorite,
           type: typeValue,
-          previsibilite: previsibiliteValue,
+          previsibilite: previsibiliteValue || calculatedPrevisibilite,
           statut: record.statut,
           statut_color: this.getStatusColor(record.statut),
           projet: record.projet,
@@ -310,7 +330,12 @@ export class TimelineManager {
           strategy_summary: strategySummary,
           est_dette: record.est_dette_technique,
           age: this.getAgeBadge(record.date_debut),
-          temps_estime: tempsEstime
+          temps_estime: tempsEstime,
+          // V3 data
+          nature: natureValue,
+          genre: genreValue,
+          etape: etapeValue,
+          famille: familleValue
         }
       });
     });
@@ -330,6 +355,15 @@ export class TimelineManager {
         return this.getFirstListValue(record.bureau);
       case 'projet':
         return record.projet || 'Non défini';
+      // === NOUVEAUX AXES V3 ===
+      case 'nature':
+        return this.getNatureActiviteValue(record) || 'Non défini';
+      case 'genre':
+        return this.getGenreActionValue(record) || 'Non défini';
+      case 'etape':
+        return this.getEtapeCycleValue(record) || 'Non défini';
+      case 'famille':
+        return this.getFamilleActionValue(record) || 'Non défini';
       default:
         return 'Non défini';
     }
@@ -366,31 +400,52 @@ export class TimelineManager {
   createTimelineItemTemplate(item) {
     const data = item.customData || {};
     const badges = [];
+
+    // Ligne 1: Nature + Genre + Etape (axes V3)
+    if (data.nature) {
+      const natureData = getNatureActiviteByLegacyId(data.nature) || {};
+      const color = natureData.couleur || '#6c757d';
+      badges.push(`<span class="timeline-meta-pill timeline-meta-nature" style="--pill-color: ${color};">${data.nature}</span>`);
+    }
+    if (data.genre) {
+      const genreData = getGenreAction(data.genre?.toUpperCase?.()) || {};
+      const color = genreData.couleur || '#64748b';
+      badges.push(`<span class="timeline-meta-pill timeline-meta-genre" style="--pill-color: ${color};">${data.genre}</span>`);
+    }
+    if (data.etape) {
+      const etapeData = getEtapeCycle(data.etape) || {};
+      const color = etapeData.couleur || '#8b5cf6';
+      badges.push(`<span class="timeline-meta-pill timeline-meta-etape" style="--pill-color: ${color};">${data.etape}</span>`);
+    }
+
+    // Ligne 2: Prévisibilité + Statut
     if (data.previsibilite) {
-      badges.push(`<span class="timeline-meta-pill timeline-meta-previsibilite">${data.previsibilite}</span>`);
-    }
-    if (data.type) {
-      badges.push(`<span class="timeline-meta-pill timeline-meta-type">${data.type}</span>`);
-    }
-    if (data.est_dette) {
-      badges.push(`<span class="timeline-meta-pill timeline-meta-dette">⚙️ Dette</span>`);
-    }
-    if (data.age) {
-      badges.push(`<span class="timeline-meta-pill timeline-meta-age">${data.age} Âge</span>`);
+      const isImprevisible = data.previsibilite === 'Imprévisible';
+      const prevColor = isImprevisible ? '#dc3545' : '#198754';
+      badges.push(`<span class="timeline-meta-pill timeline-meta-previsibilite" style="--pill-color: ${prevColor};">${data.previsibilite}</span>`);
     }
     if (data.statut) {
       const statusColor = data.statut_color || '#64748b';
       badges.push(
-        `<span class="timeline-meta-pill timeline-meta-status" style="--status-color: ${statusColor};">${data.statut}</span>`
+        `<span class="timeline-meta-pill timeline-meta-status" style="--pill-color: ${statusColor};">${data.statut}</span>`
       );
     }
+
+    // Indicateurs secondaires
+    if (data.est_dette) {
+      badges.push(`<span class="timeline-meta-pill timeline-meta-dette">Dette</span>`);
+    }
+    if (data.age) {
+      badges.push(`<span class="timeline-meta-pill timeline-meta-age">${data.age}</span>`);
+    }
     if (data.assignee && data.assignee !== 'Non défini') {
-      badges.push(`<span class="timeline-meta-pill timeline-meta-assignee">👤 ${data.assignee}</span>`);
+      badges.push(`<span class="timeline-meta-pill timeline-meta-assignee">${data.assignee}</span>`);
     }
     if (Number.isFinite(data.temps_estime) && data.temps_estime > 0) {
       const hours = data.temps_estime.toString().replace('.', ',');
-      badges.push(`<span class="timeline-meta-pill timeline-meta-charge">⏱ ${hours}h</span>`);
+      badges.push(`<span class="timeline-meta-pill timeline-meta-charge">${hours}h</span>`);
     }
+
     const projectLine = data.projet ? `<div class="timeline-item-subtitle">Projet : ${data.projet}</div>` : '';
     const strategyLine = data.strategy_summary
       ? `<div class="timeline-item-subtitle">Mission : ${data.strategy_summary}</div>`
@@ -468,6 +523,15 @@ export class TimelineManager {
         return 'bureau';
       case 'projet':
         return 'projet';
+      // === NOUVEAUX AXES V3 ===
+      case 'nature':
+        return this.hasColumn('nature_activite') ? 'nature_activite' : (this.hasColumn('type_tache') ? 'type_tache' : null);
+      case 'genre':
+        return this.hasColumn('genre_action') ? 'genre_action' : null;
+      case 'etape':
+        return this.hasColumn('etape_code') ? 'etape_code' : null;
+      case 'famille':
+        return null; // Calculé depuis genre_action, pas éditable directement
       default:
         return null;
     }
@@ -518,6 +582,15 @@ export class TimelineManager {
         return 'bureau';
       case 'projet':
         return 'projet';
+      // === NOUVEAUX AXES V3 ===
+      case 'nature':
+        return 'nature d\'activité';
+      case 'genre':
+        return 'genre d\'action';
+      case 'etape':
+        return 'étape du cycle';
+      case 'famille':
+        return 'famille d\'action';
       default:
         return 'valeur';
     }
@@ -591,6 +664,71 @@ export class TimelineManager {
 
   getPrevisibiliteValue(record) {
     return record.previsibilite || record['previsibilité'] || '';
+  }
+
+  // === NOUVELLES MÉTHODES V3 ===
+
+  getNatureActiviteValue(record) {
+    // Priorité: nature_activite (V3) > type_tache (legacy)
+    if (record.nature_activite) {
+      const nature = NATURE_ACTIVITE[record.nature_activite];
+      return nature ? nature.nom : record.nature_activite;
+    }
+    // Fallback sur type_tache legacy
+    const typeValue = this.getTypeValue(record);
+    if (typeValue) {
+      const nature = getNatureActiviteByLegacyId(typeValue);
+      return nature ? nature.nom : typeValue;
+    }
+    return '';
+  }
+
+  getNatureActiviteCode(record) {
+    if (record.nature_activite) return record.nature_activite;
+    const typeValue = this.getTypeValue(record);
+    if (typeValue) {
+      const nature = getNatureActiviteByLegacyId(typeValue);
+      return nature ? nature.code : null;
+    }
+    return null;
+  }
+
+  getGenreActionValue(record) {
+    if (record.genre_action) {
+      const genre = getGenreAction(record.genre_action);
+      return genre ? genre.nom : record.genre_action;
+    }
+    return '';
+  }
+
+  getEtapeCycleValue(record) {
+    if (record.etape_code) {
+      const etape = getEtapeCycle(record.etape_code);
+      return etape ? etape.nom : record.etape_code;
+    }
+    return '';
+  }
+
+  getFamilleActionValue(record) {
+    if (record.genre_action) {
+      const genre = getGenreAction(record.genre_action);
+      if (genre?.famille) {
+        const famille = FAMILLE_ACTION[genre.famille];
+        return famille ? famille.nom : genre.famille;
+      }
+    }
+    return '';
+  }
+
+  getCalculatedPrevisibilite(record) {
+    // Prévisibilité explicite ou calculée depuis nature_activite
+    const explicit = this.getPrevisibiliteValue(record);
+    if (explicit) return explicit;
+    const natureCode = this.getNatureActiviteCode(record);
+    if (natureCode) {
+      return calculerPrevisibilite(natureCode, null) || '';
+    }
+    return '';
   }
 
   getAgeBadge(dateDebut) {
