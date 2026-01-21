@@ -1,0 +1,193 @@
+[MEO] renderMeoList called, selectedMission: 38 Mettre en place les outils de demain (nouvel intranet, workflows, tableaux de bord, outils de pilotage, circulation de l'information…) missions-app.js:436:11
+[MEO] getMeosForMission: Looking for missionId=38 (type: number) in 131 tasks missions-app.js:271:11
+[MEO] Task 0: strategie_id=null (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 1: strategie_id=L,6 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 2: strategie_id=L,6 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 3: strategie_id=L,8 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 4: strategie_id=L,24 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] getMeosForMission: Found 0 MEOs 
+Array []
+missions-app.js:304:11
+[MEO] renderMeoList: meos to render: 0 missions-app.js:449:11
+[MEO] getMeosForMission: Looking for missionId=38 (type: number) in 131 tasks missions-app.js:271:11
+[MEO] Task 0: strategie_id=null (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 1: strategie_id=L,6 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 2: strategie_id=L,6 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 3: strategie_id=L,8 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 4: strategie_id=L,24 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] getMeosForMission: Found 0 MEOs 
+Array []
+missions-app.js:304:11
+[MEO] getMeosForMission: Looking for missionId=38 (type: number) in 131 tasks missions-app.js:271:11
+[MEO] Task 0: strategie_id=null (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 1: strategie_id=L,6 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 2: strategie_id=L,6 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 3: strategie_id=L,8 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 4: strategie_id=L,24 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] getMeosForMission: Found 0 MEOs 
+Array []
+missions-app.js:304:11
+PLUGIN VIEW /kanbantest/missions.html: Rpc for GristDocAPI.applyUserActions#19: RPC_CALLING grist-plugin-api.ts:408:15
+PLUGIN VIEW /kanbantest/missions.html: Rpc sending RpcCall: GristDocAPI.applyUserActions#19 grist-plugin-api.ts:408:15
+Rpc for GristDocAPI.applyUserActions#19: RPC_ONCALL sentry.min.js:3:44522
+Comm request #15 applyUserActions 
+Array(3) [ 0, (1) […], {…} ]
+main.bundle.js:2:26632
+GristWSConnection.send[true] {"reqId":15,"method":"applyUserActions","args":[0,[["AddRecord","Ssir_principale_task",null,{"titre":"[MEO] zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz","description":"Mise en œuvre: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz\nCode: MEO-001\nCatégorie: Projet","statut":"À faire","strategie_id":38,"mise_en_oeuvre_code":"MEO-001","mise_en_oeuvre_nom":"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz","categorie":"Projet","mise_en_oeuvre_charge_estimee":321,"est_classifiee":true}]],{}]} sentry.min.js:3:44522
+GristWSConnection: onmessage (4835 bytes) sentry.min.js:3:44522
+Comm: Triggering event docUserAction main.bundle.js:2:28333
+GristDoc.onDocUserAction 
+Object { type: "docUserAction", data: {…}, docFD: 0, fromSelf: true, seqId: 1245 }
+sentry.min.js:3:44522
+GristDoc applying #0 
+Array(4) [ "AddRecord", "Ssir_principale_task", 209, {…} ]
+sentry.min.js:3:44522
+GristDoc applying #1 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 209, {…} ]
+sentry.min.js:3:44522
+GristDoc applying #2 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 209, {…} ]
+sentry.min.js:3:44522
+GristDoc applying #3 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 209, {…} ]
+sentry.min.js:3:44522
+GristDoc applying #4 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 209, {…} ]
+sentry.min.js:3:44522
+GristDoc applying #5 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 209, {…} ]
+sentry.min.js:3:44522
+GristDoc applying #6 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 209, {…} ]
+sentry.min.js:3:44522
+GristDoc applying #7 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 209, {…} ]
+sentry.min.js:3:44522
+GristDoc applying #8 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 209, {…} ]
+sentry.min.js:3:44522
+GristDoc applying #9 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 209, {…} ]
+sentry.min.js:3:44522
+GristDoc applying #10 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 209, {…} ]
+sentry.min.js:3:44522
+GristDoc applying #11 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 209, {…} ]
+sentry.min.js:3:44522
+GristDoc applying #12 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 209, {…} ]
+sentry.min.js:3:44522
+GristDoc applying #13 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 209, {…} ]
+sentry.min.js:3:44522
+GristDoc applying #14 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 209, {…} ]
+sentry.min.js:3:44522
+GristDoc applying #15 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 209, {…} ]
+sentry.min.js:3:44522
+GristDoc applying #16 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 209, {…} ]
+sentry.min.js:3:44522
+GristDoc applying #17 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 209, {…} ]
+sentry.min.js:3:44522
+GristDoc applying #18 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 209, {…} ]
+sentry.min.js:3:44522
+GristDoc applying #19 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 209, {…} ]
+sentry.min.js:3:44522
+GristDoc applying #20 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 209, {…} ]
+sentry.min.js:3:44522
+GristDoc applying #21 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 209, {…} ]
+sentry.min.js:3:44522
+GristDoc applying #22 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 209, {…} ]
+sentry.min.js:3:44522
+GristDoc applying #23 
+Array(4) [ "UpdateRecord", "Ssir_principale_task", 209, {…} ]
+sentry.min.js:3:44522
+GristWSConnection: onmessage (172 bytes) sentry.min.js:3:44522
+Comm response #15 applyUserActions OK main.bundle.js:2:28047
+Rpc for GristDocAPI.applyUserActions#19: RPC_ONCALL_OK sentry.min.js:3:44522
+Rpc sending RpcRespData sentry.min.js:3:44522
+Rpc sending Custom sentry.min.js:3:44522
+PLUGIN VIEW /kanbantest/missions.html: Rpc for GristDocAPI.applyUserActions#19: RPC_RESULT_OK grist-plugin-api.ts:408:15
+PLUGIN VIEW /kanbantest/missions.html: Rpc for GristView.fetchSelectedTable#20: RPC_CALLING grist-plugin-api.ts:408:15
+PLUGIN VIEW /kanbantest/missions.html: Rpc sending RpcCall: GristView.fetchSelectedTable#20 grist-plugin-api.ts:408:15
+Rpc for GristView.fetchSelectedTable#20: RPC_ONCALL sentry.min.js:3:44522
+Rpc for GristView.fetchSelectedTable#20: RPC_ONCALL_OK sentry.min.js:3:44522
+Rpc sending RpcRespData sentry.min.js:3:44522
+PLUGIN VIEW /kanbantest/missions.html: Rpc for GristView.fetchSelectedTable#20: RPC_RESULT_OK grist-plugin-api.ts:408:15
+PLUGIN VIEW /kanbantest/missions.html: Rpc for GristDocAPI.fetchTable#21: RPC_CALLING grist-plugin-api.ts:408:15
+PLUGIN VIEW /kanbantest/missions.html: Rpc sending RpcCall: GristDocAPI.fetchTable#21 grist-plugin-api.ts:408:15
+Rpc for GristDocAPI.fetchTable#21: RPC_ONCALL sentry.min.js:3:44522
+Comm request #16 fetchTable 
+Array [ 0, "Ssir_principale_task" ]
+main.bundle.js:2:26632
+GristWSConnection.send[true] {"reqId":16,"method":"fetchTable","args":[0,"Ssir_principale_task"]} sentry.min.js:3:44522
+GristWSConnection: onmessage (520801 bytes) sentry.min.js:3:44522
+Comm response #16 fetchTable OK main.bundle.js:2:28047
+Rpc for GristDocAPI.fetchTable#21: RPC_ONCALL_OK sentry.min.js:3:44522
+Rpc sending RpcRespData sentry.min.js:3:44522
+PLUGIN VIEW /kanbantest/missions.html: Rpc for GristDocAPI.fetchTable#21: RPC_RESULT_OK grist-plugin-api.ts:408:15
+[INFO:GristManager] 131 enregistrements rechargés LoggerManager.js:146:15
+PLUGIN VIEW /kanbantest/missions.html: Rpc for GristDocAPI.fetchTable#22: RPC_CALLING grist-plugin-api.ts:408:15
+PLUGIN VIEW /kanbantest/missions.html: Rpc sending RpcCall: GristDocAPI.fetchTable#22 grist-plugin-api.ts:408:15
+Rpc for GristDocAPI.fetchTable#22: RPC_ONCALL sentry.min.js:3:44522
+Comm request #17 fetchTable 
+Array [ 0, "Ssir_principale_task" ]
+main.bundle.js:2:26632
+GristWSConnection.send[true] {"reqId":17,"method":"fetchTable","args":[0,"Ssir_principale_task"]} sentry.min.js:3:44522
+GristWSConnection: onmessage (520801 bytes) sentry.min.js:3:44522
+Comm response #17 fetchTable OK main.bundle.js:2:28047
+Rpc for GristDocAPI.fetchTable#22: RPC_ONCALL_OK sentry.min.js:3:44522
+Rpc sending RpcRespData sentry.min.js:3:44522
+PLUGIN VIEW /kanbantest/missions.html: Rpc for GristDocAPI.fetchTable#22: RPC_RESULT_OK grist-plugin-api.ts:408:15
+[MEO] Reloaded 131 tasks missions-app.js:182:13
+[MEO] Tasks with mise_en_oeuvre_code: 28 missions-app.js:185:13
+[MEO] Sample tasks with MEO: 
+Array(3) [ {…}, {…}, {…} ]
+missions-app.js:187:15
+[MEO] renderMeoList called, selectedMission: 38 Mettre en place les outils de demain (nouvel intranet, workflows, tableaux de bord, outils de pilotage, circulation de l'information…) missions-app.js:436:11
+[MEO] getMeosForMission: Looking for missionId=38 (type: number) in 131 tasks missions-app.js:271:11
+[MEO] Task 0: strategie_id=null (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 1: strategie_id=L,6 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 2: strategie_id=L,6 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 3: strategie_id=L,8 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 4: strategie_id=L,24 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] getMeosForMission: Found 0 MEOs 
+Array []
+missions-app.js:304:11
+[MEO] renderMeoList: meos to render: 0 missions-app.js:449:11
+[MEO] getMeosForMission: Looking for missionId=38 (type: number) in 131 tasks missions-app.js:271:11
+[MEO] Task 0: strategie_id=null (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 1: strategie_id=L,6 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 2: strategie_id=L,6 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 3: strategie_id=L,8 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 4: strategie_id=L,24 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] getMeosForMission: Found 0 MEOs 
+Array []
+missions-app.js:304:11
+[MEO] getMeosForMission: Looking for missionId=38 (type: number) in 131 tasks missions-app.js:271:11
+[MEO] Task 0: strategie_id=null (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 1: strategie_id=L,6 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 2: strategie_id=L,6 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 3: strategie_id=L,8 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 4: strategie_id=L,24 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] getMeosForMission: Found 0 MEOs 
+Array []
+missions-app.js:304:11
+[MEO] getMeosForMission: Looking for missionId=38 (type: number) in 131 tasks missions-app.js:271:11
+[MEO] Task 0: strategie_id=null (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 1: strategie_id=L,6 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 2: strategie_id=L,6 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 3: strategie_id=L,8 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] Task 4: strategie_id=L,24 (type: object), mise_en_oeuvre_code= missions-app.js:276:13
+[MEO] getMeosForMission: Found 0 MEOs 
+Array []
+missions-app.js:304:11
