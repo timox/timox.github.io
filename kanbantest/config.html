@@ -312,33 +312,43 @@
           <!-- ONGLET: Stratégies -->
           <div class="tab-pane fade" id="strategies" role="tabpanel">
             <div class="config-section">
-              <h5 class="mb-3">
-                <i class="bi bi-bullseye me-2"></i>Gestion des Stratégies
-                <span class="badge bg-secondary ms-2 badge-count" id="count-strategies">0</span>
-              </h5>
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">
+                  <i class="bi bi-bullseye me-2"></i>Gestion des Stratégies (Ssir_strategie2)
+                  <span class="badge bg-secondary ms-2 badge-count" id="count-strategies">0</span>
+                </h5>
+                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modal-strategie">
+                  <i class="bi bi-plus-circle me-1"></i>Nouvelle entrée
+                </button>
+              </div>
 
-              <!-- Formulaire ajout -->
-              <div class="add-item-form">
-                <div class="row g-2">
-                  <div class="col-md-4">
-                    <input type="text" class="form-control" id="input-strategie-objectif" placeholder="Objectif">
-                  </div>
-                  <div class="col-md-4">
-                    <input type="text" class="form-control" id="input-strategie-sous-objectif" placeholder="Sous-objectif">
-                  </div>
-                  <div class="col-md-4">
-                    <input type="text" class="form-control" id="input-strategie-axe" placeholder="Axe stratégique">
-                  </div>
-                  <div class="col-md-12">
-                    <button class="btn btn-primary w-100" id="btn-add-strategie">
-                      <i class="bi bi-plus-circle me-1"></i>Ajouter
-                    </button>
-                  </div>
+              <!-- Info hiérarchie -->
+              <div class="alert alert-info py-2 mb-3">
+                <small>
+                  <i class="bi bi-diagram-3 me-1"></i>
+                  <strong>Hiérarchie :</strong> Programme (objectif) → Stratégie (sous_objectif) → Mission (axe_strategique)
+                </small>
+              </div>
+
+              <!-- Filtres -->
+              <div class="row g-2 mb-3">
+                <div class="col-md-4">
+                  <select class="form-select form-select-sm" id="filter-programme">
+                    <option value="">Tous les programmes</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <select class="form-select form-select-sm" id="filter-strategie">
+                    <option value="">Toutes les stratégies</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <input type="text" class="form-control form-control-sm" id="filter-search" placeholder="Rechercher...">
                 </div>
               </div>
 
-              <!-- Liste -->
-              <div class="item-list" id="list-strategies">
+              <!-- Liste groupée par Programme -->
+              <div class="item-list" id="list-strategies" style="max-height: 600px;">
                 <!-- Items injectés par JS -->
               </div>
             </div>
@@ -477,6 +487,100 @@
       </button>
     </div>
   </template>
+
+  <!-- Modal: Stratégie CRUD -->
+  <div class="modal fade" id="modal-strategie" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modal-strategie-title">
+            <i class="bi bi-bullseye me-2"></i>Nouvelle entrée stratégique
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="form-strategie">
+            <input type="hidden" id="strategie-id">
+
+            <div class="row g-3">
+              <!-- Programme -->
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">
+                  <i class="bi bi-folder me-1"></i>Programme (objectif)
+                  <span class="text-danger">*</span>
+                </label>
+                <input type="text" class="form-control" id="input-strategie-objectif"
+                       list="list-programmes-existants" required>
+                <datalist id="list-programmes-existants"></datalist>
+                <div class="form-text">Niveau 1 de la hiérarchie</div>
+              </div>
+
+              <!-- Stratégie -->
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">
+                  <i class="bi bi-diagram-2 me-1"></i>Stratégie (sous_objectif)
+                </label>
+                <input type="text" class="form-control" id="input-strategie-sous-objectif"
+                       list="list-strategies-existantes">
+                <datalist id="list-strategies-existantes"></datalist>
+                <div class="form-text">Niveau 2 de la hiérarchie</div>
+              </div>
+
+              <!-- Mission -->
+              <div class="col-md-12">
+                <label class="form-label fw-semibold">
+                  <i class="bi bi-bullseye me-1"></i>Mission (axe_strategique)
+                  <span class="text-danger">*</span>
+                </label>
+                <input type="text" class="form-control" id="input-strategie-axe" required>
+                <div class="form-text">Niveau 3 - Les tâches seront rattachées à ce niveau</div>
+              </div>
+
+              <hr class="my-2">
+
+              <!-- Responsable -->
+              <div class="col-md-4">
+                <label class="form-label">
+                  <i class="bi bi-person me-1"></i>Responsable
+                </label>
+                <input type="text" class="form-control" id="input-strategie-responsable"
+                       list="list-responsables">
+                <datalist id="list-responsables"></datalist>
+              </div>
+
+              <!-- Échéance -->
+              <div class="col-md-4">
+                <label class="form-label">
+                  <i class="bi bi-calendar me-1"></i>Échéance
+                </label>
+                <input type="date" class="form-control" id="input-strategie-echeance">
+              </div>
+
+              <!-- Portée -->
+              <div class="col-md-4">
+                <label class="form-label">
+                  <i class="bi bi-geo-alt me-1"></i>Portée
+                </label>
+                <select class="form-select" id="input-strategie-portee">
+                  <option value="">Non définie</option>
+                  <option value="NATIONAL">National</option>
+                  <option value="REGIONAL">Régional</option>
+                  <option value="LOCAL">Local</option>
+                  <option value="INTERNE">Interne</option>
+                </select>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="btn-save-strategie">
+            <i class="bi bi-check-circle me-1"></i>Enregistrer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Toast Container -->
   <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toast-container"></div>

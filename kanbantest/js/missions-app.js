@@ -1,25 +1,18 @@
 // === missions-app.js ===
-// Application principale pour la gestion des missions
+// Application pour la gestion des missions - Rattachement des tâches aux missions stratégiques (Ssir_strategie2)
 
 import { GristManager } from './managers/GristManager.js';
-import { MissionsManager } from './managers/MissionsManager.js';
 import { createModuleLogger } from './utils/LoggerManager.js';
 
 const logger = createModuleLogger('MissionsApp');
 
 // Variables globales
 let gristManager = null;
-let missionsManager = null;
-let strategies = []; // Liste des stratégies chargées depuis Ssir_strategie2
-let agents = []; // Liste des agents chargés depuis Ssir_agents
-let currentFilters = {
-  search: '',
-  priorite: '',
-  categorie: '',
-  bureau: ''
-};
-let currentViewMode = 'missions';
-let currentEditingMissionCode = null;
+let strategies = []; // Liste des missions depuis Ssir_strategie2
+let tasks = []; // Liste des tâches
+let selectedMission = null; // Mission actuellement sélectionnée
+let selectedTaskIds = new Set(); // Tâches sélectionnées
+let currentTaskView = 'orphelines'; // 'orphelines' ou 'mission'
 
 /**
  * Initialise l'application
@@ -28,32 +21,23 @@ async function initApp() {
   try {
     logger.debug('Initializing Missions App...');
 
-    // Initialiser Grist (si non déjà initialisé)
+    // Initialiser Grist
     if (typeof grist !== 'undefined' && !window._gristReadyInitialized) {
-      // Simplified model: Mission → Tasks (no sous-actions)
-      // Missions are defined in Ssir_strategie2: objectif=Programme, sous_objectif=Stratégie, action=Mission
       grist.ready({
         requiredAccess: 'full',
         columns: [
-          { name: 'mission_code', title: 'Code Mission', optional: true },
-          { name: 'mission_nom', title: 'Nom Mission', optional: true },
-          { name: 'strategie_id', title: 'Lien Stratégie', optional: true },
-          { name: 'mission_responsable', title: 'Responsable Mission', optional: true },
-          { name: 'mission_bureau', title: 'Bureau Mission', optional: true },
-          { name: 'mission_priorite', title: 'Priorité Mission', optional: true },
-          { name: 'mission_date_debut', title: 'Date Début Mission', optional: true },
-          { name: 'mission_date_fin', title: 'Date Fin Mission', optional: true },
-          { name: 'est_classifiee', title: 'Classifiée', optional: true }
+          { name: 'strategie_id', title: 'Lien Mission', optional: true },
+          { name: 'titre', title: 'Titre', optional: true },
+          { name: 'statut', title: 'Statut', optional: true }
         ]
       });
       window._gristReadyInitialized = true;
     }
 
-    // Initialiser les managers
-    // Note: GristManager attend un kanbanManager, on lui passe null pour l'instant
+    // Initialiser le GristManager
     gristManager = new GristManager(null);
 
-    // Attendre que Grist soit prêt et les données chargées
+    // Attendre que Grist soit prêt
     await new Promise((resolve) => {
       const checkReady = () => {
         if (gristManager.isConnected && gristManager.currentRecords.length >= 0) {
@@ -65,16 +49,16 @@ async function initApp() {
       checkReady();
     });
 
-    missionsManager = new MissionsManager(gristManager);
-
-    // Initialiser l'interface
+    // Configurer les écouteurs
     setupEventListeners();
+
+    // Charger les données
     await loadData();
 
     logger.debug('Missions App initialized successfully');
   } catch (error) {
     logger.error('Failed to initialize app:', error);
-    showError('Erreur d\'initialisation de l\'application');
+    showToast('Erreur d\'initialisation', 'danger');
   }
 }
 
@@ -82,92 +66,65 @@ async function initApp() {
  * Configure les écouteurs d'événements
  */
 function setupEventListeners() {
-  // Boutons principaux
-  $('#btn-nouvelle-mission, #btn-create-first-mission').on('click', openNewMissionModal);
-  $('#btn-save-mission').on('click', saveMission);
-  $('#btn-refresh').on('click', refreshData);
-  $('#btn-export').on('click', exportMissions);
+  // Recherche missions
+  $('#search-missions').on('input', debounce(renderMissionsTree, 300));
 
-  // Sélecteur de stratégie - pré-remplir le nom de la mission
-  // Note: Dans le nouveau modèle, stratégie = Programme → Stratégie → Mission (Ssir_strategie2)
-  $('#mission-strategie').on('change', handleStrategyChange);
+  // Expand/Collapse
+  $('#btn-expand-all').on('click', () => {
+    $('.programme-content, .strategie-content').addClass('show');
+  });
+  $('#btn-collapse-all').on('click', () => {
+    $('.programme-content, .strategie-content').removeClass('show');
+  });
 
-  // Filtres et recherche
-  $('#search-missions').on('input', debounce(handleSearch, 300));
-  $('#filter-priorite').on('change', handleFilterChange);
-  $('#filter-categorie').on('change', handleFilterChange);
-  $('#vue-mode').on('change', handleViewModeChange);
+  // Toggle task view (orphelines / mission)
+  $('input[name="task-view"]').on('change', function () {
+    currentTaskView = $(this).val();
+    renderTasksList();
+    updateActionButtons();
+  });
 
-  // Délégation pour les boutons des cartes et du tableau
-  $('#missions-container, #missions-table-container').on('click', '.btn-voir-taches', handleVoirTaches);
-  $('#missions-container, #missions-table-container').on('click', '.btn-edit-mission', handleEditMission);
+  // Select all tasks
+  $('#btn-select-all').on('click', () => {
+    const $visible = $('#tasks-list .task-item:visible');
+    const allSelected = $visible.length > 0 && $visible.length === $visible.filter('.selected').length;
 
-  // Bouton Classifier/Affecter pour les tâches non classifiées
-  $('#missions-container').on('click', '.btn-classify-task', handleClassifyTask);
-  $('#classify-mission-select').on('change', handleClassifyMissionChange);
-  $('#btn-save-classification').on('click', saveClassification);
+    if (allSelected) {
+      // Deselect all
+      selectedTaskIds.clear();
+      $visible.removeClass('selected');
+    } else {
+      // Select all
+      $visible.each(function () {
+        const id = $(this).data('task-id');
+        selectedTaskIds.add(id);
+        $(this).addClass('selected');
+      });
+    }
+    updateActionButtons();
+  });
+
+  // Attach tasks button
+  $('#btn-attach-tasks').on('click', openAttachModal);
+  $('#btn-confirm-attach').on('click', confirmAttach);
+
+  // Detach tasks button
+  $('#btn-detach-tasks').on('click', detachTasks);
+
+  // Délégation: click sur mission dans l'arbre
+  $('#missions-tree').on('click', '.mission-item', function (e) {
+    e.stopPropagation();
+    const missionId = $(this).data('mission-id');
+    selectMission(missionId);
+  });
+
+  // Délégation: click sur tâche
+  $('#tasks-list').on('click', '.task-item', function () {
+    const taskId = $(this).data('task-id');
+    toggleTaskSelection(taskId, $(this));
+  });
 
   logger.debug('Event listeners configured');
-}
-
-/**
- * Gère le changement de stratégie sélectionnée
- * Pré-remplit le nom de la mission et le responsable
- * Note: Dans Ssir_strategie2: objectif=Programme, sous_objectif=Stratégie, action=Mission
- */
-function handleStrategyChange() {
-  const $selected = $('#mission-strategie option:selected');
-  const strategyId = $('#mission-strategie').val();
-
-  if (!strategyId) {
-    // Aucune mission stratégique sélectionnée
-    $('#strategy-preview').hide();
-    return;
-  }
-
-  // Récupérer les données de l'option sélectionnée
-  // Terminologie: objectif=Programme, sous_objectif=Stratégie, action=Mission
-  const programme = $selected.data('objectif') || '';
-  const strategie = $selected.data('sous-objectif') || '';
-  const mission = $selected.data('action') || '';
-  const responsable = $selected.data('responsable') || '';
-
-  // Pré-remplir le nom de la mission si vide (avec le nom de mission qui est le niveau le plus précis)
-  const $missionNom = $('#mission-nom');
-  if (!$missionNom.val().trim()) {
-    $missionNom.val(mission);
-  }
-
-  // Pré-remplir le responsable si vide
-  const $missionResponsable = $('#mission-responsable');
-  if (!$missionResponsable.val().trim() && responsable) {
-    $missionResponsable.val(responsable);
-  }
-
-  // Afficher l'aperçu de la hiérarchie: Programme > Stratégie > Mission
-  let hierarchyHtml = '';
-  if (programme) {
-    hierarchyHtml += `<span class="text-primary"><i class="bi bi-folder me-1"></i>Programme: ${escapeHtml(programme)}</span>`;
-  }
-  if (strategie) {
-    hierarchyHtml += `<br><span class="text-secondary"><i class="bi bi-arrow-return-right me-1"></i>Stratégie: ${escapeHtml(strategie)}</span>`;
-  }
-  if (mission) {
-    hierarchyHtml += `<br><span class="text-success"><i class="bi bi-arrow-return-right me-1"></i><strong>Mission: ${escapeHtml(mission)}</strong></span>`;
-  }
-
-  const previewHtml = `
-    <div class="alert alert-info py-2 mb-0">
-      <small>
-        <strong><i class="bi bi-diagram-3 me-1"></i>Hiérarchie :</strong><br>
-        ${hierarchyHtml}
-        ${responsable ? `<br><i class="bi bi-person me-1"></i>${escapeHtml(responsable)}` : ''}
-      </small>
-    </div>
-  `;
-  $('#strategy-preview').html(previewHtml).show();
-
-  logger.debug('Strategy selected:', { strategyId, programme, strategie, mission, responsable });
 }
 
 /**
@@ -175,66 +132,55 @@ function handleStrategyChange() {
  */
 async function loadData() {
   try {
-    showLoading(true);
-
-    // Charger les stratégies depuis Ssir_strategie2
+    // Charger les missions depuis Ssir_strategie2
     await loadStrategies();
 
-    // Charger les agents depuis Ssir_agents
-    await loadAgents();
+    // Récupérer les tâches depuis GristManager
+    tasks = gristManager.currentRecords || [];
 
-    // Charger les statistiques
-    await updateStats();
+    // Mettre à jour les stats et l'affichage
+    updateStats();
+    renderMissionsTree();
+    renderTasksList();
 
-    // Charger et afficher les missions
-    await displayMissions();
-
-    showLoading(false);
+    logger.debug(`Loaded ${strategies.length} missions, ${tasks.length} tasks`);
   } catch (error) {
     logger.error('Failed to load data:', error);
-    showError('Erreur de chargement des données');
-    showLoading(false);
+    showToast('Erreur de chargement', 'danger');
   }
 }
 
 /**
- * Charge les stratégies depuis la table Ssir_strategie2
+ * Charge les stratégies/missions depuis Ssir_strategie2
  */
 async function loadStrategies() {
   try {
-    logger.debug('Loading strategies from Ssir_strategie2...');
-
-    const gristData = await window.grist.docApi.fetchTable('Ssir_strategie2');
-
-    // Convertir les données Grist en tableau d'objets
+    const data = await window.grist.docApi.fetchTable('Ssir_strategie2');
     strategies = [];
-    const count = gristData.id.length;
 
+    if (!data?.id) return;
+
+    const count = data.id.length;
     for (let i = 0; i < count; i++) {
       strategies.push({
-        id: gristData.id[i],
-        id2: gristData.id2 ? gristData.id2[i] : gristData.id[i],
-        objectif: gristData.objectif ? gristData.objectif[i] : '',
-        sous_objectif: gristData.sous_objectif ? gristData.sous_objectif[i] : '',
-        axe_strategique: gristData.axe_strategique ? gristData.axe_strategique[i] : '',
-        responsable: gristData.responsable ? gristData.responsable[i] : '',
-        echeance: gristData.echeance ? gristData.echeance[i] : '',
-        portee: gristData.portee ? gristData.portee[i] : ''
+        id: data.id[i],
+        objectif: data.objectif?.[i] || '',
+        sous_objectif: data.sous_objectif?.[i] || '',
+        axe_strategique: data.axe_strategique?.[i] || '',
+        responsable: data.responsable?.[i] || '',
+        echeance: data.echeance?.[i] || '',
+        portee: data.portee?.[i] || ''
       });
     }
 
-    // Trier par objectif puis sous_objectif puis axe stratégique
+    // Trier
     strategies.sort((a, b) => {
       if (a.objectif !== b.objectif) return a.objectif.localeCompare(b.objectif);
       if (a.sous_objectif !== b.sous_objectif) return a.sous_objectif.localeCompare(b.sous_objectif);
       return a.axe_strategique.localeCompare(b.axe_strategique);
     });
 
-    logger.debug(`Loaded ${strategies.length} strategies`);
-
-    // Peupler le sélecteur de stratégie
-    populateStrategySelector();
-
+    logger.debug(`Loaded ${strategies.length} strategies from Ssir_strategie2`);
   } catch (error) {
     logger.error('Failed to load strategies:', error);
     strategies = [];
@@ -242,125 +188,438 @@ async function loadStrategies() {
 }
 
 /**
- * Peuple le sélecteur de stratégie avec les données chargées
- * Terminologie: objectif=Programme, sous_objectif=Stratégie, axe_strategique=Mission
+ * Met à jour les statistiques
  */
-function populateStrategySelector() {
-  const $selector = $('#mission-strategie');
-  $selector.empty();
+function updateStats() {
+  const totalTasks = tasks.length;
+  const attachedTasks = tasks.filter(t => t.strategie_id).length;
+  const orphanTasks = totalTasks - attachedTasks;
 
-  // Option par défaut
-  $selector.append('<option value="">-- Créer sans lien stratégique --</option>');
-
-  // Grouper par Programme (objectif) pour une meilleure lisibilité
-  const programmes = [...new Set(strategies.map(s => s.objectif))].filter(p => p);
-
-  for (const programme of programmes) {
-    const $optgroup = $(`<optgroup label="📁 ${escapeHtml(programme)}"></optgroup>`);
-
-    const strategiesForProgramme = strategies.filter(s => s.objectif === programme);
-
-    for (const strat of strategiesForProgramme) {
-      // Afficher Stratégie > Mission pour identifier l'entrée
-      const strategie = strat.sous_objectif || '';
-      const mission = strat.axe_strategique || '';
-      const label = strategie
-        ? `${strategie} → ${mission}`
-        : mission;
-
-      $optgroup.append(`<option value="${strat.id}"
-        data-objectif="${escapeHtml(strat.objectif)}"
-        data-sous-objectif="${escapeHtml(strat.sous_objectif)}"
-        data-action="${escapeHtml(strat.axe_strategique)}"
-        data-responsable="${escapeHtml(strat.responsable)}"
-        data-echeance="${escapeHtml(strat.echeance)}">
-        ${escapeHtml(label)}
-      </option>`);
-    }
-
-    $selector.append($optgroup);
-  }
-
-  logger.debug('Strategy selector populated with', strategies.length, 'entries');
+  $('#stat-missions-total').text(strategies.length);
+  $('#stat-taches-total').text(totalTasks);
+  $('#stat-taches-rattachees').text(attachedTasks);
+  $('#stat-taches-orphelines').text(orphanTasks);
+  $('#badge-orphelines').text(orphanTasks);
 }
 
 /**
- * Charge les agents depuis la table Ssir_agents
+ * Rend l'arbre des missions groupé par Programme → Stratégie → Mission
  */
-async function loadAgents() {
-  try {
-    logger.debug('Loading agents from Ssir_agents...');
+function renderMissionsTree() {
+  const $tree = $('#missions-tree');
+  const searchQuery = ($('#search-missions').val() || '').toLowerCase();
 
-    const gristData = await window.grist.docApi.fetchTable('Ssir_agents');
-
-    // Convertir les données Grist en tableau d'objets
-    agents = [];
-    const count = gristData.id?.length || 0;
-
-    for (let i = 0; i < count; i++) {
-      // Ne garder que les agents actifs
-      if (gristData.actif?.[i] !== false) {
-        agents.push({
-          id: gristData.id[i],
-          nom: gristData.nom ? gristData.nom[i] : '',
-          prenom: gristData.prenom ? gristData.prenom[i] : '',
-          bureau: gristData.bureau ? gristData.bureau[i] : '',
-          fullName: `${gristData.prenom?.[i] || ''} ${gristData.nom?.[i] || ''}`.trim()
-        });
-      }
-    }
-
-    // Trier par bureau puis par nom
-    agents.sort((a, b) => {
-      if (a.bureau !== b.bureau) return a.bureau.localeCompare(b.bureau);
-      return a.fullName.localeCompare(b.fullName);
-    });
-
-    logger.debug(`Loaded ${agents.length} agents`);
-
-    // Peupler le sélecteur de responsable
-    populateAgentSelector();
-
-  } catch (error) {
-    logger.warn('Failed to load agents:', error);
-    agents = [];
+  // Filtrer si recherche
+  let filteredStrategies = strategies;
+  if (searchQuery) {
+    filteredStrategies = strategies.filter(s =>
+      s.objectif.toLowerCase().includes(searchQuery) ||
+      s.sous_objectif.toLowerCase().includes(searchQuery) ||
+      s.axe_strategique.toLowerCase().includes(searchQuery) ||
+      s.responsable.toLowerCase().includes(searchQuery)
+    );
   }
-}
 
-/**
- * Peuple le sélecteur de responsable avec les agents groupés par bureau
- */
-function populateAgentSelector() {
-  const $selector = $('#mission-responsable');
-  $selector.empty();
-
-  // Option par défaut
-  $selector.append('<option value="">-- Sélectionner un responsable --</option>');
-
-  if (agents.length === 0) {
-    // Fallback si pas d'agents
-    logger.debug('No agents loaded, using empty selector');
+  if (filteredStrategies.length === 0) {
+    $tree.html(`
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+        <p class="mt-2">Aucune mission trouvée</p>
+        <a href="config.html#strategies" class="btn btn-sm btn-primary">
+          <i class="bi bi-plus me-1"></i>Créer des missions
+        </a>
+      </div>
+    `);
     return;
   }
 
-  // Grouper par bureau
-  const bureaux = [...new Set(agents.map(a => a.bureau))];
-
-  for (const bureau of bureaux) {
-    const $optgroup = $(`<optgroup label="${escapeHtml(bureau || 'Sans bureau')}"></optgroup>`);
-
-    const agentsBureau = agents.filter(a => a.bureau === bureau);
-
-    for (const agent of agentsBureau) {
-      $optgroup.append(`<option value="${agent.id}" data-fullname="${escapeHtml(agent.fullName)}" data-bureau="${escapeHtml(agent.bureau)}">
-        ${escapeHtml(agent.fullName)}
-      </option>`);
+  // Compter les tâches par mission
+  const taskCounts = {};
+  tasks.forEach(t => {
+    if (t.strategie_id) {
+      taskCounts[t.strategie_id] = (taskCounts[t.strategie_id] || 0) + 1;
     }
+  });
 
-    $selector.append($optgroup);
+  // Grouper par Programme → Stratégie
+  const grouped = {};
+  filteredStrategies.forEach(s => {
+    const prog = s.objectif || '(Sans programme)';
+    const strat = s.sous_objectif || '(Sans stratégie)';
+
+    if (!grouped[prog]) grouped[prog] = {};
+    if (!grouped[prog][strat]) grouped[prog][strat] = [];
+    grouped[prog][strat].push(s);
+  });
+
+  let html = '';
+  const programmes = Object.keys(grouped).sort();
+
+  programmes.forEach((prog, progIdx) => {
+    const progId = `prog-${progIdx}`;
+    const strategies = grouped[prog];
+    const stratKeys = Object.keys(strategies).sort();
+
+    // Compter les tâches du programme
+    let progTaskCount = 0;
+    stratKeys.forEach(strat => {
+      strategies[strat].forEach(m => {
+        progTaskCount += taskCounts[m.id] || 0;
+      });
+    });
+
+    html += `
+      <div class="programme-group mb-2">
+        <div class="programme-header d-flex justify-content-between align-items-center"
+             data-bs-toggle="collapse" data-bs-target="#${progId}">
+          <span>
+            <i class="bi bi-folder me-2"></i>${escapeHtml(prog)}
+          </span>
+          <span class="badge bg-white text-primary badge-task-count">${progTaskCount}</span>
+        </div>
+        <div class="collapse show" id="${progId}">
+          <div class="programme-content">
+    `;
+
+    stratKeys.forEach((strat, stratIdx) => {
+      const stratId = `strat-${progIdx}-${stratIdx}`;
+      const missions = strategies[strat];
+
+      // Compter les tâches de la stratégie
+      let stratTaskCount = 0;
+      missions.forEach(m => {
+        stratTaskCount += taskCounts[m.id] || 0;
+      });
+
+      html += `
+        <div class="strategie-group">
+          <div class="strategie-header d-flex justify-content-between align-items-center"
+               data-bs-toggle="collapse" data-bs-target="#${stratId}">
+            <span>
+              <i class="bi bi-diagram-2 me-2"></i>${escapeHtml(strat)}
+            </span>
+            <span class="badge bg-secondary badge-task-count">${stratTaskCount}</span>
+          </div>
+          <div class="collapse show" id="${stratId}">
+            <div class="strategie-content">
+      `;
+
+      missions.forEach(m => {
+        const count = taskCounts[m.id] || 0;
+        const isSelected = selectedMission && selectedMission.id === m.id;
+        const selectedClass = isSelected ? 'selected' : '';
+        const badgeClass = count > 0 ? 'bg-success' : 'bg-secondary';
+
+        html += `
+          <div class="mission-item ${selectedClass}" data-mission-id="${m.id}">
+            <div>
+              <i class="bi bi-bullseye me-2 text-primary"></i>
+              <strong>${escapeHtml(m.axe_strategique)}</strong>
+              ${m.responsable ? `<br><small class="text-muted"><i class="bi bi-person me-1"></i>${escapeHtml(m.responsable)}</small>` : ''}
+            </div>
+            <span class="badge ${badgeClass} badge-task-count" title="Tâches rattachées">${count}</span>
+          </div>
+        `;
+      });
+
+      html += `
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    html += `
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  $tree.html(html);
+}
+
+/**
+ * Sélectionne une mission
+ */
+function selectMission(missionId) {
+  // Désélectionner l'ancienne
+  $('.mission-item.selected').removeClass('selected');
+
+  // Trouver la nouvelle
+  selectedMission = strategies.find(s => s.id === missionId);
+
+  if (selectedMission) {
+    $(`.mission-item[data-mission-id="${missionId}"]`).addClass('selected');
+
+    // Mettre à jour le badge des tâches de la mission
+    const missionTasks = tasks.filter(t => t.strategie_id === missionId);
+    $('#badge-mission-tasks').text(missionTasks.length);
+
+    // Si on est en vue "mission", rafraîchir la liste
+    if (currentTaskView === 'mission') {
+      renderTasksList();
+    }
   }
 
-  logger.debug('Agent selector populated with', agents.length, 'agents');
+  updateActionButtons();
+  logger.debug('Selected mission:', selectedMission?.axe_strategique);
+}
+
+/**
+ * Rend la liste des tâches (orphelines ou de la mission sélectionnée)
+ */
+function renderTasksList() {
+  const $list = $('#tasks-list');
+  selectedTaskIds.clear();
+
+  let filteredTasks = [];
+  let emptyMessage = '';
+
+  if (currentTaskView === 'orphelines') {
+    // Tâches sans strategie_id
+    filteredTasks = tasks.filter(t => !t.strategie_id);
+    emptyMessage = `
+      <div class="text-center py-4 text-success">
+        <i class="bi bi-check-circle" style="font-size: 2rem;"></i>
+        <p class="mt-2 mb-0">Toutes les tâches sont rattachées !</p>
+      </div>
+    `;
+    $('#panel-title').html('<i class="bi bi-list-task me-2"></i>Tâches orphelines');
+    $('#btn-attach-tasks').show();
+    $('#btn-detach-tasks').hide();
+  } else {
+    // Tâches de la mission sélectionnée
+    if (selectedMission) {
+      filteredTasks = tasks.filter(t => t.strategie_id === selectedMission.id);
+      emptyMessage = `
+        <div class="text-center py-4 text-muted">
+          <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+          <p class="mt-2 mb-0">Aucune tâche rattachée à cette mission</p>
+        </div>
+      `;
+      $('#panel-title').html(`<i class="bi bi-link me-2"></i>Tâches de: ${escapeHtml(selectedMission.axe_strategique)}`);
+    } else {
+      emptyMessage = `
+        <div class="text-center py-4 text-muted">
+          <i class="bi bi-hand-index" style="font-size: 2rem;"></i>
+          <p class="mt-2 mb-0">Sélectionnez une mission pour voir ses tâches</p>
+        </div>
+      `;
+      $('#panel-title').html('<i class="bi bi-link me-2"></i>Tâches de la mission');
+    }
+    $('#btn-attach-tasks').hide();
+    $('#btn-detach-tasks').show();
+  }
+
+  if (filteredTasks.length === 0) {
+    $list.html(emptyMessage);
+    return;
+  }
+
+  // Trier par statut puis titre
+  filteredTasks.sort((a, b) => {
+    const statusOrder = { 'A faire': 0, 'En cours': 1, 'Bloqué': 2, 'Terminé': 3, 'Annulé': 4 };
+    const statusA = statusOrder[a.statut] ?? 99;
+    const statusB = statusOrder[b.statut] ?? 99;
+    if (statusA !== statusB) return statusA - statusB;
+    return (a.titre || '').localeCompare(b.titre || '');
+  });
+
+  const statusColors = {
+    'A faire': 'secondary',
+    'En cours': 'primary',
+    'Bloqué': 'danger',
+    'Terminé': 'success',
+    'Annulé': 'dark'
+  };
+
+  let html = '';
+  filteredTasks.forEach(t => {
+    const badgeColor = statusColors[t.statut] || 'secondary';
+    html += `
+      <div class="task-item" data-task-id="${t.id}">
+        <div class="d-flex justify-content-between align-items-start">
+          <div class="flex-grow-1">
+            <div class="form-check">
+              <input class="form-check-input task-checkbox" type="checkbox" id="task-${t.id}">
+              <label class="form-check-label" for="task-${t.id}">
+                <strong>${escapeHtml(t.titre || 'Sans titre')}</strong>
+              </label>
+            </div>
+            <div class="small text-muted mt-1">
+              ${t.qui ? `<span class="me-2"><i class="bi bi-person"></i> ${escapeHtml(t.qui)}</span>` : ''}
+              ${t.projet ? `<span><i class="bi bi-folder"></i> ${escapeHtml(t.projet)}</span>` : ''}
+            </div>
+          </div>
+          <span class="badge bg-${badgeColor}">${escapeHtml(t.statut || 'N/A')}</span>
+        </div>
+      </div>
+    `;
+  });
+
+  $list.html(html);
+}
+
+/**
+ * Toggle la sélection d'une tâche
+ */
+function toggleTaskSelection(taskId, $element) {
+  if (selectedTaskIds.has(taskId)) {
+    selectedTaskIds.delete(taskId);
+    $element.removeClass('selected');
+    $element.find('.task-checkbox').prop('checked', false);
+  } else {
+    selectedTaskIds.add(taskId);
+    $element.addClass('selected');
+    $element.find('.task-checkbox').prop('checked', true);
+  }
+  updateActionButtons();
+}
+
+/**
+ * Met à jour les boutons d'action
+ */
+function updateActionButtons() {
+  const count = selectedTaskIds.size;
+  $('#count-selected').text(count);
+  $('#count-detach').text(count);
+
+  if (currentTaskView === 'orphelines') {
+    // Pour rattacher, il faut des tâches sélectionnées ET une mission sélectionnée
+    $('#btn-attach-tasks').prop('disabled', count === 0 || !selectedMission);
+  } else {
+    // Pour détacher, il suffit d'avoir des tâches sélectionnées
+    $('#btn-detach-tasks').prop('disabled', count === 0);
+  }
+}
+
+/**
+ * Ouvre le modal de rattachement
+ */
+function openAttachModal() {
+  if (!selectedMission || selectedTaskIds.size === 0) return;
+
+  $('#attach-count').text(selectedTaskIds.size);
+  $('#attach-target-info').html(`
+    <div class="mb-2">
+      <i class="bi bi-folder me-1"></i><strong>Programme:</strong> ${escapeHtml(selectedMission.objectif)}
+    </div>
+    ${selectedMission.sous_objectif ? `
+      <div class="mb-2">
+        <i class="bi bi-diagram-2 me-1"></i><strong>Stratégie:</strong> ${escapeHtml(selectedMission.sous_objectif)}
+      </div>
+    ` : ''}
+    <div class="mb-2">
+      <i class="bi bi-bullseye me-1"></i><strong>Mission:</strong> ${escapeHtml(selectedMission.axe_strategique)}
+    </div>
+    ${selectedMission.responsable ? `
+      <div class="small text-muted">
+        <i class="bi bi-person me-1"></i>Responsable: ${escapeHtml(selectedMission.responsable)}
+      </div>
+    ` : ''}
+  `);
+
+  $('#modal-attach').modal('show');
+}
+
+/**
+ * Confirme le rattachement des tâches
+ */
+async function confirmAttach() {
+  if (!selectedMission || selectedTaskIds.size === 0) return;
+
+  try {
+    const updates = [];
+    selectedTaskIds.forEach(taskId => {
+      updates.push(['UpdateRecord', 'Ssir_principale_task', taskId, {
+        strategie_id: selectedMission.id
+      }]);
+    });
+
+    await window.grist.docApi.applyUserActions(updates);
+
+    // Mettre à jour localement
+    selectedTaskIds.forEach(taskId => {
+      const task = tasks.find(t => t.id === taskId);
+      if (task) task.strategie_id = selectedMission.id;
+    });
+
+    $('#modal-attach').modal('hide');
+    selectedTaskIds.clear();
+
+    // Rafraîchir
+    updateStats();
+    renderMissionsTree();
+    renderTasksList();
+
+    showToast(`${updates.length} tâche(s) rattachée(s)`, 'success');
+    logger.debug(`Attached ${updates.length} tasks to mission ${selectedMission.id}`);
+  } catch (error) {
+    logger.error('Failed to attach tasks:', error);
+    showToast('Erreur lors du rattachement', 'danger');
+  }
+}
+
+/**
+ * Détache les tâches sélectionnées
+ */
+async function detachTasks() {
+  if (selectedTaskIds.size === 0) return;
+
+  if (!confirm(`Détacher ${selectedTaskIds.size} tâche(s) de la mission ?`)) return;
+
+  try {
+    const updates = [];
+    selectedTaskIds.forEach(taskId => {
+      updates.push(['UpdateRecord', 'Ssir_principale_task', taskId, {
+        strategie_id: null
+      }]);
+    });
+
+    await window.grist.docApi.applyUserActions(updates);
+
+    // Mettre à jour localement
+    selectedTaskIds.forEach(taskId => {
+      const task = tasks.find(t => t.id === taskId);
+      if (task) task.strategie_id = null;
+    });
+
+    selectedTaskIds.clear();
+
+    // Rafraîchir
+    updateStats();
+    renderMissionsTree();
+    renderTasksList();
+
+    showToast(`${updates.length} tâche(s) détachée(s)`, 'success');
+    logger.debug(`Detached ${updates.length} tasks`);
+  } catch (error) {
+    logger.error('Failed to detach tasks:', error);
+    showToast('Erreur lors du détachement', 'danger');
+  }
+}
+
+/**
+ * Affiche un toast
+ */
+function showToast(message, type = 'info') {
+  const toastHtml = `
+    <div class="toast align-items-center text-white bg-${type} border-0" role="alert">
+      <div class="d-flex">
+        <div class="toast-body">${escapeHtml(message)}</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+  `;
+
+  const $toast = $(toastHtml);
+  $('#toast-container').append($toast);
+
+  const toast = new bootstrap.Toast($toast[0], { delay: 3000 });
+  toast.show();
+
+  $toast.on('hidden.bs.toast', () => $toast.remove());
 }
 
 /**
@@ -374,582 +633,8 @@ function escapeHtml(text) {
 }
 
 /**
- * Affiche les missions
+ * Debounce
  */
-async function displayMissions() {
-  try {
-    let missions = [];
-
-    // Masquer tous les conteneurs
-    $('#missions-container').hide();
-    $('#missions-table-container').hide();
-    $('#empty-state').hide();
-
-    if (currentViewMode === 'missions') {
-      // Vue cartes des missions
-      missions = await missionsManager.getMissions();
-      missions = await applyFilters(missions);
-
-      if (missions.length === 0) {
-        $('#empty-state').show();
-        return;
-      }
-
-      renderMissionCards(missions);
-      $('#missions-container').show();
-
-    } else if (currentViewMode === 'table') {
-      // Vue tableau
-      missions = await missionsManager.getMissions();
-      missions = await applyFilters(missions);
-
-      if (missions.length === 0) {
-        $('#empty-state').show();
-        return;
-      }
-
-      renderTableView(missions);
-      $('#missions-table-container').show();
-
-    } else if (currentViewMode === 'categories') {
-      // Vue par catégories
-      await renderCategoriesView();
-      $('#missions-container').show();
-
-    } else if (currentViewMode === 'non-classifiees') {
-      // Vue tâches non classifiées
-      await renderUnclassifiedView();
-      $('#missions-container').show();
-    }
-  } catch (error) {
-    logger.error('Failed to display missions:', error);
-    showError('Erreur d\'affichage des missions');
-  }
-}
-
-/**
- * Rend la vue tableau des missions
- */
-function renderTableView(missions) {
-  const $tbody = $('#missions-table-body').empty();
-
-  for (const mission of missions) {
-    const prioriteColors = {
-      'Critique': 'danger',
-      'Haute': 'warning',
-      'Moyenne': 'primary',
-      'Basse': 'secondary'
-    };
-
-    // Calculer la progression
-    const progress = mission.stats.total > 0
-      ? Math.round((mission.stats.completed / mission.stats.total) * 100)
-      : 0;
-
-    // Formater les dates
-    let datesText = '-';
-    if (mission.date_debut || mission.date_fin) {
-      const debut = mission.date_debut ? new Date(mission.date_debut).toLocaleDateString('fr-FR') : '?';
-      const fin = mission.date_fin ? new Date(mission.date_fin).toLocaleDateString('fr-FR') : '?';
-      datesText = `${debut} → ${fin}`;
-    }
-
-    const $row = $(`
-      <tr data-mission-code="${escapeHtml(mission.code)}">
-        <td><code>${escapeHtml(mission.code)}</code></td>
-        <td>
-          <strong>${escapeHtml(mission.nom)}</strong>
-          ${mission.strategie_action ? `<br><small class="text-muted"><i class="bi bi-diagram-3"></i> ${escapeHtml(mission.strategie_action)}</small>` : ''}
-        </td>
-        <td>${escapeHtml(mission.responsable) || '<span class="text-muted">-</span>'}</td>
-        <td>${escapeHtml(mission.bureau) || '<span class="text-muted">-</span>'}</td>
-        <td><span class="badge bg-${prioriteColors[mission.priorite] || 'secondary'}">${escapeHtml(mission.priorite)}</span></td>
-        <td><small>${datesText}</small></td>
-        <td>
-          <span class="badge bg-info">${mission.stats.total}</span>
-          <span class="badge bg-success">${mission.stats.completed} ✓</span>
-        </td>
-        <td>
-          <div class="progress" style="width: 80px; height: 8px;">
-            <div class="progress-bar bg-success" style="width: ${progress}%"></div>
-          </div>
-          <small class="text-muted">${progress}%</small>
-        </td>
-        <td>
-          <div class="btn-group btn-group-sm">
-            <button class="btn btn-outline-primary btn-voir-taches" title="Voir tâches">
-              <i class="bi bi-kanban"></i>
-            </button>
-            <button class="btn btn-outline-secondary btn-edit-mission" title="Modifier">
-              <i class="bi bi-pencil"></i>
-            </button>
-          </div>
-        </td>
-      </tr>
-    `);
-
-    // Stocker les données de mission pour les boutons
-    $row.data('mission', mission);
-
-    $tbody.append($row);
-  }
-
-  logger.debug(`Rendered ${missions.length} missions in table view`);
-}
-
-/**
- * Rend les cartes de missions
- */
-function renderMissionCards(missions) {
-  const $container = $('#missions-container').empty();
-
-  for (const mission of missions) {
-    const $card = createMissionCard(mission);
-    $container.append($card);
-  }
-
-  logger.debug(`Rendered ${missions.length} mission cards`);
-}
-
-/**
- * Crée une carte de mission
- */
-function createMissionCard(mission) {
-  const $template = $($('#template-mission-card').html());
-
-  // Remplir les données
-  $template.find('.mission-code').text(mission.code);
-  $template.find('.mission-nom').text(mission.nom);
-  $template.find('.mission-responsable').text(mission.responsable || 'Non assigné');
-  $template.find('.mission-bureau').text(mission.bureau || 'N/A');
-
-  // Priorité
-  const prioriteColors = {
-    'Critique': 'danger',
-    'Haute': 'warning',
-    'Moyenne': 'primary',
-    'Basse': 'secondary'
-  };
-  $template.find('.mission-priorite')
-    .text(mission.priorite)
-    .addClass(`bg-${prioriteColors[mission.priorite] || 'secondary'}`);
-
-  // Classe de priorité pour border
-  $template.find('.mission-card').addClass(`priority-${mission.priorite}`);
-
-  // Dates
-  let datesText = 'Pas de dates';
-  if (mission.date_debut || mission.date_fin) {
-    const debut = mission.date_debut ? new Date(mission.date_debut).toLocaleDateString() : '?';
-    const fin = mission.date_fin ? new Date(mission.date_fin).toLocaleDateString() : '?';
-    datesText = `${debut} → ${fin}`;
-  }
-  $template.find('.mission-dates').text(datesText);
-
-  // Afficher le lien stratégique si présent
-  if (mission.strategie_action || mission.strategie_sous_objectif) {
-    const strategyText = mission.strategie_sous_objectif
-      ? `${mission.strategie_sous_objectif} → ${mission.strategie_action || ''}`
-      : mission.strategie_action;
-    $template.find('.mission-strategy').text(strategyText);
-    $template.find('.strategy-link').show();
-  }
-
-  // Statistiques
-  $template.find('.tasks-count').text(mission.stats.total);
-  $template.find('.tasks-completed').text(mission.stats.completed);
-
-  // Stocker les données
-  $template.data('mission', mission);
-
-  return $template;
-}
-
-/**
- * Rend la vue par catégories
- */
-async function renderCategoriesView() {
-  const missions = await missionsManager.getMissions();
-  const $container = $('#missions-container').empty();
-
-  const categories = ['MCO', 'Projet', 'Imprévisible'];
-  const categoriesData = {
-    'MCO': { missions: [], taches: 0 },
-    'Projet': { missions: [], taches: 0 },
-    'Imprévisible': { missions: [], taches: 0 }
-  };
-
-  // Organiser par catégorie
-  for (const mission of missions) {
-    for (const sa of mission.sous_actions.values()) {
-      if (sa.categorie && categoriesData[sa.categorie]) {
-        if (!categoriesData[sa.categorie].missions.includes(mission)) {
-          categoriesData[sa.categorie].missions.push(mission);
-        }
-        categoriesData[sa.categorie].taches += sa.taches.length;
-      }
-    }
-  }
-
-  // Afficher par catégorie
-  for (const cat of categories) {
-    const data = categoriesData[cat];
-    const $section = $(`
-      <div class="col-12 mb-3">
-        <h4>
-          ${getCategorieIcon(cat)} ${cat}
-          <span class="badge bg-secondary">${data.taches} tâches</span>
-        </h4>
-        <div class="row g-3 category-missions-${cat}"></div>
-      </div>
-    `);
-
-    const $missionsContainer = $section.find(`.category-missions-${cat}`);
-    for (const mission of data.missions) {
-      const $card = createMissionCard(mission);
-      $missionsContainer.append($card);
-    }
-
-    $container.append($section);
-  }
-}
-
-/**
- * Rend la vue des tâches non classifiées
- */
-async function renderUnclassifiedView() {
-  const tasks = await missionsManager.getUnclassifiedTasks();
-  const $container = $('#missions-container').empty();
-
-  if (tasks.length === 0) {
-    $container.html(`
-      <div class="col-12 text-center text-success py-5">
-        <i class="bi bi-check-circle" style="font-size: 4rem;"></i>
-        <h3>Toutes les tâches sont classifiées !</h3>
-        <p>Excellent travail, aucune tâche orpheline.</p>
-      </div>
-    `);
-    return;
-  }
-
-  $container.html(`
-    <div class="col-12">
-      <div class="alert alert-warning">
-        <i class="bi bi-exclamation-triangle me-2"></i>
-        <strong>${tasks.length} tâches non classifiées</strong> - Elles doivent être rattachées à une mission.
-      </div>
-    </div>
-  `);
-
-  // TODO: Afficher la liste des tâches avec bouton "Classifier"
-  for (const task of tasks.slice(0, 20)) { // Limiter à 20 pour l'affichage
-    const $taskCard = $(`
-      <div class="col-md-6">
-        <div class="card">
-          <div class="card-body">
-            <h6>${task.titre}</h6>
-            <p class="small text-muted">${task.description || ''}</p>
-            <button class="btn btn-sm btn-primary btn-classify-task" data-task-id="${task.id}">
-              <i class="bi bi-tag"></i> Classifier
-            </button>
-          </div>
-        </div>
-      </div>
-    `);
-    $container.append($taskCard);
-  }
-}
-
-/**
- * Applique les filtres
- */
-async function applyFilters(missions) {
-  let filtered = missions;
-
-  // Recherche textuelle
-  if (currentFilters.search) {
-    const query = currentFilters.search.toLowerCase();
-    filtered = filtered.filter(m =>
-      m.code.toLowerCase().includes(query) ||
-      m.nom.toLowerCase().includes(query) ||
-      m.responsable.toLowerCase().includes(query)
-    );
-  }
-
-  // Filtre priorité
-  if (currentFilters.priorite) {
-    filtered = filtered.filter(m => m.priorite === currentFilters.priorite);
-  }
-
-  // Filtre catégorie
-  if (currentFilters.categorie) {
-    filtered = filtered.filter(m => {
-      for (const sa of m.sous_actions.values()) {
-        if (sa.categorie === currentFilters.categorie) return true;
-      }
-      return false;
-    });
-  }
-
-  return filtered;
-}
-
-/**
- * Met à jour les statistiques
- */
-async function updateStats() {
-  try {
-    const stats = await missionsManager.getStats();
-
-    $('#stat-missions-total').text(stats.missions_actives);
-    $('#stat-taches-total').text(stats.taches_total);
-    $('#stat-taches-non-classifiees').text(stats.taches_non_classifiees);
-    $('#stat-missions-en-retard').text(stats.missions_en_retard);
-
-    logger.debug('Stats updated:', stats);
-  } catch (error) {
-    logger.error('Failed to update stats:', error);
-  }
-}
-
-/**
- * Ouvre le modal de nouvelle mission
- */
-function openNewMissionModal() {
-  $('#modal-mission-title').text('Nouvelle Mission');
-  $('#form-mission')[0].reset();
-  $('#sous-actions-container').empty();
-  $('#mission-code').val(generateMissionCode());
-  $('#mission-strategie').val(''); // Réinitialiser le sélecteur de stratégie
-  $('#strategy-preview').hide(); // Masquer l'aperçu
-  $('#mission-code').prop('disabled', false);
-  currentEditingMissionCode = null;
-  $('#modal-mission').modal('show');
-}
-
-// Note: Sous-action functions removed - model simplified to Mission → Tasks
-
-/**
- * Sauvegarde la mission
- */
-async function saveMission() {
-  try {
-    // Récupérer la stratégie sélectionnée
-    const strategyId = $('#mission-strategie').val();
-    const selectedStrategy = strategyId ? strategies.find(s => s.id === parseInt(strategyId)) : null;
-
-    // Récupérer le responsable sélectionné
-    const responsableId = $('#mission-responsable').val();
-    const $selectedAgent = $('#mission-responsable option:selected');
-    const responsableFullName = $selectedAgent.data('fullname') || $selectedAgent.text().trim() || '';
-
-    // Récupérer les données du formulaire
-    const missionData = {
-      code: ($('#mission-code').val().trim()) || currentEditingMissionCode,
-      nom: $('#mission-nom').val().trim(),
-      responsable: responsableFullName,
-      responsable_id: responsableId ? parseInt(responsableId) : null,
-      bureau: $('#mission-bureau').val(),
-      priorite: $('#mission-priorite').val(),
-      date_debut: $('#mission-date-debut').val() || null,
-      date_fin: $('#mission-date-fin').val() || null,
-      // Données de liaison stratégique
-      strategie_id: strategyId ? parseInt(strategyId) : null,
-      strategie_objectif: selectedStrategy ? selectedStrategy.objectif : null,
-      strategie_sous_objectif: selectedStrategy ? selectedStrategy.sous_objectif : null,
-      strategie_action: selectedStrategy ? selectedStrategy.axe_strategique : null
-    };
-
-    // Valider
-    if (!missionData.code || !missionData.nom) {
-      alert('Le code et le nom de la mission sont requis');
-      return;
-    }
-
-    // Sauvegarder (sans sous-actions dans le modèle simplifié)
-    showLoading(true);
-    await missionsManager.saveMission(missionData, []);
-
-    // Fermer modal et rafraîchir
-    $('#modal-mission').modal('hide');
-    await refreshData();
-
-    logger.debug('Mission saved successfully:', missionData.code);
-  } catch (error) {
-    logger.error('Failed to save mission:', error);
-    alert('Erreur lors de la sauvegarde de la mission');
-  } finally {
-    showLoading(false);
-  }
-}
-
-/**
- * Rafraîchit les données
- */
-async function refreshData() {
-  await missionsManager.refresh();
-  await loadData();
-  logger.debug('Data refreshed');
-}
-
-/**
- * Exporte les missions
- */
-async function exportMissions() {
-  try {
-    const json = await missionsManager.exportMissions();
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `missions_${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    logger.debug('Missions exported');
-  } catch (error) {
-    logger.error('Failed to export missions:', error);
-    alert('Erreur lors de l\'export');
-  }
-}
-
-/**
- * Gère la recherche
- */
-function handleSearch(e) {
-  currentFilters.search = $(e.currentTarget).val();
-  displayMissions();
-}
-
-/**
- * Gère le changement de filtre
- */
-function handleFilterChange() {
-  currentFilters.priorite = $('#filter-priorite').val();
-  currentFilters.categorie = $('#filter-categorie').val();
-  displayMissions();
-}
-
-/**
- * Gère le changement de mode de vue
- */
-function handleViewModeChange() {
-  currentViewMode = $('#vue-mode').val();
-  displayMissions();
-}
-
-/**
- * Voir les tâches d'une mission
- */
-function handleVoirTaches(e) {
-  // Chercher dans carte ou ligne de tableau
-  let mission = $(e.currentTarget).closest('.mission-card-wrapper').data('mission');
-  if (!mission) {
-    mission = $(e.currentTarget).closest('tr').data('mission');
-  }
-  if (mission) {
-    // Rediriger vers le kanban avec filtre sur la mission
-    window.location.href = `index.html?mission=${encodeURIComponent(mission.code)}`;
-  }
-}
-
-/**
- * Éditer une mission
- */
-function handleEditMission(e) {
-  // Chercher dans carte ou ligne de tableau
-  let mission = $(e.currentTarget).closest('.mission-card-wrapper').data('mission');
-  if (!mission) {
-    mission = $(e.currentTarget).closest('tr').data('mission');
-  }
-  if (mission) {
-    $('#modal-mission-title').text('Modifier la Mission');
-    $('#form-mission')[0].reset();
-    $('#sous-actions-container').empty();
-    $('#mission-code').val(mission.code).prop('disabled', true);
-    $('#mission-nom').val(mission.nom);
-
-    // Sélectionner le responsable (par ID ou par nom)
-    if (mission.responsable_id) {
-      $('#mission-responsable').val(mission.responsable_id);
-    } else if (mission.responsable) {
-      // Chercher l'agent par nom (legacy)
-      const agent = agents.find(a => a.fullName === mission.responsable);
-      if (agent) {
-        $('#mission-responsable').val(agent.id);
-      } else {
-        $('#mission-responsable').val('');
-      }
-    } else {
-      $('#mission-responsable').val('');
-    }
-
-    $('#mission-bureau').val(mission.bureau || '');
-    $('#mission-priorite').val(mission.priorite || 'Moyenne');
-    $('#mission-date-debut').val(mission.date_debut || '');
-    $('#mission-date-fin').val(mission.date_fin || '');
-    currentEditingMissionCode = mission.code;
-
-    const strategyOption = findStrategyOption(mission);
-    if (strategyOption) {
-      $('#mission-strategie').val(String(strategyOption.id));
-      handleStrategyChange();
-    } else {
-      $('#mission-strategie').val('');
-      $('#strategy-preview').hide();
-    }
-
-    // Note: Sous-actions removed from model
-
-    $('#modal-mission').modal('show');
-  }
-}
-
-function findStrategyOption(mission) {
-  if (!mission || strategies.length === 0) return null;
-  if (mission.strategie_id) {
-    const direct = strategies.find(s => s.id === mission.strategie_id);
-    if (direct) return direct;
-  }
-  return strategies.find(s =>
-    s.objectif === mission.strategie_objectif &&
-    s.sous_objectif === mission.strategie_sous_objectif &&
-    s.axe_strategique === mission.strategie_action
-  );
-}
-
-/**
- * Utilitaires
- */
-function showLoading(show) {
-  if (show) {
-    $('#loading-missions').show();
-    $('#missions-container').hide();
-  } else {
-    $('#loading-missions').hide();
-    $('#missions-container').show();
-  }
-}
-
-function showError(message) {
-  console.error(message);
-  // TODO: Afficher une notification
-}
-
-function generateMissionCode() {
-  const year = new Date().getFullYear();
-  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-  return `MIS-${year}-${random}`;
-}
-
-function getCategorieIcon(categorie) {
-  const icons = {
-    'MCO': '🔧',
-    'Projet': '🎯',
-    'Imprévisible': '⚡'
-  };
-  return icons[categorie] || '';
-}
-
 function debounce(func, wait) {
   let timeout;
   return function executedFunction(...args) {
@@ -962,143 +647,5 @@ function debounce(func, wait) {
   };
 }
 
-// Variable pour stocker la tâche en cours de classification
-let currentTaskToClassify = null;
-
-/**
- * Ouvre le modal de classification pour une tâche
- */
-async function handleClassifyTask(e) {
-  const taskId = $(e.currentTarget).data('task-id');
-  const tasks = gristManager.currentRecords || [];
-  const task = tasks.find(t => t.id === taskId);
-
-  if (!task) {
-    logger.error('Task not found:', taskId);
-    alert('Tâche non trouvée');
-    return;
-  }
-
-  currentTaskToClassify = task;
-  logger.debug('Opening classification modal for task:', taskId, task.titre);
-
-  // Peupler le sélecteur de missions
-  const missions = await missionsManager.getMissions();
-  const $missionSelector = $('#classify-mission-select').empty();
-  $missionSelector.append('<option value="">-- Sélectionner une mission --</option>');
-
-  for (const mission of missions) {
-    $missionSelector.append(`<option value="${escapeHtml(mission.code)}"
-      data-mission='${JSON.stringify({
-        code: mission.code,
-        nom: mission.nom,
-        responsable: mission.responsable,
-        bureau: mission.bureau,
-        priorite: mission.priorite,
-        date_debut: mission.date_debut,
-        date_fin: mission.date_fin,
-        strategie_id: mission.strategie_id,
-        strategie_objectif: mission.strategie_objectif,
-        strategie_sous_objectif: mission.strategie_sous_objectif,
-        strategie_action: mission.strategie_action
-      }).replace(/'/g, "&#39;")}'>
-      [${escapeHtml(mission.code)}] ${escapeHtml(mission.nom)}
-    </option>`);
-  }
-
-  // Mettre à jour le titre du modal avec le nom de la tâche
-  $('#classify-task-title').text(task.titre);
-
-  // Ouvrir le modal
-  $('#modal-classify').modal('show');
-}
-
-/**
- * Met à jour l'aperçu de la hiérarchie quand on change de mission
- */
-function handleClassifyMissionChange() {
-  const $select = $('#classify-mission-select');
-  const missionCode = $select.val();
-  const $preview = $('#classify-strategy-preview');
-
-  if (!missionCode) {
-    $preview.hide();
-    return;
-  }
-
-  // Récupérer les données de l'option sélectionnée
-  const $option = $select.find('option:selected');
-  try {
-    const missionData = JSON.parse($option.attr('data-mission') || '{}');
-
-    // Afficher l'aperçu de la hiérarchie
-    let html = '';
-    if (missionData.strategie_objectif) {
-      html += `<div><i class="bi bi-folder me-1"></i><strong>Programme:</strong> ${escapeHtml(missionData.strategie_objectif)}</div>`;
-    }
-    if (missionData.strategie_sous_objectif) {
-      html += `<div><i class="bi bi-arrow-return-right me-1"></i><strong>Stratégie:</strong> ${escapeHtml(missionData.strategie_sous_objectif)}</div>`;
-    }
-    if (missionData.strategie_action) {
-      html += `<div><i class="bi bi-arrow-return-right me-1"></i><strong>Mission:</strong> ${escapeHtml(missionData.strategie_action)}</div>`;
-    }
-
-    if (html) {
-      $preview.html(html).show();
-    } else {
-      $preview.hide();
-    }
-  } catch (e) {
-    $preview.hide();
-  }
-}
-
-/**
- * Sauvegarde l'affectation d'une tâche à une mission
- * Modèle simplifié: La tâche est liée directement à la mission via strategie_id
- */
-async function saveClassification() {
-  if (!currentTaskToClassify) {
-    alert('Aucune tâche sélectionnée');
-    return;
-  }
-
-  const missionCode = $('#classify-mission-select').val();
-  if (!missionCode) {
-    alert('Veuillez sélectionner une mission');
-    return;
-  }
-
-  try {
-    showLoading(true);
-
-    // Récupérer les données de la mission depuis l'option
-    const $missionOption = $('#classify-mission-select option:selected');
-    const missionData = JSON.parse($missionOption.attr('data-mission') || '{}');
-
-    logger.debug('Assigning task:', currentTaskToClassify.id, 'to mission:', missionCode);
-
-    // Appeler attachTaskToMission (sans sous-action)
-    await missionsManager.attachTaskToMission(
-      currentTaskToClassify.id,
-      missionCode,
-      missionData,
-      null // pas de sous-action dans le modèle simplifié
-    );
-
-    // Fermer le modal et rafraîchir
-    $('#modal-classify').modal('hide');
-    currentTaskToClassify = null;
-    await refreshData();
-
-    logger.debug('Task assigned successfully');
-  } catch (error) {
-    logger.error('Failed to assign task:', error);
-    alert('Erreur lors de l\'affectation: ' + error.message);
-  } finally {
-    showLoading(false);
-  }
-}
-
-// Initialiser l'app au chargement
+// Initialiser au chargement
 $(document).ready(initApp);

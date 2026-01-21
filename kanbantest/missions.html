@@ -15,7 +15,7 @@
 
   <style>
     .mission-card {
-      border-left: 4px solid #3498db;
+      border-left: 4px solid #6366f1;
       transition: all 0.3s;
     }
 
@@ -24,48 +24,66 @@
       transform: translateY(-2px);
     }
 
-    .mission-card.priority-Critique {
-      border-left-color: #e74c3c;
+    .mission-card.expanded {
+      border-left-color: #10b981;
     }
 
-    .mission-card.priority-Haute {
-      border-left-color: #f39c12;
-    }
-
-    .mission-card.priority-Moyenne {
-      border-left-color: #3498db;
-    }
-
-    .mission-card.priority-Basse {
-      border-left-color: #95a5a6;
-    }
-
-    .strategy-info {
-      border-left: 3px solid #6366f1;
-      padding-left: 12px;
-      margin-left: 8px;
-      background: #f8f9fa;
-      border-radius: 0 4px 4px 0;
-    }
-
-    .badge-categorie {
-      font-size: 0.75rem;
-      padding: 0.25rem 0.5rem;
-    }
-
-    .badge-MCO {
-      background-color: #3498db;
+    .programme-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
+      padding: 12px 16px;
+      border-radius: 8px 8px 0 0;
+      cursor: pointer;
     }
 
-    .badge-Projet {
-      background-color: #2ecc71;
-      color: white;
+    .strategie-header {
+      background: #f1f5f9;
+      padding: 8px 16px;
+      border-bottom: 1px solid #e2e8f0;
+      cursor: pointer;
     }
 
-    .badge-Imprévisible {
-      background-color: #e67e22;
-      color: white;
+    .strategie-header:hover {
+      background: #e2e8f0;
+    }
+
+    .mission-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .mission-item:hover {
+      background: #fafafa;
+    }
+
+    .mission-item.selected {
+      background: #eff6ff;
+      border-left: 3px solid #3b82f6;
+    }
+
+    .task-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .task-item {
+      padding: 8px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+    }
+
+    .task-item:hover {
+      background: #f9fafb;
+    }
+
+    .task-item.selected {
+      border-color: #3b82f6;
+      background: #eff6ff;
     }
 
     .stats-box {
@@ -85,6 +103,11 @@
       font-weight: bold;
     }
 
+    .badge-task-count {
+      font-size: 0.85rem;
+      min-width: 24px;
+    }
+
     .empty-state {
       text-align: center;
       padding: 60px 20px;
@@ -96,23 +119,14 @@
       margin-bottom: 20px;
     }
 
-    /* Table styles */
-    #missions-table th {
-      white-space: nowrap;
-      font-size: 0.85rem;
+    .panel-tasks {
+      height: calc(100vh - 300px);
+      min-height: 400px;
     }
-    #missions-table td {
-      vertical-align: middle;
-      font-size: 0.9rem;
-    }
-    #missions-table .progress {
-      background-color: #e9ecef;
-    }
-    #missions-table code {
-      background: #e9ecef;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 0.8rem;
+
+    .hierarchy-tree {
+      max-height: calc(100vh - 350px);
+      overflow-y: auto;
     }
   </style>
 </head>
@@ -129,17 +143,18 @@
                 <i class="bi bi-diagram-3 me-2"></i>
                 Gestion des Missions
               </h1>
+              <small class="text-muted">Rattachement des tâches aux missions stratégiques</small>
             </div>
             <div class="d-flex gap-2">
               <a href="index.html" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-kanban me-1"></i>Kanban
               </a>
-              <a href="stats.html" class="btn btn-outline-primary btn-sm">
+              <a href="config.html#strategies" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-gear me-1"></i>Config Stratégies
+              </a>
+              <a href="stats.html" class="btn btn-outline-info btn-sm">
                 <i class="bi bi-graph-up me-1"></i>Stats
               </a>
-              <button type="button" class="btn btn-primary btn-sm" id="btn-nouvelle-mission">
-                <i class="bi bi-plus-lg me-1"></i>Nouvelle Mission
-              </button>
             </div>
           </div>
         </div>
@@ -151,357 +166,149 @@
           <div class="row">
             <div class="col-md-3 stats-item">
               <div class="stats-number" id="stat-missions-total">0</div>
-              <div class="stats-label">Missions actives</div>
+              <div class="stats-label">Missions (Ssir_strategie2)</div>
             </div>
             <div class="col-md-3 stats-item">
               <div class="stats-number" id="stat-taches-total">0</div>
               <div class="stats-label">Tâches total</div>
             </div>
             <div class="col-md-3 stats-item">
-              <div class="stats-number" id="stat-taches-non-classifiees">0</div>
-              <div class="stats-label text-warning">Non classifiées</div>
+              <div class="stats-number" id="stat-taches-rattachees">0</div>
+              <div class="stats-label text-success">Rattachées</div>
             </div>
             <div class="col-md-3 stats-item">
-              <div class="stats-number" id="stat-missions-en-retard">0</div>
-              <div class="stats-label text-danger">En retard</div>
+              <div class="stats-number" id="stat-taches-orphelines">0</div>
+              <div class="stats-label text-warning">Orphelines</div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Filtres et vue -->
+      <!-- Info -->
       <div class="container-fluid">
-        <div class="card shadow-sm mb-3">
-          <div class="card-body">
-            <div class="row g-2 align-items-center">
-              <div class="col-md-3">
-                <input type="text" class="form-control" id="search-missions" placeholder="Rechercher missions...">
-              </div>
-              <div class="col-md-2">
-                <select class="form-select" id="filter-priorite">
-                  <option value="">Toutes priorités</option>
-                  <option value="Critique">Critique</option>
-                  <option value="Haute">Haute</option>
-                  <option value="Moyenne">Moyenne</option>
-                  <option value="Basse">Basse</option>
-                </select>
-              </div>
-              <div class="col-md-2">
-                <select class="form-select" id="filter-categorie">
-                  <option value="">Toutes catégories</option>
-                  <option value="MCO">MCO</option>
-                  <option value="Projet">Projet</option>
-                  <option value="Imprévisible">Imprévisible</option>
-                </select>
-              </div>
-              <div class="col-md-2">
-                <select class="form-select" id="vue-mode">
-                  <option value="missions">Vue Cartes</option>
-                  <option value="table">Vue Tableau</option>
-                  <option value="categories">Vue Catégories</option>
-                  <option value="non-classifiees">Tâches non classifiées</option>
-                </select>
-              </div>
-              <div class="col-md-3 text-end">
-                <button class="btn btn-outline-secondary btn-sm" id="btn-refresh">
-                  <i class="bi bi-arrow-clockwise"></i> Actualiser
-                </button>
-                <button class="btn btn-outline-primary btn-sm" id="btn-export">
-                  <i class="bi bi-download"></i> Exporter
-                </button>
-              </div>
-            </div>
-          </div>
+        <div class="alert alert-info py-2">
+          <i class="bi bi-info-circle me-2"></i>
+          <strong>Hiérarchie :</strong> Programme (objectif) → Stratégie (sous_objectif) → Mission (axe_strategique) → Tâches
+          <br><small>Les missions sont définies dans la table <code>Ssir_strategie2</code>. Les tâches y sont rattachées via le champ <code>strategie_id</code>.</small>
         </div>
       </div>
 
-      <!-- Contenu principal -->
+      <!-- Contenu principal: 2 colonnes -->
       <div class="container-fluid">
-        <!-- Loading -->
-        <div id="loading-missions" class="text-center py-5" style="display: none;">
-          <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Chargement...</span>
-          </div>
-          <p class="mt-2 text-muted">Chargement des missions...</p>
-        </div>
+        <div class="row">
 
-        <!-- Empty state -->
-        <div id="empty-state" class="empty-state" style="display: none;">
-          <i class="bi bi-inbox"></i>
-          <h3>Aucune mission</h3>
-          <p>Commencez par créer votre première mission pour organiser vos tâches.</p>
-          <button class="btn btn-primary" id="btn-create-first-mission">
-            <i class="bi bi-plus-lg me-1"></i>Créer ma première mission
-          </button>
-        </div>
-
-        <!-- Liste des missions (cartes) -->
-        <div id="missions-container" class="row g-3">
-          <!-- Les missions seront injectées ici par JS -->
-        </div>
-
-        <!-- Tableau des missions -->
-        <div id="missions-table-container" style="display: none;">
-          <div class="card shadow-sm">
-            <div class="table-responsive">
-              <table class="table table-hover table-striped mb-0" id="missions-table">
-                <thead class="table-dark">
-                  <tr>
-                    <th>Code</th>
-                    <th>Nom</th>
-                    <th>Responsable</th>
-                    <th>Bureau</th>
-                    <th>Priorité</th>
-                    <th>Dates</th>
-                    <th>Tâches</th>
-                    <th>Progression</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="missions-table-body">
-                  <!-- Lignes générées par JS -->
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- Modal: Nouvelle Mission -->
-  <div class="modal fade" id="modal-mission" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">
-            <i class="bi bi-diagram-3 me-2"></i>
-            <span id="modal-mission-title">Nouvelle Mission</span>
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <form id="form-mission">
-            <div class="row g-3">
-
-              <!-- Sélecteur de stratégie (Programme → Stratégie → Mission) -->
-              <div class="col-12">
-                <label for="mission-strategie" class="form-label">
-                  <i class="bi bi-diagram-3 me-1"></i>
-                  Lier à une mission existante (Ssir_strategie2)
-                </label>
-                <select class="form-select" id="mission-strategie">
-                  <option value="">-- Créer sans lien stratégique --</option>
-                  <!-- Options chargées dynamiquement depuis Ssir_strategie2 -->
-                </select>
-                <small class="text-muted">
-                  Sélectionnez une mission stratégique (Programme → Stratégie → Mission) pour lier les tâches
-                </small>
-                <div id="strategy-preview" class="mt-2" style="display: none;">
-                  <!-- Aperçu de la hiérarchie sélectionnée -->
+          <!-- Colonne gauche: Arbre des missions -->
+          <div class="col-lg-6">
+            <div class="card shadow-sm">
+              <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                  <i class="bi bi-diagram-3 me-2"></i>Missions stratégiques
+                </h5>
+                <div class="d-flex gap-2">
+                  <input type="text" class="form-control form-control-sm" id="search-missions"
+                         placeholder="Rechercher..." style="width: 150px;">
+                  <button class="btn btn-sm btn-outline-secondary" id="btn-expand-all" title="Tout déplier">
+                    <i class="bi bi-arrows-expand"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-secondary" id="btn-collapse-all" title="Tout replier">
+                    <i class="bi bi-arrows-collapse"></i>
+                  </button>
                 </div>
               </div>
-
-              <div class="col-12"><hr class="my-2"></div>
-
-              <!-- Code Mission -->
-              <div class="col-md-4">
-                <label for="mission-code" class="form-label">
-                  Code Mission <span class="text-danger">*</span>
-                </label>
-                <input type="text" class="form-control" id="mission-code"
-                       placeholder="MIS-2025-001" required>
-                <small class="text-muted">Ex: MIS-2025-001</small>
+              <div class="card-body p-0">
+                <div class="hierarchy-tree" id="missions-tree">
+                  <!-- Arbre généré par JS -->
+                  <div class="text-center py-5 text-muted">
+                    <div class="spinner-border spinner-border-sm me-2"></div>
+                    Chargement des missions...
+                  </div>
+                </div>
               </div>
-
-              <!-- Priorité -->
-              <div class="col-md-4">
-                <label for="mission-priorite" class="form-label">Priorité</label>
-                <select class="form-select" id="mission-priorite">
-                  <option value="Moyenne">Moyenne</option>
-                  <option value="Haute">Haute</option>
-                  <option value="Critique">Critique</option>
-                  <option value="Basse">Basse</option>
-                </select>
-              </div>
-
-              <!-- Bureau -->
-              <div class="col-md-4">
-                <label for="mission-bureau" class="form-label">Bureau</label>
-                <select class="form-select" id="mission-bureau">
-                  <option value="">Sélectionner...</option>
-                  <option value="Exploit">Exploit</option>
-                  <option value="Réseau">Réseau</option>
-                  <option value="BDD">BDD</option>
-                  <option value="Chef SSIR">Chef SSIR</option>
-                  <option value="SIG">SIG</option>
-                  <option value="NEXSIS-RRF">NEXSIS-RRF</option>
-                  <option value="COMSIC">COMSIC</option>
-                  <option value="RSSI">RSSI</option>
-                  <option value="DPO">DPO</option>
-                </select>
-              </div>
-
-              <!-- Nom Mission -->
-              <div class="col-12">
-                <label for="mission-nom" class="form-label">
-                  Nom de la mission <span class="text-danger">*</span>
-                </label>
-                <input type="text" class="form-control" id="mission-nom"
-                       placeholder="Ex: Migration cloud Azure" required>
-              </div>
-
-              <!-- Responsable -->
-              <div class="col-md-6">
-                <label for="mission-responsable" class="form-label">Responsable</label>
-                <select class="form-select" id="mission-responsable">
-                  <option value="">-- Sélectionner un responsable --</option>
-                  <!-- Options chargées dynamiquement depuis Ssir_agents -->
-                </select>
-              </div>
-
-              <!-- Dates -->
-              <div class="col-md-3">
-                <label for="mission-date-debut" class="form-label">Date début</label>
-                <input type="date" class="form-control" id="mission-date-debut">
-              </div>
-
-              <div class="col-md-3">
-                <label for="mission-date-fin" class="form-label">Date fin</label>
-                <input type="date" class="form-control" id="mission-date-fin">
-              </div>
-
             </div>
+          </div>
 
-            <!-- Note sur le modèle simplifié -->
-            <hr class="my-4">
-            <div class="alert alert-info small mb-0">
-              <i class="bi bi-info-circle me-2"></i>
-              <strong>Modèle simplifié :</strong> Les tâches sont directement liées aux missions via strategie_id.
-              La notion de sous-action a été supprimée.
+          <!-- Colonne droite: Panneau de tâches -->
+          <div class="col-lg-6">
+            <div class="card shadow-sm panel-tasks">
+              <div class="card-header bg-white">
+                <div class="d-flex justify-content-between align-items-center">
+                  <h5 class="mb-0" id="panel-title">
+                    <i class="bi bi-list-task me-2"></i>Tâches orphelines
+                  </h5>
+                  <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-primary" id="btn-select-all" title="Tout sélectionner">
+                      <i class="bi bi-check-all"></i>
+                    </button>
+                    <button class="btn btn-sm btn-primary" id="btn-attach-tasks" disabled>
+                      <i class="bi bi-link-45deg me-1"></i>Rattacher (<span id="count-selected">0</span>)
+                    </button>
+                    <button class="btn btn-sm btn-danger" id="btn-detach-tasks" disabled style="display: none;">
+                      <i class="bi bi-x-circle me-1"></i>Détacher (<span id="count-detach">0</span>)
+                    </button>
+                  </div>
+                </div>
+                <div class="mt-2">
+                  <div class="btn-group btn-group-sm w-100" role="group">
+                    <input type="radio" class="btn-check" name="task-view" id="view-orphelines" value="orphelines" checked>
+                    <label class="btn btn-outline-warning" for="view-orphelines">
+                      <i class="bi bi-exclamation-triangle me-1"></i>Orphelines (<span id="badge-orphelines">0</span>)
+                    </label>
+
+                    <input type="radio" class="btn-check" name="task-view" id="view-mission" value="mission">
+                    <label class="btn btn-outline-success" for="view-mission">
+                      <i class="bi bi-link me-1"></i>De la mission (<span id="badge-mission-tasks">0</span>)
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div class="card-body p-2">
+                <div class="task-list" id="tasks-list">
+                  <!-- Tâches générées par JS -->
+                </div>
+              </div>
             </div>
+          </div>
 
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="button" class="btn btn-primary" id="btn-save-mission">
-            <i class="bi bi-save me-1"></i>Enregistrer
-          </button>
         </div>
       </div>
+
     </div>
   </div>
 
-  <!-- Template: Carte Mission -->
-  <template id="template-mission-card">
-    <div class="col-12 mission-card-wrapper">
-      <div class="card shadow-sm mission-card">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-start mb-2">
-            <div>
-              <h5 class="card-title mb-1">
-                <span class="badge bg-secondary me-2 mission-code">CODE</span>
-                <span class="mission-nom">Nom de la mission</span>
-              </h5>
-              <div class="text-muted small mission-responsable">
-                <i class="bi bi-person me-1"></i>Responsable
-              </div>
-            </div>
-            <div class="text-end">
-              <span class="badge mission-priorite">Priorité</span>
-            </div>
-          </div>
-
-          <div class="mission-meta small text-muted mb-3">
-            <span class="me-3">
-              <i class="bi bi-building me-1"></i>
-              <span class="mission-bureau">Bureau</span>
-            </span>
-            <span class="me-3">
-              <i class="bi bi-calendar me-1"></i>
-              <span class="mission-dates">Dates</span>
-            </span>
-            <span class="me-3 strategy-link" style="display: none;">
-              <i class="bi bi-diagram-3 me-1"></i>
-              <span class="mission-strategy">Stratégie</span>
-            </span>
-          </div>
-
-          <div class="d-flex justify-content-between align-items-center">
-            <div class="task-stats">
-              <span class="badge bg-info me-2">
-                <i class="bi bi-list-check me-1"></i>
-                <span class="tasks-count">0</span> tâches
-              </span>
-              <span class="badge bg-success">
-                <i class="bi bi-check-circle me-1"></i>
-                <span class="tasks-completed">0</span> terminées
-              </span>
-            </div>
-            <div class="btn-group btn-group-sm">
-              <button class="btn btn-outline-primary btn-voir-taches" title="Voir tâches">
-                <i class="bi bi-kanban"></i>
-              </button>
-              <button class="btn btn-outline-secondary btn-edit-mission" title="Modifier">
-                <i class="bi bi-pencil"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </template>
-
-  <!-- Note: Sous-actions templates removed - model simplified to Mission → Tâches -->
-
-  <!-- Modal: Classification de tâche (liens vers mission/stratégie) -->
-  <div class="modal fade" id="modal-classify" tabindex="-1">
+  <!-- Modal: Confirmation de rattachement -->
+  <div class="modal fade" id="modal-attach" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">
-            <i class="bi bi-tag me-2"></i>
-            Affecter à une mission
+            <i class="bi bi-link-45deg me-2"></i>Rattacher à une mission
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
+          <div class="alert alert-info py-2 mb-3" id="attach-info">
+            <span id="attach-count">0</span> tâche(s) sélectionnée(s)
+          </div>
+
           <div class="mb-3">
-            <label class="form-label text-muted">Tâche à affecter :</label>
-            <div class="alert alert-light py-2">
-              <strong id="classify-task-title">-</strong>
+            <label class="form-label fw-semibold">Mission cible :</label>
+            <div id="attach-target-info" class="p-3 bg-light rounded">
+              <!-- Info mission remplie par JS -->
             </div>
-          </div>
-
-          <div class="mb-3">
-            <label for="classify-mission-select" class="form-label">
-              <i class="bi bi-diagram-3 me-1"></i>
-              Mission (Ssir_strategie2) <span class="text-danger">*</span>
-            </label>
-            <select class="form-select" id="classify-mission-select">
-              <option value="">-- Sélectionner une mission --</option>
-              <!-- Options chargées depuis Ssir_strategie2 où action != null -->
-            </select>
-            <small class="text-muted">
-              Hiérarchie : Programme → Stratégie → Mission
-            </small>
-          </div>
-
-          <div id="classify-strategy-preview" class="strategy-info p-2 mb-3" style="display: none;">
-            <!-- Aperçu de la hiérarchie sélectionnée -->
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="button" class="btn btn-primary" id="btn-save-classification">
-            <i class="bi bi-check-lg me-1"></i>Affecter
+          <button type="button" class="btn btn-primary" id="btn-confirm-attach">
+            <i class="bi bi-check-lg me-1"></i>Confirmer le rattachement
           </button>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toast-container"></div>
 
   <!-- Grist API -->
   <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
