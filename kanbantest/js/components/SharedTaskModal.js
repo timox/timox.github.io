@@ -36,6 +36,7 @@ class SharedTaskModal {
     this.programmes = [];
     this.agents = [];
     this.strategies = [];
+    this.meos = []; // Mises en œuvre agrégées depuis les tâches
   }
 
   /**
@@ -171,6 +172,9 @@ class SharedTaskModal {
       // Charger les stratégies
       await this.loadStrategies();
 
+      // Charger les MEO (après les stratégies)
+      await this.loadMeos();
+
       console.log('[SharedTaskModal] Reference data loaded');
     } catch (error) {
       console.warn('[SharedTaskModal] Failed to load some reference data:', error);
@@ -268,6 +272,131 @@ class SharedTaskModal {
       this.populateStrategySelect();
     } catch (error) {
       console.warn('[SharedTaskModal] No strategies table:', error.message);
+    }
+  }
+
+  /**
+   * Charge les MEO depuis les tâches (agrégées)
+   */
+  async loadMeos() {
+    try {
+      // Charger toutes les tâches pour extraire les MEO
+      const data = await grist.docApi.fetchTable('Ssir_principale_task');
+      const meoMap = new Map();
+
+      const count = data.id?.length || 0;
+      for (let i = 0; i < count; i++) {
+        const meoCode = data.mise_en_oeuvre_code?.[i];
+        const strategieId = data.strategie_id?.[i];
+
+        if (meoCode && strategieId && !meoMap.has(meoCode)) {
+          meoMap.set(meoCode, {
+            code: meoCode,
+            nom: data.mise_en_oeuvre_nom?.[i] || 'Sans nom',
+            categorie: data.categorie?.[i] || 'Projet',
+            strategie_id: strategieId
+          });
+        }
+      }
+
+      this.meos = Array.from(meoMap.values());
+
+      // Enrichir avec les infos de stratégie
+      this.meos.forEach(meo => {
+        const strat = this.strategies.find(s => s.id === meo.strategie_id);
+        if (strat) {
+          meo.mission = strat.axe_strategique;
+          meo.strategie = strat.sous_objectif;
+          meo.programme = strat.objectif;
+        }
+      });
+
+      // Trier par programme > mission > code
+      this.meos.sort((a, b) => {
+        if (a.programme !== b.programme) return (a.programme || '').localeCompare(b.programme || '');
+        if (a.mission !== b.mission) return (a.mission || '').localeCompare(b.mission || '');
+        return (a.code || '').localeCompare(b.code || '');
+      });
+
+      this.populateMeoSelect();
+      console.log('[SharedTaskModal] Loaded', this.meos.length, 'MEOs');
+    } catch (error) {
+      console.warn('[SharedTaskModal] Failed to load MEOs:', error.message);
+      this.meos = [];
+    }
+  }
+
+  /**
+   * Peuple le sélecteur de MEO
+   */
+  populateMeoSelect() {
+    const select = document.getElementById('stm-meo');
+    if (!select) return;
+
+    select.innerHTML = '<option value="">-- Sélectionner une mise en œuvre --</option>';
+
+    // Grouper par Mission
+    const missionGroups = {};
+    this.meos.forEach(meo => {
+      const missionKey = meo.mission || '(Sans mission)';
+      if (!missionGroups[missionKey]) {
+        missionGroups[missionKey] = [];
+      }
+      missionGroups[missionKey].push(meo);
+    });
+
+    // Créer les optgroups
+    for (const [mission, meoList] of Object.entries(missionGroups)) {
+      const optgroup = document.createElement('optgroup');
+      optgroup.label = mission;
+
+      for (const meo of meoList) {
+        const option = document.createElement('option');
+        option.value = meo.code;
+        option.textContent = `${meo.code} - ${meo.nom}`;
+        option.dataset.strategieId = meo.strategie_id;
+        option.dataset.meoNom = meo.nom;
+        option.dataset.mission = meo.mission || '';
+        option.dataset.strategie = meo.strategie || '';
+        option.dataset.programme = meo.programme || '';
+        optgroup.appendChild(option);
+      }
+
+      select.appendChild(optgroup);
+    }
+
+    // Listener pour remplir la hiérarchie automatiquement
+    select.addEventListener('change', () => this.handleMeoChange());
+  }
+
+  /**
+   * Gère le changement de MEO sélectionnée
+   */
+  handleMeoChange() {
+    const select = document.getElementById('stm-meo');
+    const infoDiv = document.getElementById('stm-hierarchy-info');
+
+    if (!select || !infoDiv) return;
+
+    const selectedOption = select.options[select.selectedIndex];
+
+    if (selectedOption && selectedOption.value) {
+      // Remplir les champs cachés
+      this.setFieldValue('stm-meo-code', selectedOption.value);
+      this.setFieldValue('stm-meo-nom', selectedOption.dataset.meoNom || '');
+      this.setFieldValue('stm-strategie', selectedOption.dataset.strategieId || '');
+
+      // Afficher les infos déduites
+      document.getElementById('stm-programme-display').textContent = selectedOption.dataset.programme || '-';
+      document.getElementById('stm-strategie-display').textContent = selectedOption.dataset.strategie || '-';
+      document.getElementById('stm-mission-display').textContent = selectedOption.dataset.mission || '-';
+      infoDiv.style.display = 'flex';
+    } else {
+      // Vider les champs
+      this.setFieldValue('stm-meo-code', '');
+      this.setFieldValue('stm-meo-nom', '');
+      this.setFieldValue('stm-strategie', '');
+      infoDiv.style.display = 'none';
     }
   }
 
@@ -463,11 +592,22 @@ class SharedTaskModal {
     this.setFieldValue('stm-etape', task.etape_code);
     this.setFieldValue('stm-previsibilite', task.previsibilite);
 
-    // Rattachement hiérarchique
-    this.setFieldValue('stm-programme', task.programme_id || '');
-    this.setFieldValue('stm-mission-code', task.mission_code || '');
-    this.setFieldValue('stm-mission-nom', task.mission_nom || '');
+    // Rattachement hiérarchique via MEO
+    this.setFieldValue('stm-meo-code', task.mise_en_oeuvre_code || '');
+    this.setFieldValue('stm-meo-nom', task.mise_en_oeuvre_nom || '');
     this.setFieldValue('stm-strategie', task.strategie_id || '');
+    this.setFieldValue('stm-programme', task.programme_id || '');
+
+    // Sélectionner la MEO dans le dropdown
+    const meoSelect = document.getElementById('stm-meo');
+    if (meoSelect && task.mise_en_oeuvre_code) {
+      meoSelect.value = task.mise_en_oeuvre_code;
+      this.handleMeoChange(); // Mettre à jour l'affichage
+    } else if (meoSelect) {
+      meoSelect.value = '';
+      const infoDiv = document.getElementById('stm-hierarchy-info');
+      if (infoDiv) infoDiv.style.display = 'none';
+    }
 
     // Responsable (soit ID de Ssir_agents, soit texte legacy)
     if (task.responsable_id) {
@@ -554,18 +694,19 @@ class SharedTaskModal {
       data.id = parseInt(taskId, 10);
     }
 
-    // Rattachement hiérarchique
-    const programmeIdStr = this.getFieldValue('stm-programme');
-    if (programmeIdStr) {
-      data.programme_id = parseInt(programmeIdStr, 10);
-    }
-
-    data.mission_code = this.getFieldValue('stm-mission-code');
-    data.mission_nom = this.getFieldValue('stm-mission-nom');
+    // Rattachement hiérarchique via MEO
+    data.mise_en_oeuvre_code = this.getFieldValue('stm-meo-code');
+    data.mise_en_oeuvre_nom = this.getFieldValue('stm-meo-nom');
 
     const strategieIdStr = this.getFieldValue('stm-strategie');
     if (strategieIdStr) {
       data.strategie_id = parseInt(strategieIdStr, 10);
+      data.est_classifiee = true; // Marquer comme classifiée si liée à une stratégie
+    }
+
+    const programmeIdStr = this.getFieldValue('stm-programme');
+    if (programmeIdStr) {
+      data.programme_id = parseInt(programmeIdStr, 10);
     }
 
     // Responsable (référence vers Ssir_agents)
