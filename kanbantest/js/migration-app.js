@@ -123,7 +123,24 @@ class MigrationApp {
         return;
       }
 
+      // Liste des colonnes disponibles
+      const availableCols = Object.keys(data);
+      this.log(`Colonnes disponibles: ${availableCols.join(', ')}`, 'info');
+
       // Convertir en tableau d'objets (avec conversion string securisee)
+      // Gérer les variantes de noms de colonnes (avec/sans accents)
+      const getNatureActivite = (idx) => {
+        if (data.nature_activite) return toStr(data.nature_activite[idx]);
+        if (data['nature_activité']) return toStr(data['nature_activité'][idx]);
+        return '';
+      };
+      const getPrevisibilite = (idx) => {
+        if (data.previsibilite) return toStr(data.previsibilite[idx]);
+        if (data['previsibilité']) return toStr(data['previsibilité'][idx]);
+        if (data['prévisibilité']) return toStr(data['prévisibilité'][idx]);
+        return '';
+      };
+
       this.records = [];
       for (let i = 0; i < data.id.length; i++) {
         this.records.push({
@@ -131,10 +148,10 @@ class MigrationApp {
           titre: toStr(data.titre?.[i]),
           type_tache_id: toStr(data.type_tache_id?.[i]),
           type_tache: toStr(data.type_tache?.[i]),
-          nature_activite: toStr(data.nature_activite?.[i]),
+          nature_activite: getNatureActivite(i),
           genre_action: toStr(data.genre_action?.[i]),
           etape_code: toStr(data.etape_code?.[i]),
-          previsibilite: toStr(data.previsibilite?.[i]) || toStr(data['previsibilité']?.[i])
+          previsibilite: getPrevisibilite(i)
         });
       }
 
@@ -199,23 +216,26 @@ class MigrationApp {
         // Preparer migration
         const updates = {};
 
-        // Nature activite
+        // Nature activite (ChoiceList - format ['L', 'valeur'])
         if (!record.nature_activite) {
-          updates.nature_activite = this.deduceNature(record);
-        }
-
-        // Genre action
-        if (!record.genre_action && record.type_tache_id) {
-          const genre = TYPE_ID_TO_GENRE[record.type_tache_id];
-          if (genre) {
-            updates.genre_action = genre;
+          const nature = this.deduceNature(record);
+          if (nature) {
+            updates.nature_activite = ['L', nature];
           }
         }
 
-        // Previsibilite
-        const finalNature = updates.nature_activite || record.nature_activite;
+        // Genre action (ChoiceList - format ['L', 'valeur'])
+        if (!record.genre_action && record.type_tache_id) {
+          const genre = TYPE_ID_TO_GENRE[record.type_tache_id];
+          if (genre) {
+            updates.genre_action = ['L', genre];
+          }
+        }
+
+        // Previsibilite (ChoiceList - format ['L', 'valeur'])
+        const finalNature = updates.nature_activite ? updates.nature_activite[1] : record.nature_activite;
         if (!record.previsibilite && finalNature && NATURE_PREVISIBILITE[finalNature]) {
-          updates.previsibilite = NATURE_PREVISIBILITE[finalNature];
+          updates.previsibilite = ['L', NATURE_PREVISIBILITE[finalNature]];
         }
 
         if (Object.keys(updates).length > 0) {
@@ -547,16 +567,43 @@ class MigrationApp {
     this.log(`Migration de ${this.toMigrate.length} taches...`, 'info');
     $('#btn-migrate').prop('disabled', true).html('<i class="bi bi-hourglass-split me-1"></i>Migration...');
 
-    // Créer les colonnes V3 si elles n'existent pas
-    await this.ensureV3Columns();
+    // Vérifier que les colonnes V3 existent
+    const existingCols = await this.getExistingColumns();
+    this.log(`Colonnes disponibles: ${existingCols.join(', ')}`, 'info');
+
+    // Vérifier quelles colonnes V3 existent
+    const v3Cols = ['nature_activite', 'genre_action', 'etape_code', 'previsibilite'];
+    const missingCols = v3Cols.filter(c => !existingCols.includes(c));
+    if (missingCols.length > 0) {
+      this.log(`Colonnes manquantes: ${missingCols.join(', ')} - création...`, 'warning');
+      await this.ensureV3Columns();
+    }
 
     let migrated = 0;
     let errors = 0;
 
     for (const { record, updates } of this.toMigrate) {
       try {
+        // Filtrer les updates pour ne garder que les colonnes qui existent
+        const safeUpdates = {};
+        for (const [key, value] of Object.entries(updates)) {
+          if (existingCols.includes(key)) {
+            safeUpdates[key] = value;
+          } else {
+            this.log(`  ⚠ Colonne "${key}" ignorée (n'existe pas)`, 'warning');
+          }
+        }
+
+        if (Object.keys(safeUpdates).length === 0) {
+          this.log(`  #${record.id}: aucune colonne valide à mettre à jour`, 'warning');
+          continue;
+        }
+
+        // Log les updates pour debug
+        this.log(`  Migration #${record.id}: ${JSON.stringify(safeUpdates)}`, 'info');
+
         await grist.docApi.applyUserActions([
-          ['UpdateRecord', TABLE_ID, record.id, updates]
+          ['UpdateRecord', TABLE_ID, record.id, safeUpdates]
         ]);
         migrated++;
 
@@ -608,20 +655,20 @@ class MigrationApp {
   async ensureColumn(colId, config) {
     const existingCols = await this.getExistingColumns();
 
-    if (existingCols.includes(colId)) {
-      // La colonne existe déjà - mettre à jour
-      try {
-        await grist.docApi.applyUserActions([
-          ['ModifyColumn', TABLE_ID, colId, {
-            type: config.type,
-            label: config.label,
-            widgetOptions: config.widgetOptions
-          }]
-        ]);
-        return { success: true, action: 'updated', message: `${colId} existe (mise à jour)` };
-      } catch (e) {
-        return { success: true, action: 'exists', message: `${colId} existe déjà` };
-      }
+    // Vérifier aussi les variantes avec accents
+    const variants = {
+      'nature_activite': ['nature_activite', 'nature_activité'],
+      'previsibilite': ['previsibilite', 'previsibilité', 'prévisibilité']
+    };
+
+    const colVariants = variants[colId] || [colId];
+    const existingVariant = colVariants.find(v => existingCols.includes(v));
+
+    if (existingVariant) {
+      // La colonne existe déjà (peut-être avec un nom différent)
+      // Ne pas essayer de modifier, juste confirmer qu'elle existe
+      this.log(`  Colonne trouvée: ${existingVariant}`, 'info');
+      return { success: true, action: 'exists', message: `${existingVariant} existe déjà` };
     } else {
       // La colonne n'existe pas - la créer
       try {
@@ -653,7 +700,7 @@ class MigrationApp {
 
     const columns = {
       nature_activite: {
-        type: 'Choice',
+        type: 'ChoiceList',
         label: 'Nature activité',
         widgetOptions: JSON.stringify({
           choices: ['INC', 'SUP', 'MCO', 'PRJ', 'OVH'],
@@ -667,7 +714,7 @@ class MigrationApp {
         })
       },
       genre_action: {
-        type: 'Choice',
+        type: 'ChoiceList',
         label: 'Genre action',
         widgetOptions: JSON.stringify({
           choices: ['DOC', 'ANA', 'CON', 'RCH', 'DEV', 'TST', 'VAL', 'VER', 'COR', 'INS', 'CFG', 'INV', 'SEC', 'REU', 'FOR', 'SUI'],
@@ -692,7 +739,7 @@ class MigrationApp {
         })
       },
       etape_code: {
-        type: 'Choice',
+        type: 'ChoiceList',
         label: 'Étape cycle',
         widgetOptions: JSON.stringify({
           choices: ['ETP.VIS', 'ETP.ANA', 'ETP.CON', 'ETP.PLN', 'ETP.REA', 'ETP.DEP', 'ETP.EXP', 'ETP.AME'],
@@ -709,7 +756,7 @@ class MigrationApp {
         })
       },
       previsibilite: {
-        type: 'Choice',
+        type: 'ChoiceList',
         label: 'Prévisibilité',
         widgetOptions: JSON.stringify({
           choices: ['Prévisible', 'Imprévisible'],
