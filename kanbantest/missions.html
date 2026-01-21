@@ -93,6 +93,25 @@
       font-size: 4rem;
       margin-bottom: 20px;
     }
+
+    /* Table styles */
+    #missions-table th {
+      white-space: nowrap;
+      font-size: 0.85rem;
+    }
+    #missions-table td {
+      vertical-align: middle;
+      font-size: 0.9rem;
+    }
+    #missions-table .progress {
+      background-color: #e9ecef;
+    }
+    #missions-table code {
+      background: #e9ecef;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+    }
   </style>
 </head>
 <body class="bg-light">
@@ -175,7 +194,8 @@
               </div>
               <div class="col-md-2">
                 <select class="form-select" id="vue-mode">
-                  <option value="missions">Vue Missions</option>
+                  <option value="missions">Vue Cartes</option>
+                  <option value="table">Vue Tableau</option>
                   <option value="categories">Vue Catégories</option>
                   <option value="non-classifiees">Tâches non classifiées</option>
                 </select>
@@ -213,9 +233,35 @@
           </button>
         </div>
 
-        <!-- Liste des missions -->
+        <!-- Liste des missions (cartes) -->
         <div id="missions-container" class="row g-3">
           <!-- Les missions seront injectées ici par JS -->
+        </div>
+
+        <!-- Tableau des missions -->
+        <div id="missions-table-container" style="display: none;">
+          <div class="card shadow-sm">
+            <div class="table-responsive">
+              <table class="table table-hover table-striped mb-0" id="missions-table">
+                <thead class="table-dark">
+                  <tr>
+                    <th>Code</th>
+                    <th>Nom</th>
+                    <th>Responsable</th>
+                    <th>Bureau</th>
+                    <th>Priorité</th>
+                    <th>Dates</th>
+                    <th>Tâches</th>
+                    <th>Progression</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="missions-table-body">
+                  <!-- Lignes générées par JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 
