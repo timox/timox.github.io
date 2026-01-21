@@ -29,6 +29,8 @@ class TachesApp {
     this.selectedTaskId = null;
     this.pendingLinkType = null;
     this.physicsEnabled = true;
+    this.tooltipsEnabled = true;
+    this.originalNodeColors = null;
   }
 
   /**
@@ -203,6 +205,12 @@ class TachesApp {
     // Graphe
     $('#btn-zoom-fit').on('click', () => this.network?.fit());
     $('#btn-toggle-physics').on('click', () => this.togglePhysics());
+
+    // Recherche dans le graphe avec surbrillance
+    $('#graph-search').on('input', () => this.highlightGraphNodes());
+    $('#graph-highlight-color').on('change', () => this.highlightGraphNodes());
+    $('#btn-clear-highlight').on('click', () => this.clearGraphHighlight());
+    $('#btn-toggle-tooltips').on('click', () => this.toggleGraphTooltips());
 
     // Ajout de liaison depuis dropdown
     $('[data-link-type]').on('click', (e) => {
@@ -539,6 +547,139 @@ class TachesApp {
     } else {
       $btn.html('<i class="bi bi-wind"></i>');
       $btn.attr('title', 'Activer la physique');
+    }
+  }
+
+  /**
+   * Surbrillance des nœuds correspondant à la recherche
+   */
+  highlightGraphNodes() {
+    if (!this.nodes || !this.network) return;
+
+    const search = $('#graph-search').val().toLowerCase().trim();
+    const highlightColor = $('#graph-highlight-color').val() || '#ff6b6b';
+
+    // Stocker les couleurs originales si pas déjà fait
+    if (!this.originalNodeColors) {
+      this.originalNodeColors = {};
+      this.nodes.forEach(node => {
+        this.originalNodeColors[node.id] = { ...node.color };
+      });
+    }
+
+    // Si recherche vide, restaurer les couleurs
+    if (!search) {
+      this.clearGraphHighlight();
+      return;
+    }
+
+    // Parcourir tous les nœuds et mettre en surbrillance ceux qui correspondent
+    const updates = [];
+    const matchingIds = [];
+
+    this.tasks.forEach(task => {
+      const searchIn = `${task.id} ${task.titre || ''} ${task.description || ''} ${task.qui || ''} ${task.projet || ''}`.toLowerCase();
+      const matches = searchIn.includes(search);
+
+      if (matches) {
+        matchingIds.push(task.id);
+        updates.push({
+          id: task.id,
+          color: {
+            background: highlightColor,
+            border: this.adjustColor(highlightColor, -30),
+            highlight: {
+              background: this.adjustColor(highlightColor, 20),
+              border: this.adjustColor(highlightColor, -50)
+            }
+          },
+          borderWidth: 4
+        });
+      } else {
+        // Remettre la couleur originale mais en plus pâle pour le contexte
+        const original = this.originalNodeColors[task.id];
+        if (original) {
+          updates.push({
+            id: task.id,
+            color: {
+              background: this.adjustColor(original.background || '#6b7280', 40),
+              border: this.adjustColor(original.border || '#6b7280', 20),
+              highlight: original.highlight
+            },
+            borderWidth: 2
+          });
+        }
+      }
+    });
+
+    // Appliquer les mises à jour
+    this.nodes.update(updates);
+
+    // Afficher le compteur
+    const count = matchingIds.length;
+    if (count > 0) {
+      this.showToast(`${count} tâche(s) trouvée(s)`, 'info');
+      // Optionnel: centrer la vue sur les nœuds trouvés
+      if (count <= 10) {
+        this.network.fit({ nodes: matchingIds, animation: true });
+      }
+    }
+  }
+
+  /**
+   * Effacer la surbrillance et restaurer les couleurs originales
+   */
+  clearGraphHighlight() {
+    $('#graph-search').val('');
+
+    if (!this.nodes || !this.originalNodeColors) return;
+
+    const updates = [];
+    this.tasks.forEach(task => {
+      const original = this.originalNodeColors[task.id];
+      if (original) {
+        updates.push({
+          id: task.id,
+          color: original,
+          borderWidth: 2
+        });
+      }
+    });
+
+    this.nodes.update(updates);
+  }
+
+  /**
+   * Activer/désactiver les tooltips sur les nœuds du graphe
+   */
+  toggleGraphTooltips() {
+    if (!this.nodes) return;
+
+    this.tooltipsEnabled = !this.tooltipsEnabled;
+
+    // Mettre à jour tous les nœuds
+    const updates = [];
+    this.tasks.forEach(task => {
+      const type = getTaskType(task.type_tache_id);
+      updates.push({
+        id: task.id,
+        title: this.tooltipsEnabled
+          ? `#${task.id} - ${task.titre}\nStatut: ${task.statut || 'N/A'}\nType: ${type?.nom || 'Non défini'}`
+          : undefined
+      });
+    });
+    this.nodes.update(updates);
+
+    // Mettre à jour le bouton
+    const $btn = $('#btn-toggle-tooltips');
+    if (this.tooltipsEnabled) {
+      $btn.removeClass('btn-secondary').addClass('btn-outline-secondary');
+      $btn.attr('title', 'Désactiver les tooltips');
+      this.showToast('Tooltips activés', 'info');
+    } else {
+      $btn.removeClass('btn-outline-secondary').addClass('btn-secondary');
+      $btn.attr('title', 'Activer les tooltips');
+      this.showToast('Tooltips désactivés', 'info');
     }
   }
 
