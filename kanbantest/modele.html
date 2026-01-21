@@ -284,53 +284,77 @@
       <div class="card-body p-0">
         <div class="hierarchy-diagram">
           <div class="hierarchy-item">
-            <span class="hierarchy-badge badge-strategie">STRATÉGIE</span>
-            <span class="text-muted">Table: Ssir_strategie2</span>
+            <span class="hierarchy-badge badge-strategie">PROGRAMME</span>
+            <span class="text-muted">Ssir_strategie2.objectif</span>
           </div>
           <div class="hierarchy-level">
             <div class="hierarchy-item">
-              <span class="hierarchy-badge badge-programme">PROGRAMME</span>
-              <span class="text-muted">Table: Ssir_programmes</span>
+              <span class="hierarchy-badge badge-programme">STRATÉGIE</span>
+              <span class="text-muted">Ssir_strategie2.sous_objectif</span>
               <span class="badge bg-secondary">1:n</span>
             </div>
             <div class="hierarchy-level">
               <div class="hierarchy-item">
                 <span class="hierarchy-badge badge-mission">MISSION</span>
-                <span class="text-muted">Préfixe: [MISSION]</span>
+                <span class="text-muted">Ssir_strategie2.action (axe stratégique)</span>
                 <span class="badge bg-secondary">1:n</span>
               </div>
               <div class="hierarchy-level">
                 <div class="hierarchy-item">
-                  <span class="hierarchy-badge badge-tache">SOUS-ACTION</span>
-                  <span class="text-muted">Préfixe: [SA]</span>
-                  <span class="badge bg-secondary">1:n</span>
+                  <span class="hierarchy-badge badge-tache">TÂCHE</span>
+                  <span class="text-muted">Table: Ssir_principale_task</span>
                 </div>
-                <div class="hierarchy-level">
+                <div class="hierarchy-level" style="border-color: #6366f1;">
                   <div class="hierarchy-item">
-                    <span class="hierarchy-badge badge-tache">TÂCHE</span>
-                    <span class="text-muted">Table: Ssir_principale_task</span>
+                    <i class="bi bi-tag text-danger"></i>
+                    <code>nature_activite</code>
+                    <span class="text-muted">WHY - Pourquoi ?</span>
                   </div>
-                  <div class="hierarchy-level" style="border-color: #6366f1;">
-                    <div class="hierarchy-item">
-                      <i class="bi bi-tag text-danger"></i>
-                      <code>nature_activite</code>
-                      <span class="text-muted">WHY - Pourquoi ?</span>
-                    </div>
-                    <div class="hierarchy-item">
-                      <i class="bi bi-tag text-primary"></i>
-                      <code>genre_action</code>
-                      <span class="text-muted">HOW - Comment ?</span>
-                    </div>
-                    <div class="hierarchy-item">
-                      <i class="bi bi-tag text-info"></i>
-                      <code>etape_code</code>
-                      <span class="text-muted">WHERE - Où dans le cycle ?</span>
-                    </div>
+                  <div class="hierarchy-item">
+                    <i class="bi bi-tag text-primary"></i>
+                    <code>genre_action</code>
+                    <span class="text-muted">HOW - Comment ?</span>
+                  </div>
+                  <div class="hierarchy-item">
+                    <i class="bi bi-tag text-info"></i>
+                    <code>etape_code</code>
+                    <span class="text-muted">WHERE - Où dans le cycle ?</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- Correspondance des termes -->
+        <div class="p-3 bg-light border-top">
+          <h6 class="mb-3"><i class="bi bi-info-circle me-2"></i>Correspondance des termes (Table Ssir_strategie2)</h6>
+          <table class="table table-sm table-bordered mb-0">
+            <thead class="table-secondary">
+              <tr>
+                <th>Champ dans Grist</th>
+                <th>Concept métier</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>objectif</code></td>
+                <td><span class="badge badge-strategie">Programme</span></td>
+                <td>Grand domaine d'action (ex: Sécurité, Infrastructure, Services)</td>
+              </tr>
+              <tr>
+                <td><code>sous_objectif</code></td>
+                <td><span class="badge badge-programme">Stratégie</span></td>
+                <td>Orientation stratégique au sein du programme</td>
+              </tr>
+              <tr>
+                <td><code>action</code></td>
+                <td><span class="badge badge-mission">Mission</span></td>
+                <td>Axe stratégique concret, regroupement de tâches</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -600,17 +624,39 @@
 
           <!-- Table Stratégie -->
           <div class="tab-pane fade" id="tab-strategie">
-            <h6>Table des objectifs stratégiques</h6>
-            <p class="text-muted">Structure hiérarchique : Objectif → Sous-objectif → Action</p>
+            <h6>Table de la hiérarchie stratégique</h6>
+            <div class="alert alert-info small mb-3">
+              <strong>Correspondance :</strong> objectif = Programme, sous_objectif = Stratégie, action = Mission
+            </div>
             <table class="schema-table">
               <thead>
-                <tr><th>Champ</th><th>Type</th><th>Description</th></tr>
+                <tr><th>Champ</th><th>Type</th><th>Concept métier</th><th>Description</th></tr>
               </thead>
               <tbody>
-                <tr><td><code class="field-name">objectif</code></td><td><span class="field-type">Text</span></td><td>Objectif stratégique principal</td></tr>
-                <tr><td><code class="field-name">sous_objectif</code></td><td><span class="field-type">Text</span></td><td>Sous-objectif</td></tr>
-                <tr><td><code class="field-name">action</code></td><td><span class="field-type">Text</span></td><td>Action à réaliser</td></tr>
-                <tr><td><code class="field-name">priorite</code></td><td><span class="field-type">Int</span></td><td>Niveau de priorité</td></tr>
+                <tr>
+                  <td><code class="field-name">objectif</code></td>
+                  <td><span class="field-type">Text</span></td>
+                  <td><span class="badge" style="background:var(--color-strategie)">Programme</span></td>
+                  <td>Grand domaine d'action (Sécurité, Infrastructure, Services...)</td>
+                </tr>
+                <tr>
+                  <td><code class="field-name">sous_objectif</code></td>
+                  <td><span class="field-type">Text</span></td>
+                  <td><span class="badge" style="background:var(--color-programme)">Stratégie</span></td>
+                  <td>Orientation stratégique au sein du programme</td>
+                </tr>
+                <tr>
+                  <td><code class="field-name">action</code></td>
+                  <td><span class="field-type">Text</span></td>
+                  <td><span class="badge" style="background:var(--color-mission);color:#1e293b">Mission</span></td>
+                  <td>Axe stratégique concret auquel rattacher les tâches</td>
+                </tr>
+                <tr>
+                  <td><code class="field-name">priorite</code></td>
+                  <td><span class="field-type">Int</span></td>
+                  <td>-</td>
+                  <td>Niveau de priorité (1-5)</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -624,29 +670,40 @@
         <i class="bi bi-link-45deg text-purple"></i>Relations entre Tables
       </div>
       <div class="card-body">
-        <div class="row align-items-center text-center">
-          <div class="col-md-2">
+        <h6 class="mb-3">Hiérarchie stratégique (Table Ssir_strategie2)</h6>
+        <div class="row align-items-center text-center mb-4">
+          <div class="col-md-3">
             <div class="relationship-box" style="border-color: var(--color-strategie);">
-              <h6 style="color: var(--color-strategie);">Ssir_strategie2</h6>
-              <small class="text-muted">Objectifs</small>
+              <h6 style="color: var(--color-strategie);">Programme</h6>
+              <small class="text-muted">objectif</small>
             </div>
           </div>
           <div class="col-md-1 relationship-arrow">
             <i class="bi bi-arrow-right"></i>
           </div>
-          <div class="col-md-2">
+          <div class="col-md-3">
             <div class="relationship-box" style="border-color: var(--color-programme);">
-              <h6 style="color: var(--color-programme);">Ssir_programmes</h6>
-              <small class="text-muted">Programmes</small>
+              <h6 style="color: var(--color-programme);">Stratégie</h6>
+              <small class="text-muted">sous_objectif</small>
             </div>
           </div>
           <div class="col-md-1 relationship-arrow">
             <i class="bi bi-arrow-right"></i>
           </div>
-          <div class="col-md-2">
+          <div class="col-md-3">
             <div class="relationship-box" style="border-color: var(--color-mission);">
-              <h6 style="color: var(--color-mission);">[MISSION]</h6>
-              <small class="text-muted">mission_code</small>
+              <h6 style="color: var(--color-mission);">Mission</h6>
+              <small class="text-muted">action</small>
+            </div>
+          </div>
+        </div>
+
+        <h6 class="mb-3">Liaison avec les tâches</h6>
+        <div class="row align-items-center text-center">
+          <div class="col-md-4">
+            <div class="relationship-box" style="border-color: var(--color-mission);">
+              <h6 style="color: var(--color-mission);">Ssir_strategie2</h6>
+              <small class="text-muted">Programme → Stratégie → Mission</small>
             </div>
           </div>
           <div class="col-md-1 relationship-arrow">
@@ -655,7 +712,16 @@
           <div class="col-md-3">
             <div class="relationship-box" style="border-color: var(--color-tache);">
               <h6 style="color: var(--color-tache);">Ssir_principale_task</h6>
-              <small class="text-muted">Tâches</small>
+              <small class="text-muted">strategie_id</small>
+            </div>
+          </div>
+          <div class="col-md-1 relationship-arrow">
+            <i class="bi bi-arrow-left"></i>
+          </div>
+          <div class="col-md-3">
+            <div class="relationship-box" style="border-color: #6c757d;">
+              <h6 style="color: #6c757d;">Ssir_agents</h6>
+              <small class="text-muted">responsable_id</small>
             </div>
           </div>
         </div>
@@ -663,11 +729,16 @@
         <div class="mt-4">
           <h6>Clés de liaison</h6>
           <ul class="mb-0">
-            <li><code>Ssir_programmes.strategie_id</code> → <code>Ssir_strategie2.id</code></li>
-            <li><code>Ssir_principale_task.programme_id</code> → <code>Ssir_programmes.id</code></li>
-            <li><code>Ssir_principale_task.mission_code</code> → titre d'une tâche [MISSION]</li>
+            <li><code>Ssir_principale_task.strategie_id</code> → <code>Ssir_strategie2.id</code> (lien vers Programme/Stratégie/Mission)</li>
             <li><code>Ssir_principale_task.responsable_id</code> → <code>Ssir_agents.id</code></li>
           </ul>
+        </div>
+
+        <div class="alert alert-warning mt-3 small mb-0">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          <strong>Note :</strong> La table <code>Ssir_programmes</code> est une table auxiliaire optionnelle.
+          La hiérarchie principale est gérée via <code>Ssir_strategie2</code> avec le mapping :
+          objectif=Programme, sous_objectif=Stratégie, action=Mission.
         </div>
       </div>
     </div>
