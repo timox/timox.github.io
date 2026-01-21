@@ -256,6 +256,8 @@ function updateCounts() {
 function getMeosForMission(missionId) {
   const meoMap = new Map();
 
+  logger.debug(`getMeosForMission: Looking for missionId=${missionId} in ${tasks.length} tasks`);
+
   tasks.forEach(task => {
     if (task.strategie_id === missionId && task.mise_en_oeuvre_code) {
       const code = task.mise_en_oeuvre_code;
@@ -278,7 +280,9 @@ function getMeosForMission(missionId) {
     }
   });
 
-  return Array.from(meoMap.values()).sort((a, b) => a.code.localeCompare(b.code));
+  const result = Array.from(meoMap.values()).sort((a, b) => a.code.localeCompare(b.code));
+  logger.debug(`getMeosForMission: Found ${result.length} MEOs`, result.map(m => m.code));
+  return result;
 }
 
 /**
@@ -409,6 +413,7 @@ function selectMission(missionId) {
  */
 function renderMeoList() {
   const $list = $('#meo-list');
+  logger.debug('renderMeoList called, selectedMission:', selectedMission?.id, selectedMission?.axe_strategique);
 
   if (!selectedMission) {
     $list.html(`
@@ -421,6 +426,7 @@ function renderMeoList() {
   }
 
   const meos = getMeosForMission(selectedMission.id);
+  logger.debug('renderMeoList: meos to render:', meos.length);
 
   if (meos.length === 0) {
     $list.html(`
@@ -706,7 +712,9 @@ function openMeoModal(editMode = false) {
     $('#meo-code').val(`MEO-${String(nextNum).padStart(3, '0')}`);
   }
 
-  $('#modal-meo').modal('show');
+  const modalEl = document.getElementById('modal-meo');
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  modal.show();
 }
 
 /**
@@ -784,7 +792,9 @@ async function saveMeo() {
       showToast('Mise en œuvre créée', 'success');
     }
 
-    $('#modal-meo').modal('hide');
+    const modalEl = document.getElementById('modal-meo');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    modal?.hide();
 
     // Attendre un peu pour que Grist synchronise
     await new Promise(r => setTimeout(r, 500));
@@ -894,7 +904,9 @@ function openAttachModal() {
     <i class="bi bi-collection me-1" style="color: var(--color-meo);"></i>${escapeHtml(selectedMeo.nom)}
   `);
 
-  $('#modal-attach').modal('show');
+  const modalEl = document.getElementById('modal-attach');
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  modal.show();
 }
 
 /**
@@ -929,7 +941,9 @@ async function confirmAttach() {
       }
     });
 
-    $('#modal-attach').modal('hide');
+    const modalEl = document.getElementById('modal-attach');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    modal?.hide();
     selectedTaskIds.clear();
 
     renderMeoList();
