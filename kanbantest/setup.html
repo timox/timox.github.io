@@ -43,32 +43,65 @@
       <span>Connexion à Grist...</span>
     </div>
 
-    <!-- Étapes -->
+    <!-- Étapes V3 Taxonomie -->
     <div class="card mb-4">
       <div class="card-header">
-        <i class="bi bi-list-check me-2"></i>Étapes de configuration
+        <i class="bi bi-list-check me-2"></i>1. Taxonomie V3 (3 axes)
       </div>
       <div class="card-body">
         <div class="checklist-item d-flex justify-content-between align-items-center">
           <div>
-            <strong>1. Colonnes V3</strong>
+            <strong>Colonnes V3</strong>
             <div class="text-muted small">nature_activite, genre_action, etape_code, previsibilite</div>
           </div>
           <span class="status-badge status-pending" id="status-columns">En attente</span>
         </div>
         <div class="checklist-item d-flex justify-content-between align-items-center">
           <div>
-            <strong>2. Couleurs des Choices</strong>
+            <strong>Couleurs des Choices</strong>
             <div class="text-muted small">Widget options avec couleurs pour chaque valeur</div>
           </div>
           <span class="status-badge status-pending" id="status-colors">En attente</span>
         </div>
         <div class="checklist-item d-flex justify-content-between align-items-center">
           <div>
-            <strong>3. Données test (optionnel)</strong>
+            <strong>Données test (optionnel)</strong>
             <div class="text-muted small">25 tâches couvrant toute la taxonomie</div>
           </div>
           <span class="status-badge status-pending" id="status-data">En attente</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Structure hiérarchique -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <i class="bi bi-diagram-3 me-2"></i>2. Structure hiérarchique
+      </div>
+      <div class="card-body">
+        <div class="alert alert-info small mb-3">
+          <strong>Modèle :</strong> Stratégie → Programme(s) → Mission(s) → Tâches classées sur 3 axes
+        </div>
+        <div class="checklist-item d-flex justify-content-between align-items-center">
+          <div>
+            <strong>Table Ssir_programmes</strong>
+            <div class="text-muted small">code, nom, strategie_id, responsable, date_debut, date_fin</div>
+          </div>
+          <span class="status-badge status-pending" id="status-programmes-table">En attente</span>
+        </div>
+        <div class="checklist-item d-flex justify-content-between align-items-center">
+          <div>
+            <strong>Colonne programme_id</strong>
+            <div class="text-muted small">Référence vers Ssir_programmes dans la table des tâches</div>
+          </div>
+          <span class="status-badge status-pending" id="status-programme-ref">En attente</span>
+        </div>
+        <div class="checklist-item d-flex justify-content-between align-items-center">
+          <div>
+            <strong>Colonne mission_code</strong>
+            <div class="text-muted small">Identifiant de la mission (groupe de tâches)</div>
+          </div>
+          <span class="status-badge status-pending" id="status-mission-col">En attente</span>
         </div>
       </div>
     </div>
@@ -79,17 +112,28 @@
         <i class="bi bi-play-circle me-2"></i>Actions
       </div>
       <div class="card-body">
-        <div class="d-flex gap-2 flex-wrap">
+        <h6 class="text-muted mb-2">Taxonomie V3</h6>
+        <div class="d-flex gap-2 flex-wrap mb-3">
           <button class="btn btn-action" id="btn-setup-columns" disabled>
-            <i class="bi bi-columns-gap me-1"></i>Configurer colonnes
+            <i class="bi bi-columns-gap me-1"></i>Configurer colonnes V3
           </button>
-          <button class="btn btn-outline-light" id="btn-import-data" disabled>
+          <button class="btn btn-outline-secondary" id="btn-import-data" disabled>
             <i class="bi bi-cloud-upload me-1"></i>Importer données test
           </button>
-          <button class="btn btn-outline-secondary" id="btn-clear-log">
-            <i class="bi bi-trash me-1"></i>Effacer log
+        </div>
+        <h6 class="text-muted mb-2">Structure hiérarchique</h6>
+        <div class="d-flex gap-2 flex-wrap mb-3">
+          <button class="btn btn-success" id="btn-create-programmes" disabled>
+            <i class="bi bi-table me-1"></i>Créer table Programmes
+          </button>
+          <button class="btn btn-outline-success" id="btn-add-hierarchy-cols" disabled>
+            <i class="bi bi-link-45deg me-1"></i>Ajouter colonnes hiérarchie
           </button>
         </div>
+        <hr>
+        <button class="btn btn-outline-secondary btn-sm" id="btn-clear-log">
+          <i class="bi bi-trash me-1"></i>Effacer log
+        </button>
       </div>
     </div>
 
@@ -103,51 +147,76 @@
       </div>
     </div>
 
+    <!-- Modèle hiérarchique -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <i class="bi bi-diagram-3 me-2"></i>Modèle hiérarchique
+      </div>
+      <div class="card-body">
+        <div class="hierarchy-diagram mb-3 p-3" style="background:#f1f5f9; border-radius:8px; font-family:monospace; font-size:0.85rem;">
+          <div style="color:#475569;">
+            <strong style="color:#3b82f6;">Ssir_strategie2</strong> (Stratégie)<br>
+            └── <strong style="color:#22c55e;">Ssir_programmes</strong> (Programme) <span class="text-muted">1:n</span><br>
+            &nbsp;&nbsp;&nbsp;&nbsp;└── <strong style="color:#f59e0b;">Mission</strong> (groupe de tâches) <span class="text-muted">1:n</span><br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── <strong style="color:#6366f1;">Ssir_principale_task</strong> (Tâche) <span class="text-muted">1:n</span><br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── nature_activite <span class="text-muted">(WHY)</span><br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── etape_code <span class="text-muted">(WHERE)</span><br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── genre_action <span class="text-muted">(HOW)</span>
+          </div>
+        </div>
+        <p class="text-muted small mb-0">
+          <i class="bi bi-info-circle me-1"></i>
+          Les missions regroupent des tâches partageant le même <code>mission_code</code>.
+          Chaque mission appartient à un programme via <code>programme_id</code>.
+        </p>
+      </div>
+    </div>
+
     <!-- Aperçu taxonomie -->
     <div class="card">
       <div class="card-header">
-        <i class="bi bi-palette me-2"></i>Aperçu de la taxonomie
+        <i class="bi bi-palette me-2"></i>Aperçu de la taxonomie V3 (3 axes)
       </div>
       <div class="card-body">
-        <h6>Nature d'activité (WHY)</h6>
+        <h6>Nature d'activité (WHY) - Pourquoi ?</h6>
         <div class="mb-3">
-          <span class="preview-badge" style="background:#dc3545">INC</span>
-          <span class="preview-badge" style="background:#0d6efd">SUP</span>
-          <span class="preview-badge" style="background:#6f42c1">MCO</span>
-          <span class="preview-badge" style="background:#198754">PRJ</span>
-          <span class="preview-badge" style="background:#6c757d">OVH</span>
+          <span class="preview-badge" style="background:#dc3545" title="Incident">INC</span>
+          <span class="preview-badge" style="background:#0d6efd" title="Support">SUP</span>
+          <span class="preview-badge" style="background:#6f42c1" title="Maintien en condition opérationnelle">MCO</span>
+          <span class="preview-badge" style="background:#198754" title="Projet">PRJ</span>
+          <span class="preview-badge" style="background:#6c757d" title="Overhead/Administration">OVH</span>
         </div>
 
-        <h6>Étape du cycle (WHERE - TOGAF ADM)</h6>
+        <h6>Étape du cycle (WHERE) - Où dans le cycle TOGAF ADM ?</h6>
         <div class="mb-3">
-          <span class="preview-badge" style="background:#8b5cf6">VIS</span>
-          <span class="preview-badge" style="background:#6366f1">ANA</span>
-          <span class="preview-badge" style="background:#3b82f6">CON</span>
-          <span class="preview-badge" style="background:#0ea5e9">PLN</span>
-          <span class="preview-badge" style="background:#14b8a6">REA</span>
-          <span class="preview-badge" style="background:#22c55e">DEP</span>
-          <span class="preview-badge" style="background:#f59e0b">EXP</span>
-          <span class="preview-badge" style="background:#eab308">AME</span>
+          <span class="preview-badge" style="background:#8b5cf6" title="Vision">VIS</span>
+          <span class="preview-badge" style="background:#6366f1" title="Analyse">ANA</span>
+          <span class="preview-badge" style="background:#3b82f6" title="Conception">CON</span>
+          <span class="preview-badge" style="background:#0ea5e9" title="Planification">PLN</span>
+          <span class="preview-badge" style="background:#14b8a6" title="Réalisation">REA</span>
+          <span class="preview-badge" style="background:#22c55e" title="Déploiement">DEP</span>
+          <span class="preview-badge" style="background:#f59e0b" title="Exploitation">EXP</span>
+          <span class="preview-badge" style="background:#eab308" title="Amélioration">AME</span>
         </div>
 
-        <h6>Genre d'action (HOW - COBIT)</h6>
+        <h6>Genre d'action (HOW) - Comment ? (COBIT)</h6>
         <div class="mb-3">
-          <span class="preview-badge" style="background:#3b82f6">DOC</span>
-          <span class="preview-badge" style="background:#8b5cf6">ANA</span>
-          <span class="preview-badge" style="background:#6366f1">CON</span>
-          <span class="preview-badge" style="background:#a855f7">RCH</span>
-          <span class="preview-badge" style="background:#7c3aed">DEV</span>
-          <span class="preview-badge" style="background:#10b981">TST</span>
-          <span class="preview-badge" style="background:#22c55e">VAL</span>
-          <span class="preview-badge" style="background:#14b8a6">VER</span>
-          <span class="preview-badge" style="background:#ef4444">COR</span>
-          <span class="preview-badge" style="background:#059669">INS</span>
-          <span class="preview-badge" style="background:#f97316">CFG</span>
-          <span class="preview-badge" style="background:#f59e0b">INV</span>
-          <span class="preview-badge" style="background:#dc2626">SEC</span>
-          <span class="preview-badge" style="background:#0ea5e9">REU</span>
-          <span class="preview-badge" style="background:#06b6d4">FOR</span>
-          <span class="preview-badge" style="background:#eab308">SUI</span>
+          <span class="preview-badge" style="background:#3b82f6" title="Documentation">DOC</span>
+          <span class="preview-badge" style="background:#8b5cf6" title="Analyse">ANA</span>
+          <span class="preview-badge" style="background:#6366f1" title="Conception">CON</span>
+          <span class="preview-badge" style="background:#a855f7" title="Recherche">RCH</span>
+          <span class="preview-badge" style="background:#7c3aed" title="Développement">DEV</span>
+          <span class="preview-badge" style="background:#10b981" title="Tests">TST</span>
+          <span class="preview-badge" style="background:#22c55e" title="Validation">VAL</span>
+          <span class="preview-badge" style="background:#14b8a6" title="Vérification">VER</span>
+          <span class="preview-badge" style="background:#ef4444" title="Correction">COR</span>
+          <span class="preview-badge" style="background:#059669" title="Installation">INS</span>
+          <span class="preview-badge" style="background:#f97316" title="Configuration">CFG</span>
+          <span class="preview-badge" style="background:#f59e0b" title="Inventaire">INV</span>
+          <span class="preview-badge" style="background:#dc2626" title="Sécurité">SEC</span>
+          <span class="preview-badge" style="background:#0ea5e9" title="Réunion">REU</span>
+          <span class="preview-badge" style="background:#06b6d4" title="Formation">FOR</span>
+          <span class="preview-badge" style="background:#eab308" title="Suivi">SUI</span>
         </div>
       </div>
     </div>
@@ -246,11 +315,43 @@
       }
     };
 
+    // Configuration table Programmes
+    const PROGRAMMES_TABLE = {
+      name: 'Ssir_programmes',
+      columns: [
+        { id: 'code', type: 'Text', label: 'Code' },
+        { id: 'nom', type: 'Text', label: 'Nom du programme' },
+        { id: 'description', type: 'Text', label: 'Description' },
+        { id: 'strategie_id', type: 'Ref:Ssir_strategie2', label: 'Stratégie' },
+        { id: 'responsable', type: 'Text', label: 'Responsable' },
+        { id: 'date_debut', type: 'Date', label: 'Date début' },
+        { id: 'date_fin', type: 'Date', label: 'Date fin' },
+        { id: 'statut', type: 'Choice', label: 'Statut', widgetOptions: {
+          choices: ['Planifié', 'En cours', 'Terminé', 'Suspendu'],
+          choiceOptions: {
+            'Planifié': { fillColor: '#94a3b8', textColor: '#ffffff' },
+            'En cours': { fillColor: '#3b82f6', textColor: '#ffffff' },
+            'Terminé': { fillColor: '#22c55e', textColor: '#ffffff' },
+            'Suspendu': { fillColor: '#f59e0b', textColor: '#ffffff' }
+          }
+        }}
+      ]
+    };
+
+    // Colonnes hiérarchiques pour la table des tâches
+    const HIERARCHY_COLUMNS = {
+      programme_id: { type: 'Ref:Ssir_programmes', label: 'Programme' },
+      mission_code: { type: 'Text', label: 'Code mission' },
+      mission_nom: { type: 'Text', label: 'Nom mission' }
+    };
+
     // Éléments DOM
     const logArea = document.getElementById('log-area');
     const btnSetup = document.getElementById('btn-setup-columns');
     const btnImport = document.getElementById('btn-import-data');
     const btnClear = document.getElementById('btn-clear-log');
+    const btnCreateProgrammes = document.getElementById('btn-create-programmes');
+    const btnAddHierarchyCols = document.getElementById('btn-add-hierarchy-cols');
     const gristStatus = document.getElementById('grist-status');
 
     // Logging
@@ -277,6 +378,8 @@
         gristStatus.innerHTML = '<i class="bi bi-check-circle me-2"></i><span>Connecté à Grist - Table détectée</span>';
         btnSetup.disabled = false;
         btnImport.disabled = false;
+        btnCreateProgrammes.disabled = false;
+        btnAddHierarchyCols.disabled = false;
         log('Connexion Grist établie', 'success');
       }
     });
@@ -439,6 +542,116 @@
     btnClear.addEventListener('click', () => {
       logArea.innerHTML = '';
       log('Journal effacé', 'info');
+    });
+
+    // Créer la table Programmes
+    btnCreateProgrammes.addEventListener('click', async () => {
+      if (!gristReady) {
+        log('Grist non connecté', 'error');
+        return;
+      }
+
+      btnCreateProgrammes.disabled = true;
+      log('Création de la table Ssir_programmes...', 'info');
+
+      try {
+        // Préparer les colonnes pour AddTable
+        const columns = PROGRAMMES_TABLE.columns.map(col => ({
+          id: col.id,
+          fields: {
+            type: col.type,
+            label: col.label,
+            ...(col.widgetOptions ? { widgetOptions: JSON.stringify(col.widgetOptions) } : {})
+          }
+        }));
+
+        await grist.docApi.applyUserActions([
+          ['AddTable', PROGRAMMES_TABLE.name, columns]
+        ]);
+
+        log(`✓ Table ${PROGRAMMES_TABLE.name} créée avec ${columns.length} colonnes`, 'success');
+        setStatus('status-programmes-table', 'done');
+
+        // Ajouter quelques programmes exemples
+        log('Ajout de programmes exemples...', 'info');
+        const exempleProgrammes = {
+          code: ['PRG-SOC', 'PRG-M365', 'PRG-AD'],
+          nom: ['SOC SDIS 2026', 'Migration M365', 'Conformité AD'],
+          description: [
+            'Programme de mise en place du SOC (Security Operations Center)',
+            'Programme de migration vers Microsoft 365',
+            'Programme de mise en conformité Active Directory'
+          ],
+          responsable: ['Gaël', 'Timothée', 'Alex'],
+          statut: ['En cours', 'Planifié', 'En cours']
+        };
+
+        await grist.docApi.applyUserActions([
+          ['BulkAddRecord', PROGRAMMES_TABLE.name, [null, null, null], exempleProgrammes]
+        ]);
+        log('✓ 3 programmes exemples créés', 'success');
+
+      } catch (error) {
+        if (error.message && error.message.includes('already exists')) {
+          log('Table déjà existante, mise à jour...', 'info');
+          setStatus('status-programmes-table', 'done');
+        } else {
+          log(`Erreur: ${error.message}`, 'error');
+          setStatus('status-programmes-table', 'error');
+        }
+      }
+
+      btnCreateProgrammes.disabled = false;
+    });
+
+    // Ajouter les colonnes hiérarchiques
+    btnAddHierarchyCols.addEventListener('click', async () => {
+      if (!gristReady) {
+        log('Grist non connecté', 'error');
+        return;
+      }
+
+      btnAddHierarchyCols.disabled = true;
+      log('Ajout des colonnes hiérarchiques...', 'info');
+
+      try {
+        for (const [colId, config] of Object.entries(HIERARCHY_COLUMNS)) {
+          log(`Configuration de ${colId}...`, 'info');
+
+          try {
+            // Essayer de modifier si existante
+            await grist.docApi.applyUserActions([
+              ['ModifyColumn', TABLE_NAME, colId, {
+                type: config.type,
+                label: config.label
+              }]
+            ]);
+            log(`✓ ${colId} déjà existante, configurée`, 'success');
+          } catch (e) {
+            if (e.message && (e.message.includes('not found') || e.message.includes('No such column'))) {
+              // Créer la colonne
+              await grist.docApi.applyUserActions([
+                ['AddColumn', TABLE_NAME, colId, {
+                  type: config.type,
+                  label: config.label
+                }]
+              ]);
+              log(`✓ ${colId} créée`, 'success');
+            } else {
+              throw e;
+            }
+          }
+        }
+
+        setStatus('status-programme-ref', 'done');
+        setStatus('status-mission-col', 'done');
+        log('Colonnes hiérarchiques configurées !', 'success');
+      } catch (error) {
+        log(`Erreur: ${error.message}`, 'error');
+        setStatus('status-programme-ref', 'error');
+      }
+
+      btnAddHierarchyCols.disabled = false;
     });
   </script>
 </body>
