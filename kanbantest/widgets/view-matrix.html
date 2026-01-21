@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Matrice Nature x Etape</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f8fafc;
+      padding: 1rem;
+      margin: 0;
+    }
+    .matrix-container {
+      overflow-x: auto;
+    }
+    .matrix-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 4px;
+      background: transparent;
+    }
+    .matrix-table th {
+      padding: 0.5rem;
+      text-align: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: white;
+      border-radius: 6px;
+      min-width: 80px;
+    }
+    .matrix-table th.corner {
+      background: transparent;
+    }
+    .matrix-table th.nature-header {
+      text-align: left;
+      padding-left: 1rem;
+      min-width: 120px;
+    }
+    .matrix-table td {
+      padding: 0.5rem;
+      text-align: center;
+      border-radius: 6px;
+      background: white;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .matrix-table td:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 10;
+    }
+    .matrix-table td.empty {
+      background: #f1f5f9;
+      color: #cbd5e1;
+    }
+    .matrix-table td.has-tasks {
+      font-weight: bold;
+    }
+
+    /* Couleurs des natures (lignes) */
+    .nature-INC { background: #dc3545 !important; }
+    .nature-SUP { background: #0d6efd !important; }
+    .nature-MCO { background: #6f42c1 !important; }
+    .nature-PRJ { background: #198754 !important; }
+    .nature-OVH { background: #6c757d !important; }
+
+    /* Couleurs des etapes (colonnes) */
+    .etape-VIS { background: #8b5cf6 !important; }
+    .etape-ANA { background: #6366f1 !important; }
+    .etape-CON { background: #3b82f6 !important; }
+    .etape-PLN { background: #0ea5e9 !important; }
+    .etape-REA { background: #14b8a6 !important; }
+    .etape-DEP { background: #22c55e !important; }
+    .etape-EXP { background: #f59e0b !important; }
+    .etape-AME { background: #eab308 !important; }
+
+    /* Intensite selon le nombre de taches */
+    .count-0 { background: #f8fafc; color: #e2e8f0; }
+    .count-1 { background: #dbeafe; color: #1e40af; }
+    .count-2 { background: #bfdbfe; color: #1e40af; }
+    .count-3 { background: #93c5fd; color: #1e3a8a; }
+    .count-4 { background: #60a5fa; color: white; }
+    .count-5plus { background: #3b82f6; color: white; }
+
+    .cell-count {
+      font-size: 1.25rem;
+      font-weight: bold;
+      display: block;
+    }
+    .cell-label {
+      font-size: 0.65rem;
+      color: inherit;
+      opacity: 0.8;
+    }
+
+    .stats-row {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .stat-card {
+      background: white;
+      padding: 1rem 1.5rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .stat-card .number {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #3b82f6;
+    }
+    .stat-card .label {
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: #94a3b8;
+    }
+    .loading {
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .legend {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+      padding: 0.75rem;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.75rem;
+    }
+    .legend-color {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+    }
+
+    /* Detail panel */
+    .detail-panel {
+      position: fixed;
+      top: 0;
+      right: -400px;
+      width: 400px;
+      height: 100%;
+      background: white;
+      box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+      z-index: 1000;
+      transition: right 0.3s ease;
+      overflow-y: auto;
+    }
+    .detail-panel.open {
+      right: 0;
+    }
+    .detail-header {
+      padding: 1rem;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .detail-content {
+      padding: 1rem;
+    }
+    .detail-task {
+      padding: 0.75rem;
+      border-radius: 6px;
+      background: #f8fafc;
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .detail-task:hover {
+      background: #e2e8f0;
+    }
+    .detail-task-title {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    .detail-task-meta {
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+    .btn-close-panel {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.3);
+      z-index: 999;
+      display: none;
+    }
+    .overlay.open {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading" class="loading">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p class="mt-2 text-muted">Chargement des donnees...</p>
+  </div>
+
+  <div id="content" style="display: none;">
+    <div class="stats-row" id="stats-row"></div>
+    <div class="matrix-container">
+      <table class="matrix-table" id="matrix-table"></table>
+    </div>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <div id="empty" class="empty-state" style="display: none;">
+    <i class="bi bi-grid-3x3" style="font-size: 3rem;"></i>
+    <p>Aucune donnee a afficher</p>
+  </div>
+
+  <!-- Panneau de detail -->
+  <div class="overlay" id="overlay"></div>
+  <div class="detail-panel" id="detail-panel">
+    <div class="detail-header" id="detail-header">
+      <div>
+        <strong id="detail-title">Titre</strong>
+        <div id="detail-subtitle" style="font-size: 0.85rem; opacity: 0.8;"></div>
+      </div>
+      <button class="btn-close-panel" id="btn-close-panel">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+    <div class="detail-content" id="detail-content"></div>
+  </div>
+
+  <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+  <script>
+    // Configuration
+    const NATURES = {
+      'INC': { label: 'Incident', color: '#dc3545', order: 1 },
+      'SUP': { label: 'Support', color: '#0d6efd', order: 2 },
+      'MCO': { label: 'MCO', color: '#6f42c1', order: 3 },
+      'PRJ': { label: 'Projet', color: '#198754', order: 4 },
+      'OVH': { label: 'Overhead', color: '#6c757d', order: 5 }
+    };
+
+    const ETAPES = {
+      'ETP.VIS': { label: 'Vision', shortLabel: 'VIS', color: '#8b5cf6', order: 1 },
+      'ETP.ANA': { label: 'Analyse', shortLabel: 'ANA', color: '#6366f1', order: 2 },
+      'ETP.CON': { label: 'Conception', shortLabel: 'CON', color: '#3b82f6', order: 3 },
+      'ETP.PLN': { label: 'Planification', shortLabel: 'PLN', color: '#0ea5e9', order: 4 },
+      'ETP.REA': { label: 'Realisation', shortLabel: 'REA', color: '#14b8a6', order: 5 },
+      'ETP.DEP': { label: 'Deploiement', shortLabel: 'DEP', color: '#22c55e', order: 6 },
+      'ETP.EXP': { label: 'Exploitation', shortLabel: 'EXP', color: '#f59e0b', order: 7 },
+      'ETP.AME': { label: 'Amelioration', shortLabel: 'AME', color: '#eab308', order: 8 }
+    };
+
+    let allRecords = [];
+    let matrixData = {};
+
+    // Initialisation Grist
+    grist.ready({
+      requiredAccess: 'read table',
+      columns: [
+        { name: 'titre', title: 'Titre' },
+        { name: 'statut', title: 'Statut' },
+        { name: 'nature_activite', title: 'Nature' },
+        { name: 'etape_code', title: 'Etape' },
+        { name: 'genre_action', title: 'Genre' },
+        { name: 'qui', title: 'Responsable' },
+        { name: 'mission_code', title: 'Mission' }
+      ]
+    });
+
+    grist.onRecords(function(records) {
+      allRecords = records;
+      render(records);
+    });
+
+    function render(records) {
+      document.getElementById('loading').style.display = 'none';
+
+      if (!records || records.length === 0) {
+        document.getElementById('empty').style.display = 'block';
+        document.getElementById('content').style.display = 'none';
+        return;
+      }
+
+      document.getElementById('empty').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+
+      // Construire la matrice
+      matrixData = {};
+      let maxCount = 0;
+
+      for (const record of records) {
+        const nature = record.nature_activite || 'unknown';
+        const etape = record.etape_code || 'unknown';
+        const key = `${nature}|${etape}`;
+
+        if (!matrixData[key]) {
+          matrixData[key] = [];
+        }
+        matrixData[key].push(record);
+        if (matrixData[key].length > maxCount) {
+          maxCount = matrixData[key].length;
+        }
+      }
+
+      // Statistiques
+      const completed = records.filter(r => r.statut === 'Termine').length;
+      const inProgress = records.filter(r => r.statut === 'En cours').length;
+      const uniqueNatures = new Set(records.map(r => r.nature_activite).filter(Boolean)).size;
+      const uniqueEtapes = new Set(records.map(r => r.etape_code).filter(Boolean)).size;
+
+      document.getElementById('stats-row').innerHTML = `
+        <div class="stat-card">
+          <div class="number">${records.length}</div>
+          <div class="label">Taches total</div>
+        </div>
+        <div class="stat-card">
+          <div class="number" style="color: #f59e0b;">${inProgress}</div>
+          <div class="label">En cours</div>
+        </div>
+        <div class="stat-card">
+          <div class="number" style="color: #22c55e;">${completed}</div>
+          <div class="label">Terminees</div>
+        </div>
+        <div class="stat-card">
+          <div class="number" style="color: #8b5cf6;">${Object.keys(matrixData).filter(k => matrixData[k].length > 0).length}</div>
+          <div class="label">Combinaisons actives</div>
+        </div>
+      `;
+
+      // Generer la matrice
+      const sortedNatures = Object.keys(NATURES).sort((a, b) => NATURES[a].order - NATURES[b].order);
+      const sortedEtapes = Object.keys(ETAPES).sort((a, b) => ETAPES[a].order - ETAPES[b].order);
+
+      let tableHtml = '<thead><tr><th class="corner"></th>';
+
+      // En-tetes colonnes (etapes)
+      for (const etape of sortedEtapes) {
+        const config = ETAPES[etape];
+        tableHtml += `<th class="etape-${config.shortLabel}">${config.shortLabel}</th>`;
+      }
+      tableHtml += '<th style="background: #64748b;">Total</th></tr></thead><tbody>';
+
+      // Lignes (natures)
+      for (const nature of sortedNatures) {
+        const natureConfig = NATURES[nature];
+        let rowTotal = 0;
+
+        tableHtml += `<tr><th class="nature-header nature-${nature}">${natureConfig.label}</th>`;
+
+        for (const etape of sortedEtapes) {
+          const key = `${nature}|${etape}`;
+          const tasks = matrixData[key] || [];
+          const count = tasks.length;
+          rowTotal += count;
+
+          const countClass = count === 0 ? 'count-0' :
+                            count === 1 ? 'count-1' :
+                            count === 2 ? 'count-2' :
+                            count === 3 ? 'count-3' :
+                            count === 4 ? 'count-4' : 'count-5plus';
+
+          tableHtml += `
+            <td class="${countClass} ${count > 0 ? 'has-tasks' : 'empty'}"
+                data-nature="${nature}" data-etape="${etape}"
+                title="${natureConfig.label} + ${ETAPES[etape].label}: ${count} taches">
+              <span class="cell-count">${count || '-'}</span>
+            </td>
+          `;
+        }
+
+        tableHtml += `<td style="background: #f1f5f9; font-weight: bold;">${rowTotal}</td></tr>`;
+      }
+
+      // Ligne totaux
+      tableHtml += '<tr><th style="background: #64748b; color: white;">Total</th>';
+      let grandTotal = 0;
+      for (const etape of sortedEtapes) {
+        let colTotal = 0;
+        for (const nature of sortedNatures) {
+          const key = `${nature}|${etape}`;
+          colTotal += (matrixData[key] || []).length;
+        }
+        grandTotal += colTotal;
+        tableHtml += `<td style="background: #f1f5f9; font-weight: bold;">${colTotal}</td>`;
+      }
+      tableHtml += `<td style="background: #1e293b; color: white; font-weight: bold;">${grandTotal}</td></tr>`;
+
+      tableHtml += '</tbody>';
+      document.getElementById('matrix-table').innerHTML = tableHtml;
+
+      // Legende
+      document.getElementById('legend').innerHTML = `
+        <span style="font-weight: 600; margin-right: 0.5rem;">Intensite:</span>
+        <div class="legend-item"><div class="legend-color count-0"></div> 0</div>
+        <div class="legend-item"><div class="legend-color count-1"></div> 1</div>
+        <div class="legend-item"><div class="legend-color count-2"></div> 2</div>
+        <div class="legend-item"><div class="legend-color count-3"></div> 3</div>
+        <div class="legend-item"><div class="legend-color count-4"></div> 4</div>
+        <div class="legend-item"><div class="legend-color count-5plus"></div> 5+</div>
+      `;
+
+      // Event handlers pour les cellules
+      document.querySelectorAll('td[data-nature]').forEach(cell => {
+        cell.addEventListener('click', () => {
+          const nature = cell.dataset.nature;
+          const etape = cell.dataset.etape;
+          showCellDetail(nature, etape);
+        });
+      });
+
+      // Fermer le panel
+      document.getElementById('btn-close-panel').addEventListener('click', closePanel);
+      document.getElementById('overlay').addEventListener('click', closePanel);
+    }
+
+    function showCellDetail(nature, etape) {
+      const key = `${nature}|${etape}`;
+      const tasks = matrixData[key] || [];
+      const natureConfig = NATURES[nature] || { label: nature, color: '#64748b' };
+      const etapeConfig = ETAPES[etape] || { label: etape, color: '#64748b' };
+
+      document.getElementById('detail-header').style.background =
+        `linear-gradient(135deg, ${natureConfig.color}, ${etapeConfig.color})`;
+      document.getElementById('detail-title').textContent =
+        `${natureConfig.label} + ${etapeConfig.label}`;
+      document.getElementById('detail-subtitle').textContent =
+        `${tasks.length} tache${tasks.length > 1 ? 's' : ''}`;
+
+      let contentHtml = '';
+      if (tasks.length === 0) {
+        contentHtml = '<div class="text-center text-muted py-4">Aucune tache dans cette combinaison</div>';
+      } else {
+        for (const task of tasks) {
+          contentHtml += `
+            <div class="detail-task" data-row-id="${task.id}">
+              <div class="detail-task-title">${escapeHtml(task.titre || 'Sans titre')}</div>
+              <div class="detail-task-meta">
+                <span class="badge bg-secondary me-1">${task.statut || '-'}</span>
+                <span class="badge bg-info me-1">${task.genre_action || '-'}</span>
+                ${task.qui ? `<i class="bi bi-person"></i> ${escapeHtml(task.qui)}` : ''}
+              </div>
+            </div>
+          `;
+        }
+      }
+      document.getElementById('detail-content').innerHTML = contentHtml;
+
+      // Event handlers pour les taches
+      document.querySelectorAll('.detail-task[data-row-id]').forEach(taskEl => {
+        taskEl.addEventListener('click', () => {
+          const rowId = parseInt(taskEl.dataset.rowId);
+          grist.setCursorPos({ rowId });
+        });
+      });
+
+      // Ouvrir le panel
+      document.getElementById('detail-panel').classList.add('open');
+      document.getElementById('overlay').classList.add('open');
+    }
+
+    function closePanel() {
+      document.getElementById('detail-panel').classList.remove('open');
+      document.getElementById('overlay').classList.remove('open');
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
