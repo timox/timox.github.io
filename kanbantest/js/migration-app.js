@@ -581,11 +581,26 @@ class MigrationApp {
 
     for (const { record, updates } of this.toMigrate) {
       try {
+        // Filtrer les updates pour ne garder que les colonnes qui existent
+        const safeUpdates = {};
+        for (const [key, value] of Object.entries(updates)) {
+          if (existingCols.includes(key)) {
+            safeUpdates[key] = value;
+          } else {
+            this.log(`  ⚠ Colonne "${key}" ignorée (n'existe pas)`, 'warning');
+          }
+        }
+
+        if (Object.keys(safeUpdates).length === 0) {
+          this.log(`  #${record.id}: aucune colonne valide à mettre à jour`, 'warning');
+          continue;
+        }
+
         // Log les updates pour debug
-        this.log(`  Migration #${record.id}: ${JSON.stringify(updates)}`, 'info');
+        this.log(`  Migration #${record.id}: ${JSON.stringify(safeUpdates)}`, 'info');
 
         await grist.docApi.applyUserActions([
-          ['UpdateRecord', TABLE_ID, record.id, updates]
+          ['UpdateRecord', TABLE_ID, record.id, safeUpdates]
         ]);
         migrated++;
 
