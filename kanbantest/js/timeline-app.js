@@ -1,770 +1,637 @@
-// === Timeline App ===
-// Application de timeline pour la planification des tâches avec coloration par mission
+// === timeline-app.js ===
+// Application Gantt Timeline compacte
 
-import {
-  STATUTS,
-  TABLE_ID
-} from './config/constants.js';
+const TABLE_ID = 'Ssir_principale_task';
+const STRATEGY_TABLE_ID = 'Ssir_strategie2';
 
-class TimelineAppManager {
+// Configuration
+const CONFIG = {
+  dayWidth: 40,      // Largeur d'un jour en pixels (vue jour)
+  weekDayWidth: 80,  // Largeur d'un jour en pixels (vue semaine)
+  monthDayWidth: 20, // Largeur d'un jour en pixels (vue mois)
+  rowHeight: 56
+};
+
+/**
+ * Application Gantt Timeline
+ */
+class GanttTimeline {
   constructor() {
     this.tasks = [];
-    this.missions = [];
-    this.timeline = null;
-    this.items = null;
-    this.groups = null;
-    this.sharedTaskModal = null;
-    this.contextMenuTaskId = null;
+    this.missions = {};
+    this.viewMode = 'day'; // day, week, month
+    this.viewStart = new Date();
+    this.viewEnd = new Date();
+    this.sortBy = 'priority';
+    this.selectedTaskId = null;
 
-    // Configuration
-    this.colorMode = 'status';
-    this.groupMode = 'none';
-    this.currentPeriod = 'month';
-    this.searchTerm = '';
-    this.filterStatus = '';
-    this.filterMission = '';
+    // Références DOM
+    this.taskListEl = document.getElementById('task-list');
+    this.timelineHeaderEl = document.getElementById('timeline-header');
+    this.timelineBodyEl = document.getElementById('timeline-body');
+    this.loadingEl = document.getElementById('loading');
 
-    // Couleurs par statut
-    this.statusColors = {
-      'Backlog': '#6c757d',
-      'À faire': '#0d6efd',
-      'En cours': '#fd7e14',
-      'En attente': '#20c997',
-      'Bloqué': '#dc3545',
-      'Validation': '#ffc107',
-      'Terminé': '#198754'
-    };
-
-    // Couleurs pour les missions (générées dynamiquement)
-    this.missionColors = {};
-    this.missionColorPalette = [
-      '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3',
-      '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#cddc39',
-      '#ffeb3b', '#ffc107', '#ff9800', '#ff5722', '#795548'
-    ];
-
-    // Couleurs par bureau
-    this.bureauColors = {
-      'DSS': '#3b82f6',
-      'DDI': '#8b5cf6',
-      'DPRS': '#ec4899',
-      'DGAI': '#f97316',
-      'DGS': '#10b981',
-      'default': '#6b7280'
-    };
-
-    this.init();
+    // Initialiser la période de vue
+    this.initViewPeriod();
   }
 
+  /**
+   * Initialise l'application
+   */
   async init() {
-    try {
-      await this.waitForGristReady();
-      await this.loadData();
-      this.initSharedTaskModal();
-      this.setupFilters();
-      this.setupEventListeners();
-      this.renderTimeline();
-      this.updateStats();
-      this.updateLegend();
+    console.log('[GanttTimeline] Initialisation...');
 
-      console.log('Timeline initialisée avec', this.tasks.length, 'tâches');
+    // Attendre Grist
+    await this.waitForGrist();
 
-    } catch (error) {
-      console.error('Erreur initialisation timeline:', error);
-      this.showError('Erreur lors du chargement des données');
-    }
+    // Charger les données
+    await this.loadData();
+
+    // Configurer les événements
+    this.setupEventListeners();
+
+    // Rendu initial
+    this.render();
+
+    // Masquer le chargement
+    this.loadingEl.style.display = 'none';
+
+    console.log('[GanttTimeline] Prêt');
   }
 
-  async waitForGristReady() {
+  /**
+   * Attend que Grist soit prêt
+   */
+  async waitForGrist() {
     return new Promise((resolve, reject) => {
-      let attempts = 0;
-      const maxAttempts = 50;
+      if (typeof grist === 'undefined') {
+        console.error('[GanttTimeline] Grist non disponible');
+        reject(new Error('Grist not available'));
+        return;
+      }
 
-      const checkGrist = () => {
-        attempts++;
-
-        if (typeof window.grist !== 'undefined') {
-          window.grist.ready();
-          resolve();
-        } else if (attempts >= maxAttempts) {
-          reject(new Error('API Grist non disponible'));
-        } else {
-          setTimeout(checkGrist, 100);
-        }
-      };
-
-      checkGrist();
+      grist.ready({ requiredAccess: 'full' });
+      setTimeout(resolve, 300);
     });
   }
 
+  /**
+   * Charge les données depuis Grist
+   */
   async loadData() {
-    // Charger les tâches
-    const records = await window.grist.docApi.fetchTable(TABLE_ID);
-    this.tasks = this.mapGristRecords(records);
-
-    // Charger les missions depuis Ssir_strategie2
     try {
-      const strategies = await window.grist.docApi.fetchTable('Ssir_strategie2');
-      this.missions = this.mapMissionRecords(strategies);
+      // Charger les tâches
+      const data = await grist.docApi.fetchTable(TABLE_ID);
 
-      // Générer les couleurs pour les missions
-      this.missions.forEach((mission, index) => {
-        this.missionColors[mission.id] = this.missionColorPalette[index % this.missionColorPalette.length];
-      });
-    } catch (e) {
-      console.warn('Impossible de charger les missions:', e);
-      this.missions = [];
-    }
+      if (!data || !data.id) {
+        this.tasks = [];
+        return;
+      }
 
-    console.log(`Chargé: ${this.tasks.length} tâches, ${this.missions.length} missions`);
-  }
+      this.tasks = [];
+      for (let i = 0; i < data.id.length; i++) {
+        const task = {
+          id: data.id[i],
+          titre: data.titre?.[i] || 'Sans titre',
+          statut: data.statut?.[i] || '',
+          urgence: data.urgence?.[i] || '',
+          date_debut: this.parseDate(data.date_debut?.[i]),
+          date_echeance: this.parseDate(data.date_echeance?.[i] || data.echeance?.[i]),
+          date_creation: this.parseDate(data.date_creation?.[i]),
+          strategie_id: data.strategie_id?.[i] || null,
+          mission_code: data.mission_code?.[i] || '',
+          avancement: this.parseProgress(data.avancement?.[i])
+        };
 
-  mapGristRecords(gristData) {
-    const records = [];
-    if (!gristData || !gristData.id) return records;
-
-    gristData.id.forEach((id, index) => {
-      const record = { id };
-
-      Object.keys(gristData).forEach(key => {
-        if (key !== 'id') {
-          record[key] = gristData[key][index];
+        // Ne garder que les tâches avec au moins une date
+        if (task.date_debut || task.date_echeance || task.date_creation) {
+          this.tasks.push(task);
         }
-      });
-
-      records.push(record);
-    });
-
-    return records;
-  }
-
-  mapMissionRecords(gristData) {
-    const records = [];
-    if (!gristData || !gristData.id2) return records;
-
-    gristData.id2.forEach((id, index) => {
-      records.push({
-        id: id,
-        nom: gristData.axe_strategique?.[index] || '',
-        objectif: gristData.objectif?.[index] || '',
-        sous_objectif: gristData.sous_objectif?.[index] || ''
-      });
-    });
-
-    return records;
-  }
-
-  initSharedTaskModal() {
-    if (typeof SharedTaskModal === 'undefined') {
-      console.warn('SharedTaskModal non disponible');
-      return;
-    }
-
-    this.sharedTaskModal = new SharedTaskModal({
-      showTimes: false,
-      showLinks: false,
-      onSave: async (taskData) => {
-        await this.saveTask(taskData);
       }
-    });
 
-    this.sharedTaskModal.init();
-  }
+      // Charger les missions
+      try {
+        const missionData = await grist.docApi.fetchTable(STRATEGY_TABLE_ID);
+        if (missionData && missionData.id2) {
+          for (let i = 0; i < missionData.id2.length; i++) {
+            const id = missionData.id2[i];
+            this.missions[id] = {
+              code: missionData.axe_strategique?.[i] || '',
+              nom: missionData.action?.[i] || ''
+            };
+          }
+        }
+      } catch (e) {
+        console.warn('[GanttTimeline] Pas de table missions');
+      }
 
-  async saveTask(taskData) {
-    try {
-      await window.grist.docApi.applyUserActions([
-        ['UpdateRecord', TABLE_ID, taskData.id, taskData]
-      ]);
+      console.log(`[GanttTimeline] ${this.tasks.length} tâches chargées`);
 
-      // Recharger les données et rafraîchir
-      await this.loadData();
-      this.renderTimeline();
-      this.updateStats();
-
-      this.showToast('Tâche enregistrée', 'success');
     } catch (error) {
-      console.error('Erreur sauvegarde:', error);
-      this.showToast('Erreur lors de la sauvegarde', 'danger');
+      console.error('[GanttTimeline] Erreur chargement:', error);
+      this.tasks = [];
     }
   }
 
-  setupFilters() {
-    // Remplir les statuts
-    const statusSelect = document.getElementById('filter-status');
-    STATUTS.forEach(statut => {
-      const option = document.createElement('option');
-      option.value = statut.id;
-      option.textContent = statut.libelle;
-      statusSelect.appendChild(option);
-    });
-
-    // Remplir les missions
-    const missionSelect = document.getElementById('filter-mission');
-    this.missions.forEach(mission => {
-      const option = document.createElement('option');
-      option.value = mission.id;
-      option.textContent = mission.nom || `Mission #${mission.id}`;
-      missionSelect.appendChild(option);
-    });
+  /**
+   * Parse une date Grist
+   */
+  parseDate(value) {
+    if (!value) return null;
+    if (typeof value === 'number') {
+      // Timestamp Unix en secondes
+      return new Date(value * 1000);
+    }
+    if (typeof value === 'string') {
+      const d = new Date(value);
+      return isNaN(d.getTime()) ? null : d;
+    }
+    return null;
   }
 
+  /**
+   * Parse la progression
+   */
+  parseProgress(value) {
+    if (typeof value === 'number') return Math.min(100, Math.max(0, Math.round(value)));
+    if (typeof value === 'string') {
+      const num = parseFloat(value);
+      return isNaN(num) ? 0 : Math.min(100, Math.max(0, Math.round(num)));
+    }
+    return 0;
+  }
+
+  /**
+   * Initialise la période de vue
+   */
+  initViewPeriod() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Vue par défaut: 1 mois centré sur aujourd'hui
+    this.viewStart = new Date(today);
+    this.viewStart.setDate(this.viewStart.getDate() - 7);
+
+    this.viewEnd = new Date(this.viewStart);
+    this.viewEnd.setDate(this.viewEnd.getDate() + 30);
+  }
+
+  /**
+   * Configure les événements
+   */
   setupEventListeners() {
-    // Filtres
-    document.getElementById('filter-status').addEventListener('change', (e) => {
-      this.filterStatus = e.target.value;
-      this.renderTimeline();
-      this.updateStats();
-    });
+    // Navigation
+    document.getElementById('btn-prev').addEventListener('click', () => this.navigate(-1));
+    document.getElementById('btn-next').addEventListener('click', () => this.navigate(1));
+    document.getElementById('btn-today').addEventListener('click', () => this.goToToday());
 
-    document.getElementById('filter-mission').addEventListener('change', (e) => {
-      this.filterMission = e.target.value;
-      this.renderTimeline();
-      this.updateStats();
-    });
-
-    document.getElementById('color-mode').addEventListener('change', (e) => {
-      this.colorMode = e.target.value;
-      this.renderTimeline();
-      this.updateLegend();
-    });
-
-    document.getElementById('group-mode').addEventListener('change', (e) => {
-      this.groupMode = e.target.value;
-      this.renderTimeline();
-    });
-
-    // Recherche
-    document.getElementById('search-tasks').addEventListener('input', (e) => {
-      this.searchTerm = e.target.value.toLowerCase();
-      this.renderTimeline();
-      this.updateStats();
-    });
-
-    // Période
-    document.querySelectorAll('[data-period]').forEach(btn => {
+    // Vue
+    document.querySelectorAll('.view-toggle button').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        document.querySelectorAll('[data-period]').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
         e.target.classList.add('active');
-        this.currentPeriod = e.target.dataset.period;
-        this.adjustTimelineView();
+        this.viewMode = e.target.dataset.view;
+        this.render();
       });
     });
 
-    // Boutons
-    document.getElementById('btn-refresh').addEventListener('click', async () => {
-      await this.loadData();
-      this.renderTimeline();
-      this.updateStats();
-      this.showToast('Données actualisées', 'success');
+    // Tri
+    document.getElementById('sort-by').addEventListener('change', (e) => {
+      this.sortBy = e.target.value;
+      this.render();
     });
 
-    document.getElementById('btn-fit').addEventListener('click', () => {
-      if (this.timeline) this.timeline.fit();
+    // Synchronisation du scroll
+    const leftBody = this.taskListEl;
+    const rightBody = this.timelineBodyEl;
+
+    leftBody.addEventListener('scroll', () => {
+      rightBody.scrollTop = leftBody.scrollTop;
     });
 
-    document.getElementById('btn-today').addEventListener('click', () => {
-      if (this.timeline) {
-        this.timeline.moveTo(new Date());
-      }
+    rightBody.addEventListener('scroll', () => {
+      leftBody.scrollTop = rightBody.scrollTop;
+      // Sync header scroll
+      this.timelineHeaderEl.scrollLeft = rightBody.scrollLeft;
     });
 
     // Menu contextuel
-    this.setupContextMenu();
+    document.addEventListener('click', () => this.hideContextMenu());
 
-    // Fermer le menu au clic ailleurs
-    document.addEventListener('click', () => {
-      document.getElementById('task-context-menu').style.display = 'none';
-    });
-  }
-
-  setupContextMenu() {
-    const contextMenu = document.getElementById('task-context-menu');
-
-    document.getElementById('ctx-edit-task').addEventListener('click', (e) => {
-      e.preventDefault();
-      contextMenu.style.display = 'none';
-      if (this.contextMenuTaskId) {
-        this.openTaskModal(this.contextMenuTaskId);
+    document.getElementById('ctx-edit').addEventListener('click', () => {
+      if (this.selectedTaskId) {
+        this.openTaskModal(this.selectedTaskId);
       }
     });
 
-    document.getElementById('ctx-view-kanban').addEventListener('click', (e) => {
-      e.preventDefault();
-      contextMenu.style.display = 'none';
-      if (this.contextMenuTaskId) {
-        window.location.href = `index.html?taskId=${this.contextMenuTaskId}`;
-      }
+    document.getElementById('ctx-kanban').addEventListener('click', () => {
+      window.location.href = 'index.html';
     });
 
-    document.getElementById('ctx-focus').addEventListener('click', (e) => {
-      e.preventDefault();
-      contextMenu.style.display = 'none';
-      if (this.contextMenuTaskId && this.timeline) {
-        const item = this.items.get(this.contextMenuTaskId);
-        if (item && item.start) {
-          this.timeline.moveTo(item.start);
-        }
+    document.getElementById('ctx-focus').addEventListener('click', () => {
+      if (this.selectedTaskId) {
+        this.focusOnTask(this.selectedTaskId);
       }
     });
   }
 
-  getFilteredTasks() {
-    return this.tasks.filter(task => {
-      // Filtre par statut
-      if (this.filterStatus && task.statut !== this.filterStatus) {
-        return false;
-      }
+  /**
+   * Navigation temporelle
+   */
+  navigate(direction) {
+    const days = this.viewMode === 'day' ? 7 :
+                 this.viewMode === 'week' ? 14 : 30;
 
-      // Filtre par mission
-      if (this.filterMission) {
-        if (this.filterMission === 'orphan') {
-          if (task.strategie_id) return false;
-        } else {
-          if (task.strategie_id !== parseInt(this.filterMission)) return false;
-        }
-      }
+    this.viewStart.setDate(this.viewStart.getDate() + (direction * days));
+    this.viewEnd.setDate(this.viewEnd.getDate() + (direction * days));
 
-      // Recherche textuelle
-      if (this.searchTerm) {
-        const searchIn = `${task.titre || ''} ${task.description || ''} ${task.qui || ''}`.toLowerCase();
-        if (!searchIn.includes(this.searchTerm)) return false;
-      }
-
-      return true;
-    });
+    this.render();
   }
 
-  renderTimeline() {
-    const container = document.getElementById('timeline-visualization');
-    const filteredTasks = this.getFilteredTasks();
+  /**
+   * Aller à aujourd'hui
+   */
+  goToToday() {
+    this.initViewPeriod();
+    this.render();
 
-    // Créer les items
-    this.items = new vis.DataSet();
-    this.groups = new vis.DataSet();
-
-    // Créer les groupes si nécessaire
-    if (this.groupMode !== 'none') {
-      this.createGroups(filteredTasks);
-    }
-
-    // Ajouter les tâches à la timeline
-    const now = new Date();
-
-    filteredTasks.forEach(task => {
-      // Déterminer les dates
-      let startDate = null;
-      let endDate = null;
-
-      // Utiliser echeance comme date principale
-      if (task.echeance && task.echeance > 0) {
-        // Grist stocke les dates en timestamp Unix (secondes depuis 1970)
-        endDate = new Date(task.echeance * 1000);
-        // La date de début est soit date_creation soit 7 jours avant l'échéance
-        if (task.date_creation && task.date_creation > 0) {
-          startDate = new Date(task.date_creation * 1000);
-        } else {
-          startDate = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
-        }
-      } else if (task.date_creation && task.date_creation > 0) {
-        // Si pas d'échéance, utiliser date_creation comme point
-        startDate = new Date(task.date_creation * 1000);
-        endDate = startDate;
-      } else {
-        // Pas de date, placer à aujourd'hui
-        startDate = now;
-        endDate = now;
+    // Scroller pour centrer sur aujourd'hui
+    setTimeout(() => {
+      const todayMarker = document.querySelector('.today-marker');
+      if (todayMarker) {
+        const container = this.timelineBodyEl;
+        const markerLeft = parseInt(todayMarker.style.left);
+        container.scrollLeft = markerLeft - container.clientWidth / 2;
       }
-
-      // Ignorer les dates invalides
-      if (startDate.getFullYear() < 2020) return;
-
-      // Déterminer la couleur
-      const color = this.getTaskColor(task);
-
-      // Déterminer le groupe
-      let groupId = null;
-      if (this.groupMode !== 'none') {
-        groupId = this.getGroupId(task);
-      }
-
-      // Créer l'item
-      const isRange = startDate.getTime() !== endDate.getTime();
-      const isOverdue = endDate < now && task.statut !== 'Terminé';
-
-      const item = {
-        id: task.id,
-        content: this.truncate(task.titre || 'Sans titre', 40),
-        start: startDate,
-        end: isRange ? endDate : undefined,
-        type: isRange ? 'range' : 'point',
-        style: `background-color: ${color}; border-color: ${this.adjustColor(color, -20)}; color: white;`,
-        title: this.buildTooltip(task, startDate, endDate, isOverdue),
-        className: isOverdue ? 'overdue-task' : ''
-      };
-
-      if (groupId !== null) {
-        item.group = groupId;
-      }
-
-      this.items.add(item);
-    });
-
-    // Options de la timeline
-    const options = {
-      width: '100%',
-      height: this.groupMode !== 'none' ? '600px' : '500px',
-      margin: { item: 10, axis: 40 },
-      orientation: 'top',
-      showCurrentTime: true,
-      zoomMin: 1000 * 60 * 60 * 24,       // 1 jour
-      zoomMax: 1000 * 60 * 60 * 24 * 365, // 1 an
-      moveable: true,
-      zoomable: true,
-      stack: true,
-      stackSubgroups: true,
-      locale: 'fr',
-      format: {
-        minorLabels: {
-          hour: 'HH:mm',
-          day: 'D',
-          weekday: 'ddd D',
-          month: 'MMM',
-          year: 'YYYY'
-        },
-        majorLabels: {
-          hour: 'ddd D MMMM',
-          day: 'MMMM YYYY',
-          week: 'MMMM YYYY',
-          month: 'YYYY',
-          year: ''
-        }
-      }
-    };
-
-    // Créer ou mettre à jour la timeline
-    if (this.timeline) {
-      this.timeline.destroy();
-    }
-
-    if (this.groupMode !== 'none') {
-      this.timeline = new vis.Timeline(container, this.items, this.groups, options);
-    } else {
-      this.timeline = new vis.Timeline(container, this.items, options);
-    }
-
-    // Événements
-    this.timeline.on('click', (params) => {
-      if (params.item) {
-        this.openTaskModal(params.item);
-      }
-    });
-
-    this.timeline.on('contextmenu', (params) => {
-      if (params.item) {
-        params.event.preventDefault();
-        this.contextMenuTaskId = params.item;
-
-        const contextMenu = document.getElementById('task-context-menu');
-        contextMenu.style.display = 'block';
-        contextMenu.style.left = params.pageX + 'px';
-        contextMenu.style.top = params.pageY + 'px';
-      }
-    });
-
-    this.timeline.on('rangechanged', () => {
-      this.updateVisibleRange();
-    });
-
-    // Ajuster la vue initiale
-    this.adjustTimelineView();
+    }, 100);
   }
 
-  createGroups(tasks) {
-    const groupSet = new Set();
+  /**
+   * Trier les tâches
+   */
+  sortTasks(tasks) {
+    const sorted = [...tasks];
 
-    tasks.forEach(task => {
-      const groupId = this.getGroupId(task);
-      const groupLabel = this.getGroupLabel(task);
-
-      if (groupId !== null && !groupSet.has(groupId)) {
-        groupSet.add(groupId);
-        this.groups.add({
-          id: groupId,
-          content: groupLabel,
-          style: 'font-weight: bold;'
+    switch (this.sortBy) {
+      case 'priority':
+        const priorityOrder = { 'Immédiate': 0, 'Courte': 1, 'Moyenne': 2, 'Longue': 3, '': 4 };
+        sorted.sort((a, b) => (priorityOrder[a.urgence] || 4) - (priorityOrder[b.urgence] || 4));
+        break;
+      case 'date':
+        sorted.sort((a, b) => {
+          const dateA = a.date_debut || a.date_echeance || a.date_creation;
+          const dateB = b.date_debut || b.date_echeance || b.date_creation;
+          if (!dateA) return 1;
+          if (!dateB) return -1;
+          return dateA - dateB;
         });
-      }
-    });
-
-    // Ajouter un groupe "Non classé" si nécessaire
-    if (this.groupMode === 'mission') {
-      this.groups.add({
-        id: 'orphan',
-        content: 'Sans mission',
-        style: 'font-weight: bold; color: #6b7280;'
-      });
-    }
-  }
-
-  getGroupId(task) {
-    switch (this.groupMode) {
-      case 'mission':
-        return task.strategie_id || 'orphan';
-      case 'status':
-        return task.statut || 'Non défini';
-      case 'bureau':
-        const bureaux = this.parseBureau(task.bureau);
-        return bureaux[0] || 'Non attribué';
-      default:
-        return null;
-    }
-  }
-
-  getGroupLabel(task) {
-    switch (this.groupMode) {
-      case 'mission':
-        if (task.strategie_id) {
-          const mission = this.missions.find(m => m.id === task.strategie_id);
-          return mission ? (mission.nom || `Mission #${mission.id}`) : `Mission #${task.strategie_id}`;
-        }
-        return 'Sans mission';
-      case 'status':
-        return task.statut || 'Non défini';
-      case 'bureau':
-        const bureaux = this.parseBureau(task.bureau);
-        return bureaux[0] || 'Non attribué';
-      default:
-        return '';
-    }
-  }
-
-  getTaskColor(task) {
-    switch (this.colorMode) {
-      case 'status':
-        return this.statusColors[task.statut] || '#6b7280';
-
-      case 'mission':
-        if (task.strategie_id) {
-          return this.missionColors[task.strategie_id] || '#6b7280';
-        }
-        return '#6b7280';
-
-      case 'bureau':
-        const bureaux = this.parseBureau(task.bureau);
-        if (bureaux.length > 0) {
-          return this.bureauColors[bureaux[0]] || this.bureauColors.default;
-        }
-        return this.bureauColors.default;
-
-      default:
-        return '#3b82f6';
-    }
-  }
-
-  parseBureau(bureau) {
-    if (!bureau) return [];
-
-    if (Array.isArray(bureau)) {
-      return bureau.filter(v => v && String(v).trim() && String(v).trim() !== 'L');
-    }
-
-    if (typeof bureau === 'string') {
-      if (bureau.startsWith('[')) {
-        try {
-          return JSON.parse(bureau).filter(v => v && v !== 'L');
-        } catch (e) {
-          return [bureau];
-        }
-      }
-      return [bureau];
-    }
-
-    return [];
-  }
-
-  buildTooltip(task, startDate, endDate, isOverdue) {
-    const mission = task.strategie_id ? this.missions.find(m => m.id === task.strategie_id) : null;
-    const missionName = mission ? (mission.nom || `Mission #${mission.id}`) : 'Sans mission';
-
-    let tooltip = `#${task.id} - ${task.titre || 'Sans titre'}\n`;
-    tooltip += `Statut: ${task.statut || 'Non défini'}\n`;
-    tooltip += `Mission: ${missionName}\n`;
-
-    if (startDate && endDate && startDate.getTime() !== endDate.getTime()) {
-      tooltip += `Du: ${startDate.toLocaleDateString('fr-FR')}\n`;
-      tooltip += `Au: ${endDate.toLocaleDateString('fr-FR')}\n`;
-    } else if (endDate) {
-      tooltip += `Échéance: ${endDate.toLocaleDateString('fr-FR')}\n`;
-    }
-
-    if (isOverdue) {
-      tooltip += '⚠️ EN RETARD';
-    }
-
-    return tooltip;
-  }
-
-  adjustTimelineView() {
-    if (!this.timeline) return;
-
-    const now = new Date();
-    let start, end;
-
-    switch (this.currentPeriod) {
-      case 'week':
-        start = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
-        end = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
         break;
-      case 'month':
-        start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        end = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      case 'name':
+        sorted.sort((a, b) => a.titre.localeCompare(b.titre));
         break;
-      case 'quarter':
-        start = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000);
-        end = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+      case 'progress':
+        sorted.sort((a, b) => b.avancement - a.avancement);
         break;
-      case 'all':
-        this.timeline.fit();
-        return;
     }
 
-    this.timeline.setWindow(start, end);
+    return sorted;
   }
 
-  updateVisibleRange() {
-    const range = this.timeline.getWindow();
-    const start = new Date(range.start).toLocaleDateString('fr-FR');
-    const end = new Date(range.end).toLocaleDateString('fr-FR');
-    document.getElementById('visible-range').textContent = `${start} - ${end}`;
+  /**
+   * Obtenir la couleur selon la priorité
+   */
+  getPriorityClass(task) {
+    if (task.statut === 'Terminé' || task.statut === 'Annulé') return 'done';
+
+    switch (task.urgence) {
+      case 'Immédiate': return 'high';
+      case 'Courte': return 'medium';
+      case 'Moyenne': return 'normal';
+      case 'Longue': return 'low';
+      default: return 'normal';
+    }
   }
 
-  updateStats() {
-    const filteredTasks = this.getFilteredTasks();
-    const now = new Date();
-
-    const total = filteredTasks.length;
-    const withDate = filteredTasks.filter(t => t.echeance && t.echeance > 0).length;
-    const overdue = filteredTasks.filter(t => {
-      if (!t.echeance || t.statut === 'Terminé') return false;
-      const echeance = new Date(t.echeance * 1000);
-      return echeance < now;
-    }).length;
-
-    const missionsUsed = new Set(filteredTasks.filter(t => t.strategie_id).map(t => t.strategie_id));
-
-    document.getElementById('stat-total').textContent = total;
-    document.getElementById('stat-with-date').textContent = withDate;
-    document.getElementById('stat-overdue').textContent = overdue;
-    document.getElementById('stat-missions').textContent = missionsUsed.size;
+  /**
+   * Formater une date courte
+   */
+  formatDateShort(date) {
+    if (!date) return '';
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = date.toLocaleDateString('fr-FR', { month: 'short' });
+    const year = date.getFullYear();
+    return `${day} ${month} ${year}`;
   }
 
-  updateLegend() {
-    const container = document.getElementById('legend-container');
+  /**
+   * Formater une date très courte
+   */
+  formatDateCompact(date) {
+    if (!date) return '';
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = date.toLocaleDateString('fr-FR', { month: 'short' });
+    return `${day} ${month}`;
+  }
+
+  /**
+   * Rendu complet
+   */
+  render() {
+    const sortedTasks = this.sortTasks(this.tasks);
+
+    this.renderTaskList(sortedTasks);
+    this.renderTimeline(sortedTasks);
+    this.updateDateRange();
+
+    document.getElementById('task-count').textContent = sortedTasks.length;
+  }
+
+  /**
+   * Rendu de la liste des tâches (panneau gauche)
+   */
+  renderTaskList(tasks) {
+    if (tasks.length === 0) {
+      this.taskListEl.innerHTML = `
+        <div class="empty-state">
+          <i class="bi bi-calendar-x"></i>
+          <p>Aucune tâche avec des dates</p>
+        </div>
+      `;
+      return;
+    }
+
     let html = '';
 
-    switch (this.colorMode) {
-      case 'status':
-        Object.entries(this.statusColors).forEach(([status, color]) => {
-          html += `
-            <div class="legend-item">
-              <div class="legend-color" style="background-color: ${color};"></div>
-              <span>${status}</span>
-            </div>
-          `;
-        });
-        break;
+    for (const task of tasks) {
+      const priorityClass = this.getPriorityClass(task);
+      const startDate = task.date_debut || task.date_creation;
+      const endDate = task.date_echeance;
+      const dateStr = startDate && endDate ?
+        `${this.formatDateCompact(startDate)} - ${this.formatDateCompact(endDate)}` :
+        startDate ? this.formatDateCompact(startDate) :
+        endDate ? `Éch: ${this.formatDateCompact(endDate)}` : '';
 
-      case 'mission':
-        this.missions.forEach(mission => {
-          const color = this.missionColors[mission.id];
-          html += `
-            <div class="legend-item">
-              <div class="legend-color" style="background-color: ${color};"></div>
-              <span>${mission.nom || `Mission #${mission.id}`}</span>
-            </div>
-          `;
-        });
-        html += `
-          <div class="legend-item">
-            <div class="legend-color" style="background-color: #6b7280;"></div>
-            <span>Sans mission</span>
+      html += `
+        <div class="task-row" data-task-id="${task.id}">
+          <div class="task-drag-handle">
+            <i class="bi bi-grip-vertical"></i>
           </div>
-        `;
-        break;
-
-      case 'bureau':
-        Object.entries(this.bureauColors).forEach(([bureau, color]) => {
-          if (bureau !== 'default') {
-            html += `
-              <div class="legend-item">
-                <div class="legend-color" style="background-color: ${color};"></div>
-                <span>${bureau}</span>
-              </div>
-            `;
-          }
-        });
-        break;
+          <div class="task-color-bar color-${priorityClass}"></div>
+          <div class="task-info">
+            <div class="task-name" title="${this.escapeHtml(task.titre)}">${this.escapeHtml(task.titre)}</div>
+            <div class="task-dates">${dateStr}</div>
+          </div>
+          <div class="task-progress">${task.avancement}%</div>
+        </div>
+      `;
     }
 
-    container.innerHTML = html;
+    this.taskListEl.innerHTML = html;
+
+    // Événements clic sur les lignes
+    this.taskListEl.querySelectorAll('.task-row').forEach(row => {
+      row.addEventListener('click', (e) => {
+        const taskId = parseInt(row.dataset.taskId);
+        this.openTaskModal(taskId);
+      });
+
+      row.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        this.selectedTaskId = parseInt(row.dataset.taskId);
+        this.showContextMenu(e.clientX, e.clientY);
+      });
+    });
   }
 
+  /**
+   * Rendu de la timeline (panneau droit)
+   */
+  renderTimeline(tasks) {
+    const dayWidth = this.viewMode === 'day' ? CONFIG.dayWidth :
+                     this.viewMode === 'week' ? CONFIG.weekDayWidth :
+                     CONFIG.monthDayWidth;
+
+    const days = this.getDaysInRange();
+    const totalWidth = days.length * dayWidth;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Rendu de l'en-tête
+    let headerHtml = '<div class="timeline-header" style="width: ' + totalWidth + 'px;">';
+
+    for (const day of days) {
+      const isToday = day.getTime() === today.getTime();
+      const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+      const classes = ['timeline-day'];
+      if (isToday) classes.push('today');
+      if (isWeekend) classes.push('weekend');
+
+      const label = this.viewMode === 'month' ?
+        day.getDate() :
+        day.getDate();
+
+      headerHtml += `<div class="${classes.join(' ')}" style="width: ${dayWidth}px;">${label}</div>`;
+    }
+
+    headerHtml += '</div>';
+    this.timelineHeaderEl.innerHTML = headerHtml;
+
+    // Rendu du corps
+    if (tasks.length === 0) {
+      this.timelineBodyEl.innerHTML = '';
+      return;
+    }
+
+    let bodyHtml = '<div class="timeline-grid" style="width: ' + totalWidth + 'px;">';
+
+    // Marqueur aujourd'hui
+    const todayOffset = this.getDayOffset(today);
+    if (todayOffset >= 0 && todayOffset < days.length) {
+      const todayLeft = todayOffset * dayWidth + dayWidth / 2;
+      bodyHtml += `<div class="today-marker" style="left: ${todayLeft}px;"></div>`;
+    }
+
+    // Lignes de tâches
+    for (const task of tasks) {
+      bodyHtml += this.renderTimelineRow(task, days, dayWidth, totalWidth);
+    }
+
+    bodyHtml += '</div>';
+    this.timelineBodyEl.innerHTML = bodyHtml;
+
+    // Événements sur les barres
+    this.timelineBodyEl.querySelectorAll('.task-bar').forEach(bar => {
+      bar.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const taskId = parseInt(bar.dataset.taskId);
+        this.openTaskModal(taskId);
+      });
+
+      bar.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.selectedTaskId = parseInt(bar.dataset.taskId);
+        this.showContextMenu(e.clientX, e.clientY);
+      });
+    });
+  }
+
+  /**
+   * Rendu d'une ligne de timeline
+   */
+  renderTimelineRow(task, days, dayWidth, totalWidth) {
+    const priorityClass = this.getPriorityClass(task);
+
+    // Cellules de fond
+    let rowHtml = `<div class="timeline-row" data-task-id="${task.id}">`;
+
+    for (const day of days) {
+      const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+      rowHtml += `<div class="timeline-cell${isWeekend ? ' weekend' : ''}" style="width: ${dayWidth}px;"></div>`;
+    }
+
+    // Barre de tâche
+    const startDate = task.date_debut || task.date_creation;
+    const endDate = task.date_echeance || startDate;
+
+    if (startDate) {
+      const startOffset = this.getDayOffset(startDate);
+      const endOffset = this.getDayOffset(endDate);
+
+      // Calculer position et largeur
+      const barStart = Math.max(0, startOffset) * dayWidth;
+      const barEnd = Math.min(days.length, endOffset + 1) * dayWidth;
+      const barWidth = Math.max(dayWidth, barEnd - barStart);
+
+      // Ne pas afficher si complètement hors vue
+      if (startOffset < days.length && endOffset >= 0) {
+        rowHtml += `
+          <div class="task-bar-container" style="left: ${barStart}px; width: ${barWidth}px;">
+            <div class="task-bar priority-${priorityClass}"
+                 data-task-id="${task.id}"
+                 style="width: 100%; position: relative;">
+              <div class="task-bar-progress" style="width: ${task.avancement}%;"></div>
+              <span style="position: relative; z-index: 1;">${this.escapeHtml(task.titre)}</span>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    rowHtml += '</div>';
+    return rowHtml;
+  }
+
+  /**
+   * Obtenir les jours dans la période
+   */
+  getDaysInRange() {
+    const days = [];
+    const current = new Date(this.viewStart);
+
+    while (current <= this.viewEnd) {
+      days.push(new Date(current));
+      current.setDate(current.getDate() + 1);
+    }
+
+    return days;
+  }
+
+  /**
+   * Obtenir l'offset en jours depuis viewStart
+   */
+  getDayOffset(date) {
+    if (!date) return -1;
+    const start = new Date(this.viewStart);
+    start.setHours(0, 0, 0, 0);
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    return Math.floor((d - start) / (24 * 60 * 60 * 1000));
+  }
+
+  /**
+   * Mettre à jour l'affichage de la plage de dates
+   */
+  updateDateRange() {
+    const start = this.formatDateShort(this.viewStart);
+    const end = this.formatDateShort(this.viewEnd);
+    document.getElementById('date-range').textContent = `${start} - ${end}`;
+  }
+
+  /**
+   * Afficher le menu contextuel
+   */
+  showContextMenu(x, y) {
+    const menu = document.getElementById('context-menu');
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+    menu.style.display = 'block';
+  }
+
+  /**
+   * Masquer le menu contextuel
+   */
+  hideContextMenu() {
+    document.getElementById('context-menu').style.display = 'none';
+  }
+
+  /**
+   * Ouvrir la modale de tâche
+   */
   openTaskModal(taskId) {
     const task = this.tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    if (this.sharedTaskModal) {
-      this.sharedTaskModal.open(task);
+    // Utiliser SharedTaskModal si disponible
+    if (typeof SharedTaskModal !== 'undefined') {
+      const modal = new SharedTaskModal();
+      modal.init().then(() => modal.open(task));
     } else {
-      // Fallback: afficher une alerte avec les infos
-      alert(`Tâche #${task.id}\n${task.titre || 'Sans titre'}\nStatut: ${task.statut}`);
+      console.log('[GanttTimeline] Tâche sélectionnée:', task);
+      alert(`Tâche: ${task.titre}\nStatut: ${task.statut}\nAvancement: ${task.avancement}%`);
     }
   }
 
-  truncate(text, maxLength) {
-    if (!text) return '';
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength - 3) + '...';
-  }
+  /**
+   * Centrer sur une tâche
+   */
+  focusOnTask(taskId) {
+    const task = this.tasks.find(t => t.id === taskId);
+    if (!task) return;
 
-  adjustColor(color, amount) {
-    const hex = color.replace('#', '');
-    const r = Math.max(0, Math.min(255, parseInt(hex.substring(0, 2), 16) + amount));
-    const g = Math.max(0, Math.min(255, parseInt(hex.substring(2, 4), 16) + amount));
-    const b = Math.max(0, Math.min(255, parseInt(hex.substring(4, 6), 16) + amount));
-    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-  }
+    const startDate = task.date_debut || task.date_creation;
+    if (startDate) {
+      // Centrer la vue sur la date de début
+      const newStart = new Date(startDate);
+      newStart.setDate(newStart.getDate() - 7);
+      this.viewStart = newStart;
+      this.viewEnd = new Date(newStart);
+      this.viewEnd.setDate(this.viewEnd.getDate() + 30);
+      this.render();
+    }
 
-  showError(message) {
-    const container = document.getElementById('error-container');
-    if (container) {
-      const div = document.createElement('div');
-      div.className = 'alert alert-danger alert-dismissible fade show';
-      div.innerHTML = `
-        <strong>Erreur:</strong> ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      `;
-      container.appendChild(div);
+    // Surligner la ligne
+    const row = this.taskListEl.querySelector(`[data-task-id="${taskId}"]`);
+    if (row) {
+      row.style.background = '#fef3c7';
+      setTimeout(() => {
+        row.style.background = '';
+      }, 2000);
     }
   }
 
-  showToast(message, type = 'info') {
-    // Créer un toast simple
-    const toast = document.createElement('div');
-    toast.className = `alert alert-${type} position-fixed bottom-0 end-0 m-3`;
-    toast.style.zIndex = '9999';
-    toast.textContent = message;
-    document.body.appendChild(toast);
-
-    setTimeout(() => toast.remove(), 3000);
+  /**
+   * Échapper HTML
+   */
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text || '';
+    return div.innerHTML;
   }
 }
 
-// Initialisation
+// === INITIALISATION ===
 document.addEventListener('DOMContentLoaded', () => {
-  if (document.getElementById('timeline-visualization')) {
-    console.log('Initialisation TimelineManager');
-    new TimelineAppManager();
-  }
+  const app = new GanttTimeline();
+  app.init();
 });
