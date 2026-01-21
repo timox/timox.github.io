@@ -460,6 +460,9 @@ class MigrationApp {
     this.log(`Migration de ${this.toMigrate.length} taches...`, 'info');
     $('#btn-migrate').prop('disabled', true).html('<i class="bi bi-hourglass-split me-1"></i>Migration...');
 
+    // Créer les colonnes V3 si elles n'existent pas
+    await this.ensureV3Columns();
+
     let migrated = 0;
     let errors = 0;
 
@@ -486,8 +489,122 @@ class MigrationApp {
       this.log(`Erreurs: ${errors}`, 'error');
     }
 
+    // Remettre le bouton
+    $('#btn-migrate').prop('disabled', false).html('<i class="bi bi-arrow-right-circle me-1"></i>4. Migrer (<span id="count-migrate">0</span>)');
+
     // Re-analyser
     await this.analyze();
+  }
+
+  /**
+   * S'assure que les colonnes V3 existent, les cree si necessaire
+   */
+  async ensureV3Columns() {
+    this.log('Vérification des colonnes V3...', 'info');
+
+    const columns = {
+      nature_activite: {
+        type: 'Choice',
+        label: 'Nature activité',
+        widgetOptions: JSON.stringify({
+          choices: ['INC', 'SUP', 'MCO', 'PRJ', 'OVH'],
+          choiceOptions: {
+            'INC': { fillColor: '#dc3545', textColor: '#ffffff' },
+            'SUP': { fillColor: '#0d6efd', textColor: '#ffffff' },
+            'MCO': { fillColor: '#6f42c1', textColor: '#ffffff' },
+            'PRJ': { fillColor: '#198754', textColor: '#ffffff' },
+            'OVH': { fillColor: '#6c757d', textColor: '#ffffff' }
+          }
+        })
+      },
+      genre_action: {
+        type: 'Choice',
+        label: 'Genre action',
+        widgetOptions: JSON.stringify({
+          choices: ['DOC', 'ANA', 'CON', 'RCH', 'DEV', 'TST', 'VAL', 'VER', 'COR', 'INS', 'CFG', 'INV', 'SEC', 'REU', 'FOR', 'SUI'],
+          choiceOptions: {
+            'DOC': { fillColor: '#3b82f6', textColor: '#ffffff' },
+            'ANA': { fillColor: '#8b5cf6', textColor: '#ffffff' },
+            'CON': { fillColor: '#6366f1', textColor: '#ffffff' },
+            'RCH': { fillColor: '#a855f7', textColor: '#ffffff' },
+            'DEV': { fillColor: '#7c3aed', textColor: '#ffffff' },
+            'TST': { fillColor: '#10b981', textColor: '#ffffff' },
+            'VAL': { fillColor: '#22c55e', textColor: '#ffffff' },
+            'VER': { fillColor: '#14b8a6', textColor: '#ffffff' },
+            'COR': { fillColor: '#ef4444', textColor: '#ffffff' },
+            'INS': { fillColor: '#059669', textColor: '#ffffff' },
+            'CFG': { fillColor: '#f97316', textColor: '#ffffff' },
+            'INV': { fillColor: '#f59e0b', textColor: '#ffffff' },
+            'SEC': { fillColor: '#dc2626', textColor: '#ffffff' },
+            'REU': { fillColor: '#0ea5e9', textColor: '#ffffff' },
+            'FOR': { fillColor: '#06b6d4', textColor: '#ffffff' },
+            'SUI': { fillColor: '#eab308', textColor: '#ffffff' }
+          }
+        })
+      },
+      etape_code: {
+        type: 'Choice',
+        label: 'Étape cycle',
+        widgetOptions: JSON.stringify({
+          choices: ['ETP.VIS', 'ETP.ANA', 'ETP.CON', 'ETP.PLN', 'ETP.REA', 'ETP.DEP', 'ETP.EXP', 'ETP.AME'],
+          choiceOptions: {
+            'ETP.VIS': { fillColor: '#8b5cf6', textColor: '#ffffff' },
+            'ETP.ANA': { fillColor: '#6366f1', textColor: '#ffffff' },
+            'ETP.CON': { fillColor: '#3b82f6', textColor: '#ffffff' },
+            'ETP.PLN': { fillColor: '#0ea5e9', textColor: '#ffffff' },
+            'ETP.REA': { fillColor: '#14b8a6', textColor: '#ffffff' },
+            'ETP.DEP': { fillColor: '#22c55e', textColor: '#ffffff' },
+            'ETP.EXP': { fillColor: '#f59e0b', textColor: '#ffffff' },
+            'ETP.AME': { fillColor: '#eab308', textColor: '#ffffff' }
+          }
+        })
+      },
+      previsibilite: {
+        type: 'Choice',
+        label: 'Prévisibilité',
+        widgetOptions: JSON.stringify({
+          choices: ['Prévisible', 'Imprévisible'],
+          choiceOptions: {
+            'Prévisible': { fillColor: '#198754', textColor: '#ffffff' },
+            'Imprévisible': { fillColor: '#dc3545', textColor: '#ffffff' }
+          }
+        })
+      }
+    };
+
+    for (const [colId, config] of Object.entries(columns)) {
+      try {
+        // Essayer de modifier (si existe)
+        await grist.docApi.applyUserActions([
+          ['ModifyColumn', TABLE_ID, colId, {
+            type: config.type,
+            label: config.label,
+            widgetOptions: config.widgetOptions
+          }]
+        ]);
+        this.log(`  ✓ ${colId} existe`, 'success');
+      } catch (e) {
+        if (e.message && (e.message.includes('not found') || e.message.includes('No such column'))) {
+          // Créer la colonne
+          try {
+            await grist.docApi.applyUserActions([
+              ['AddColumn', TABLE_ID, colId, {
+                type: config.type,
+                label: config.label,
+                widgetOptions: config.widgetOptions
+              }]
+            ]);
+            this.log(`  ✓ ${colId} créée`, 'success');
+          } catch (addError) {
+            this.log(`  ✗ ${colId}: ${addError.message}`, 'error');
+          }
+        } else {
+          this.log(`  ⚠ ${colId}: ${e.message}`, 'warning');
+        }
+      }
+    }
+
+    this.log('Colonnes V3 prêtes', 'success');
   }
 
   /**
