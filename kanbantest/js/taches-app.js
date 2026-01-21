@@ -218,6 +218,17 @@ class TachesApp {
   initGraph() {
     const container = document.getElementById('task-graph');
 
+    if (!container) {
+      console.error('Container task-graph non trouvé');
+      return;
+    }
+
+    // S'assurer que le container a des dimensions
+    if (container.clientWidth === 0 || container.clientHeight === 0) {
+      container.style.width = '100%';
+      container.style.height = '500px';
+    }
+
     // Créer les données
     this.nodes = new vis.DataSet();
     this.edges = new vis.DataSet();
@@ -263,18 +274,36 @@ class TachesApp {
       },
       physics: {
         enabled: true,
-        stabilization: { iterations: 100 },
+        stabilization: { iterations: 100, fit: true },
         barnesHut: {
-          gravitationalConstant: -2000,
-          centralGravity: 0.3,
-          springLength: 150,
-          springConstant: 0.04
-        }
+          gravitationalConstant: -3000,
+          centralGravity: 0.5,
+          springLength: 120,
+          springConstant: 0.08,
+          avoidOverlap: 0.5
+        },
+        maxVelocity: 50,
+        minVelocity: 0.1
       },
       interaction: {
         hover: true,
         selectConnectedEdges: true,
-        tooltipDelay: 200
+        tooltipDelay: 200,
+        dragNodes: true,
+        dragView: true,
+        zoomView: true
+      },
+      manipulation: {
+        enabled: true,
+        initiallyActive: false,
+        addNode: false,
+        deleteNode: false,
+        addEdge: (edgeData, callback) => {
+          this.handleAddEdge(edgeData, callback);
+        },
+        deleteEdge: (edgeData, callback) => {
+          this.handleDeleteEdge(edgeData, callback);
+        }
       },
       layout: {
         improvedLayout: true
@@ -333,8 +362,24 @@ class TachesApp {
    * Active/désactive la physique
    */
   togglePhysics() {
+    if (!this.network) return;
     this.physicsEnabled = !this.physicsEnabled;
-    this.network.setOptions({ physics: { enabled: this.physicsEnabled } });
+
+    try {
+      // Stabiliser d'abord si on active la physique
+      if (this.physicsEnabled) {
+        this.network.setOptions({
+          physics: {
+            enabled: true,
+            stabilization: { enabled: true, iterations: 50 }
+          }
+        });
+      } else {
+        this.network.setOptions({ physics: { enabled: false } });
+      }
+    } catch (e) {
+      console.warn('Erreur toggle physique:', e);
+    }
 
     const $btn = $('#btn-toggle-physics');
     if (this.physicsEnabled) {
@@ -343,6 +388,52 @@ class TachesApp {
     } else {
       $btn.html('<i class="bi bi-wind"></i>');
       $btn.attr('title', 'Activer la physique');
+    }
+  }
+
+  /**
+   * Handler pour ajouter une arête graphiquement
+   */
+  handleAddEdge(edgeData, callback) {
+    if (edgeData.from === edgeData.to) {
+      this.showToast('Impossible de lier une tâche à elle-même', 'warning');
+      callback(null);
+      return;
+    }
+
+    // Ouvrir le modal pour choisir le type de lien
+    this.pendingEdgeData = edgeData;
+    this.pendingEdgeCallback = callback;
+    this.openAddLinkModal('RELATED_TO', edgeData.from);
+
+    // Pré-remplir la cible
+    $('#link-target-task').val(edgeData.to);
+    this.updateLinkPreview();
+  }
+
+  /**
+   * Handler pour supprimer une arête graphiquement
+   */
+  handleDeleteEdge(edgeData, callback) {
+    const edgeId = edgeData.edges[0];
+    const edge = this.edges.get(edgeId);
+
+    if (!edge) {
+      callback(null);
+      return;
+    }
+
+    if (confirm('Supprimer cette liaison ?')) {
+      try {
+        this.taskLinksManager.removeLink(edge.from, edge.to);
+        callback(edgeData);
+        this.showToast('Liaison supprimée', 'success');
+      } catch (e) {
+        this.showToast('Erreur: ' + e.message, 'danger');
+        callback(null);
+      }
+    } else {
+      callback(null);
     }
   }
 
