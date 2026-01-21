@@ -132,25 +132,31 @@
       <!-- Stats -->
       <div class="container-fluid">
         <div class="row" id="migration-stats">
-          <div class="col-md-3">
+          <div class="col-md-2">
             <div class="stats-card bg-primary text-white">
               <div class="stats-number" id="stat-total">-</div>
-              <div>Total taches</div>
+              <div>Total</div>
             </div>
           </div>
-          <div class="col-md-3">
+          <div class="col-md-2">
             <div class="stats-card bg-warning text-white">
               <div class="stats-number" id="stat-temp">-</div>
-              <div>TEMP a supprimer</div>
+              <div>TEMP</div>
             </div>
           </div>
-          <div class="col-md-3">
+          <div class="col-md-2">
+            <div class="stats-card text-white" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;">
+              <div class="stats-number" id="stat-duplicates">-</div>
+              <div>Doublons</div>
+            </div>
+          </div>
+          <div class="col-md-2">
             <div class="stats-card bg-success text-white">
               <div class="stats-number" id="stat-migrated">-</div>
-              <div>Deja migrees</div>
+              <div>Migrees</div>
             </div>
           </div>
-          <div class="col-md-3">
+          <div class="col-md-2">
             <div class="stats-card bg-info text-white">
               <div class="stats-number" id="stat-to-migrate">-</div>
               <div>A migrer</div>
@@ -166,13 +172,16 @@
 
           <div class="d-flex gap-2 flex-wrap mb-3">
             <button class="btn btn-primary btn-lg" id="btn-analyze">
-              <i class="bi bi-search me-1"></i>1. Analyser les donnees
+              <i class="bi bi-search me-1"></i>1. Analyser
             </button>
             <button class="btn btn-warning btn-lg" id="btn-delete-temp" disabled>
-              <i class="bi bi-trash me-1"></i>2. Supprimer TEMP (<span id="count-temp">0</span>)
+              <i class="bi bi-trash me-1"></i>2. Suppr. TEMP (<span id="count-temp">0</span>)
+            </button>
+            <button class="btn btn-danger btn-lg" id="btn-delete-duplicates" disabled>
+              <i class="bi bi-files me-1"></i>3. Suppr. doublons (<span id="count-duplicates">0</span>)
             </button>
             <button class="btn btn-success btn-lg" id="btn-migrate" disabled>
-              <i class="bi bi-arrow-right-circle me-1"></i>3. Migrer (<span id="count-migrate">0</span>)
+              <i class="bi bi-arrow-right-circle me-1"></i>4. Migrer (<span id="count-migrate">0</span>)
             </button>
           </div>
 

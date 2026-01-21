@@ -61,6 +61,7 @@ class MigrationApp {
     this.records = [];
     this.toMigrate = [];
     this.toDelete = [];
+    this.duplicates = []; // Doublons [MISSION] et [SA]
     this.isAnalyzed = false;
   }
 
@@ -76,6 +77,7 @@ class MigrationApp {
     // Event listeners
     $('#btn-analyze').on('click', () => this.analyze());
     $('#btn-delete-temp').on('click', () => this.deleteTemp());
+    $('#btn-delete-duplicates').on('click', () => this.deleteDuplicates());
     $('#btn-migrate').on('click', () => this.migrate());
 
     this.log('Application prete. Cliquez sur "Analyser".', 'success');
@@ -138,9 +140,36 @@ class MigrationApp {
       // Analyser
       this.toDelete = [];
       this.toMigrate = [];
+      this.duplicates = [];
       let alreadyMigrated = 0;
 
+      // Détection des doublons par titre pour [MISSION] et [SA]
+      const titleCounts = {};
       for (const record of this.records) {
+        if (record.titre && (record.titre.startsWith('[MISSION]') || record.titre.startsWith('[SA]'))) {
+          titleCounts[record.titre] = titleCounts[record.titre] || [];
+          titleCounts[record.titre].push(record);
+        }
+      }
+
+      // Identifier les doublons (garder le premier, supprimer les autres)
+      for (const [titre, records] of Object.entries(titleCounts)) {
+        if (records.length > 1) {
+          // Trier par ID pour garder le plus ancien
+          records.sort((a, b) => a.id - b.id);
+          // Les enregistrements après le premier sont des doublons
+          for (let i = 1; i < records.length; i++) {
+            this.duplicates.push(records[i]);
+          }
+        }
+      }
+
+      for (const record of this.records) {
+        // Ignorer les doublons déjà identifiés
+        if (this.duplicates.some(d => d.id === record.id)) {
+          continue;
+        }
+
         // Detecter TEMP
         if (record.titre.includes('___TEMP')) {
           this.toDelete.push(record);
@@ -185,11 +214,14 @@ class MigrationApp {
       $('#stat-temp').text(this.toDelete.length);
       $('#stat-migrated').text(alreadyMigrated);
       $('#stat-to-migrate').text(this.toMigrate.length);
+      $('#stat-duplicates').text(this.duplicates.length);
       $('#count-temp').text(this.toDelete.length);
       $('#count-migrate').text(this.toMigrate.length);
+      $('#count-duplicates').text(this.duplicates.length);
 
       // Activer/desactiver boutons
       $('#btn-delete-temp').prop('disabled', this.toDelete.length === 0);
+      $('#btn-delete-duplicates').prop('disabled', this.duplicates.length === 0);
       $('#btn-migrate').prop('disabled', this.toMigrate.length === 0);
 
       // Afficher apercu
@@ -197,6 +229,7 @@ class MigrationApp {
 
       // Log resume
       this.log(`TEMP a supprimer: ${this.toDelete.length}`, this.toDelete.length > 0 ? 'warning' : 'info');
+      this.log(`Doublons [MISSION]/[SA]: ${this.duplicates.length}`, this.duplicates.length > 0 ? 'error' : 'success');
       this.log(`Deja migrees: ${alreadyMigrated}`, 'success');
       this.log(`A migrer: ${this.toMigrate.length}`, this.toMigrate.length > 0 ? 'info' : 'success');
 
@@ -245,12 +278,25 @@ class MigrationApp {
   renderPreview() {
     const $container = $('#preview-container');
 
-    if (this.toMigrate.length === 0 && this.toDelete.length === 0) {
-      $container.html('<p class="text-success"><i class="bi bi-check-circle me-2"></i>Toutes les taches sont deja migrees!</p>');
+    if (this.toMigrate.length === 0 && this.toDelete.length === 0 && this.duplicates.length === 0) {
+      $container.html('<p class="text-success"><i class="bi bi-check-circle me-2"></i>Toutes les taches sont deja migrees et pas de doublons!</p>');
       return;
     }
 
     let html = '';
+
+    // Doublons [MISSION] et [SA]
+    if (this.duplicates.length > 0) {
+      html += '<h6 class="text-danger"><i class="bi bi-files me-2"></i>Doublons [MISSION]/[SA]</h6>';
+      html += '<ul class="list-group mb-3">';
+      this.duplicates.slice(0, 5).forEach(r => {
+        html += `<li class="list-group-item list-group-item-warning small">[${r.id}] ${this.escapeHtml(r.titre.substring(0, 50))}...</li>`;
+      });
+      if (this.duplicates.length > 5) {
+        html += `<li class="list-group-item text-muted">... et ${this.duplicates.length - 5} autres doublons</li>`;
+      }
+      html += '</ul>';
+    }
 
     // TEMP
     if (this.toDelete.length > 0) {
@@ -332,6 +378,66 @@ class MigrationApp {
     }
 
     this.log(`Suppression terminee: ${deleted} OK, ${errors} erreurs`, deleted === this.toDelete.length ? 'success' : 'warning');
+
+    // Re-analyser
+    await this.analyze();
+  }
+
+  /**
+   * Supprime les doublons [MISSION] et [SA]
+   */
+  async deleteDuplicates() {
+    if (this.duplicates.length === 0) {
+      this.log('Aucun doublon a supprimer', 'info');
+      return;
+    }
+
+    if (!confirm(`Supprimer ${this.duplicates.length} enregistrements en double ([MISSION] et [SA]) ?\n\nLe premier enregistrement de chaque doublon sera conserve.\n\nCette action est irreversible!`)) {
+      this.log('Suppression annulee', 'warning');
+      return;
+    }
+
+    this.log(`Suppression de ${this.duplicates.length} doublons...`, 'info');
+    $('#btn-delete-duplicates').prop('disabled', true).html('<i class="bi bi-hourglass-split me-1"></i>Suppression...');
+
+    let deleted = 0;
+    let errors = 0;
+
+    // Supprimer par lots pour de meilleures performances
+    const batchSize = 50;
+    for (let i = 0; i < this.duplicates.length; i += batchSize) {
+      const batch = this.duplicates.slice(i, i + batchSize);
+      const ids = batch.map(r => r.id);
+
+      try {
+        await grist.docApi.applyUserActions([
+          ['BulkRemoveRecord', TABLE_ID, ids]
+        ]);
+        deleted += ids.length;
+        this.log(`  Supprime: ${deleted}/${this.duplicates.length}`, 'success');
+      } catch (error) {
+        // Si BulkRemoveRecord echoue, essayer un par un
+        for (const record of batch) {
+          try {
+            await grist.docApi.applyUserActions([
+              ['RemoveRecord', TABLE_ID, record.id]
+            ]);
+            deleted++;
+          } catch (err) {
+            errors++;
+            this.log(`  Erreur ${record.id}: ${err.message}`, 'error');
+          }
+        }
+      }
+
+      // Pause entre lots
+      await this.sleep(100);
+    }
+
+    this.log(`Suppression doublons terminee: ${deleted} OK, ${errors} erreurs`, deleted === this.duplicates.length ? 'success' : 'warning');
+
+    // Remettre le bouton
+    $('#btn-delete-duplicates').html('<i class="bi bi-files me-1"></i>Suppr. doublons (<span id="count-duplicates">0</span>)');
 
     // Re-analyser
     await this.analyze();
