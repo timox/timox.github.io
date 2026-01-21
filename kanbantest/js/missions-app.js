@@ -101,9 +101,9 @@ function setupEventListeners() {
   $('#filter-categorie').on('change', handleFilterChange);
   $('#vue-mode').on('change', handleViewModeChange);
 
-  // Délégation pour les boutons des cartes
-  $('#missions-container').on('click', '.btn-voir-taches', handleVoirTaches);
-  $('#missions-container').on('click', '.btn-edit-mission', handleEditMission);
+  // Délégation pour les boutons des cartes et du tableau
+  $('#missions-container, #missions-table-container').on('click', '.btn-voir-taches', handleVoirTaches);
+  $('#missions-container, #missions-table-container').on('click', '.btn-edit-mission', handleEditMission);
   $('#sous-actions-container').on('click', '.btn-remove-sa', handleRemoveSousAction);
 
   logger.debug('Event listeners configured');
@@ -294,34 +294,121 @@ async function displayMissions() {
   try {
     let missions = [];
 
-    if (currentViewMode === 'missions') {
-      // Vue normale des missions
-      missions = await missionsManager.getMissions();
+    // Masquer tous les conteneurs
+    $('#missions-container').hide();
+    $('#missions-table-container').hide();
+    $('#empty-state').hide();
 
-      // Appliquer les filtres
+    if (currentViewMode === 'missions') {
+      // Vue cartes des missions
+      missions = await missionsManager.getMissions();
       missions = await applyFilters(missions);
 
       if (missions.length === 0) {
         $('#empty-state').show();
-        $('#missions-container').empty();
         return;
       }
 
-      $('#empty-state').hide();
       renderMissionCards(missions);
+      $('#missions-container').show();
+
+    } else if (currentViewMode === 'table') {
+      // Vue tableau
+      missions = await missionsManager.getMissions();
+      missions = await applyFilters(missions);
+
+      if (missions.length === 0) {
+        $('#empty-state').show();
+        return;
+      }
+
+      renderTableView(missions);
+      $('#missions-table-container').show();
 
     } else if (currentViewMode === 'categories') {
       // Vue par catégories
       await renderCategoriesView();
+      $('#missions-container').show();
 
     } else if (currentViewMode === 'non-classifiees') {
       // Vue tâches non classifiées
       await renderUnclassifiedView();
+      $('#missions-container').show();
     }
   } catch (error) {
     logger.error('Failed to display missions:', error);
     showError('Erreur d\'affichage des missions');
   }
+}
+
+/**
+ * Rend la vue tableau des missions
+ */
+function renderTableView(missions) {
+  const $tbody = $('#missions-table-body').empty();
+
+  for (const mission of missions) {
+    const prioriteColors = {
+      'Critique': 'danger',
+      'Haute': 'warning',
+      'Moyenne': 'primary',
+      'Basse': 'secondary'
+    };
+
+    // Calculer la progression
+    const progress = mission.stats.total > 0
+      ? Math.round((mission.stats.completed / mission.stats.total) * 100)
+      : 0;
+
+    // Formater les dates
+    let datesText = '-';
+    if (mission.date_debut || mission.date_fin) {
+      const debut = mission.date_debut ? new Date(mission.date_debut).toLocaleDateString('fr-FR') : '?';
+      const fin = mission.date_fin ? new Date(mission.date_fin).toLocaleDateString('fr-FR') : '?';
+      datesText = `${debut} → ${fin}`;
+    }
+
+    const $row = $(`
+      <tr data-mission-code="${escapeHtml(mission.code)}">
+        <td><code>${escapeHtml(mission.code)}</code></td>
+        <td>
+          <strong>${escapeHtml(mission.nom)}</strong>
+          ${mission.sous_actions.size > 0 ? `<br><small class="text-muted">${mission.sous_actions.size} sous-actions</small>` : ''}
+        </td>
+        <td>${escapeHtml(mission.responsable) || '<span class="text-muted">-</span>'}</td>
+        <td>${escapeHtml(mission.bureau) || '<span class="text-muted">-</span>'}</td>
+        <td><span class="badge bg-${prioriteColors[mission.priorite] || 'secondary'}">${escapeHtml(mission.priorite)}</span></td>
+        <td><small>${datesText}</small></td>
+        <td>
+          <span class="badge bg-info">${mission.stats.total}</span>
+          <span class="badge bg-success">${mission.stats.completed} ✓</span>
+        </td>
+        <td>
+          <div class="progress" style="width: 80px; height: 8px;">
+            <div class="progress-bar bg-success" style="width: ${progress}%"></div>
+          </div>
+          <small class="text-muted">${progress}%</small>
+        </td>
+        <td>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-primary btn-voir-taches" title="Voir tâches">
+              <i class="bi bi-kanban"></i>
+            </button>
+            <button class="btn btn-outline-secondary btn-edit-mission" title="Modifier">
+              <i class="bi bi-pencil"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `);
+
+    // Stocker les données de mission pour les boutons
+    $row.data('mission', mission);
+
+    $tbody.append($row);
+  }
+
+  logger.debug(`Rendered ${missions.length} missions in table view`);
 }
 
 /**
@@ -706,7 +793,11 @@ function handleViewModeChange() {
  * Voir les tâches d'une mission
  */
 function handleVoirTaches(e) {
-  const mission = $(e.currentTarget).closest('.mission-card-wrapper').data('mission');
+  // Chercher dans carte ou ligne de tableau
+  let mission = $(e.currentTarget).closest('.mission-card-wrapper').data('mission');
+  if (!mission) {
+    mission = $(e.currentTarget).closest('tr').data('mission');
+  }
   if (mission) {
     // Rediriger vers le kanban avec filtre sur la mission
     window.location.href = `index.html?mission=${encodeURIComponent(mission.code)}`;
@@ -717,7 +808,11 @@ function handleVoirTaches(e) {
  * Éditer une mission
  */
 function handleEditMission(e) {
-  const mission = $(e.currentTarget).closest('.mission-card-wrapper').data('mission');
+  // Chercher dans carte ou ligne de tableau
+  let mission = $(e.currentTarget).closest('.mission-card-wrapper').data('mission');
+  if (!mission) {
+    mission = $(e.currentTarget).closest('tr').data('mission');
+  }
   if (mission) {
     $('#modal-mission-title').text('Modifier la Mission');
     $('#form-mission')[0].reset();
