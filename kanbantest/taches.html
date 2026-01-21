@@ -185,6 +185,7 @@
     .trigramme.genre { background: #fef3c7; color: #92400e; }
     .trigramme.etape { background: #d1fae5; color: #065f46; }
     .trigramme.mission { background: #fce7f3; color: #9d174d; }
+    .trigramme.meo { background: #f3e8ff; color: #7c3aed; }
 
     /* === TIME INPUT === */
     .time-input-group {
@@ -357,13 +358,23 @@
         </div>
 
         <!-- Filtres -->
-        <div class="d-flex gap-2 mb-2">
-          <select class="form-select form-select-sm" id="filter-type">
-            <option value="">Tous types</option>
-          </select>
-          <select class="form-select form-select-sm" id="filter-status">
-            <option value="">Tous statuts</option>
-          </select>
+        <div class="d-flex flex-column gap-2 mb-2">
+          <div class="d-flex gap-2">
+            <select class="form-select form-select-sm" id="filter-type">
+              <option value="">Tous types</option>
+            </select>
+            <select class="form-select form-select-sm" id="filter-status">
+              <option value="">Tous statuts</option>
+            </select>
+          </div>
+          <div class="d-flex gap-2">
+            <select class="form-select form-select-sm" id="filter-mission">
+              <option value="">Toutes missions</option>
+            </select>
+            <select class="form-select form-select-sm" id="filter-meo">
+              <option value="">Toutes MEO</option>
+            </select>
+          </div>
         </div>
 
         <!-- Stats -->

@@ -27,6 +27,7 @@ class TachesApp {
     this.edges = null;
     this.tasks = [];
     this.missions = []; // Missions depuis Ssir_strategie2
+    this.meos = []; // Mises en œuvre agrégées depuis les tâches
     this.selectedTaskId = null;
     this.pendingLinkType = null;
     this.physicsEnabled = true;
@@ -59,6 +60,9 @@ class TachesApp {
 
     // Charger les missions depuis Ssir_strategie2
     await this.loadMissions();
+
+    // Agréger les MEOs depuis les tâches
+    this.aggregateMeos();
 
     // Initialiser la modale partagée
     await this.initSharedTaskModal();
@@ -127,6 +131,55 @@ class TachesApp {
       console.warn('TachesApp: Could not load missions:', e);
       this.missions = [];
     }
+  }
+
+  /**
+   * Agrège les MEOs depuis les tâches
+   */
+  aggregateMeos() {
+    const meoMap = new Map();
+
+    for (const task of this.tasks) {
+      const code = task.mise_en_oeuvre_code;
+      if (!code) continue;
+
+      if (!meoMap.has(code)) {
+        meoMap.set(code, {
+          code: code,
+          nom: task.mise_en_oeuvre_nom || code,
+          strategie_id: task.strategie_id,
+          mission_code: task.mission_code,
+          mission_nom: task.mission_nom,
+          taskCount: 0,
+          tempsEstime: 0,
+          tempsReel: 0
+        });
+      }
+
+      const meo = meoMap.get(code);
+      meo.taskCount++;
+      meo.tempsEstime += parseFloat(task.temps_estime) || 0;
+      meo.tempsReel += parseFloat(task.temps_reel) || 0;
+    }
+
+    // Enrichir avec les noms de mission
+    this.meos = Array.from(meoMap.values()).map(meo => {
+      const mission = this.missions.find(m => m.id === meo.strategie_id);
+      if (mission) {
+        meo.missionNom = mission.nom || `Mission #${mission.id}`;
+      }
+      return meo;
+    });
+
+    // Trier par mission puis par code
+    this.meos.sort((a, b) => {
+      const mA = a.missionNom || '';
+      const mB = b.missionNom || '';
+      if (mA !== mB) return mA.localeCompare(mB);
+      return (a.code || '').localeCompare(b.code || '');
+    });
+
+    console.log('TachesApp: Aggregated', this.meos.length, 'MEOs');
   }
 
   /**
@@ -245,6 +298,56 @@ class TachesApp {
     for (const statut of STATUTS) {
       $filterStatus.append(`<option value="${statut.id}">${statut.libelle}</option>`);
     }
+
+    // Filtres missions
+    const $filterMission = $('#filter-mission');
+    $filterMission.html('<option value="">Toutes missions</option>');
+    for (const mission of this.missions) {
+      const label = mission.nom || `Mission #${mission.id}`;
+      $filterMission.append(`<option value="${mission.id}">${this.escapeHtml(label)}</option>`);
+    }
+
+    // Filtres MEO
+    this.populateMeoFilter();
+  }
+
+  /**
+   * Peuple le filtre MEO (optionnellement filtré par mission)
+   */
+  populateMeoFilter(missionId = null) {
+    const $filterMeo = $('#filter-meo');
+    $filterMeo.html('<option value="">Toutes MEO</option>');
+
+    // Filtrer les MEOs si une mission est sélectionnée
+    let meosToShow = this.meos;
+    if (missionId) {
+      meosToShow = this.meos.filter(m => m.strategie_id === parseInt(missionId));
+    }
+
+    // Grouper par mission
+    const grouped = new Map();
+    for (const meo of meosToShow) {
+      const groupKey = meo.missionNom || 'Sans mission';
+      if (!grouped.has(groupKey)) {
+        grouped.set(groupKey, []);
+      }
+      grouped.get(groupKey).push(meo);
+    }
+
+    // Ajouter les optgroups
+    for (const [missionName, meosList] of grouped) {
+      if (grouped.size > 1) {
+        const $optgroup = $(`<optgroup label="${this.escapeHtml(missionName)}"></optgroup>`);
+        for (const meo of meosList) {
+          $optgroup.append(`<option value="${this.escapeHtml(meo.code)}">[${this.escapeHtml(meo.code)}] ${this.escapeHtml(meo.nom)} (${meo.taskCount})</option>`);
+        }
+        $filterMeo.append($optgroup);
+      } else {
+        for (const meo of meosList) {
+          $filterMeo.append(`<option value="${this.escapeHtml(meo.code)}">[${this.escapeHtml(meo.code)}] ${this.escapeHtml(meo.nom)} (${meo.taskCount})</option>`);
+        }
+      }
+    }
   }
 
   /**
@@ -255,6 +358,15 @@ class TachesApp {
     $('#search-tasks').on('input', () => this.renderTasksList());
     $('#filter-type').on('change', () => this.renderTasksList());
     $('#filter-status').on('change', () => this.renderTasksList());
+
+    // Filtres Mission et MEO
+    $('#filter-mission').on('change', () => {
+      const missionId = $('#filter-mission').val();
+      this.populateMeoFilter(missionId);
+      $('#filter-meo').val(''); // Reset MEO filter
+      this.renderTasksList();
+    });
+    $('#filter-meo').on('change', () => this.renderTasksList());
 
     // Graphe
     $('#btn-zoom-fit').on('click', () => this.network?.fit());
@@ -374,6 +486,8 @@ class TachesApp {
     const search = $('#search-tasks').val().toLowerCase();
     const filterType = $('#filter-type').val();
     const filterStatus = $('#filter-status').val();
+    const filterMission = $('#filter-mission').val();
+    const filterMeo = $('#filter-meo').val();
 
     let filtered = this.tasks.filter(task => {
       // Recherche textuelle
@@ -387,6 +501,12 @@ class TachesApp {
 
       // Filtre statut
       if (filterStatus && task.statut !== filterStatus) return false;
+
+      // Filtre mission
+      if (filterMission && task.strategie_id !== parseInt(filterMission)) return false;
+
+      // Filtre MEO
+      if (filterMeo && task.mise_en_oeuvre_code !== filterMeo) return false;
 
       return true;
     });
@@ -414,15 +534,17 @@ class TachesApp {
       const genre = this.extractChoiceValue(task.genre_action);
       const etape = this.extractChoiceValue(task.etape_code);
       const missionName = this.getMissionName(task.strategie_id);
+      const meoCode = task.mise_en_oeuvre_code;
 
       // Construire les badges trigrammes
       let trigrammes = '';
-      if (nature || genre || etape || missionName) {
+      if (nature || genre || etape || missionName || meoCode) {
         trigrammes = '<div class="task-card-trigrammes">';
         if (nature) trigrammes += `<span class="trigramme nature">${this.escapeHtml(nature)}</span>`;
         if (genre) trigrammes += `<span class="trigramme genre">${this.escapeHtml(genre)}</span>`;
         if (etape) trigrammes += `<span class="trigramme etape">${this.escapeHtml(etape)}</span>`;
         if (missionName) trigrammes += `<span class="trigramme mission" title="${this.escapeHtml(missionName)}">${this.escapeHtml(missionName.substring(0, 15))}${missionName.length > 15 ? '...' : ''}</span>`;
+        if (meoCode) trigrammes += `<span class="trigramme meo" title="${this.escapeHtml(task.mise_en_oeuvre_nom || meoCode)}">${this.escapeHtml(meoCode)}</span>`;
         trigrammes += '</div>';
       }
 
