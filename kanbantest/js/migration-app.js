@@ -3,6 +3,27 @@
 
 const TABLE_ID = 'Ssir_principale_task';
 
+/**
+ * Convertit une valeur Grist en string
+ * Gere les cas: string, number, array ['L', 'val'], Reference, null
+ */
+function toStr(value) {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return String(value);
+  if (Array.isArray(value)) {
+    // ChoiceList format: ['L', 'val1', 'val2']
+    if (value[0] === 'L') return value.slice(1).join(', ');
+    return value.join(', ');
+  }
+  if (typeof value === 'object') {
+    // Reference format: peut avoir une propriété displayValue
+    if (value.displayValue) return String(value.displayValue);
+    return '';
+  }
+  return String(value);
+}
+
 // Mapping type_tache_id (ancien) -> genre_action (V3)
 const TYPE_ID_TO_GENRE = {
   'Rédaction documentation': 'DOC',
@@ -97,18 +118,18 @@ class MigrationApp {
         return;
       }
 
-      // Convertir en tableau d'objets
+      // Convertir en tableau d'objets (avec conversion string securisee)
       this.records = [];
       for (let i = 0; i < data.id.length; i++) {
         this.records.push({
           id: data.id[i],
-          titre: data.titre?.[i] || '',
-          type_tache_id: data.type_tache_id?.[i] || '',
-          type_tache: data.type_tache?.[i] || '',
-          nature_activite: data.nature_activite?.[i] || '',
-          genre_action: data.genre_action?.[i] || '',
-          etape_code: data.etape_code?.[i] || '',
-          previsibilite: data.previsibilite?.[i] || data['previsibilité']?.[i] || ''
+          titre: toStr(data.titre?.[i]),
+          type_tache_id: toStr(data.type_tache_id?.[i]),
+          type_tache: toStr(data.type_tache?.[i]),
+          nature_activite: toStr(data.nature_activite?.[i]),
+          genre_action: toStr(data.genre_action?.[i]),
+          etape_code: toStr(data.etape_code?.[i]),
+          previsibilite: toStr(data.previsibilite?.[i]) || toStr(data['previsibilité']?.[i])
         });
       }
 
