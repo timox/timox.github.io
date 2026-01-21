@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modèle de Données - Kanban SSIR V3</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root {
+      --color-strategie: #3b82f6;
+      --color-programme: #22c55e;
+      --color-mission: #f59e0b;
+      --color-tache: #6366f1;
+      --color-nature: #dc3545;
+      --color-genre: #0d6efd;
+      --color-etape: #6f42c1;
+    }
+
+    body {
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    .page-header {
+      background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      color: white;
+      padding: 2rem 0;
+      margin-bottom: 2rem;
+    }
+
+    .page-header h1 {
+      font-weight: 700;
+    }
+
+    .card {
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      margin-bottom: 1.5rem;
+    }
+
+    .card-header {
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      font-weight: 600;
+      padding: 1rem 1.25rem;
+      border-radius: 12px 12px 0 0 !important;
+    }
+
+    .card-header i {
+      margin-right: 0.5rem;
+    }
+
+    /* Hierarchy Diagram */
+    .hierarchy-diagram {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 2rem;
+      color: #e2e8f0;
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 0.9rem;
+      overflow-x: auto;
+    }
+
+    .hierarchy-level {
+      margin-left: 2rem;
+      border-left: 2px solid #475569;
+      padding-left: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    .hierarchy-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.25rem 0;
+    }
+
+    .hierarchy-badge {
+      padding: 0.25rem 0.75rem;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+
+    .badge-strategie { background: var(--color-strategie); }
+    .badge-programme { background: var(--color-programme); }
+    .badge-mission { background: var(--color-mission); color: #1e293b; }
+    .badge-tache { background: var(--color-tache); }
+
+    /* Taxonomy Cards */
+    .taxonomy-card {
+      border-left: 4px solid;
+      background: white;
+      border-radius: 0 8px 8px 0;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .taxonomy-card.nature { border-color: var(--color-nature); }
+    .taxonomy-card.genre { border-color: var(--color-genre); }
+    .taxonomy-card.etape { border-color: var(--color-etape); }
+
+    .taxonomy-title {
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .taxonomy-question {
+      color: #64748b;
+      font-style: italic;
+      margin-bottom: 0.75rem;
+    }
+
+    /* Value Badges */
+    .value-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      margin: 0.25rem;
+      color: white;
+    }
+
+    /* Table Schema */
+    .schema-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .schema-table th {
+      background: #f1f5f9;
+      padding: 0.75rem;
+      text-align: left;
+      font-weight: 600;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .schema-table td {
+      padding: 0.75rem;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+
+    .schema-table tr:hover {
+      background: #f8fafc;
+    }
+
+    .field-name {
+      font-family: 'Fira Code', monospace;
+      background: #f1f5f9;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+
+    .field-type {
+      font-size: 0.75rem;
+      color: #64748b;
+      background: #e2e8f0;
+      padding: 0.15rem 0.4rem;
+      border-radius: 3px;
+    }
+
+    .field-required {
+      color: #dc3545;
+      font-weight: bold;
+    }
+
+    .field-optional {
+      color: #64748b;
+    }
+
+    /* Relationship Diagram */
+    .relationship-box {
+      background: white;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .relationship-box h6 {
+      margin: 0;
+      font-weight: 700;
+    }
+
+    .relationship-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      font-size: 1.5rem;
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    /* Print styles */
+    @media print {
+      .no-print { display: none; }
+      .card { break-inside: avoid; }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hierarchy-diagram { font-size: 0.8rem; }
+      .hierarchy-level { margin-left: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="page-header">
+    <div class="container">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+          <h1><i class="bi bi-diagram-3 me-2"></i>Modèle de Données V3</h1>
+          <p class="mb-0 opacity-75">Documentation du système de gestion des tâches SSIR</p>
+        </div>
+        <div class="nav-buttons no-print">
+          <a href="index.html" class="btn btn-outline-light btn-sm">
+            <i class="bi bi-kanban me-1"></i>Kanban
+          </a>
+          <a href="missions.html" class="btn btn-outline-light btn-sm">
+            <i class="bi bi-flag me-1"></i>Missions
+          </a>
+          <a href="setup.html" class="btn btn-outline-light btn-sm">
+            <i class="bi bi-gear me-1"></i>Setup
+          </a>
+          <button onclick="window.print()" class="btn btn-light btn-sm">
+            <i class="bi bi-printer me-1"></i>Imprimer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container pb-5">
+    <!-- Vue d'ensemble -->
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-eye text-primary"></i>Vue d'ensemble
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <h5>Principes du modèle V3</h5>
+            <ul>
+              <li><strong>Hiérarchie stratégique</strong> : Stratégie → Programme → Mission → Tâche</li>
+              <li><strong>Classification 3 axes</strong> : Chaque tâche est classifiée selon 3 dimensions orthogonales</li>
+              <li><strong>Flexibilité</strong> : Les champs V3 sont optionnels et peuvent être remplis progressivement</li>
+            </ul>
+          </div>
+          <div class="col-md-6">
+            <h5>Avantages</h5>
+            <ul>
+              <li><i class="bi bi-check-circle text-success me-1"></i>Vision stratégique claire</li>
+              <li><i class="bi bi-check-circle text-success me-1"></i>Analyses multidimensionnelles</li>
+              <li><i class="bi bi-check-circle text-success me-1"></i>Traçabilité complète</li>
+              <li><i class="bi bi-check-circle text-success me-1"></i>Reporting automatisé</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hiérarchie -->
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-diagram-2 text-success"></i>Structure Hiérarchique
+      </div>
+      <div class="card-body p-0">
+        <div class="hierarchy-diagram">
+          <div class="hierarchy-item">
+            <span class="hierarchy-badge badge-strategie">STRATÉGIE</span>
+            <span class="text-muted">Table: Ssir_strategie2</span>
+          </div>
+          <div class="hierarchy-level">
+            <div class="hierarchy-item">
+              <span class="hierarchy-badge badge-programme">PROGRAMME</span>
+              <span class="text-muted">Table: Ssir_programmes</span>
+              <span class="badge bg-secondary">1:n</span>
+            </div>
+            <div class="hierarchy-level">
+              <div class="hierarchy-item">
+                <span class="hierarchy-badge badge-mission">MISSION</span>
+                <span class="text-muted">Préfixe: [MISSION]</span>
+                <span class="badge bg-secondary">1:n</span>
+              </div>
+              <div class="hierarchy-level">
+                <div class="hierarchy-item">
+                  <span class="hierarchy-badge badge-tache">SOUS-ACTION</span>
+                  <span class="text-muted">Préfixe: [SA]</span>
+                  <span class="badge bg-secondary">1:n</span>
+                </div>
+                <div class="hierarchy-level">
+                  <div class="hierarchy-item">
+                    <span class="hierarchy-badge badge-tache">TÂCHE</span>
+                    <span class="text-muted">Table: Ssir_principale_task</span>
+                  </div>
+                  <div class="hierarchy-level" style="border-color: #6366f1;">
+                    <div class="hierarchy-item">
+                      <i class="bi bi-tag text-danger"></i>
+                      <code>nature_activite</code>
+                      <span class="text-muted">WHY - Pourquoi ?</span>
+                    </div>
+                    <div class="hierarchy-item">
+                      <i class="bi bi-tag text-primary"></i>
+                      <code>genre_action</code>
+                      <span class="text-muted">HOW - Comment ?</span>
+                    </div>
+                    <div class="hierarchy-item">
+                      <i class="bi bi-tag text-info"></i>
+                      <code>etape_code</code>
+                      <span class="text-muted">WHERE - Où dans le cycle ?</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Taxonomie V3 - 3 Axes -->
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-tags text-warning"></i>Taxonomie V3 - Les 3 Axes
+      </div>
+      <div class="card-body">
+        <p class="text-muted mb-4">
+          Chaque tâche peut être classifiée selon 3 dimensions orthogonales et indépendantes.
+          Ces axes permettent des analyses croisées et des vues multidimensionnelles.
+        </p>
+
+        <!-- Axe 1: Nature -->
+        <div class="taxonomy-card nature">
+          <div class="taxonomy-title">
+            <i class="bi bi-question-circle me-1"></i>
+            Axe 1 : Nature d'Activité (WHY)
+          </div>
+          <div class="taxonomy-question">Pourquoi fait-on cette tâche ?</div>
+          <div class="mb-2"><code class="field-name">nature_activite</code></div>
+          <div>
+            <span class="value-badge" style="background:#dc3545" title="Incident - Réponse à un problème urgent">INC</span>
+            <span class="value-badge" style="background:#0d6efd" title="Support - Assistance aux utilisateurs">SUP</span>
+            <span class="value-badge" style="background:#6f42c1" title="MCO - Maintien en Condition Opérationnelle">MCO</span>
+            <span class="value-badge" style="background:#198754" title="Projet - Développement planifié">PRJ</span>
+            <span class="value-badge" style="background:#6c757d" title="Overhead - Administration, réunions">OVH</span>
+          </div>
+          <table class="table table-sm mt-3 mb-0">
+            <tr><td><strong>INC</strong> - Incident</td><td>Réponse urgente à un problème non planifié</td></tr>
+            <tr><td><strong>SUP</strong> - Support</td><td>Assistance aux utilisateurs, helpdesk</td></tr>
+            <tr><td><strong>MCO</strong> - Maintien</td><td>Maintenance préventive, mises à jour régulières</td></tr>
+            <tr><td><strong>PRJ</strong> - Projet</td><td>Développement, déploiement planifié</td></tr>
+            <tr><td><strong>OVH</strong> - Overhead</td><td>Réunions, formation, administratif</td></tr>
+          </table>
+        </div>
+
+        <!-- Axe 2: Genre -->
+        <div class="taxonomy-card genre">
+          <div class="taxonomy-title">
+            <i class="bi bi-tools me-1"></i>
+            Axe 2 : Genre d'Action (HOW)
+          </div>
+          <div class="taxonomy-question">Comment réalise-t-on cette tâche ? (inspiré COBIT)</div>
+          <div class="mb-2"><code class="field-name">genre_action</code></div>
+          <div>
+            <span class="value-badge" style="background:#3b82f6">DOC</span>
+            <span class="value-badge" style="background:#8b5cf6">ANA</span>
+            <span class="value-badge" style="background:#6366f1">CON</span>
+            <span class="value-badge" style="background:#a855f7">RCH</span>
+            <span class="value-badge" style="background:#7c3aed">DEV</span>
+            <span class="value-badge" style="background:#10b981">TST</span>
+            <span class="value-badge" style="background:#22c55e">VAL</span>
+            <span class="value-badge" style="background:#14b8a6">VER</span>
+            <span class="value-badge" style="background:#ef4444">COR</span>
+            <span class="value-badge" style="background:#059669">INS</span>
+            <span class="value-badge" style="background:#f97316">CFG</span>
+            <span class="value-badge" style="background:#f59e0b">INV</span>
+            <span class="value-badge" style="background:#dc2626">SEC</span>
+            <span class="value-badge" style="background:#0ea5e9">REU</span>
+            <span class="value-badge" style="background:#06b6d4">FOR</span>
+            <span class="value-badge" style="background:#eab308">SUI</span>
+          </div>
+          <div class="row mt-3">
+            <div class="col-md-4">
+              <small>
+                <strong>DOC</strong> - Documentation<br>
+                <strong>ANA</strong> - Analyse<br>
+                <strong>CON</strong> - Conception<br>
+                <strong>RCH</strong> - Recherche<br>
+              </small>
+            </div>
+            <div class="col-md-4">
+              <small>
+                <strong>DEV</strong> - Développement<br>
+                <strong>TST</strong> - Tests<br>
+                <strong>VAL</strong> - Validation<br>
+                <strong>VER</strong> - Vérification<br>
+              </small>
+            </div>
+            <div class="col-md-4">
+              <small>
+                <strong>COR</strong> - Correction<br>
+                <strong>INS</strong> - Installation<br>
+                <strong>CFG</strong> - Configuration<br>
+                <strong>INV</strong> - Inventaire<br>
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Axe 3: Étape -->
+        <div class="taxonomy-card etape">
+          <div class="taxonomy-title">
+            <i class="bi bi-arrow-repeat me-1"></i>
+            Axe 3 : Étape du Cycle (WHERE)
+          </div>
+          <div class="taxonomy-question">Où se situe la tâche dans le cycle de vie ? (inspiré TOGAF ADM)</div>
+          <div class="mb-2"><code class="field-name">etape_code</code></div>
+          <div>
+            <span class="value-badge" style="background:#8b5cf6">ETP.VIS</span>
+            <span class="value-badge" style="background:#6366f1">ETP.ANA</span>
+            <span class="value-badge" style="background:#3b82f6">ETP.CON</span>
+            <span class="value-badge" style="background:#0ea5e9">ETP.PLN</span>
+            <span class="value-badge" style="background:#14b8a6">ETP.REA</span>
+            <span class="value-badge" style="background:#22c55e">ETP.DEP</span>
+            <span class="value-badge" style="background:#f59e0b">ETP.EXP</span>
+            <span class="value-badge" style="background:#eab308">ETP.AME</span>
+          </div>
+          <table class="table table-sm mt-3 mb-0">
+            <tr><td><strong>ETP.VIS</strong></td><td>Vision</td><td>Définition des objectifs stratégiques</td></tr>
+            <tr><td><strong>ETP.ANA</strong></td><td>Analyse</td><td>Étude de l'existant et des besoins</td></tr>
+            <tr><td><strong>ETP.CON</strong></td><td>Conception</td><td>Architecture et design de la solution</td></tr>
+            <tr><td><strong>ETP.PLN</strong></td><td>Planification</td><td>Organisation et planning du projet</td></tr>
+            <tr><td><strong>ETP.REA</strong></td><td>Réalisation</td><td>Développement et implémentation</td></tr>
+            <tr><td><strong>ETP.DEP</strong></td><td>Déploiement</td><td>Mise en production</td></tr>
+            <tr><td><strong>ETP.EXP</strong></td><td>Exploitation</td><td>Run, maintenance courante</td></tr>
+            <tr><td><strong>ETP.AME</strong></td><td>Amélioration</td><td>Optimisation continue</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Schéma des tables -->
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-table text-info"></i>Schéma des Tables Grist
+      </div>
+      <div class="card-body">
+        <ul class="nav nav-tabs" id="tableTabs" role="tablist">
+          <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-taches">Ssir_principale_task</button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-programmes">Ssir_programmes</button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-agents">Ssir_agents</button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-strategie">Ssir_strategie2</button>
+          </li>
+        </ul>
+
+        <div class="tab-content pt-3">
+          <!-- Table Tâches -->
+          <div class="tab-pane fade show active" id="tab-taches">
+            <h6>Table principale des tâches</h6>
+            <table class="schema-table">
+              <thead>
+                <tr>
+                  <th>Champ</th>
+                  <th>Type</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code class="field-name">titre</code> <span class="field-required">*</span></td>
+                  <td><span class="field-type">Text</span></td>
+                  <td>Titre de la tâche. Préfixes spéciaux : [MISSION], [SA]</td>
+                </tr>
+                <tr>
+                  <td><code class="field-name">description</code></td>
+                  <td><span class="field-type">Text</span></td>
+                  <td>Description détaillée</td>
+                </tr>
+                <tr>
+                  <td><code class="field-name">statut</code></td>
+                  <td><span class="field-type">Choice</span></td>
+                  <td>À faire, En cours, En attente, Terminé</td>
+                </tr>
+                <tr>
+                  <td><code class="field-name">bureau</code></td>
+                  <td><span class="field-type">ChoiceList</span></td>
+                  <td>Bureau(x) concerné(s)</td>
+                </tr>
+                <tr>
+                  <td><code class="field-name">qui</code></td>
+                  <td><span class="field-type">ChoiceList</span></td>
+                  <td>Personne(s) assignée(s)</td>
+                </tr>
+                <tr>
+                  <td><code class="field-name">date_echeance</code></td>
+                  <td><span class="field-type">Date</span></td>
+                  <td>Date d'échéance</td>
+                </tr>
+                <tr class="table-info">
+                  <td><code class="field-name">nature_activite</code></td>
+                  <td><span class="field-type">Choice</span></td>
+                  <td><strong>V3</strong> - Axe WHY : INC, SUP, MCO, PRJ, OVH</td>
+                </tr>
+                <tr class="table-info">
+                  <td><code class="field-name">genre_action</code></td>
+                  <td><span class="field-type">Choice</span></td>
+                  <td><strong>V3</strong> - Axe HOW : DOC, ANA, DEV, TST, etc.</td>
+                </tr>
+                <tr class="table-info">
+                  <td><code class="field-name">etape_code</code></td>
+                  <td><span class="field-type">Choice</span></td>
+                  <td><strong>V3</strong> - Axe WHERE : ETP.VIS, ETP.ANA, etc.</td>
+                </tr>
+                <tr class="table-info">
+                  <td><code class="field-name">previsibilite</code></td>
+                  <td><span class="field-type">Choice</span></td>
+                  <td><strong>V3</strong> - Prévisible / Imprévisible</td>
+                </tr>
+                <tr class="table-warning">
+                  <td><code class="field-name">mission_code</code></td>
+                  <td><span class="field-type">Text</span></td>
+                  <td><strong>Hiérarchie</strong> - Code de la mission parente</td>
+                </tr>
+                <tr class="table-warning">
+                  <td><code class="field-name">sous_action_code</code></td>
+                  <td><span class="field-type">Text</span></td>
+                  <td><strong>Hiérarchie</strong> - Code de la sous-action</td>
+                </tr>
+                <tr class="table-warning">
+                  <td><code class="field-name">programme_id</code></td>
+                  <td><span class="field-type">Ref</span></td>
+                  <td><strong>Hiérarchie</strong> - Référence vers Ssir_programmes</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Table Programmes -->
+          <div class="tab-pane fade" id="tab-programmes">
+            <h6>Table des programmes</h6>
+            <table class="schema-table">
+              <thead>
+                <tr><th>Champ</th><th>Type</th><th>Description</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code class="field-name">code</code></td><td><span class="field-type">Text</span></td><td>Code unique (ex: PRG-SOC)</td></tr>
+                <tr><td><code class="field-name">nom</code></td><td><span class="field-type">Text</span></td><td>Nom du programme</td></tr>
+                <tr><td><code class="field-name">description</code></td><td><span class="field-type">Text</span></td><td>Description</td></tr>
+                <tr><td><code class="field-name">strategie_id</code></td><td><span class="field-type">Ref</span></td><td>Référence vers Ssir_strategie2</td></tr>
+                <tr><td><code class="field-name">responsable</code></td><td><span class="field-type">Ref</span></td><td>Référence vers Ssir_agents</td></tr>
+                <tr><td><code class="field-name">date_debut</code></td><td><span class="field-type">Date</span></td><td>Date de début</td></tr>
+                <tr><td><code class="field-name">date_fin</code></td><td><span class="field-type">Date</span></td><td>Date de fin prévue</td></tr>
+                <tr><td><code class="field-name">statut</code></td><td><span class="field-type">Choice</span></td><td>Planifié, En cours, Terminé, Suspendu</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Table Agents -->
+          <div class="tab-pane fade" id="tab-agents">
+            <h6>Table des agents (personnes)</h6>
+            <table class="schema-table">
+              <thead>
+                <tr><th>Champ</th><th>Type</th><th>Description</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code class="field-name">nom</code></td><td><span class="field-type">Text</span></td><td>Nom de famille</td></tr>
+                <tr><td><code class="field-name">prenom</code></td><td><span class="field-type">Text</span></td><td>Prénom</td></tr>
+                <tr><td><code class="field-name">email</code></td><td><span class="field-type">Text</span></td><td>Adresse email</td></tr>
+                <tr><td><code class="field-name">bureau</code></td><td><span class="field-type">Choice</span></td><td>Bureau d'affectation</td></tr>
+                <tr><td><code class="field-name">fonction</code></td><td><span class="field-type">Text</span></td><td>Fonction/poste</td></tr>
+                <tr><td><code class="field-name">telephone</code></td><td><span class="field-type">Text</span></td><td>Numéro de téléphone</td></tr>
+                <tr><td><code class="field-name">actif</code></td><td><span class="field-type">Bool</span></td><td>Agent actif ou non</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Table Stratégie -->
+          <div class="tab-pane fade" id="tab-strategie">
+            <h6>Table des objectifs stratégiques</h6>
+            <p class="text-muted">Structure hiérarchique : Objectif → Sous-objectif → Action</p>
+            <table class="schema-table">
+              <thead>
+                <tr><th>Champ</th><th>Type</th><th>Description</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code class="field-name">objectif</code></td><td><span class="field-type">Text</span></td><td>Objectif stratégique principal</td></tr>
+                <tr><td><code class="field-name">sous_objectif</code></td><td><span class="field-type">Text</span></td><td>Sous-objectif</td></tr>
+                <tr><td><code class="field-name">action</code></td><td><span class="field-type">Text</span></td><td>Action à réaliser</td></tr>
+                <tr><td><code class="field-name">priorite</code></td><td><span class="field-type">Int</span></td><td>Niveau de priorité</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Relations -->
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-link-45deg text-purple"></i>Relations entre Tables
+      </div>
+      <div class="card-body">
+        <div class="row align-items-center text-center">
+          <div class="col-md-2">
+            <div class="relationship-box" style="border-color: var(--color-strategie);">
+              <h6 style="color: var(--color-strategie);">Ssir_strategie2</h6>
+              <small class="text-muted">Objectifs</small>
+            </div>
+          </div>
+          <div class="col-md-1 relationship-arrow">
+            <i class="bi bi-arrow-right"></i>
+          </div>
+          <div class="col-md-2">
+            <div class="relationship-box" style="border-color: var(--color-programme);">
+              <h6 style="color: var(--color-programme);">Ssir_programmes</h6>
+              <small class="text-muted">Programmes</small>
+            </div>
+          </div>
+          <div class="col-md-1 relationship-arrow">
+            <i class="bi bi-arrow-right"></i>
+          </div>
+          <div class="col-md-2">
+            <div class="relationship-box" style="border-color: var(--color-mission);">
+              <h6 style="color: var(--color-mission);">[MISSION]</h6>
+              <small class="text-muted">mission_code</small>
+            </div>
+          </div>
+          <div class="col-md-1 relationship-arrow">
+            <i class="bi bi-arrow-right"></i>
+          </div>
+          <div class="col-md-3">
+            <div class="relationship-box" style="border-color: var(--color-tache);">
+              <h6 style="color: var(--color-tache);">Ssir_principale_task</h6>
+              <small class="text-muted">Tâches</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <h6>Clés de liaison</h6>
+          <ul class="mb-0">
+            <li><code>Ssir_programmes.strategie_id</code> → <code>Ssir_strategie2.id</code></li>
+            <li><code>Ssir_principale_task.programme_id</code> → <code>Ssir_programmes.id</code></li>
+            <li><code>Ssir_principale_task.mission_code</code> → titre d'une tâche [MISSION]</li>
+            <li><code>Ssir_principale_task.responsable_id</code> → <code>Ssir_agents.id</code></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Exemples -->
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-lightbulb text-warning"></i>Exemples d'utilisation
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <h6>Exemple 1 : Incident serveur</h6>
+            <div class="p-3 bg-light rounded">
+              <code>
+                titre: "Serveur mail down"<br>
+                nature_activite: <span class="badge" style="background:#dc3545">INC</span><br>
+                genre_action: <span class="badge" style="background:#ef4444">COR</span><br>
+                etape_code: <span class="badge" style="background:#f59e0b">ETP.EXP</span><br>
+                previsibilite: Imprévisible
+              </code>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <h6>Exemple 2 : Projet planifié</h6>
+            <div class="p-3 bg-light rounded">
+              <code>
+                titre: "[MISSION] Migration M365"<br>
+                nature_activite: <span class="badge" style="background:#198754">PRJ</span><br>
+                genre_action: <span class="badge" style="background:#7c3aed">DEV</span><br>
+                etape_code: <span class="badge" style="background:#14b8a6">ETP.REA</span><br>
+                previsibilite: Prévisible
+              </code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center text-muted mt-4">
+      <small>
+        <i class="bi bi-info-circle me-1"></i>
+        Modèle de données V3 - Kanban SSIR - Dernière mise à jour : Janvier 2026
+      </small>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
