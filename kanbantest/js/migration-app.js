@@ -574,32 +574,32 @@ class MigrationApp {
 
     for (const [colId, config] of Object.entries(columns)) {
       try {
-        // Essayer de modifier (si existe)
+        // Essayer d'abord de créer la colonne (plus fiable)
         await grist.docApi.applyUserActions([
-          ['ModifyColumn', TABLE_ID, colId, {
+          ['AddColumn', TABLE_ID, colId, {
             type: config.type,
             label: config.label,
             widgetOptions: config.widgetOptions
           }]
         ]);
-        this.log(`  ✓ ${colId} existe`, 'success');
-      } catch (e) {
-        if (e.message && (e.message.includes('not found') || e.message.includes('No such column'))) {
-          // Créer la colonne
+        this.log(`  ✓ ${colId} créée`, 'success');
+      } catch (addError) {
+        // Si la colonne existe déjà, la modifier
+        if (addError.message && addError.message.includes('already exists')) {
           try {
             await grist.docApi.applyUserActions([
-              ['AddColumn', TABLE_ID, colId, {
+              ['ModifyColumn', TABLE_ID, colId, {
                 type: config.type,
                 label: config.label,
                 widgetOptions: config.widgetOptions
               }]
             ]);
-            this.log(`  ✓ ${colId} créée`, 'success');
-          } catch (addError) {
-            this.log(`  ✗ ${colId}: ${addError.message}`, 'error');
+            this.log(`  ✓ ${colId} existe (mise à jour)`, 'success');
+          } catch (modError) {
+            this.log(`  ⚠ ${colId}: ${modError.message}`, 'warning');
           }
         } else {
-          this.log(`  ⚠ ${colId}: ${e.message}`, 'warning');
+          this.log(`  ✗ ${colId}: ${addError.message}`, 'error');
         }
       }
     }
