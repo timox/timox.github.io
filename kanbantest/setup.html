@@ -566,11 +566,11 @@
             ['AddTable', PROGRAMMES_TABLE.name, columns]
           ]);
           log(`✓ Table ${PROGRAMMES_TABLE.name} créée`, 'success');
-          setStatus('status-programmes', 'done');
+          setStatus('status-programmes-table', 'done');
         } catch (e) {
           if (e.message && e.message.includes('already exists')) {
             log(`✓ Table ${PROGRAMMES_TABLE.name} existe déjà`, 'success');
-            setStatus('status-programmes', 'done');
+            setStatus('status-programmes-table', 'done');
           } else {
             log(`⚠ Programmes: ${e.message}`, 'error');
           }
@@ -592,12 +592,12 @@
             ['AddTable', AGENTS_TABLE.name, columns]
           ]);
           log(`✓ Table ${AGENTS_TABLE.name} créée`, 'success');
-          setStatus('status-agents', 'done');
+          setStatus('status-agents-table', 'done');
           agentsTableCreated = true;
         } catch (e) {
           if (e.message && e.message.includes('already exists')) {
             log(`✓ Table ${AGENTS_TABLE.name} existe déjà`, 'success');
-            setStatus('status-agents', 'done');
+            setStatus('status-agents-table', 'done');
           } else {
             log(`⚠ Agents: ${e.message}`, 'error');
           }
@@ -693,7 +693,8 @@
             }
           }
         }
-        setStatus('status-hierarchy', 'done');
+        setStatus('status-programme-ref', 'done');
+        setStatus('status-mission-col', 'done');
 
         log('=== CONFIGURATION TERMINÉE ===', 'success');
         log('Rechargez la page des tâches pour voir les nouveaux champs.', 'info');
