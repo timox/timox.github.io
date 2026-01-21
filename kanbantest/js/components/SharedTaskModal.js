@@ -509,6 +509,13 @@ class SharedTaskModal {
       const agent = this.agents.find(a => a.id === responsableId);
       if (agent) {
         quiValue = agent.fullName;
+      } else {
+        // Fallback: récupérer le texte de l'option sélectionnée
+        const selectEl = document.getElementById('stm-responsable');
+        if (selectEl && selectEl.selectedIndex >= 0) {
+          const selectedOption = selectEl.options[selectEl.selectedIndex];
+          quiValue = selectedOption.dataset.fullname || selectedOption.textContent.trim();
+        }
       }
     }
 
