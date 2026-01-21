@@ -470,6 +470,10 @@
 
     function setStatus(id, status) {
       const el = document.getElementById(id);
+      if (!el) {
+        console.warn(`setStatus: élément #${id} non trouvé`);
+        return;
+      }
       el.className = `status-badge status-${status}`;
       el.textContent = status === 'done' ? 'Fait' : status === 'error' ? 'Erreur' : 'En attente';
     }
