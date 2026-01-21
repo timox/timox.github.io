@@ -8,7 +8,7 @@ import {
   TABLE_ID
 } from './config/constants.js';
 
-import { generateSingleBureauBadge } from './utils/badges.js';
+import { generateSingleBureauBadge, extractPrenom } from './utils/badges.js';
 
 class StatsAppManager {
   constructor() {
@@ -163,7 +163,9 @@ class StatsAppManager {
       const responsables = this.parseMultipleValues(task.qui);
       const bureaux = this.parseMultipleValues(task.bureau);
       
-      responsables.forEach(person => {
+      responsables.forEach(rawPerson => {
+        const person = extractPrenom(rawPerson);
+        if (!person) return;
         if (!personStats[person]) {
           personStats[person] = {
             name: person,
@@ -176,7 +178,7 @@ class StatsAppManager {
             p3plus: 0
           };
         }
-        
+
         const stats = personStats[person];
         
         // Ajouter les bureaux
@@ -501,10 +503,10 @@ class StatsAppManager {
     const responsables = this.parseMultipleValues(task.qui);
     const bureaux = this.parseMultipleValues(task.bureau);
     
-    // Badges pour responsables
-    const responsablesBadges = responsables.map(resp => 
-      `<span class="badge bg-secondary me-1">${resp}</span>`
-    ).join('');
+    // Badges pour responsables (afficher les prénoms uniquement)
+    const responsablesBadges = responsables.map(resp =>
+      `<span class="badge bg-secondary me-1">${extractPrenom(resp)}</span>`
+    ).filter(Boolean).join('');
     
     // Badges pour bureaux
     const bureauxBadges = bureaux.map(bureau => {
@@ -833,11 +835,12 @@ class StatsAppManager {
     this.tasks.forEach(task => {
       const personnes = this.parseMultipleValues(task.qui);
       
-      if (personnes.length === 0) {
+      const prenoms = personnes.map(extractPrenom).filter(Boolean);
+      if (prenoms.length === 0) {
         result['Non assigné'] = result['Non assigné'] || [];
         result['Non assigné'].push(task);
       } else {
-        personnes.forEach(personne => {
+        prenoms.forEach(personne => {
           result[personne] = result[personne] || [];
           result[personne].push(task);
         });
