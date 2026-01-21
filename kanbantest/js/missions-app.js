@@ -107,6 +107,10 @@ function setupEventListeners() {
   $('#missions-container, #missions-table-container').on('click', '.btn-edit-mission', handleEditMission);
   $('#sous-actions-container').on('click', '.btn-remove-sa', handleRemoveSousAction);
 
+  // Bouton Classifier pour les tâches non classifiées
+  $('#missions-container').on('click', '.btn-classify-task', handleClassifyTask);
+  $('#btn-save-classification').on('click', saveClassification);
+
   logger.debug('Event listeners configured');
 }
 
@@ -1010,6 +1014,140 @@ function debounce(func, wait) {
     clearTimeout(timeout);
     timeout = setTimeout(later, wait);
   };
+}
+
+// Variable pour stocker la tâche en cours de classification
+let currentTaskToClassify = null;
+
+/**
+ * Ouvre le modal de classification pour une tâche
+ */
+async function handleClassifyTask(e) {
+  const taskId = $(e.currentTarget).data('task-id');
+  const tasks = gristManager.currentRecords || [];
+  const task = tasks.find(t => t.id === taskId);
+
+  if (!task) {
+    logger.error('Task not found:', taskId);
+    alert('Tâche non trouvée');
+    return;
+  }
+
+  currentTaskToClassify = task;
+  logger.debug('Opening classification modal for task:', taskId, task.titre);
+
+  // Peupler le sélecteur de missions
+  const missions = await missionsManager.getMissions();
+  const $missionSelector = $('#classify-mission-select').empty();
+  $missionSelector.append('<option value="">-- Sélectionner une mission --</option>');
+
+  for (const mission of missions) {
+    $missionSelector.append(`<option value="${escapeHtml(mission.code)}"
+      data-mission='${JSON.stringify({
+        code: mission.code,
+        nom: mission.nom,
+        responsable: mission.responsable,
+        bureau: mission.bureau,
+        priorite: mission.priorite,
+        date_debut: mission.date_debut,
+        date_fin: mission.date_fin,
+        strategie_id: mission.strategie_id,
+        strategie_objectif: mission.strategie_objectif,
+        strategie_sous_objectif: mission.strategie_sous_objectif,
+        strategie_action: mission.strategie_action
+      }).replace(/'/g, "&#39;")}'>
+      [${escapeHtml(mission.code)}] ${escapeHtml(mission.nom)}
+    </option>`);
+  }
+
+  // Mettre à jour le titre du modal avec le nom de la tâche
+  $('#classify-task-title').text(task.titre);
+
+  // Vider le sélecteur de sous-action
+  $('#classify-sous-action-select').empty().append('<option value="">-- Optionnel: Sous-action --</option>');
+
+  // Ouvrir le modal
+  $('#modal-classify').modal('show');
+}
+
+/**
+ * Met à jour les sous-actions disponibles quand on change de mission
+ */
+$('#classify-mission-select').on('change', async function() {
+  const missionCode = $(this).val();
+  const $sousActionSelector = $('#classify-sous-action-select').empty();
+  $sousActionSelector.append('<option value="">-- Optionnel: Sous-action --</option>');
+
+  if (!missionCode) return;
+
+  const mission = await missionsManager.getMission(missionCode);
+  if (mission && mission.sous_actions.size > 0) {
+    for (const sa of mission.sous_actions.values()) {
+      $sousActionSelector.append(`<option value="${escapeHtml(sa.code)}"
+        data-sa='${JSON.stringify({
+          code: sa.code,
+          nom: sa.nom,
+          categorie: sa.categorie,
+          charge_estimee: sa.charge_estimee
+        }).replace(/'/g, "&#39;")}'>
+        [${escapeHtml(sa.code)}] ${escapeHtml(sa.nom)} (${sa.categorie || 'N/A'})
+      </option>`);
+    }
+  }
+});
+
+/**
+ * Sauvegarde la classification d'une tâche
+ */
+async function saveClassification() {
+  if (!currentTaskToClassify) {
+    alert('Aucune tâche sélectionnée');
+    return;
+  }
+
+  const missionCode = $('#classify-mission-select').val();
+  if (!missionCode) {
+    alert('Veuillez sélectionner une mission');
+    return;
+  }
+
+  try {
+    showLoading(true);
+
+    // Récupérer les données de la mission depuis l'option
+    const $missionOption = $('#classify-mission-select option:selected');
+    const missionData = JSON.parse($missionOption.attr('data-mission') || '{}');
+
+    // Récupérer les données de la sous-action si sélectionnée
+    let sousActionData = null;
+    const sousActionCode = $('#classify-sous-action-select').val();
+    if (sousActionCode) {
+      const $saOption = $('#classify-sous-action-select option:selected');
+      sousActionData = JSON.parse($saOption.attr('data-sa') || 'null');
+    }
+
+    logger.debug('Classifying task:', currentTaskToClassify.id, 'to mission:', missionCode);
+
+    // Appeler attachTaskToMission
+    await missionsManager.attachTaskToMission(
+      currentTaskToClassify.id,
+      missionCode,
+      missionData,
+      sousActionData
+    );
+
+    // Fermer le modal et rafraîchir
+    $('#modal-classify').modal('hide');
+    currentTaskToClassify = null;
+    await refreshData();
+
+    logger.debug('Task classified successfully');
+  } catch (error) {
+    logger.error('Failed to classify task:', error);
+    alert('Erreur lors de la classification: ' + error.message);
+  } finally {
+    showLoading(false);
+  }
 }
 
 // Initialiser l'app au chargement
