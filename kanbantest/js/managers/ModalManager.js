@@ -15,7 +15,16 @@ import {
   confirmAction
 } from '../utils/dom.js';
 
-import { TABLE_ID } from '../config/constants.js';
+import {
+  TABLE_ID,
+  NATURE_ACTIVITE,
+  GENRE_ACTION,
+  ETAPE_CYCLE,
+  PREVISIBILITE,
+  getAllNaturesActivite,
+  getAllGenresAction,
+  getAllEtapesCycle
+} from '../config/constants.js';
 import { getUserActionManager } from '../utils/UserActionManager.js';
 import { createModuleLogger } from '../utils/LoggerManager.js';
 import { referenceManager } from '../utils/ReferenceManager.js';
@@ -1079,7 +1088,13 @@ export class ModalManager {
     // Urgence et Impact
     setFieldValue('popup-urgence', task.urgence || '');
     setFieldValue('popup-impact', task.impact || '');
-    
+
+    // Champs V3
+    setFieldValue('popup-nature', task.nature_activite || '');
+    setFieldValue('popup-genre', task.genre_action || '');
+    setFieldValue('popup-etape', task.etape_code || '');
+    setFieldValue('popup-previsibilite', task.previsibilite || task['previsibilité'] || '');
+
     // Priorité calculée automatiquement
     const prioriteCalculee = this.calculatePriorite(task.urgence || '', task.impact || '');
     setFieldValue('popup-priorite-calculee', prioriteCalculee);
@@ -1415,6 +1430,11 @@ export class ModalManager {
       projet: getFieldValue('popup-projet').trim() || null,
       urgence: getFieldValue('popup-urgence') || null,
       impact: getFieldValue('popup-impact') || null,
+      // Champs V3
+      nature_activite: getFieldValue('popup-nature') || null,
+      genre_action: getFieldValue('popup-genre') || null,
+      etape_code: getFieldValue('popup-etape') || null,
+      previsibilite: getFieldValue('popup-previsibilite') || null,
       bureau: getSelectedOptionsAsGristFormat('popup-bureau'),
       qui: getSelectedOptionsAsGristFormat('popup-qui'),
       strategie_id: this.collectStrategyData(), // Collecte spécialisée stratégies
@@ -2510,12 +2530,82 @@ export class ModalManager {
     populateSelect('popup-impact', impactOptions, true);
     populateSelect('popup-projet', projetOptions, true);
 
+    // Peupler les selects V3
+    this.populateV3Selects();
+
     // Peupler les cases à cocher
     this.logger.debug(`Populating options: ${bureauOptions.length} bureau, ${responsableOptions.length} responsables`);
     this.populateCheckboxOptions('popup-bureau-checkboxes', 'popup-bureau', ['L', ...bureauOptions]);
     this.populateCheckboxOptions('popup-qui-checkboxes', 'popup-qui', ['L', ...responsableOptions]);
   }
-  
+
+  /**
+   * Peuple les selects de taxonomie V3
+   */
+  populateV3Selects() {
+    // Nature d'activite (Pourquoi)
+    const natureSelect = document.getElementById('popup-nature');
+    if (natureSelect) {
+      natureSelect.innerHTML = '<option value="">-- Nature --</option>';
+      getAllNaturesActivite().forEach(nature => {
+        const option = document.createElement('option');
+        option.value = nature.code;
+        option.textContent = `${nature.nom}`;
+        option.title = nature.description;
+        natureSelect.appendChild(option);
+      });
+    }
+
+    // Genre d'action (Comment)
+    const genreSelect = document.getElementById('popup-genre');
+    if (genreSelect) {
+      genreSelect.innerHTML = '<option value="">-- Genre --</option>';
+      // Grouper par famille
+      const families = {};
+      getAllGenresAction().forEach(genre => {
+        if (!families[genre.famille]) families[genre.famille] = [];
+        families[genre.famille].push(genre);
+      });
+      Object.entries(families).forEach(([famille, genres]) => {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = famille.charAt(0).toUpperCase() + famille.slice(1);
+        genres.forEach(genre => {
+          const option = document.createElement('option');
+          option.value = genre.code;
+          option.textContent = genre.nom;
+          option.title = genre.description;
+          optgroup.appendChild(option);
+        });
+        genreSelect.appendChild(optgroup);
+      });
+    }
+
+    // Etape du cycle (Ou)
+    const etapeSelect = document.getElementById('popup-etape');
+    if (etapeSelect) {
+      etapeSelect.innerHTML = '<option value="">-- Etape --</option>';
+      getAllEtapesCycle().forEach(etape => {
+        const option = document.createElement('option');
+        option.value = etape.code;
+        option.textContent = `${etape.ordre}. ${etape.nom}`;
+        option.title = etape.description;
+        etapeSelect.appendChild(option);
+      });
+    }
+
+    // Previsibilite
+    const prevSelect = document.getElementById('popup-previsibilite');
+    if (prevSelect) {
+      prevSelect.innerHTML = '<option value="">-- Auto --</option>';
+      PREVISIBILITE.forEach(prev => {
+        const option = document.createElement('option');
+        option.value = prev.id;
+        option.textContent = prev.id;
+        prevSelect.appendChild(option);
+      });
+    }
+  }
+
   /**
    * Peuple les options sous forme de cases à cocher
    */
