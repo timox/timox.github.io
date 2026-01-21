@@ -127,28 +127,11 @@ class MigrationApp {
       const availableCols = Object.keys(data);
       this.log(`Colonnes disponibles: ${availableCols.join(', ')}`, 'info');
 
-      // Convertir en tableau d'objets (avec conversion string securisee)
-      // Utiliser les noms de colonnes réels (sensible à la casse)
-      const getNatureActivite = (idx) => {
-        if (data.Nature_activite) return toStr(data.Nature_activite[idx]);
-        if (data.nature_activite) return toStr(data.nature_activite[idx]);
-        return '';
-      };
-      const getGenreAction = (idx) => {
-        if (data.Genre_action) return toStr(data.Genre_action[idx]);
-        if (data.genre_action) return toStr(data.genre_action[idx]);
-        return '';
-      };
-      const getEtapeCycle = (idx) => {
-        if (data.Etape_cycle) return toStr(data.Etape_cycle[idx]);
-        if (data.etape_code) return toStr(data.etape_code[idx]);
-        return '';
-      };
-      const getPrevisibilite = (idx) => {
-        if (data.Previsibilite) return toStr(data.Previsibilite[idx]);
-        if (data.previsibilite) return toStr(data.previsibilite[idx]);
-        return '';
-      };
+      // Convertir en tableau d'objets (noms de colonnes en minuscules)
+      const getNatureActivite = (idx) => toStr(data.nature_activite?.[idx]);
+      const getGenreAction = (idx) => toStr(data.genre_action?.[idx]);
+      const getEtapeCycle = (idx) => toStr(data.etape_cycle?.[idx]);
+      const getPrevisibilite = (idx) => toStr(data.previsibilite?.[idx]);
 
       this.records = [];
       for (let i = 0; i < data.id.length; i++) {
@@ -223,15 +206,14 @@ class MigrationApp {
         }
 
         // Preparer migration
-        // NOTE: Les noms de colonnes Grist sont sensibles à la casse
-        // Colonnes réelles: Nature_activite, Genre_action, Etape_cycle, Previsibilite
+        // NOTE: Les noms de colonnes sont en minuscules dans Grist
         const updates = {};
 
         // Nature activite (Choice - valeur simple string)
         if (!record.nature_activite) {
           const nature = this.deduceNature(record);
           if (nature) {
-            updates.Nature_activite = nature;
+            updates.nature_activite = nature;
           }
         }
 
@@ -239,14 +221,14 @@ class MigrationApp {
         if (!record.genre_action && record.type_tache_id) {
           const genre = TYPE_ID_TO_GENRE[record.type_tache_id];
           if (genre) {
-            updates.Genre_action = genre;
+            updates.genre_action = genre;
           }
         }
 
         // Previsibilite (Choice - valeur simple string)
-        const finalNature = updates.Nature_activite || record.nature_activite;
+        const finalNature = updates.nature_activite || record.nature_activite;
         if (!record.previsibilite && finalNature && NATURE_PREVISIBILITE[finalNature]) {
-          updates.Previsibilite = NATURE_PREVISIBILITE[finalNature];
+          updates.previsibilite = NATURE_PREVISIBILITE[finalNature];
         }
 
         if (Object.keys(updates).length > 0) {
@@ -384,10 +366,10 @@ class MigrationApp {
       html += '<ul class="list-group">';
       this.toMigrate.slice(0, 10).forEach(({ record, updates }) => {
         const badges = [];
-        // Les valeurs sont maintenant des strings simples (type Choice)
-        if (updates.Nature_activite) badges.push(`<span class="badge badge-nature">${updates.Nature_activite}</span>`);
-        if (updates.Genre_action) badges.push(`<span class="badge badge-genre">${updates.Genre_action}</span>`);
-        if (updates.Previsibilite) badges.push(`<span class="badge badge-etape">${updates.Previsibilite.substring(0, 6)}</span>`);
+        // Les valeurs sont des strings simples (type Choice)
+        if (updates.nature_activite) badges.push(`<span class="badge badge-nature">${updates.nature_activite}</span>`);
+        if (updates.genre_action) badges.push(`<span class="badge badge-genre">${updates.genre_action}</span>`);
+        if (updates.previsibilite) badges.push(`<span class="badge badge-etape">${updates.previsibilite.substring(0, 6)}</span>`);
 
         html += `
           <li class="list-group-item small">
@@ -584,10 +566,9 @@ class MigrationApp {
     const existingCols = await this.getExistingColumns();
     this.log(`Colonnes disponibles (${existingCols.length}): ${existingCols.join(', ')}`, 'info');
 
-    // Vérifier quelles colonnes V3 existent (vérification insensible à la casse)
-    const v3Cols = ['Nature_activite', 'Genre_action', 'Etape_cycle', 'Previsibilite'];
-    const colsLower = existingCols.map(c => c.toLowerCase());
-    const missingCols = v3Cols.filter(c => !colsLower.includes(c.toLowerCase()));
+    // Vérifier quelles colonnes V3 existent (noms en minuscules)
+    const v3Cols = ['nature_activite', 'genre_action', 'etape_cycle', 'previsibilite'];
+    const missingCols = v3Cols.filter(c => !existingCols.includes(c));
 
     if (missingCols.length > 0) {
       this.log(`Colonnes manquantes: ${missingCols.join(', ')} - création...`, 'warning');
@@ -604,21 +585,12 @@ class MigrationApp {
 
     for (const { record, updates } of this.toMigrate) {
       try {
-        // Mapper les noms de colonnes aux noms réels existants
-        // Gère les variantes de noms (ex: etape_code -> Etape_cycle)
-        const columnMapping = {
-          'Nature_activite': existingCols.find(c => c.toLowerCase() === 'nature_activite') || 'Nature_activite',
-          'Genre_action': existingCols.find(c => c.toLowerCase() === 'genre_action') || 'Genre_action',
-          'Etape_cycle': existingCols.find(c => c.toLowerCase() === 'etape_cycle' || c.toLowerCase() === 'etape_code') || 'Etape_cycle',
-          'Previsibilite': existingCols.find(c => c.toLowerCase() === 'previsibilite') || 'Previsibilite'
-        };
-
         // Filtrer les updates pour ne garder que les colonnes qui existent
+        // Les noms de colonnes sont en minuscules
         const safeUpdates = {};
         for (const [key, value] of Object.entries(updates)) {
-          const actualCol = columnMapping[key];
-          if (actualCol && existingCols.includes(actualCol)) {
-            safeUpdates[actualCol] = value;
+          if (existingCols.includes(key)) {
+            safeUpdates[key] = value;
           } else {
             this.log(`  ⚠ Colonne "${key}" ignorée (n'existe pas)`, 'warning');
           }
@@ -680,53 +652,39 @@ class MigrationApp {
   }
 
   /**
-   * Ajoute ou met à jour une colonne de manière sécurisée
+   * Ajoute une colonne si elle n'existe pas
    */
   async ensureColumn(colId, config) {
-    // Toujours rafraîchir le cache pour avoir les colonnes à jour
     const existingCols = this.existingColumns;
 
-    this.log(`  Vérification colonne ${colId} parmi: ${existingCols.join(', ')}`, 'info');
+    this.log(`  Vérification colonne ${colId}...`, 'info');
 
-    // Vérifier si la colonne existe (sensible à la casse)
-    // Variantes possibles avec accents ou casse différente
-    const variants = {
-      'Nature_activite': ['Nature_activite', 'nature_activite', 'nature_activité'],
-      'Genre_action': ['Genre_action', 'genre_action'],
-      'Etape_cycle': ['Etape_cycle', 'etape_cycle', 'etape_code'],
-      'Previsibilite': ['Previsibilite', 'previsibilite', 'previsibilité', 'prévisibilité']
-    };
+    // Vérifier si la colonne existe (nom exact)
+    if (existingCols.includes(colId)) {
+      this.log(`  ✓ Colonne ${colId} existe`, 'success');
+      return { success: true, action: 'exists', message: `${colId} existe déjà` };
+    }
 
-    const colVariants = variants[colId] || [colId];
-    const existingVariant = colVariants.find(v => existingCols.includes(v));
-
-    if (existingVariant) {
-      // La colonne existe déjà (peut-être avec un nom différent)
-      // Ne pas essayer de modifier, juste confirmer qu'elle existe
-      this.log(`  ✓ Colonne trouvée: ${existingVariant}`, 'success');
-      return { success: true, action: 'exists', message: `${existingVariant} existe déjà` };
-    } else {
-      // La colonne n'existe pas - la créer
-      this.log(`  ⚠ Colonne ${colId} non trouvée, création...`, 'warning');
-      try {
-        await grist.docApi.applyUserActions([
-          ['AddColumn', TABLE_ID, colId, {
-            type: config.type,
-            label: config.label,
-            widgetOptions: config.widgetOptions
-          }]
-        ]);
-        // Mettre à jour le cache
-        this.existingColumns.push(colId);
-        return { success: true, action: 'created', message: `${colId} créée` };
-      } catch (e) {
-        // Si l'erreur indique que la colonne existe déjà, c'est OK
-        if (e.message && e.message.includes('already exists')) {
-          this.log(`  ✓ Colonne ${colId} existe déjà (confirmé par erreur)`, 'info');
-          return { success: true, action: 'exists', message: `${colId} existe déjà` };
-        }
-        return { success: false, action: 'error', message: `${colId}: ${e.message}` };
+    // La colonne n'existe pas - la créer
+    this.log(`  ⚠ Colonne ${colId} non trouvée, création...`, 'warning');
+    try {
+      await grist.docApi.applyUserActions([
+        ['AddColumn', TABLE_ID, colId, {
+          type: config.type,
+          label: config.label,
+          widgetOptions: config.widgetOptions
+        }]
+      ]);
+      // Mettre à jour le cache
+      this.existingColumns.push(colId);
+      return { success: true, action: 'created', message: `${colId} créée` };
+    } catch (e) {
+      // Si l'erreur indique que la colonne existe déjà, c'est OK
+      if (e.message && e.message.includes('already exists')) {
+        this.log(`  ✓ Colonne ${colId} existe déjà (confirmé par erreur)`, 'info');
+        return { success: true, action: 'exists', message: `${colId} existe déjà` };
       }
+      return { success: false, action: 'error', message: `${colId}: ${e.message}` };
     }
   }
 
@@ -741,10 +699,9 @@ class MigrationApp {
     const cols = await this.getExistingColumns();
     this.log(`Colonnes actuelles (${cols.length}): ${cols.join(', ')}`, 'info');
 
-    // NOTE: Noms de colonnes avec majuscule initiale comme dans Grist
-    // Type Choice (valeur unique) et non ChoiceList (valeurs multiples)
+    // Colonnes V3 en minuscules - Type Choice (valeur unique)
     const columns = {
-      Nature_activite: {
+      nature_activite: {
         type: 'Choice',
         label: 'Nature activité',
         widgetOptions: JSON.stringify({
@@ -758,7 +715,7 @@ class MigrationApp {
           }
         })
       },
-      Genre_action: {
+      genre_action: {
         type: 'Choice',
         label: 'Genre action',
         widgetOptions: JSON.stringify({
@@ -783,7 +740,7 @@ class MigrationApp {
           }
         })
       },
-      Etape_cycle: {
+      etape_cycle: {
         type: 'Choice',
         label: 'Étape cycle',
         widgetOptions: JSON.stringify({
@@ -800,7 +757,7 @@ class MigrationApp {
           }
         })
       },
-      Previsibilite: {
+      previsibilite: {
         type: 'Choice',
         label: 'Prévisibilité',
         widgetOptions: JSON.stringify({
