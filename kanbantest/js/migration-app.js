@@ -128,16 +128,25 @@ class MigrationApp {
       this.log(`Colonnes disponibles: ${availableCols.join(', ')}`, 'info');
 
       // Convertir en tableau d'objets (avec conversion string securisee)
-      // Gérer les variantes de noms de colonnes (avec/sans accents)
+      // Utiliser les noms de colonnes réels (sensible à la casse)
       const getNatureActivite = (idx) => {
+        if (data.Nature_activite) return toStr(data.Nature_activite[idx]);
         if (data.nature_activite) return toStr(data.nature_activite[idx]);
-        if (data['nature_activité']) return toStr(data['nature_activité'][idx]);
+        return '';
+      };
+      const getGenreAction = (idx) => {
+        if (data.Genre_action) return toStr(data.Genre_action[idx]);
+        if (data.genre_action) return toStr(data.genre_action[idx]);
+        return '';
+      };
+      const getEtapeCycle = (idx) => {
+        if (data.Etape_cycle) return toStr(data.Etape_cycle[idx]);
+        if (data.etape_code) return toStr(data.etape_code[idx]);
         return '';
       };
       const getPrevisibilite = (idx) => {
+        if (data.Previsibilite) return toStr(data.Previsibilite[idx]);
         if (data.previsibilite) return toStr(data.previsibilite[idx]);
-        if (data['previsibilité']) return toStr(data['previsibilité'][idx]);
-        if (data['prévisibilité']) return toStr(data['prévisibilité'][idx]);
         return '';
       };
 
@@ -149,8 +158,8 @@ class MigrationApp {
           type_tache_id: toStr(data.type_tache_id?.[i]),
           type_tache: toStr(data.type_tache?.[i]),
           nature_activite: getNatureActivite(i),
-          genre_action: toStr(data.genre_action?.[i]),
-          etape_code: toStr(data.etape_code?.[i]),
+          genre_action: getGenreAction(i),
+          etape_code: getEtapeCycle(i),
           previsibilite: getPrevisibilite(i)
         });
       }
@@ -214,13 +223,15 @@ class MigrationApp {
         }
 
         // Preparer migration
+        // NOTE: Les noms de colonnes Grist sont sensibles à la casse
+        // Colonnes réelles: Nature_activite, Genre_action, Etape_cycle, Previsibilite
         const updates = {};
 
         // Nature activite (ChoiceList - format ['L', 'valeur'])
         if (!record.nature_activite) {
           const nature = this.deduceNature(record);
           if (nature) {
-            updates.nature_activite = ['L', nature];
+            updates.Nature_activite = ['L', nature];
           }
         }
 
@@ -228,14 +239,14 @@ class MigrationApp {
         if (!record.genre_action && record.type_tache_id) {
           const genre = TYPE_ID_TO_GENRE[record.type_tache_id];
           if (genre) {
-            updates.genre_action = ['L', genre];
+            updates.Genre_action = ['L', genre];
           }
         }
 
         // Previsibilite (ChoiceList - format ['L', 'valeur'])
-        const finalNature = updates.nature_activite ? updates.nature_activite[1] : record.nature_activite;
+        const finalNature = updates.Nature_activite ? updates.Nature_activite[1] : record.nature_activite;
         if (!record.previsibilite && finalNature && NATURE_PREVISIBILITE[finalNature]) {
-          updates.previsibilite = ['L', NATURE_PREVISIBILITE[finalNature]];
+          updates.Previsibilite = ['L', NATURE_PREVISIBILITE[finalNature]];
         }
 
         if (Object.keys(updates).length > 0) {
@@ -373,9 +384,11 @@ class MigrationApp {
       html += '<ul class="list-group">';
       this.toMigrate.slice(0, 10).forEach(({ record, updates }) => {
         const badges = [];
-        if (updates.nature_activite) badges.push(`<span class="badge badge-nature">${updates.nature_activite}</span>`);
-        if (updates.genre_action) badges.push(`<span class="badge badge-genre">${updates.genre_action}</span>`);
-        if (updates.previsibilite) badges.push(`<span class="badge badge-etape">${updates.previsibilite.substring(0, 6)}</span>`);
+        // Extraire la valeur des ChoiceList ['L', 'valeur']
+        const extractVal = (v) => Array.isArray(v) && v[0] === 'L' ? v[1] : v;
+        if (updates.Nature_activite) badges.push(`<span class="badge badge-nature">${extractVal(updates.Nature_activite)}</span>`);
+        if (updates.Genre_action) badges.push(`<span class="badge badge-genre">${extractVal(updates.Genre_action)}</span>`);
+        if (updates.Previsibilite) badges.push(`<span class="badge badge-etape">${extractVal(updates.Previsibilite).substring(0, 6)}</span>`);
 
         html += `
           <li class="list-group-item small">
@@ -571,8 +584,8 @@ class MigrationApp {
     const existingCols = await this.getExistingColumns();
     this.log(`Colonnes disponibles: ${existingCols.join(', ')}`, 'info');
 
-    // Vérifier quelles colonnes V3 existent
-    const v3Cols = ['nature_activite', 'genre_action', 'etape_code', 'previsibilite'];
+    // Vérifier quelles colonnes V3 existent (noms avec majuscule)
+    const v3Cols = ['Nature_activite', 'Genre_action', 'Etape_cycle', 'Previsibilite'];
     const missingCols = v3Cols.filter(c => !existingCols.includes(c));
     if (missingCols.length > 0) {
       this.log(`Colonnes manquantes: ${missingCols.join(', ')} - création...`, 'warning');
@@ -584,11 +597,21 @@ class MigrationApp {
 
     for (const { record, updates } of this.toMigrate) {
       try {
+        // Mapper les noms de colonnes aux noms réels existants
+        // Gère les variantes de noms (ex: etape_code -> Etape_cycle)
+        const columnMapping = {
+          'Nature_activite': existingCols.find(c => c.toLowerCase() === 'nature_activite') || 'Nature_activite',
+          'Genre_action': existingCols.find(c => c.toLowerCase() === 'genre_action') || 'Genre_action',
+          'Etape_cycle': existingCols.find(c => c.toLowerCase() === 'etape_cycle' || c.toLowerCase() === 'etape_code') || 'Etape_cycle',
+          'Previsibilite': existingCols.find(c => c.toLowerCase() === 'previsibilite') || 'Previsibilite'
+        };
+
         // Filtrer les updates pour ne garder que les colonnes qui existent
         const safeUpdates = {};
         for (const [key, value] of Object.entries(updates)) {
-          if (existingCols.includes(key)) {
-            safeUpdates[key] = value;
+          const actualCol = columnMapping[key];
+          if (actualCol && existingCols.includes(actualCol)) {
+            safeUpdates[actualCol] = value;
           } else {
             this.log(`  ⚠ Colonne "${key}" ignorée (n'existe pas)`, 'warning');
           }
@@ -655,10 +678,13 @@ class MigrationApp {
   async ensureColumn(colId, config) {
     const existingCols = await this.getExistingColumns();
 
-    // Vérifier aussi les variantes avec accents
+    // Vérifier si la colonne existe (sensible à la casse)
+    // Variantes possibles avec accents ou casse différente
     const variants = {
-      'nature_activite': ['nature_activite', 'nature_activité'],
-      'previsibilite': ['previsibilite', 'previsibilité', 'prévisibilité']
+      'Nature_activite': ['Nature_activite', 'nature_activite', 'nature_activité'],
+      'Genre_action': ['Genre_action', 'genre_action'],
+      'Etape_cycle': ['Etape_cycle', 'etape_cycle', 'etape_code'],
+      'Previsibilite': ['Previsibilite', 'previsibilite', 'previsibilité', 'prévisibilité']
     };
 
     const colVariants = variants[colId] || [colId];
@@ -698,8 +724,9 @@ class MigrationApp {
     this.existingColumns = [];
     await this.getExistingColumns();
 
+    // NOTE: Noms de colonnes avec majuscule initiale comme dans Grist
     const columns = {
-      nature_activite: {
+      Nature_activite: {
         type: 'ChoiceList',
         label: 'Nature activité',
         widgetOptions: JSON.stringify({
@@ -713,7 +740,7 @@ class MigrationApp {
           }
         })
       },
-      genre_action: {
+      Genre_action: {
         type: 'ChoiceList',
         label: 'Genre action',
         widgetOptions: JSON.stringify({
@@ -738,7 +765,7 @@ class MigrationApp {
           }
         })
       },
-      etape_code: {
+      Etape_cycle: {
         type: 'ChoiceList',
         label: 'Étape cycle',
         widgetOptions: JSON.stringify({
@@ -755,7 +782,7 @@ class MigrationApp {
           }
         })
       },
-      previsibilite: {
+      Previsibilite: {
         type: 'ChoiceList',
         label: 'Prévisibilité',
         widgetOptions: JSON.stringify({
