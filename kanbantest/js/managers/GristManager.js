@@ -19,6 +19,27 @@ import { initUserActionManager, getUserActionManager } from '../utils/UserAction
 import { initNotesJsonMigrator, getNotesJsonMigrator } from '../utils/NotesJsonMigrator.js';
 
 /**
+ * Convertit une valeur Grist en string de maniere securisee
+ * Gere: string, number, array ['L', 'val'], Reference, null
+ */
+function toGristString(value) {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return String(value);
+  if (Array.isArray(value)) {
+    // ChoiceList format: ['L', 'val1', 'val2']
+    if (value[0] === 'L') return value.slice(1).join(', ');
+    return value.join(', ');
+  }
+  if (typeof value === 'object') {
+    // Reference format: peut avoir une propriete displayValue
+    if (value.displayValue) return String(value.displayValue);
+    return '';
+  }
+  return String(value);
+}
+
+/**
  * Gestionnaire pour l'interface avec Grist
  */
 export class GristManager {
@@ -270,11 +291,20 @@ export class GristManager {
       }
       
       // Mapper les colonnes optionnelles
+      // Colonnes V3 qui doivent etre converties en string
+      const V3_STRING_COLUMNS = ['nature_activite', 'genre_action', 'etape_code', 'previsibilite', 'previsibilité', 'type_tache'];
+
       for (const columnName of OPTIONAL_COLUMNS) {
-        if (gristData.hasOwnProperty(columnName) && 
-            Array.isArray(gristData[columnName]) && 
+        if (gristData.hasOwnProperty(columnName) &&
+            Array.isArray(gristData[columnName]) &&
             gristData[columnName].length > i) {
-          record[columnName] = gristData[columnName][i];
+          const rawValue = gristData[columnName][i];
+          // Convertir les colonnes V3 en string pour eviter les erreurs
+          if (V3_STRING_COLUMNS.includes(columnName)) {
+            record[columnName] = toGristString(rawValue);
+          } else {
+            record[columnName] = rawValue;
+          }
         } else {
           record[columnName] = null;
         }
