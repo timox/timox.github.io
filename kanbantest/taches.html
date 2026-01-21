@@ -604,6 +604,23 @@
   <!-- Toast container -->
   <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toast-container"></div>
 
+  <!-- Context Menu -->
+  <div class="dropdown-menu shadow" id="task-context-menu" style="display: none; position: fixed; z-index: 9999;">
+    <a class="dropdown-item" href="#" id="ctx-edit-task">
+      <i class="bi bi-pencil me-2"></i>Modifier la tâche
+    </a>
+    <a class="dropdown-item" href="#" id="ctx-view-detail">
+      <i class="bi bi-eye me-2"></i>Voir les détails
+    </a>
+    <div class="dropdown-divider"></div>
+    <a class="dropdown-item" href="#" id="ctx-add-link">
+      <i class="bi bi-link-45deg me-2"></i>Ajouter une liaison
+    </a>
+    <a class="dropdown-item" href="#" id="ctx-focus-graph">
+      <i class="bi bi-diagram-2 me-2"></i>Voir dans le graphe
+    </a>
+  </div>
+
   <!-- Scripts -->
   <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
