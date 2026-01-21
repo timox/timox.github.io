@@ -580,6 +580,8 @@ export class GristManager {
     // Copier les champs simples (existants + nouveaux champs missions)
     const simpleFields = [
       'titre', 'description', 'statut', 'projet', 'urgence', 'impact', 'notes',
+      // Champs V3 taxonomy
+      'nature_activite', 'genre_action', 'etape_code', 'previsibilite',
       // Champs missions
       'mission_code', 'mission_nom', 'mission_responsable', 'mission_bureau',
       'mission_priorite', 'mission_date_debut', 'mission_date_fin',
@@ -588,6 +590,8 @@ export class GristManager {
       'sous_action_charge_estimee', 'sous_action_charge_reelle',
       // Champs stratégie (pour missions)
       'strategie_objectif', 'strategie_sous_objectif', 'strategie_action',
+      // Champs hiérarchiques
+      'programme_id', 'responsable_id',
       // Meta
       'est_classifiee'
     ];
@@ -648,10 +652,25 @@ export class GristManager {
           this.logger.debug(`Champ ignoré (colonne inexistante): ${key}`);
         }
       }
+      this.logger.debug('Champs envoyés à Grist:', Object.keys(filteredData));
       return filteredData;
     }
 
-    return gristData;
+    // Si availableColumns est vide, filtrer les champs V3 potentiellement absents
+    // pour éviter les KeyError (approche conservative)
+    const safeFields = ['titre', 'description', 'statut', 'projet', 'urgence', 'impact',
+                        'notes', 'bureau', 'qui', 'date_echeance', 'date_debut',
+                        'mission_code', 'mission_nom'];
+    const safeData = {};
+    for (const [key, value] of Object.entries(gristData)) {
+      if (safeFields.includes(key)) {
+        safeData[key] = value;
+      } else {
+        this.logger.warn(`Champ ignoré (colonnes non détectées, mode safe): ${key}`);
+      }
+    }
+    this.logger.warn('Mode safe actif - availableColumns vide. Champs envoyés:', Object.keys(safeData));
+    return safeData;
   }
   
   /**

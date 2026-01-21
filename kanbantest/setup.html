@@ -138,6 +138,17 @@
         <i class="bi bi-play-circle me-2"></i>Actions
       </div>
       <div class="card-body">
+        <!-- Bouton Setup complet automatique -->
+        <div class="alert alert-primary d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <strong><i class="bi bi-magic me-2"></i>Configuration automatique</strong>
+            <div class="small">Cree toutes les colonnes et tables manquantes en un clic</div>
+          </div>
+          <button class="btn btn-primary btn-lg" id="btn-run-all" disabled>
+            <i class="bi bi-play-fill me-1"></i>Tout configurer
+          </button>
+        </div>
+        <hr>
         <h6 class="text-muted mb-2">Taxonomie V3</h6>
         <div class="d-flex gap-2 flex-wrap mb-3">
           <button class="btn btn-action" id="btn-setup-columns" disabled>
@@ -407,6 +418,7 @@
 
     // Éléments DOM
     const logArea = document.getElementById('log-area');
+    const btnRunAll = document.getElementById('btn-run-all');
     const btnSetup = document.getElementById('btn-setup-columns');
     const btnImport = document.getElementById('btn-import-data');
     const btnClear = document.getElementById('btn-clear-log');
@@ -437,6 +449,7 @@
         gristReady = true;
         gristStatus.className = 'alert alert-success d-flex align-items-center mb-4';
         gristStatus.innerHTML = '<i class="bi bi-check-circle me-2"></i><span>Connecté à Grist - Table détectée</span>';
+        btnRunAll.disabled = false;
         btnSetup.disabled = false;
         btnImport.disabled = false;
         btnCreateProgrammes.disabled = false;
@@ -453,6 +466,138 @@
         log('Grist non disponible. Exécutez depuis un widget Grist.', 'error');
       }
     }, 3000);
+
+    // ========================================
+    // BOUTON "TOUT CONFIGURER" - Setup complet automatique
+    // ========================================
+    btnRunAll.addEventListener('click', async () => {
+      if (!gristReady) {
+        log('Grist non connecté', 'error');
+        return;
+      }
+
+      btnRunAll.disabled = true;
+      btnRunAll.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Configuration en cours...';
+      log('=== CONFIGURATION AUTOMATIQUE COMPLETE ===', 'info');
+
+      try {
+        // Étape 1: Colonnes V3
+        log('--- Étape 1: Colonnes V3 ---', 'info');
+        for (const [colId, config] of Object.entries(COLUMNS_CONFIG)) {
+          try {
+            await grist.docApi.applyUserActions([
+              ['ModifyColumn', TABLE_NAME, colId, {
+                type: config.type,
+                label: config.label,
+                widgetOptions: JSON.stringify(config.widgetOptions)
+              }]
+            ]);
+            log(`✓ ${colId} configuré`, 'success');
+          } catch (e) {
+            if (e.message && (e.message.includes('not found') || e.message.includes('No such column'))) {
+              await grist.docApi.applyUserActions([
+                ['AddColumn', TABLE_NAME, colId, {
+                  type: config.type,
+                  label: config.label,
+                  widgetOptions: JSON.stringify(config.widgetOptions)
+                }]
+              ]);
+              log(`✓ ${colId} créé`, 'success');
+            } else {
+              log(`⚠ ${colId}: ${e.message}`, 'error');
+            }
+          }
+        }
+        setStatus('status-columns', 'done');
+        setStatus('status-colors', 'done');
+
+        // Étape 2: Table Programmes
+        log('--- Étape 2: Table Programmes ---', 'info');
+        try {
+          const columns = PROGRAMMES_TABLE.columns.map(col => ({
+            id: col.id,
+            fields: {
+              type: col.type,
+              label: col.label,
+              widgetOptions: col.widgetOptions ? JSON.stringify(col.widgetOptions) : undefined
+            }
+          }));
+          await grist.docApi.applyUserActions([
+            ['AddTable', PROGRAMMES_TABLE.name, columns]
+          ]);
+          log(`✓ Table ${PROGRAMMES_TABLE.name} créée`, 'success');
+          setStatus('status-programmes', 'done');
+        } catch (e) {
+          if (e.message && e.message.includes('already exists')) {
+            log(`✓ Table ${PROGRAMMES_TABLE.name} existe déjà`, 'success');
+            setStatus('status-programmes', 'done');
+          } else {
+            log(`⚠ Programmes: ${e.message}`, 'error');
+          }
+        }
+
+        // Étape 3: Table Agents
+        log('--- Étape 3: Table Agents ---', 'info');
+        try {
+          const columns = AGENTS_TABLE.columns.map(col => ({
+            id: col.id,
+            fields: {
+              type: col.type,
+              label: col.label,
+              widgetOptions: col.widgetOptions ? JSON.stringify(col.widgetOptions) : undefined
+            }
+          }));
+          await grist.docApi.applyUserActions([
+            ['AddTable', AGENTS_TABLE.name, columns]
+          ]);
+          log(`✓ Table ${AGENTS_TABLE.name} créée`, 'success');
+          setStatus('status-agents', 'done');
+        } catch (e) {
+          if (e.message && e.message.includes('already exists')) {
+            log(`✓ Table ${AGENTS_TABLE.name} existe déjà`, 'success');
+            setStatus('status-agents', 'done');
+          } else {
+            log(`⚠ Agents: ${e.message}`, 'error');
+          }
+        }
+
+        // Étape 4: Colonnes hiérarchiques
+        log('--- Étape 4: Colonnes hiérarchiques ---', 'info');
+        for (const [colId, config] of Object.entries(HIERARCHY_COLUMNS)) {
+          try {
+            await grist.docApi.applyUserActions([
+              ['ModifyColumn', TABLE_NAME, colId, {
+                type: config.type,
+                label: config.label
+              }]
+            ]);
+            log(`✓ ${colId} configuré`, 'success');
+          } catch (e) {
+            if (e.message && (e.message.includes('not found') || e.message.includes('No such column'))) {
+              await grist.docApi.applyUserActions([
+                ['AddColumn', TABLE_NAME, colId, {
+                  type: config.type,
+                  label: config.label
+                }]
+              ]);
+              log(`✓ ${colId} créé`, 'success');
+            } else {
+              log(`⚠ ${colId}: ${e.message}`, 'error');
+            }
+          }
+        }
+        setStatus('status-hierarchy', 'done');
+
+        log('=== CONFIGURATION TERMINÉE ===', 'success');
+        log('Rechargez la page des tâches pour voir les nouveaux champs.', 'info');
+
+      } catch (error) {
+        log(`ERREUR FATALE: ${error.message}`, 'error');
+      }
+
+      btnRunAll.disabled = false;
+      btnRunAll.innerHTML = '<i class="bi bi-play-fill me-1"></i>Tout configurer';
+    });
 
     // Configuration des colonnes
     btnSetup.addEventListener('click', async () => {
