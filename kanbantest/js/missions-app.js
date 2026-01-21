@@ -263,6 +263,29 @@ function updateCounts() {
 }
 
 /**
+ * Extrait l'ID réel depuis un champ de référence Grist
+ * Format Grist: ["L", id] ou nombre direct ou null
+ */
+function extractGristRefId(value) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  // Format Grist ["L", id]
+  if (Array.isArray(value) && value.length >= 2 && value[0] === 'L') {
+    return value[1];
+  }
+  // Nombre direct
+  if (typeof value === 'number') {
+    return value;
+  }
+  // String numérique
+  if (typeof value === 'string' && !isNaN(parseInt(value, 10))) {
+    return parseInt(value, 10);
+  }
+  return null;
+}
+
+/**
  * Récupère les MEO pour une mission donnée (agrégées depuis les tâches)
  */
 function getMeosForMission(missionId) {
@@ -273,12 +296,14 @@ function getMeosForMission(missionId) {
   // Log quelques tâches pour voir les valeurs de strategie_id
   const sampleTasks = tasks.slice(0, 5);
   sampleTasks.forEach((t, i) => {
-    console.log(`[MEO] Task ${i}: strategie_id=${t.strategie_id} (type: ${typeof t.strategie_id}), mise_en_oeuvre_code=${t.mise_en_oeuvre_code}`);
+    const extractedId = extractGristRefId(t.strategie_id);
+    console.log(`[MEO] Task ${i}: strategie_id=${t.strategie_id} → extracted=${extractedId}, mise_en_oeuvre_code=${t.mise_en_oeuvre_code}`);
   });
 
   tasks.forEach(task => {
-    // Comparaison souple pour gérer les différences de types
-    const matchesMission = String(task.strategie_id) === String(missionId);
+    // Extraire l'ID réel depuis le format Grist ["L", id]
+    const taskMissionId = extractGristRefId(task.strategie_id);
+    const matchesMission = taskMissionId !== null && taskMissionId === missionId;
     if (matchesMission && task.mise_en_oeuvre_code) {
       const code = task.mise_en_oeuvre_code;
       if (!meoMap.has(code)) {
@@ -309,17 +334,20 @@ function getMeosForMission(missionId) {
  * Récupère les tâches pour une MEO donnée
  */
 function getTasksForMeo(meoCode) {
-  return tasks.filter(t =>
-    t.strategie_id === selectedMission?.id &&
-    t.mise_en_oeuvre_code === meoCode
-  );
+  return tasks.filter(t => {
+    const taskMissionId = extractGristRefId(t.strategie_id);
+    return taskMissionId === selectedMission?.id && t.mise_en_oeuvre_code === meoCode;
+  });
 }
 
 /**
  * Récupère les tâches orphelines (sans strategie_id ni mise_en_oeuvre_code)
  */
 function getOrphanTasks() {
-  return tasks.filter(t => !t.strategie_id || !t.mise_en_oeuvre_code);
+  return tasks.filter(t => {
+    const missionId = extractGristRefId(t.strategie_id);
+    return missionId === null || !t.mise_en_oeuvre_code;
+  });
 }
 
 /**
@@ -356,10 +384,11 @@ function renderMissionsList() {
   });
 
   tasks.forEach(t => {
-    if (t.strategie_id && missionStats[t.strategie_id]) {
-      missionStats[t.strategie_id].tasks++;
+    const missionId = extractGristRefId(t.strategie_id);
+    if (missionId !== null && missionStats[missionId]) {
+      missionStats[missionId].tasks++;
       if (t.mise_en_oeuvre_code) {
-        missionStats[t.strategie_id].meos.add(t.mise_en_oeuvre_code);
+        missionStats[missionId].meos.add(t.mise_en_oeuvre_code);
       }
     }
   });
@@ -763,10 +792,10 @@ async function saveMeo() {
   try {
     if (editingMeoCode) {
       // Mode édition : mettre à jour toutes les tâches avec ce code MEO
-      const meoTasks = tasks.filter(t =>
-        t.strategie_id === selectedMission.id &&
-        t.mise_en_oeuvre_code === editingMeoCode
-      );
+      const meoTasks = tasks.filter(t => {
+        const taskMissionId = extractGristRefId(t.strategie_id);
+        return taskMissionId === selectedMission.id && t.mise_en_oeuvre_code === editingMeoCode;
+      });
 
       const updates = meoTasks.map(t => [
         'UpdateRecord', 'Ssir_principale_task', t.id, {
