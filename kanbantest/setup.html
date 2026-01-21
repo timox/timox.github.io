@@ -353,26 +353,42 @@
       log('Import des données test...', 'info');
 
       try {
+        // D'abord récupérer les colonnes existantes de la table
+        log('Récupération du schéma de table...', 'info');
+        const tableData = await grist.docApi.fetchTable(TABLE_NAME);
+        const existingColumns = Object.keys(tableData);
+        log(`Colonnes existantes: ${existingColumns.length}`, 'info');
+
         // Charger le CSV
         const csvUrl = new URL('data/test-dataset-v3.csv', window.location.href).href;
-        log(`Chargement de ${csvUrl}...`, 'info');
+        log(`Chargement du CSV...`, 'info');
 
         const response = await fetch(csvUrl);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         const csvText = await response.text();
         const lines = csvText.trim().split('\n');
-        const headers = parseCSVLine(lines[0]);
+        const csvHeaders = parseCSVLine(lines[0]);
+
+        // Filtrer pour ne garder que les colonnes qui existent dans Grist
+        const validHeaders = csvHeaders.filter(h => existingColumns.includes(h));
+        const skippedHeaders = csvHeaders.filter(h => !existingColumns.includes(h));
+
+        if (skippedHeaders.length > 0) {
+          log(`Colonnes ignorées (absentes de Grist): ${skippedHeaders.join(', ')}`, 'info');
+        }
+        log(`Colonnes à importer: ${validHeaders.join(', ')}`, 'info');
 
         log(`${lines.length - 1} enregistrements trouvés`, 'info');
 
-        // Parser les données
+        // Parser les données avec seulement les colonnes valides
         const columns = {};
-        headers.forEach(h => { columns[h] = []; });
+        validHeaders.forEach(h => { columns[h] = []; });
 
         for (let i = 1; i < lines.length; i++) {
           const values = parseCSVLine(lines[i]);
-          headers.forEach((header, index) => {
+          csvHeaders.forEach((header, index) => {
+            if (!validHeaders.includes(header)) return;
             let value = values[index] || '';
             // Convertir les dates en timestamps
             if (header.includes('date') && value && !isNaN(Date.parse(value))) {
