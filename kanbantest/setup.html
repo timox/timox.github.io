@@ -106,6 +106,32 @@
       </div>
     </div>
 
+    <!-- Gestion des agents -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <i class="bi bi-people me-2"></i>3. Gestion des agents
+      </div>
+      <div class="card-body">
+        <div class="alert alert-info small mb-3">
+          <strong>Table Ssir_agents :</strong> Permet de gérer les personnes et leur affectation aux bureaux
+        </div>
+        <div class="checklist-item d-flex justify-content-between align-items-center">
+          <div>
+            <strong>Table Ssir_agents</strong>
+            <div class="text-muted small">nom, prenom, email, bureau, fonction, telephone, actif</div>
+          </div>
+          <span class="status-badge status-pending" id="status-agents-table">En attente</span>
+        </div>
+        <div class="checklist-item d-flex justify-content-between align-items-center">
+          <div>
+            <strong>Colonne responsable_id</strong>
+            <div class="text-muted small">Référence vers Ssir_agents dans la table des tâches</div>
+          </div>
+          <span class="status-badge status-pending" id="status-responsable-ref">En attente</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Actions -->
     <div class="card mb-4">
       <div class="card-header">
@@ -128,6 +154,12 @@
           </button>
           <button class="btn btn-outline-success" id="btn-add-hierarchy-cols" disabled>
             <i class="bi bi-link-45deg me-1"></i>Ajouter colonnes hiérarchie
+          </button>
+        </div>
+        <h6 class="text-muted mb-2">Gestion des agents</h6>
+        <div class="d-flex gap-2 flex-wrap mb-3">
+          <button class="btn btn-info text-white" id="btn-create-agents" disabled>
+            <i class="bi bi-people me-1"></i>Créer table Agents
           </button>
         </div>
         <hr>
@@ -323,7 +355,7 @@
         { id: 'nom', type: 'Text', label: 'Nom du programme' },
         { id: 'description', type: 'Text', label: 'Description' },
         { id: 'strategie_id', type: 'Ref:Ssir_strategie2', label: 'Stratégie' },
-        { id: 'responsable', type: 'Text', label: 'Responsable' },
+        { id: 'responsable', type: 'Ref:Ssir_agents', label: 'Responsable' },
         { id: 'date_debut', type: 'Date', label: 'Date début' },
         { id: 'date_fin', type: 'Date', label: 'Date fin' },
         { id: 'statut', type: 'Choice', label: 'Statut', widgetOptions: {
@@ -338,11 +370,39 @@
       ]
     };
 
+    // Configuration table Agents (personnes)
+    const AGENTS_TABLE = {
+      name: 'Ssir_agents',
+      columns: [
+        { id: 'nom', type: 'Text', label: 'Nom' },
+        { id: 'prenom', type: 'Text', label: 'Prénom' },
+        { id: 'email', type: 'Text', label: 'Email' },
+        { id: 'bureau', type: 'Choice', label: 'Bureau', widgetOptions: {
+          choices: ['Exploit', 'Réseau', 'BDD', 'Chef SSIR', 'SIG', 'NEXSIS-RRF', 'COMSIC', 'RSSI', 'DPO'],
+          choiceOptions: {
+            'Exploit': { fillColor: '#3b82f6', textColor: '#ffffff' },
+            'Réseau': { fillColor: '#8b5cf6', textColor: '#ffffff' },
+            'BDD': { fillColor: '#06b6d4', textColor: '#ffffff' },
+            'Chef SSIR': { fillColor: '#dc2626', textColor: '#ffffff' },
+            'SIG': { fillColor: '#22c55e', textColor: '#ffffff' },
+            'NEXSIS-RRF': { fillColor: '#f59e0b', textColor: '#ffffff' },
+            'COMSIC': { fillColor: '#ec4899', textColor: '#ffffff' },
+            'RSSI': { fillColor: '#ef4444', textColor: '#ffffff' },
+            'DPO': { fillColor: '#14b8a6', textColor: '#ffffff' }
+          }
+        }},
+        { id: 'fonction', type: 'Text', label: 'Fonction' },
+        { id: 'telephone', type: 'Text', label: 'Téléphone' },
+        { id: 'actif', type: 'Bool', label: 'Actif' }
+      ]
+    };
+
     // Colonnes hiérarchiques pour la table des tâches
     const HIERARCHY_COLUMNS = {
       programme_id: { type: 'Ref:Ssir_programmes', label: 'Programme' },
       mission_code: { type: 'Text', label: 'Code mission' },
-      mission_nom: { type: 'Text', label: 'Nom mission' }
+      mission_nom: { type: 'Text', label: 'Nom mission' },
+      responsable_id: { type: 'Ref:Ssir_agents', label: 'Responsable' }
     };
 
     // Éléments DOM
@@ -352,6 +412,7 @@
     const btnClear = document.getElementById('btn-clear-log');
     const btnCreateProgrammes = document.getElementById('btn-create-programmes');
     const btnAddHierarchyCols = document.getElementById('btn-add-hierarchy-cols');
+    const btnCreateAgents = document.getElementById('btn-create-agents');
     const gristStatus = document.getElementById('grist-status');
 
     // Logging
@@ -380,6 +441,7 @@
         btnImport.disabled = false;
         btnCreateProgrammes.disabled = false;
         btnAddHierarchyCols.disabled = false;
+        btnCreateAgents.disabled = false;
         log('Connexion Grist établie', 'success');
       }
     });
@@ -652,6 +714,67 @@
       }
 
       btnAddHierarchyCols.disabled = false;
+    });
+
+    // Créer la table Agents
+    btnCreateAgents.addEventListener('click', async () => {
+      if (!gristReady) {
+        log('Grist non connecté', 'error');
+        return;
+      }
+
+      btnCreateAgents.disabled = true;
+      log('Création de la table Ssir_agents...', 'info');
+
+      try {
+        // Préparer les colonnes pour AddTable
+        const columns = AGENTS_TABLE.columns.map(col => ({
+          id: col.id,
+          fields: {
+            type: col.type,
+            label: col.label,
+            ...(col.widgetOptions ? { widgetOptions: JSON.stringify(col.widgetOptions) } : {})
+          }
+        }));
+
+        await grist.docApi.applyUserActions([
+          ['AddTable', AGENTS_TABLE.name, columns]
+        ]);
+
+        log(`✓ Table ${AGENTS_TABLE.name} créée avec ${columns.length} colonnes`, 'success');
+        setStatus('status-agents-table', 'done');
+
+        // Ajouter quelques agents exemples
+        log('Ajout d\'agents exemples...', 'info');
+        const exempleAgents = {
+          nom: ['Dupont', 'Martin', 'Bernard', 'Petit', 'Robert'],
+          prenom: ['Jean', 'Marie', 'Pierre', 'Sophie', 'Luc'],
+          email: ['jean.dupont@sdis.fr', 'marie.martin@sdis.fr', 'pierre.bernard@sdis.fr', 'sophie.petit@sdis.fr', 'luc.robert@sdis.fr'],
+          bureau: ['Exploit', 'Réseau', 'BDD', 'RSSI', 'Chef SSIR'],
+          fonction: ['Administrateur système', 'Ingénieur réseau', 'DBA', 'RSSI adjoint', 'Chef de service'],
+          telephone: ['0123456789', '0123456790', '0123456791', '0123456792', '0123456793'],
+          actif: [true, true, true, true, true]
+        };
+
+        await grist.docApi.applyUserActions([
+          ['BulkAddRecord', AGENTS_TABLE.name, [null, null, null, null, null], exempleAgents]
+        ]);
+        log('✓ 5 agents exemples créés', 'success');
+
+        // Mettre à jour le statut de responsable_id si la colonne a été ajoutée
+        setStatus('status-responsable-ref', 'done');
+
+      } catch (error) {
+        if (error.message && error.message.includes('already exists')) {
+          log('Table déjà existante', 'info');
+          setStatus('status-agents-table', 'done');
+        } else {
+          log(`Erreur: ${error.message}`, 'error');
+          setStatus('status-agents-table', 'error');
+        }
+      }
+
+      btnCreateAgents.disabled = false;
     });
   </script>
 </body>

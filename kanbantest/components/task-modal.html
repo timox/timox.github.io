@@ -103,19 +103,69 @@
             </div>
           </div>
 
+          <!-- Rattachement hiérarchique -->
+          <div class="card mb-4" id="stm-hierarchy-section">
+            <div class="card-header py-2">
+              <i class="bi bi-diagram-3 me-2"></i>Rattachement
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label for="stm-programme" class="form-label small">Programme</label>
+                  <select class="form-select" id="stm-programme">
+                    <option value="">-- Aucun programme --</option>
+                    <!-- Options chargées dynamiquement -->
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label for="stm-mission-code" class="form-label small">Code Mission</label>
+                  <input type="text" class="form-control" id="stm-mission-code" placeholder="MIS-2025-001">
+                </div>
+                <div class="col-md-4">
+                  <label for="stm-mission-nom" class="form-label small">Nom Mission</label>
+                  <input type="text" class="form-control" id="stm-mission-nom" placeholder="Nom de la mission">
+                </div>
+              </div>
+              <div class="row g-3 mt-2">
+                <div class="col-12">
+                  <label for="stm-strategie" class="form-label small">Stratégie</label>
+                  <select class="form-select" id="stm-strategie">
+                    <option value="">-- Aucune stratégie --</option>
+                    <!-- Options chargées dynamiquement -->
+                  </select>
+                  <div id="stm-strategie-preview" class="mt-2 small text-muted" style="display: none;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Métadonnées -->
           <div class="row g-3 mb-4">
             <div class="col-md-4">
-              <label for="stm-projet" class="form-label small">Projet / Mission</label>
-              <input type="text" class="form-control" id="stm-projet">
+              <label for="stm-projet" class="form-label small">Projet (legacy)</label>
+              <input type="text" class="form-control" id="stm-projet" placeholder="Ancien champ projet">
             </div>
             <div class="col-md-4">
               <label for="stm-responsable" class="form-label small">Responsable</label>
-              <input type="text" class="form-control" id="stm-responsable">
+              <select class="form-select" id="stm-responsable">
+                <option value="">-- Sélectionner --</option>
+                <!-- Options chargées dynamiquement -->
+              </select>
             </div>
             <div class="col-md-4">
               <label for="stm-bureau" class="form-label small">Bureau</label>
-              <input type="text" class="form-control" id="stm-bureau">
+              <select class="form-select" id="stm-bureau">
+                <option value="">-- Sélectionner --</option>
+                <option value="Exploit">Exploit</option>
+                <option value="Réseau">Réseau</option>
+                <option value="BDD">BDD</option>
+                <option value="Chef SSIR">Chef SSIR</option>
+                <option value="SIG">SIG</option>
+                <option value="NEXSIS-RRF">NEXSIS-RRF</option>
+                <option value="COMSIC">COMSIC</option>
+                <option value="RSSI">RSSI</option>
+                <option value="DPO">DPO</option>
+              </select>
             </div>
           </div>
 

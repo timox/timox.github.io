@@ -31,6 +31,11 @@ class SharedTaskModal {
     this.bsModal = null;
     this.currentTask = null;
     this.isLoaded = false;
+
+    // Données de référence
+    this.programmes = [];
+    this.agents = [];
+    this.strategies = [];
   }
 
   /**
@@ -68,6 +73,7 @@ class SharedTaskModal {
 
       this.setupEventListeners();
       this.configureVisibility();
+      await this.loadReferenceData();
       this.isLoaded = true;
 
       console.log('[SharedTaskModal] Initialized successfully');
@@ -143,6 +149,187 @@ class SharedTaskModal {
     }
     if (liensSection) {
       liensSection.style.display = this.options.showLinks ? 'block' : 'none';
+    }
+  }
+
+  /**
+   * Charge les données de référence (programmes, agents, stratégies)
+   */
+  async loadReferenceData() {
+    if (typeof grist === 'undefined') {
+      console.warn('[SharedTaskModal] Grist not available, skipping reference data');
+      return;
+    }
+
+    try {
+      // Charger les programmes
+      await this.loadProgrammes();
+
+      // Charger les agents
+      await this.loadAgents();
+
+      // Charger les stratégies
+      await this.loadStrategies();
+
+      console.log('[SharedTaskModal] Reference data loaded');
+    } catch (error) {
+      console.warn('[SharedTaskModal] Failed to load some reference data:', error);
+    }
+  }
+
+  /**
+   * Charge les programmes depuis Grist
+   */
+  async loadProgrammes() {
+    try {
+      const data = await grist.docApi.fetchTable('Ssir_programmes');
+      this.programmes = [];
+      const count = data.id?.length || 0;
+
+      for (let i = 0; i < count; i++) {
+        this.programmes.push({
+          id: data.id[i],
+          code: data.code?.[i] || '',
+          nom: data.nom?.[i] || ''
+        });
+      }
+
+      this.populateProgrammeSelect();
+    } catch (error) {
+      console.warn('[SharedTaskModal] No programmes table:', error.message);
+    }
+  }
+
+  /**
+   * Charge les agents depuis Grist
+   */
+  async loadAgents() {
+    try {
+      const data = await grist.docApi.fetchTable('Ssir_agents');
+      this.agents = [];
+      const count = data.id?.length || 0;
+
+      for (let i = 0; i < count; i++) {
+        if (data.actif?.[i] !== false) { // Seulement les agents actifs
+          this.agents.push({
+            id: data.id[i],
+            nom: data.nom?.[i] || '',
+            prenom: data.prenom?.[i] || '',
+            bureau: data.bureau?.[i] || '',
+            fullName: `${data.prenom?.[i] || ''} ${data.nom?.[i] || ''}`.trim()
+          });
+        }
+      }
+
+      // Trier par bureau puis par nom
+      this.agents.sort((a, b) => {
+        if (a.bureau !== b.bureau) return a.bureau.localeCompare(b.bureau);
+        return a.fullName.localeCompare(b.fullName);
+      });
+
+      this.populateAgentSelect();
+    } catch (error) {
+      console.warn('[SharedTaskModal] No agents table:', error.message);
+    }
+  }
+
+  /**
+   * Charge les stratégies depuis Grist
+   */
+  async loadStrategies() {
+    try {
+      const data = await grist.docApi.fetchTable('Ssir_strategie2');
+      this.strategies = [];
+      const count = data.id?.length || 0;
+
+      for (let i = 0; i < count; i++) {
+        this.strategies.push({
+          id: data.id[i],
+          objectif: data.objectif?.[i] || '',
+          sous_objectif: data.sous_objectif?.[i] || '',
+          axe_strategique: data.axe_strategique?.[i] || ''
+        });
+      }
+
+      this.populateStrategySelect();
+    } catch (error) {
+      console.warn('[SharedTaskModal] No strategies table:', error.message);
+    }
+  }
+
+  /**
+   * Peuple le sélecteur de programmes
+   */
+  populateProgrammeSelect() {
+    const select = document.getElementById('stm-programme');
+    if (!select) return;
+
+    select.innerHTML = '<option value="">-- Aucun programme --</option>';
+    for (const prog of this.programmes) {
+      const option = document.createElement('option');
+      option.value = prog.id;
+      option.textContent = `${prog.code} - ${prog.nom}`;
+      select.appendChild(option);
+    }
+  }
+
+  /**
+   * Peuple le sélecteur d'agents (responsables)
+   */
+  populateAgentSelect() {
+    const select = document.getElementById('stm-responsable');
+    if (!select) return;
+
+    select.innerHTML = '<option value="">-- Sélectionner --</option>';
+
+    // Grouper par bureau
+    const bureaux = [...new Set(this.agents.map(a => a.bureau))];
+
+    for (const bureau of bureaux) {
+      const optgroup = document.createElement('optgroup');
+      optgroup.label = bureau || 'Sans bureau';
+
+      const agentsBureau = this.agents.filter(a => a.bureau === bureau);
+      for (const agent of agentsBureau) {
+        const option = document.createElement('option');
+        option.value = agent.id;
+        option.textContent = agent.fullName;
+        option.dataset.bureau = agent.bureau;
+        optgroup.appendChild(option);
+      }
+
+      select.appendChild(optgroup);
+    }
+  }
+
+  /**
+   * Peuple le sélecteur de stratégies
+   */
+  populateStrategySelect() {
+    const select = document.getElementById('stm-strategie');
+    if (!select) return;
+
+    select.innerHTML = '<option value="">-- Aucune stratégie --</option>';
+
+    // Grouper par objectif
+    const objectifs = [...new Set(this.strategies.map(s => s.objectif))];
+
+    for (const objectif of objectifs) {
+      const optgroup = document.createElement('optgroup');
+      optgroup.label = objectif || 'Sans objectif';
+
+      const strategiesObj = this.strategies.filter(s => s.objectif === objectif);
+      for (const strat of strategiesObj) {
+        const option = document.createElement('option');
+        option.value = strat.id;
+        const label = strat.sous_objectif
+          ? `${strat.sous_objectif} > ${strat.axe_strategique}`
+          : strat.axe_strategique;
+        option.textContent = label;
+        optgroup.appendChild(option);
+      }
+
+      select.appendChild(optgroup);
     }
   }
 
@@ -252,8 +439,6 @@ class SharedTaskModal {
     this.setFieldValue('stm-titre', task.titre);
     this.setFieldValue('stm-description', task.description);
     this.setFieldValue('stm-statut', task.statut);
-    this.setFieldValue('stm-responsable', task.qui);
-    this.setFieldValue('stm-bureau', task.bureau);
     this.setFieldValue('stm-projet', task.projet);
     this.setFieldValue('stm-urgence', task.urgence);
     this.setFieldValue('stm-impact', task.impact);
@@ -263,6 +448,24 @@ class SharedTaskModal {
     this.setFieldValue('stm-genre', task.genre_action);
     this.setFieldValue('stm-etape', task.etape_code);
     this.setFieldValue('stm-previsibilite', task.previsibilite);
+
+    // Rattachement hiérarchique
+    this.setFieldValue('stm-programme', task.programme_id || '');
+    this.setFieldValue('stm-mission-code', task.mission_code || '');
+    this.setFieldValue('stm-mission-nom', task.mission_nom || '');
+    this.setFieldValue('stm-strategie', task.strategie_id || '');
+
+    // Responsable (soit ID de Ssir_agents, soit texte legacy)
+    if (task.responsable_id) {
+      this.setFieldValue('stm-responsable', task.responsable_id);
+    } else if (task.qui) {
+      // Chercher l'agent par nom
+      const agent = this.agents.find(a => a.fullName === task.qui);
+      this.setFieldValue('stm-responsable', agent ? agent.id : '');
+    }
+
+    // Bureau
+    this.setFieldValue('stm-bureau', task.bureau || '');
 
     // Échéance (conversion timestamp si nécessaire)
     if (task.date_echeance) {
@@ -296,11 +499,24 @@ class SharedTaskModal {
    * Récupère les données du formulaire
    */
   getFormData() {
+    // Récupérer l'ID du responsable sélectionné
+    const responsableIdStr = this.getFieldValue('stm-responsable');
+    const responsableId = responsableIdStr ? parseInt(responsableIdStr, 10) : null;
+
+    // Retrouver le nom de l'agent pour le champ legacy 'qui'
+    let quiValue = '';
+    if (responsableId) {
+      const agent = this.agents.find(a => a.id === responsableId);
+      if (agent) {
+        quiValue = agent.fullName;
+      }
+    }
+
     const data = {
       titre: this.getFieldValue('stm-titre'),
       description: this.getFieldValue('stm-description'),
       statut: this.getFieldValue('stm-statut'),
-      qui: this.getFieldValue('stm-responsable'),
+      qui: quiValue,
       bureau: this.getFieldValue('stm-bureau'),
       projet: this.getFieldValue('stm-projet'),
       urgence: this.getFieldValue('stm-urgence'),
@@ -315,6 +531,25 @@ class SharedTaskModal {
     const taskId = this.getFieldValue('stm-task-id');
     if (taskId) {
       data.id = parseInt(taskId, 10);
+    }
+
+    // Rattachement hiérarchique
+    const programmeIdStr = this.getFieldValue('stm-programme');
+    if (programmeIdStr) {
+      data.programme_id = parseInt(programmeIdStr, 10);
+    }
+
+    data.mission_code = this.getFieldValue('stm-mission-code');
+    data.mission_nom = this.getFieldValue('stm-mission-nom');
+
+    const strategieIdStr = this.getFieldValue('stm-strategie');
+    if (strategieIdStr) {
+      data.strategie_id = parseInt(strategieIdStr, 10);
+    }
+
+    // Responsable (référence vers Ssir_agents)
+    if (responsableId) {
+      data.responsable_id = responsableId;
     }
 
     // Échéance

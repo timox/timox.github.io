@@ -11,6 +11,7 @@ const logger = createModuleLogger('MissionsApp');
 let gristManager = null;
 let missionsManager = null;
 let strategies = []; // Liste des stratégies chargées depuis Ssir_strategie2
+let agents = []; // Liste des agents chargés depuis Ssir_agents
 let currentFilters = {
   search: '',
   priorite: '',
@@ -178,6 +179,9 @@ async function loadData() {
     // Charger les stratégies depuis Ssir_strategie2
     await loadStrategies();
 
+    // Charger les agents depuis Ssir_agents
+    await loadAgents();
+
     // Charger les statistiques
     await updateStats();
 
@@ -275,6 +279,85 @@ function populateStrategySelector() {
   }
 
   logger.debug('Strategy selector populated with', strategies.length, 'strategies');
+}
+
+/**
+ * Charge les agents depuis la table Ssir_agents
+ */
+async function loadAgents() {
+  try {
+    logger.debug('Loading agents from Ssir_agents...');
+
+    const gristData = await window.grist.docApi.fetchTable('Ssir_agents');
+
+    // Convertir les données Grist en tableau d'objets
+    agents = [];
+    const count = gristData.id?.length || 0;
+
+    for (let i = 0; i < count; i++) {
+      // Ne garder que les agents actifs
+      if (gristData.actif?.[i] !== false) {
+        agents.push({
+          id: gristData.id[i],
+          nom: gristData.nom ? gristData.nom[i] : '',
+          prenom: gristData.prenom ? gristData.prenom[i] : '',
+          bureau: gristData.bureau ? gristData.bureau[i] : '',
+          fullName: `${gristData.prenom?.[i] || ''} ${gristData.nom?.[i] || ''}`.trim()
+        });
+      }
+    }
+
+    // Trier par bureau puis par nom
+    agents.sort((a, b) => {
+      if (a.bureau !== b.bureau) return a.bureau.localeCompare(b.bureau);
+      return a.fullName.localeCompare(b.fullName);
+    });
+
+    logger.debug(`Loaded ${agents.length} agents`);
+
+    // Peupler le sélecteur de responsable
+    populateAgentSelector();
+
+  } catch (error) {
+    logger.warn('Failed to load agents:', error);
+    agents = [];
+  }
+}
+
+/**
+ * Peuple le sélecteur de responsable avec les agents groupés par bureau
+ */
+function populateAgentSelector() {
+  const $selector = $('#mission-responsable');
+  $selector.empty();
+
+  // Option par défaut
+  $selector.append('<option value="">-- Sélectionner un responsable --</option>');
+
+  if (agents.length === 0) {
+    // Fallback si pas d'agents
+    logger.debug('No agents loaded, using empty selector');
+    return;
+  }
+
+  // Grouper par bureau
+  const bureaux = [...new Set(agents.map(a => a.bureau))];
+
+  for (const bureau of bureaux) {
+    const $optgroup = $(`<optgroup label="${escapeHtml(bureau || 'Sans bureau')}"></optgroup>`);
+
+    const agentsBureau = agents.filter(a => a.bureau === bureau);
+
+    for (const agent of agentsBureau) {
+      $optgroup.append(`<option value="${agent.id}" data-fullname="${escapeHtml(agent.fullName)}" data-bureau="${escapeHtml(agent.bureau)}">
+        ${escapeHtml(agent.fullName)}
+      </option>`);
+    }
+
+    $selector.append($optgroup);
+  }
+
+  logger.debug('Agent selector populated with', agents.length, 'agents');
 }
 
 /**
@@ -679,11 +762,17 @@ async function saveMission() {
     const strategyId = $('#mission-strategie').val();
     const selectedStrategy = strategyId ? strategies.find(s => s.id === parseInt(strategyId)) : null;
 
+    // Récupérer le responsable sélectionné
+    const responsableId = $('#mission-responsable').val();
+    const $selectedAgent = $('#mission-responsable option:selected');
+    const responsableFullName = $selectedAgent.data('fullname') || $selectedAgent.text().trim() || '';
+
     // Récupérer les données du formulaire
     const missionData = {
       code: ($('#mission-code').val().trim()) || currentEditingMissionCode,
       nom: $('#mission-nom').val().trim(),
-      responsable: $('#mission-responsable').val().trim(),
+      responsable: responsableFullName,
+      responsable_id: responsableId ? parseInt(responsableId) : null,
       bureau: $('#mission-bureau').val(),
       priorite: $('#mission-priorite').val(),
       date_debut: $('#mission-date-debut').val() || null,
@@ -819,7 +908,22 @@ function handleEditMission(e) {
     $('#sous-actions-container').empty();
     $('#mission-code').val(mission.code).prop('disabled', true);
     $('#mission-nom').val(mission.nom);
-    $('#mission-responsable').val(mission.responsable || '');
+
+    // Sélectionner le responsable (par ID ou par nom)
+    if (mission.responsable_id) {
+      $('#mission-responsable').val(mission.responsable_id);
+    } else if (mission.responsable) {
+      // Chercher l'agent par nom (legacy)
+      const agent = agents.find(a => a.fullName === mission.responsable);
+      if (agent) {
+        $('#mission-responsable').val(agent.id);
+      } else {
+        $('#mission-responsable').val('');
+      }
+    } else {
+      $('#mission-responsable').val('');
+    }
+
     $('#mission-bureau').val(mission.bureau || '');
     $('#mission-priorite').val(mission.priorite || 'Moyenne');
     $('#mission-date-debut').val(mission.date_debut || '');
