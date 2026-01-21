@@ -442,7 +442,6 @@ class KanbanManager {
     if (Array.isArray(STRATEGY_DATA) && STRATEGY_DATA.length > 0) {
       this.strategiesData = STRATEGY_DATA.map(strategy => ({
         id: strategy.id,
-        id2: strategy.id,
         objectif: strategy.objectif || '',
         sous_objectif: strategy.sous_objectif || '',
         axe_strategique: strategy.axe_strategique || '',
