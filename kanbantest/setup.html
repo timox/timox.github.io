@@ -315,7 +315,7 @@
             log(`✓ ${colId} configuré`, 'success');
           } catch (e) {
             // Si la colonne n'existe pas, la créer
-            if (e.message && e.message.includes('not found')) {
+            if (e.message && (e.message.includes('not found') || e.message.includes('No such column'))) {
               log(`Création de ${colId}...`, 'info');
               await grist.docApi.applyUserActions([
                 ['AddColumn', TABLE_NAME, colId, {
