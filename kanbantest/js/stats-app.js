@@ -61,14 +61,15 @@ class StatsAppManager {
   async loadStrategies() {
     try {
       const gristData = await window.grist.docApi.fetchTable('Ssir_strategie2');
-      
+
       // Convertir le format Grist en tableau d'objets
+      // Utiliser id2 car c'est le seul champ id disponible dans cette table
       this.strategiesData = [];
-      if (gristData && gristData.id) {
-        const count = gristData.id.length;
+      if (gristData && gristData.id2) {
+        const count = gristData.id2.length;
         for (let i = 0; i < count; i++) {
           this.strategiesData.push({
-            id: gristData.id[i],
+            id: gristData.id2[i],
             objectif: gristData.objectif?.[i] || '',
             sous_objectif: gristData.sous_objectif?.[i] || '',
             axe_strategique: gristData.axe_strategique?.[i] || ''

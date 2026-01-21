@@ -158,12 +158,13 @@ async function loadStrategies() {
     const data = await window.grist.docApi.fetchTable('Ssir_strategie2');
     strategies = [];
 
-    if (!data?.id) return;
+    // Utiliser id2 car c'est le seul champ id disponible dans cette table
+    if (!data?.id2) return;
 
-    const count = data.id.length;
+    const count = data.id2.length;
     for (let i = 0; i < count; i++) {
       strategies.push({
-        id: data.id[i],
+        id: data.id2[i],
         objectif: data.objectif?.[i] || '',
         sous_objectif: data.sous_objectif?.[i] || '',
         axe_strategique: data.axe_strategique?.[i] || '',

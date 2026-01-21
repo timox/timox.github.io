@@ -442,7 +442,6 @@ class KanbanManager {
     if (Array.isArray(STRATEGY_DATA) && STRATEGY_DATA.length > 0) {
       this.strategiesData = STRATEGY_DATA.map(strategy => ({
         id: strategy.id,
-        id2: strategy.id,
         objectif: strategy.objectif || '',
         sous_objectif: strategy.sous_objectif || '',
         axe_strategique: strategy.axe_strategique || '',
@@ -463,17 +462,18 @@ class KanbanManager {
   mapStrategyRecords(records) {
     const mapped = [];
 
-    if (!records || !records.id) {
+    // Utiliser id2 car c'est le seul champ id disponible dans Ssir_strategie2
+    if (!records || !records.id2) {
       return mapped;
     }
 
     // Les clés sont les IDs des enregistrements
-    const ids = Object.keys(records.id || {});
-    
+    const ids = Object.keys(records.id2 || {});
+
     ids.forEach(id => {
       try {
         const strategy = {
-          id: records.id[id],
+          id: records.id2[id],
           objectif: records.objectif?.[id] || '',
           sous_objectif: records.sous_objectif?.[id] || '',
           axe_strategique: records.axe_strategique?.[id] || '',

@@ -790,11 +790,12 @@ class ConfigApp {
     try {
       const data = await window.grist.docApi.fetchTable('Ssir_strategie2');
       this.strategies = [];
-      if (!data?.id) return;
-      const count = data.id.length;
+      // Utiliser id2 car c'est le seul champ id disponible dans cette table
+      if (!data?.id2) return;
+      const count = data.id2.length;
       for (let i = 0; i < count; i++) {
         this.strategies.push({
-          id: data.id[i],
+          id: data.id2[i],
           objectif: data.objectif?.[i] || '',
           sous_objectif: data.sous_objectif?.[i] || '',
           axe_strategique: data.axe_strategique?.[i] || '',
