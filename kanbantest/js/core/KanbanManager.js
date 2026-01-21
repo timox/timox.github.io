@@ -232,7 +232,8 @@ export class KanbanManager {
    * @returns {Array} Enregistrements mappés
    */
   mapStrategyRecords(records) {
-    if (!records || !records.id) {
+    // Utiliser id2 car c'est le seul champ id disponible dans Ssir_strategie2
+    if (!records || !records.id2) {
       return [];
     }
 
@@ -248,7 +249,7 @@ export class KanbanManager {
       return [];
     };
 
-    const ids = normalizeColumn(records.id);
+    const ids = normalizeColumn(records.id2);
     const objectifs = normalizeColumn(records.objectif);
     const sousObjectifs = normalizeColumn(records.sous_objectif);
     const axesStrategiques = normalizeColumn(records.axe_strategique);

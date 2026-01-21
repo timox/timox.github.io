@@ -253,11 +253,12 @@ class SharedTaskModal {
     try {
       const data = await grist.docApi.fetchTable('Ssir_strategie2');
       this.strategies = [];
-      const count = data.id?.length || 0;
+      // Utiliser id2 car c'est le seul champ id disponible dans cette table
+      const count = data.id2?.length || 0;
 
       for (let i = 0; i < count; i++) {
         this.strategies.push({
-          id: data.id[i],
+          id: data.id2[i],
           objectif: data.objectif?.[i] || '',
           sous_objectif: data.sous_objectif?.[i] || '',
           axe_strategique: data.axe_strategique?.[i] || ''
