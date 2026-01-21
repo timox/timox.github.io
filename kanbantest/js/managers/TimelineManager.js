@@ -402,40 +402,40 @@ export class TimelineManager {
     const data = item.customData || {};
     const badges = [];
 
-    // Couleurs statut
-    const STATUT_INFO = {
-      'En cours': { icon: '▶', bg: '#3b82f6' },
-      'À faire': { icon: '○', bg: '#f59e0b' },
-      'Terminé': { icon: '✓', bg: '#10b981' },
-      'Bloqué': { icon: '✕', bg: '#ef4444' },
-      'En attente': { icon: '◷', bg: '#8b5cf6' },
-      'Backlog': { icon: '☰', bg: '#9ca3af' },
-      'Validation': { icon: '◉', bg: '#06b6d4' }
-    };
-
-    // Couleurs nature
+    // Icones Bootstrap par nature (plus intuitif que les acronymes)
     const NATURE_INFO = {
-      'Projet': { code: 'PRJ', bg: '#6366f1' },
-      'PRJ': { code: 'PRJ', bg: '#6366f1' },
-      'Support': { code: 'SUP', bg: '#f97316' },
-      'SUP': { code: 'SUP', bg: '#f97316' },
-      'Incident': { code: 'INC', bg: '#ef4444' },
-      'INC': { code: 'INC', bg: '#ef4444' },
-      'MCO': { code: 'MCO', bg: '#10b981' },
-      'Overhead': { code: 'OVH', bg: '#78716c' },
-      'OVH': { code: 'OVH', bg: '#78716c' }
+      'Projet': { icon: 'bi-folder-fill', bg: '#6366f1', label: 'Projet' },
+      'PRJ': { icon: 'bi-folder-fill', bg: '#6366f1', label: 'Projet' },
+      'Support': { icon: 'bi-headset', bg: '#f97316', label: 'Support' },
+      'SUP': { icon: 'bi-headset', bg: '#f97316', label: 'Support' },
+      'Incident': { icon: 'bi-exclamation-triangle-fill', bg: '#ef4444', label: 'Incident' },
+      'INC': { icon: 'bi-exclamation-triangle-fill', bg: '#ef4444', label: 'Incident' },
+      'MCO': { icon: 'bi-gear-fill', bg: '#10b981', label: 'Maintenance' },
+      'Overhead': { icon: 'bi-clock-fill', bg: '#78716c', label: 'Overhead' },
+      'OVH': { icon: 'bi-clock-fill', bg: '#78716c', label: 'Overhead' }
     };
 
-    // Badge Nature (PRJ, SUP, INC...)
+    // Icones Bootstrap par statut
+    const STATUT_INFO = {
+      'En cours': { icon: 'bi-play-fill', bg: '#3b82f6' },
+      'À faire': { icon: 'bi-circle', bg: '#f59e0b' },
+      'Terminé': { icon: 'bi-check-lg', bg: '#10b981' },
+      'Bloqué': { icon: 'bi-x-lg', bg: '#ef4444' },
+      'En attente': { icon: 'bi-pause-fill', bg: '#8b5cf6' },
+      'Backlog': { icon: 'bi-list-ul', bg: '#9ca3af' },
+      'Validation': { icon: 'bi-check2-circle', bg: '#06b6d4' }
+    };
+
+    // Badge Nature (icone)
     if (data.nature) {
-      const info = NATURE_INFO[data.nature] || { code: data.nature.substring(0, 3).toUpperCase(), bg: '#6366f1' };
-      badges.push(`<span class="tl-b" style="background:${info.bg}" title="${data.nature}">${info.code}</span>`);
+      const info = NATURE_INFO[data.nature] || { icon: 'bi-question-circle', bg: '#6b7280', label: data.nature };
+      badges.push(`<span class="tl-b" style="background:${info.bg}" title="${info.label}"><i class="${info.icon}"></i></span>`);
     }
 
     // Badge Statut (icone)
     if (data.statut) {
-      const info = STATUT_INFO[data.statut] || { icon: '●', bg: '#6b7280' };
-      badges.push(`<span class="tl-b tl-s" style="background:${info.bg}" title="${data.statut}">${info.icon}</span>`);
+      const info = STATUT_INFO[data.statut] || { icon: 'bi-circle', bg: '#6b7280' };
+      badges.push(`<span class="tl-b" style="background:${info.bg}" title="${data.statut}"><i class="${info.icon}"></i></span>`);
     }
 
     // Badge Assignee (initiales)
