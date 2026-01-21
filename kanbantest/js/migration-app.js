@@ -216,23 +216,26 @@ class MigrationApp {
         // Preparer migration
         const updates = {};
 
-        // Nature activite
+        // Nature activite (ChoiceList - format ['L', 'valeur'])
         if (!record.nature_activite) {
-          updates.nature_activite = this.deduceNature(record);
-        }
-
-        // Genre action
-        if (!record.genre_action && record.type_tache_id) {
-          const genre = TYPE_ID_TO_GENRE[record.type_tache_id];
-          if (genre) {
-            updates.genre_action = genre;
+          const nature = this.deduceNature(record);
+          if (nature) {
+            updates.nature_activite = ['L', nature];
           }
         }
 
-        // Previsibilite
-        const finalNature = updates.nature_activite || record.nature_activite;
+        // Genre action (ChoiceList - format ['L', 'valeur'])
+        if (!record.genre_action && record.type_tache_id) {
+          const genre = TYPE_ID_TO_GENRE[record.type_tache_id];
+          if (genre) {
+            updates.genre_action = ['L', genre];
+          }
+        }
+
+        // Previsibilite (ChoiceList - format ['L', 'valeur'])
+        const finalNature = updates.nature_activite ? updates.nature_activite[1] : record.nature_activite;
         if (!record.previsibilite && finalNature && NATURE_PREVISIBILITE[finalNature]) {
-          updates.previsibilite = NATURE_PREVISIBILITE[finalNature];
+          updates.previsibilite = ['L', NATURE_PREVISIBILITE[finalNature]];
         }
 
         if (Object.keys(updates).length > 0) {
@@ -697,7 +700,7 @@ class MigrationApp {
 
     const columns = {
       nature_activite: {
-        type: 'Choice',
+        type: 'ChoiceList',
         label: 'Nature activité',
         widgetOptions: JSON.stringify({
           choices: ['INC', 'SUP', 'MCO', 'PRJ', 'OVH'],
@@ -711,7 +714,7 @@ class MigrationApp {
         })
       },
       genre_action: {
-        type: 'Choice',
+        type: 'ChoiceList',
         label: 'Genre action',
         widgetOptions: JSON.stringify({
           choices: ['DOC', 'ANA', 'CON', 'RCH', 'DEV', 'TST', 'VAL', 'VER', 'COR', 'INS', 'CFG', 'INV', 'SEC', 'REU', 'FOR', 'SUI'],
@@ -736,7 +739,7 @@ class MigrationApp {
         })
       },
       etape_code: {
-        type: 'Choice',
+        type: 'ChoiceList',
         label: 'Étape cycle',
         widgetOptions: JSON.stringify({
           choices: ['ETP.VIS', 'ETP.ANA', 'ETP.CON', 'ETP.PLN', 'ETP.REA', 'ETP.DEP', 'ETP.EXP', 'ETP.AME'],
@@ -753,7 +756,7 @@ class MigrationApp {
         })
       },
       previsibilite: {
-        type: 'Choice',
+        type: 'ChoiceList',
         label: 'Prévisibilité',
         widgetOptions: JSON.stringify({
           choices: ['Prévisible', 'Imprévisible'],
