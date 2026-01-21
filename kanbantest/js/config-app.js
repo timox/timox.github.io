@@ -39,6 +39,7 @@ class ConfigApp {
     // Charger l'interface
     this.setupEventListeners();
     this.loadAllData();
+    this.updateFilters();
     this.updateStats();
 
     console.log('✅ ConfigApp: Ready');
@@ -134,17 +135,13 @@ class ConfigApp {
     });
 
     // === STRATÉGIES ===
-    $('#btn-add-strategie').on('click', (e) => {
-      e.preventDefault();
-      this.handleAddStrategie();
-    });
+    this.setupStrategieListeners();
 
     $(document).on('click', '.btn-delete-strategie, .btn-delete-strategie *', (e) => {
       e.preventDefault();
       e.stopPropagation();
       const $btn = $(e.target).closest('.btn-delete-strategie');
       const id = parseInt($btn.attr('data-id'));
-      console.log('Delete strategie clicked, id:', id, 'btn:', $btn.length);
       if (id) {
         this.handleDeleteStrategie(id);
       }
@@ -227,13 +224,6 @@ class ConfigApp {
       if (e.which === 13) {
         e.preventDefault();
         this.handleAddProjet();
-      }
-    });
-
-    $('#input-strategie-axe').on('keypress', (e) => {
-      if (e.which === 13) {
-        e.preventDefault();
-        this.handleAddStrategie();
       }
     });
 
@@ -455,15 +445,100 @@ class ConfigApp {
 
   // === STRATÉGIES ===
 
-  handleAddStrategie() {
-    const objectif = $('#input-strategie-objectif').val();
-    const sousObjectif = $('#input-strategie-sous-objectif').val();
-    const axeStrategique = $('#input-strategie-axe').val();
+  setupStrategieListeners() {
+    // Modal save
+    $('#btn-save-strategie').on('click', () => this.handleSaveStrategie());
+
+    // Modal reset on open
+    $('#modal-strategie').on('show.bs.modal', (e) => {
+      if (!$(e.relatedTarget).data('id')) {
+        this.resetStrategieForm();
+      }
+    });
+
+    // Filters
+    $('#filter-programme').on('change', () => this.renderStrategies());
+    $('#filter-strategie').on('change', () => this.renderStrategies());
+    $('#filter-search').on('input', () => this.renderStrategies());
+  }
+
+  resetStrategieForm() {
+    $('#strategie-id').val('');
+    $('#input-strategie-objectif').val('');
+    $('#input-strategie-sous-objectif').val('');
+    $('#input-strategie-axe').val('');
+    $('#input-strategie-responsable').val('');
+    $('#input-strategie-echeance').val('');
+    $('#input-strategie-portee').val('');
+    $('#modal-strategie-title').html('<i class="bi bi-bullseye me-2"></i>Nouvelle entrée stratégique');
+  }
+
+  handleEditStrategie(id) {
+    const strategie = (this.strategies || []).find(s => s.id === id);
+    if (!strategie) return;
+
+    $('#strategie-id').val(id);
+    $('#input-strategie-objectif').val(strategie.objectif || '');
+    $('#input-strategie-sous-objectif').val(strategie.sous_objectif || '');
+    $('#input-strategie-axe').val(strategie.axe_strategique || '');
+    $('#input-strategie-responsable').val(strategie.responsable || '');
+    $('#input-strategie-echeance').val(strategie.echeance || '');
+    $('#input-strategie-portee').val(strategie.portee || '');
+    $('#modal-strategie-title').html('<i class="bi bi-pencil me-2"></i>Modifier l\'entrée stratégique');
+
+    const modal = new bootstrap.Modal($('#modal-strategie')[0]);
+    modal.show();
+  }
+
+  async handleSaveStrategie() {
+    const id = $('#strategie-id').val();
+    const objectif = $('#input-strategie-objectif').val().trim();
+    const sousObjectif = $('#input-strategie-sous-objectif').val().trim();
+    const axeStrategique = $('#input-strategie-axe').val().trim();
+    const responsable = $('#input-strategie-responsable').val().trim();
+    const echeance = $('#input-strategie-echeance').val();
+    const portee = $('#input-strategie-portee').val();
+
+    if (!objectif) {
+      this.showError('Le programme (objectif) est obligatoire');
+      return;
+    }
+    if (!axeStrategique) {
+      this.showError('La mission (axe stratégique) est obligatoire');
+      return;
+    }
+
+    const data = {
+      objectif,
+      sous_objectif: sousObjectif,
+      axe_strategique: axeStrategique,
+      responsable,
+      echeance: echeance || null,
+      portee
+    };
 
     try {
-      this.addStrategieToGrist({ objectif, sousObjectif, axeStrategique });
+      if (id) {
+        // Update
+        await window.grist.docApi.applyUserActions([
+          ['UpdateRecord', 'Ssir_strategie2', parseInt(id), data]
+        ]);
+        this.showSuccess('Entrée mise à jour');
+      } else {
+        // Create
+        await window.grist.docApi.applyUserActions([
+          ['AddRecord', 'Ssir_strategie2', null, data]
+        ]);
+        this.showSuccess('Entrée ajoutée');
+      }
+
+      bootstrap.Modal.getInstance($('#modal-strategie')[0]).hide();
+      await this.loadStrategiesFromGrist();
+      this.renderStrategies();
+      this.updateFilters();
+      this.updateStats();
     } catch (error) {
-      this.showError(error.message);
+      this.showError('Erreur: ' + error.message);
     }
   }
 
@@ -471,7 +546,18 @@ class ConfigApp {
     const strategie = (this.strategies || []).find(s => s.id === id);
     if (!strategie) return;
 
-    if (!confirm(`Supprimer l'axe stratégique "${strategie.axe_strategique}" ?`)) return;
+    // Check if any tasks are linked to this strategy
+    const linkedTasks = (this.gristManager.currentRecords || []).filter(
+      t => t.strategie_id === id
+    );
+
+    if (linkedTasks.length > 0) {
+      this.showError(`Impossible de supprimer: ${linkedTasks.length} tâche(s) rattachée(s) à cette mission`);
+      return;
+    }
+
+    const label = `${strategie.objectif} → ${strategie.sous_objectif || '(pas de stratégie)'} → ${strategie.axe_strategique}`;
+    if (!confirm(`Supprimer cette entrée ?\n\n${label}`)) return;
 
     try {
       await window.grist.docApi.applyUserActions([
@@ -479,69 +565,151 @@ class ConfigApp {
       ]);
       await this.loadStrategiesFromGrist();
       this.renderStrategies();
+      this.updateFilters();
       this.updateStats();
-      this.showSuccess('Stratégie supprimée');
+      this.showSuccess('Entrée supprimée');
     } catch (error) {
       this.showError('Suppression impossible: ' + error.message);
     }
   }
 
-  async handleEditStrategie(id) {
-    const strategie = (this.strategies || []).find(s => s.id === id);
-    if (!strategie) return;
+  updateFilters() {
+    const strategies = this.strategies || [];
 
-    const objectif = prompt('Objectif', strategie.objectif || '');
-    if (objectif === null) return;
-    const sousObjectif = prompt('Sous-objectif', strategie.sous_objectif || '');
-    if (sousObjectif === null) return;
-    const axeStrategique = prompt('Axe stratégique', strategie.axe_strategique || '');
-    if (axeStrategique === null) return;
+    // Programmes uniques
+    const programmes = [...new Set(strategies.map(s => s.objectif).filter(Boolean))].sort();
+    $('#filter-programme').html(
+      '<option value="">Tous les programmes</option>' +
+      programmes.map(p => `<option value="${this.escapeHtml(p)}">${this.escapeHtml(p)}</option>`).join('')
+    );
 
-    try {
-      await window.grist.docApi.applyUserActions([
-        ['UpdateRecord', 'Ssir_strategie2', id, {
-          objectif: objectif.trim(),
-          sous_objectif: sousObjectif.trim(),
-          axe_strategique: axeStrategique.trim()
-        }]
-      ]);
-      await this.loadStrategiesFromGrist();
-      this.renderStrategies();
-      this.showSuccess('Stratégie mise à jour');
-    } catch (error) {
-      this.showError('Mise à jour impossible: ' + error.message);
-    }
+    // Stratégies uniques
+    const strategiesUniques = [...new Set(strategies.map(s => s.sous_objectif).filter(Boolean))].sort();
+    $('#filter-strategie').html(
+      '<option value="">Toutes les stratégies</option>' +
+      strategiesUniques.map(s => `<option value="${this.escapeHtml(s)}">${this.escapeHtml(s)}</option>`).join('')
+    );
+
+    // Datalists pour l'autocomplétion
+    $('#list-programmes-existants').html(
+      programmes.map(p => `<option value="${this.escapeHtml(p)}">`).join('')
+    );
+    $('#list-strategies-existantes').html(
+      strategiesUniques.map(s => `<option value="${this.escapeHtml(s)}">`).join('')
+    );
+
+    // Responsables (depuis les personnes)
+    const personnes = this.configManager.getPersonnes();
+    $('#list-responsables').html(
+      personnes.map(p => `<option value="${this.escapeHtml(p.nom)}">`).join('')
+    );
   }
 
   renderStrategies() {
-    const strategies = this.strategies || [];
+    const allStrategies = this.strategies || [];
     const $list = $('#list-strategies');
-    $('#count-strategies').text(strategies.length);
 
-    if (strategies.length === 0) {
-      $list.html('<div class="text-muted text-center py-3">Aucune stratégie enregistrée</div>');
+    // Apply filters
+    const filterProgramme = $('#filter-programme').val();
+    const filterStrategie = $('#filter-strategie').val();
+    const filterSearch = $('#filter-search').val().toLowerCase();
+
+    let filtered = allStrategies;
+    if (filterProgramme) {
+      filtered = filtered.filter(s => s.objectif === filterProgramme);
+    }
+    if (filterStrategie) {
+      filtered = filtered.filter(s => s.sous_objectif === filterStrategie);
+    }
+    if (filterSearch) {
+      filtered = filtered.filter(s =>
+        (s.objectif || '').toLowerCase().includes(filterSearch) ||
+        (s.sous_objectif || '').toLowerCase().includes(filterSearch) ||
+        (s.axe_strategique || '').toLowerCase().includes(filterSearch) ||
+        (s.responsable || '').toLowerCase().includes(filterSearch)
+      );
+    }
+
+    $('#count-strategies').text(`${filtered.length}/${allStrategies.length}`);
+
+    if (filtered.length === 0) {
+      $list.html('<div class="text-muted text-center py-3">Aucune entrée trouvée</div>');
       return;
     }
 
-    const html = strategies.map(s => `
-      <div class="list-group-item d-flex justify-content-between align-items-start">
-        <div class="flex-grow-1">
-          <div class="d-flex align-items-center mb-1">
-            <strong>${this.escapeHtml(s.objectif)}</strong>
+    // Group by Programme
+    const grouped = {};
+    filtered.forEach(s => {
+      const prog = s.objectif || '(Sans programme)';
+      if (!grouped[prog]) grouped[prog] = {};
+      const strat = s.sous_objectif || '(Sans stratégie)';
+      if (!grouped[prog][strat]) grouped[prog][strat] = [];
+      grouped[prog][strat].push(s);
+    });
+
+    // Count linked tasks
+    const taskCounts = {};
+    (this.gristManager.currentRecords || []).forEach(t => {
+      if (t.strategie_id) {
+        taskCounts[t.strategie_id] = (taskCounts[t.strategie_id] || 0) + 1;
+      }
+    });
+
+    let html = '';
+    Object.keys(grouped).sort().forEach(prog => {
+      html += `
+        <div class="card mb-2">
+          <div class="card-header bg-primary bg-opacity-10 py-2">
+            <strong><i class="bi bi-folder me-1"></i>${this.escapeHtml(prog)}</strong>
           </div>
-          ${s.sous_objectif ? `<div class="small text-muted ms-4">${this.escapeHtml(s.sous_objectif)}</div>` : ''}
-          ${s.axe_strategique ? `<div class="small ms-4">${this.escapeHtml(s.axe_strategique)}</div>` : ''}
-        </div>
-        <div class="d-flex gap-1">
-          <button class="btn btn-sm btn-outline-secondary btn-edit-strategie" data-id="${s.id}">
-            <i class="bi bi-pencil"></i>
-          </button>
-          <button class="btn btn-sm btn-outline-danger btn-delete-strategie" data-id="${s.id}">
-            <i class="bi bi-trash"></i>
-          </button>
-        </div>
-      </div>
-    `).join('');
+          <div class="card-body p-2">
+      `;
+
+      Object.keys(grouped[prog]).sort().forEach(strat => {
+        html += `
+          <div class="ms-2 mb-2">
+            <div class="text-muted small mb-1">
+              <i class="bi bi-diagram-2 me-1"></i>${this.escapeHtml(strat)}
+            </div>
+        `;
+
+        grouped[prog][strat].forEach(s => {
+          const taskCount = taskCounts[s.id] || 0;
+          const badgeClass = taskCount > 0 ? 'bg-success' : 'bg-secondary';
+
+          html += `
+            <div class="d-flex justify-content-between align-items-center bg-light rounded p-2 mb-1 ms-3">
+              <div class="flex-grow-1">
+                <div class="d-flex align-items-center">
+                  <i class="bi bi-bullseye me-2 text-primary"></i>
+                  <strong>${this.escapeHtml(s.axe_strategique)}</strong>
+                  <span class="badge ${badgeClass} ms-2" title="Tâches rattachées">
+                    <i class="bi bi-list-task me-1"></i>${taskCount}
+                  </span>
+                </div>
+                <div class="small text-muted mt-1">
+                  ${s.responsable ? `<span class="me-3"><i class="bi bi-person"></i> ${this.escapeHtml(s.responsable)}</span>` : ''}
+                  ${s.echeance ? `<span class="me-3"><i class="bi bi-calendar"></i> ${this.escapeHtml(s.echeance)}</span>` : ''}
+                  ${s.portee ? `<span><i class="bi bi-geo-alt"></i> ${this.escapeHtml(s.portee)}</span>` : ''}
+                </div>
+              </div>
+              <div class="d-flex gap-1">
+                <button class="btn btn-sm btn-outline-secondary btn-edit-strategie" data-id="${s.id}" title="Modifier">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger btn-delete-strategie" data-id="${s.id}" title="Supprimer">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </div>
+          `;
+        });
+
+        html += '</div>';
+      });
+
+      html += '</div></div>';
+    });
 
     $list.html(html);
   }
@@ -618,27 +786,6 @@ class ConfigApp {
     $list.html(html);
   }
 
-  async addStrategieToGrist({ objectif, sousObjectif, axeStrategique }) {
-    if (!objectif || !objectif.trim()) throw new Error('Objectif obligatoire');
-    if (!axeStrategique || !axeStrategique.trim()) throw new Error('Axe stratégique obligatoire');
-
-    await window.grist.docApi.applyUserActions([
-      ['AddRecord', 'Ssir_strategie2', null, {
-        objectif: objectif.trim(),
-        sous_objectif: (sousObjectif || '').trim(),
-        axe_strategique: axeStrategique.trim()
-      }]
-    ]);
-
-    $('#input-strategie-objectif').val('');
-    $('#input-strategie-sous-objectif').val('');
-    $('#input-strategie-axe').val('');
-    await this.loadStrategiesFromGrist();
-    this.renderStrategies();
-    this.updateStats();
-    this.showSuccess('Stratégie ajoutée');
-  }
-
   async loadStrategiesFromGrist() {
     try {
       const data = await window.grist.docApi.fetchTable('Ssir_strategie2');
@@ -650,12 +797,15 @@ class ConfigApp {
           id: data.id[i],
           objectif: data.objectif?.[i] || '',
           sous_objectif: data.sous_objectif?.[i] || '',
-          axe_strategique: data.axe_strategique?.[i] || ''
+          axe_strategique: data.axe_strategique?.[i] || '',
+          responsable: data.responsable?.[i] || '',
+          echeance: data.echeance?.[i] || '',
+          portee: data.portee?.[i] || ''
         });
       }
       $('#count-strategies').text(this.strategies.length);
     } catch (error) {
-      this.showError('Chargement stratégies impossible: ' + error.message);
+      console.warn('Chargement stratégies impossible:', error.message);
       this.strategies = [];
     }
   }
