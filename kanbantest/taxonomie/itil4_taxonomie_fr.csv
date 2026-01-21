@@ -1,0 +1,41 @@
+Composant;Categorie;Pratique_Code;Pratique_Nom;Description
+Chaîne de valeur;Planifier;SVS-PLAN;Planifier;Assurer une compréhension partagée de la vision, de l'état actuel et de la direction d'amélioration
+Chaîne de valeur;Améliorer;SVS-IMPROVE;Améliorer;Assurer l'amélioration continue des produits, services et pratiques
+Chaîne de valeur;Engager;SVS-ENGAGE;Engager;Fournir une bonne compréhension des besoins des parties prenantes et une interaction continue
+Chaîne de valeur;Concevoir et transitionner;SVS-DDT;Concevoir et transitionner;Assurer que les produits et services répondent aux attentes des parties prenantes
+Chaîne de valeur;Obtenir/Construire;SVS-OB;Obtenir/Construire;Assurer la disponibilité des composants de service
+Chaîne de valeur;Délivrer et supporter;SVS-DS;Délivrer et supporter;Assurer la livraison et le support des services selon les spécifications
+Pratiques générales;Gestion générale;GEN-ARCH;Gestion de l'architecture;Comprendre les éléments d'une organisation et leurs interrelations
+Pratiques générales;Gestion générale;GEN-CONT;Amélioration continue;Aligner les pratiques et services avec les besoins métier changeants
+Pratiques générales;Gestion générale;GEN-INFOSEC;Gestion de la sécurité de l'information;Protéger l'information nécessaire à l'organisation
+Pratiques générales;Gestion générale;GEN-KNOW;Gestion des connaissances;Maintenir et améliorer l'utilisation efficace de l'information et des connaissances
+Pratiques générales;Gestion générale;GEN-MEAS;Mesure et reporting;Soutenir la prise de décision et l'amélioration continue
+Pratiques générales;Gestion générale;GEN-CHANGE;Gestion du changement organisationnel;Assurer que les changements sont implémentés de manière fluide et réussie
+Pratiques générales;Gestion générale;GEN-PORT;Gestion du portefeuille;Assurer que l'organisation dispose du bon mix de programmes, projets, produits et services
+Pratiques générales;Gestion générale;GEN-PROJ;Gestion de projet;Assurer que tous les projets sont livrés avec succès
+Pratiques générales;Gestion générale;GEN-REL;Gestion des relations;Établir et entretenir les liens entre l'organisation et ses parties prenantes
+Pratiques générales;Gestion générale;GEN-RISK;Gestion des risques;Assurer que l'organisation comprend et gère efficacement les risques
+Pratiques générales;Gestion générale;GEN-FIN;Gestion financière des services;Soutenir les stratégies et plans de gestion financière de l'organisation
+Pratiques générales;Gestion générale;GEN-STRAT;Gestion de la stratégie;Formuler les objectifs de l'organisation et adopter les plans d'action et allocation de ressources
+Pratiques générales;Gestion générale;GEN-SUPP;Gestion des fournisseurs;Assurer que les fournisseurs de l'organisation sont gérés de manière appropriée
+Pratiques générales;Gestion générale;GEN-WORK;Gestion des effectifs et des talents;Assurer que l'organisation dispose des bonnes personnes avec les compétences appropriées
+Pratiques de gestion des services;Service;SM-AVAIL;Gestion de la disponibilité;Assurer que les services délivrent les niveaux de disponibilité convenus
+Pratiques de gestion des services;Service;SM-BA;Analyse métier;Analyser les besoins métier et recommander des solutions
+Pratiques de gestion des services;Service;SM-CAP;Gestion de la capacité et de la performance;Assurer que les services atteignent la performance convenue
+Pratiques de gestion des services;Service;SM-CHG;Contrôle des changements;Maximiser le nombre de changements réussis
+Pratiques de gestion des services;Service;SM-INC;Gestion des incidents;Minimiser l'impact négatif des incidents en restaurant le service normal
+Pratiques de gestion des services;Service;SM-ASSET;Gestion des actifs TI;Planifier et gérer le cycle de vie complet des actifs TI
+Pratiques de gestion des services;Service;SM-MON;Surveillance et gestion des événements;Observer systématiquement les services et composants de service
+Pratiques de gestion des services;Service;SM-PROB;Gestion des problèmes;Réduire la probabilité et l'impact des incidents
+Pratiques de gestion des services;Service;SM-REL;Gestion des mises en production;Rendre les services et fonctionnalités nouveaux et modifiés disponibles
+Pratiques de gestion des services;Service;SM-CAT;Gestion du catalogue de services;Fournir une source unique d'information cohérente sur les services
+Pratiques de gestion des services;Service;SM-CONF;Gestion de la configuration des services;Assurer que l'information sur la configuration des services est disponible
+Pratiques de gestion des services;Service;SM-CONT;Gestion de la continuité des services;Assurer la disponibilité et performance suffisantes en cas de sinistre
+Pratiques de gestion des services;Service;SM-DESIGN;Conception des services;Concevoir des produits et services adaptés à l'usage et à l'utilisation
+Pratiques de gestion des services;Service;SM-DESK;Centre de services;Capturer la demande de résolution d'incidents et de demandes de service
+Pratiques de gestion des services;Service;SM-SLA;Gestion des niveaux de service;Définir des objectifs clairs basés sur le métier pour la performance des services
+Pratiques de gestion des services;Service;SM-REQ;Gestion des demandes de service;Soutenir la qualité convenue d'un service en traitant les demandes
+Pratiques de gestion des services;Service;SM-VAL;Validation et test des services;Assurer que les produits et services répondent aux exigences définies
+Pratiques techniques;Technique;TECH-DEPLOY;Gestion des déploiements;Déplacer le matériel, logiciel ou documentation vers les environnements de production
+Pratiques techniques;Technique;TECH-INFRA;Gestion de l'infrastructure et des plateformes;Superviser l'infrastructure et les plateformes utilisées par l'organisation
+Pratiques techniques;Technique;TECH-DEV;Développement et gestion des logiciels;Assurer que les applications répondent aux besoins des parties prenantes

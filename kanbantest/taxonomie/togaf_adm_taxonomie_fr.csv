@@ -1,0 +1,82 @@
+Phase_Code;Phase_Nom;Etape_Code;Etape_Nom;Description
+PRELIM;Phase préliminaire;PRELIM.01;Définir le périmètre de l'organisation impactée;Identifier les unités organisationnelles concernées par l'architecture d'entreprise
+PRELIM;Phase préliminaire;PRELIM.02;Confirmer les cadres de gouvernance et de support;Établir les structures de gouvernance et les équipes de support
+PRELIM;Phase préliminaire;PRELIM.03;Définir et établir l'équipe d'architecture;Constituer l'équipe et définir les rôles et responsabilités
+PRELIM;Phase préliminaire;PRELIM.04;Identifier et établir les principes d'architecture;Définir les principes qui guideront les décisions architecturales
+PRELIM;Phase préliminaire;PRELIM.05;Adapter le cadre TOGAF;Personnaliser TOGAF selon le contexte organisationnel
+PRELIM;Phase préliminaire;PRELIM.06;Implémenter les outils d'architecture;Mettre en place les outils nécessaires au travail d'architecture
+A;Vision de l'architecture;A.01;Établir le projet d'architecture;Définir le périmètre, les contraintes et les attentes
+A;Vision de l'architecture;A.02;Identifier les parties prenantes et les préoccupations;Cartographier les acteurs clés et leurs besoins
+A;Vision de l'architecture;A.03;Confirmer et élaborer les objectifs métier;Préciser les objectifs à atteindre par l'architecture
+A;Vision de l'architecture;A.04;Définir les capacités métier requises;Identifier les capacités nécessaires pour atteindre les objectifs
+A;Vision de l'architecture;A.05;Évaluer la préparation à la transformation;Analyser la capacité de l'organisation à changer
+A;Vision de l'architecture;A.06;Définir le périmètre;Délimiter précisément ce qui est inclus et exclu
+A;Vision de l'architecture;A.07;Confirmer et élaborer les principes d'architecture;Valider les principes applicables au projet
+A;Vision de l'architecture;A.08;Développer la vision de l'architecture;Créer une vision partagée de l'architecture cible
+A;Vision de l'architecture;A.09;Définir les propositions de valeur et les KPI;Établir les métriques de succès
+A;Vision de l'architecture;A.10;Identifier les risques de transformation et les mesures d'atténuation;Anticiper les obstacles et définir les réponses
+A;Vision de l'architecture;A.11;Développer la déclaration de travail d'architecture;Formaliser l'engagement et le périmètre du projet
+B;Architecture métier;B.01;Sélectionner les modèles de référence et points de vue;Choisir les cadres de modélisation appropriés
+B;Architecture métier;B.02;Développer la description de l'architecture métier de référence;Documenter l'architecture métier existante
+B;Architecture métier;B.03;Développer la description de l'architecture métier cible;Décrire l'état futur souhaité de l'architecture métier
+B;Architecture métier;B.04;Effectuer l'analyse des écarts;Identifier les différences entre l'existant et la cible
+B;Architecture métier;B.05;Définir les composants candidats de la feuille de route;Proposer les éléments du plan de transformation
+B;Architecture métier;B.06;Résoudre les impacts sur le paysage architectural;Analyser les effets sur l'architecture globale
+B;Architecture métier;B.07;Conduire la revue formelle des parties prenantes;Valider l'architecture avec les acteurs clés
+B;Architecture métier;B.08;Finaliser l'architecture métier;Compléter et approuver l'architecture métier
+B;Architecture métier;B.09;Créer le document de définition de l'architecture;Produire la documentation formelle
+C;Architecture des systèmes d'information;C.01;Développer l'architecture des données de référence;Documenter l'architecture des données existante
+C;Architecture des systèmes d'information;C.02;Développer l'architecture des données cible;Décrire l'état futur de l'architecture des données
+C;Architecture des systèmes d'information;C.03;Développer l'architecture applicative de référence;Documenter l'architecture applicative existante
+C;Architecture des systèmes d'information;C.04;Développer l'architecture applicative cible;Décrire l'état futur de l'architecture applicative
+C;Architecture des systèmes d'information;C.05;Effectuer l'analyse des écarts;Identifier les différences entre l'existant et la cible
+C;Architecture des systèmes d'information;C.06;Définir les composants candidats de la feuille de route;Proposer les éléments du plan de transformation
+C;Architecture des systèmes d'information;C.07;Résoudre les impacts sur le paysage architectural;Analyser les effets sur l'architecture globale
+C;Architecture des systèmes d'information;C.08;Conduire la revue formelle des parties prenantes;Valider l'architecture avec les acteurs clés
+C;Architecture des systèmes d'information;C.09;Finaliser l'architecture des systèmes d'information;Compléter et approuver l'architecture SI
+C;Architecture des systèmes d'information;C.10;Créer le document de définition de l'architecture;Produire la documentation formelle
+D;Architecture technologique;D.01;Sélectionner les modèles de référence et points de vue;Choisir les cadres de modélisation appropriés
+D;Architecture technologique;D.02;Développer l'architecture technologique de référence;Documenter l'infrastructure existante
+D;Architecture technologique;D.03;Développer l'architecture technologique cible;Décrire l'état futur de l'infrastructure
+D;Architecture technologique;D.04;Effectuer l'analyse des écarts;Identifier les différences entre l'existant et la cible
+D;Architecture technologique;D.05;Définir les composants candidats de la feuille de route;Proposer les éléments du plan de transformation
+D;Architecture technologique;D.06;Résoudre les impacts sur le paysage architectural;Analyser les effets sur l'architecture globale
+D;Architecture technologique;D.07;Conduire la revue formelle des parties prenantes;Valider l'architecture avec les acteurs clés
+D;Architecture technologique;D.08;Finaliser l'architecture technologique;Compléter et approuver l'architecture technologique
+D;Architecture technologique;D.09;Créer le document de définition de l'architecture;Produire la documentation formelle
+E;Opportunités et solutions;E.01;Déterminer les attributs du changement métier;Caractériser la nature des changements requis
+E;Opportunités et solutions;E.02;Déterminer les contraintes métier;Identifier les limitations et restrictions
+E;Opportunités et solutions;E.03;Réviser et consolider les résultats de l'analyse des écarts;Synthétiser les écarts identifiés dans les phases précédentes
+E;Opportunités et solutions;E.04;Réviser les exigences consolidées;Valider l'ensemble des exigences
+E;Opportunités et solutions;E.05;Consolider et réconcilier les exigences d'interopérabilité;Assurer la cohérence des interfaces
+E;Opportunités et solutions;E.06;Affiner et valider les dépendances;Préciser les relations entre les composants
+E;Opportunités et solutions;E.07;Confirmer la préparation et le risque de transformation;Valider la faisabilité de la transformation
+E;Opportunités et solutions;E.08;Formuler la stratégie d'implémentation et de migration;Définir l'approche de déploiement
+E;Opportunités et solutions;E.09;Identifier et regrouper les lots de travail;Organiser le travail en packages cohérents
+E;Opportunités et solutions;E.10;Identifier les projets de transition;Définir les projets nécessaires à la transition
+E;Opportunités et solutions;E.11;Créer le plan d'implémentation et de migration;Formaliser le plan de transformation
+F;Planification de la migration;F.01;Confirmer les interactions du plan d'implémentation et de migration;Valider les dépendances et interfaces
+F;Planification de la migration;F.02;Estimer les besoins en ressources et calendrier;Évaluer les moyens et délais nécessaires
+F;Planification de la migration;F.03;Prioriser les projets de migration;Établir l'ordre des projets
+F;Planification de la migration;F.04;Confirmer la feuille de route de l'architecture;Valider le plan de transformation
+F;Planification de la migration;F.05;Compléter le plan d'implémentation et de migration;Finaliser la planification détaillée
+F;Planification de la migration;F.06;Compléter le cycle de développement de l'architecture;Conclure le cycle ADM
+G;Gouvernance de l'implémentation;G.01;Confirmer le périmètre et les priorités de déploiement;Valider ce qui sera déployé et dans quel ordre
+G;Gouvernance de l'implémentation;G.02;Identifier les ressources de déploiement et les compétences;Identifier les moyens nécessaires
+G;Gouvernance de l'implémentation;G.03;Guider le développement des solutions;Accompagner les équipes de développement
+G;Gouvernance de l'implémentation;G.04;Effectuer les revues de conformité de l'architecture d'entreprise;Vérifier l'alignement avec l'architecture
+G;Gouvernance de l'implémentation;G.05;Implémenter les opérations métier et TI;Mettre en production les solutions
+G;Gouvernance de l'implémentation;G.06;Effectuer la revue post-implémentation;Évaluer les résultats après déploiement
+G;Gouvernance de l'implémentation;G.07;Clôturer l'implémentation;Finaliser et documenter l'implémentation
+H;Gestion du changement d'architecture;H.01;Établir le processus de réalisation de la valeur;Définir comment mesurer la valeur créée
+H;Gestion du changement d'architecture;H.02;Déployer les outils de surveillance;Mettre en place la surveillance de l'architecture
+H;Gestion du changement d'architecture;H.03;Gérer les risques;Surveiller et traiter les risques architecturaux
+H;Gestion du changement d'architecture;H.04;Fournir l'analyse pour la gestion du changement d'architecture;Analyser les demandes de changement
+H;Gestion du changement d'architecture;H.05;Développer les exigences de changement;Formaliser les besoins de changement
+H;Gestion du changement d'architecture;H.06;Gérer le processus de gouvernance;Assurer la gouvernance continue de l'architecture
+H;Gestion du changement d'architecture;H.07;Activer le processus pour implémenter le changement;Lancer les projets de changement architectural
+REQ;Gestion des exigences;REQ.01;Identifier et documenter les exigences;Capturer toutes les exigences architecturales
+REQ;Gestion des exigences;REQ.02;Établir la traçabilité des exigences;Lier les exigences aux composants d'architecture
+REQ;Gestion des exigences;REQ.03;Gérer le référentiel des exigences;Maintenir la base des exigences à jour
+REQ;Gestion des exigences;REQ.04;Évaluer l'impact des exigences;Analyser les effets des nouvelles exigences
+REQ;Gestion des exigences;REQ.05;Prioriser les exigences;Établir l'ordre de traitement des exigences

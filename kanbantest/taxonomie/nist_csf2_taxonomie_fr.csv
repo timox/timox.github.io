@@ -1,0 +1,104 @@
+Fonction_Code;Fonction_Nom;Categorie_Code;Categorie_Nom;SousCategorie_Code;SousCategorie_Nom
+GV;Gouverner;GV.OC;Contexte organisationnel;GV.OC-01;La mission de l'organisation est comprise et informe la gestion des risques de cybersécurité
+GV;Gouverner;GV.OC;Contexte organisationnel;GV.OC-02;Les parties prenantes internes et externes sont comprises et leurs besoins et attentes sont pris en compte
+GV;Gouverner;GV.OC;Contexte organisationnel;GV.OC-03;Les exigences légales, réglementaires et contractuelles concernant la cybersécurité sont comprises et gérées
+GV;Gouverner;GV.OC;Contexte organisationnel;GV.OC-04;Les objectifs critiques, capacités et services dont dépendent les parties prenantes sont compris
+GV;Gouverner;GV.OC;Contexte organisationnel;GV.OC-05;Les résultats, capacités et services dont dépend l'organisation sont compris et communiqués
+GV;Gouverner;GV.RM;Stratégie de gestion des risques;GV.RM-01;Les objectifs de gestion des risques sont établis et acceptés par les parties prenantes
+GV;Gouverner;GV.RM;Stratégie de gestion des risques;GV.RM-02;L'appétit et la tolérance au risque sont déterminés et articulés
+GV;Gouverner;GV.RM;Stratégie de gestion des risques;GV.RM-03;Les activités et résultats de gestion des risques de cybersécurité sont intégrés aux processus de gestion des risques de l'entreprise
+GV;Gouverner;GV.RM;Stratégie de gestion des risques;GV.RM-04;La direction stratégique décrivant les options appropriées de réponse aux risques est établie
+GV;Gouverner;GV.RM;Stratégie de gestion des risques;GV.RM-05;Les lignes de communication pour la gestion des risques de cybersécurité sont établies
+GV;Gouverner;GV.RM;Stratégie de gestion des risques;GV.RM-06;Une méthode standardisée de calcul, documentation et priorisation des risques est établie
+GV;Gouverner;GV.RM;Stratégie de gestion des risques;GV.RM-07;Les opportunités stratégiques sont caractérisées et incluses dans les délibérations
+GV;Gouverner;GV.RR;Rôles, responsabilités et autorités;GV.RR-01;Le leadership organisationnel est responsable et redevable de la gestion des risques de cybersécurité
+GV;Gouverner;GV.RR;Rôles, responsabilités et autorités;GV.RR-02;Les rôles, responsabilités et autorités sont établis et communiqués
+GV;Gouverner;GV.RR;Rôles, responsabilités et autorités;GV.RR-03;Des ressources adéquates sont allouées proportionnellement aux risques
+GV;Gouverner;GV.RR;Rôles, responsabilités et autorités;GV.RR-04;La cybersécurité est incluse dans les pratiques de ressources humaines
+GV;Gouverner;GV.PO;Politique;GV.PO-01;La politique de gestion des risques de cybersécurité organisationnelle est établie basée sur le contexte
+GV;Gouverner;GV.PO;Politique;GV.PO-02;La politique est révisée, mise à jour et communiquée
+GV;Gouverner;GV.SC;Surveillance;GV.SC-01;La stratégie de gestion des risques de cybersécurité est révisée et ajustée pour assurer la couverture des exigences
+GV;Gouverner;GV.SC;Surveillance;GV.SC-02;La stratégie de gestion des risques est surveillée et ajustée selon les parties prenantes
+GV;Gouverner;GV.SC;Surveillance;GV.SC-03;La performance de gestion des risques est évaluée et ajustée
+GV;Gouverner;GV.SC;Surveillance;GV.SC-04;La gestion des risques de cybersécurité est intégrée et alignée avec d'autres fonctions organisationnelles
+GV;Gouverner;GV.SC;Surveillance;GV.SC-05;Les risques et opportunités liés aux relations avec les tiers sont compris, priorisés et gérés
+GV;Gouverner;GV.SC;Surveillance;GV.SC-06;Les pratiques de gestion des risques de cybersécurité de la chaîne d'approvisionnement sont intégrées
+GV;Gouverner;GV.SC;Surveillance;GV.SC-07;Les fournisseurs et partenaires sont intégrés dans la planification de cybersécurité
+GV;Gouverner;GV.SC;Surveillance;GV.SC-08;Les pratiques de chaîne d'approvisionnement soutiennent les objectifs de gestion des risques
+GV;Gouverner;GV.SC;Surveillance;GV.SC-09;Les intégrations et dépendances de la chaîne d'approvisionnement sont comprises
+GV;Gouverner;GV.SC;Surveillance;GV.SC-10;Les fournisseurs sont évalués et priorisés selon les risques
+ID;Identifier;ID.AM;Gestion des actifs;ID.AM-01;Les inventaires des matériels gérés par l'organisation sont maintenus
+ID;Identifier;ID.AM;Gestion des actifs;ID.AM-02;Les inventaires des logiciels, services et systèmes gérés par l'organisation sont maintenus
+ID;Identifier;ID.AM;Gestion des actifs;ID.AM-03;Les représentations des communications réseau autorisées et des flux de données internes et externes sont maintenues
+ID;Identifier;ID.AM;Gestion des actifs;ID.AM-04;Les inventaires des services fournis par les fournisseurs sont maintenus
+ID;Identifier;ID.AM;Gestion des actifs;ID.AM-05;Les actifs sont priorisés selon leur criticité et valeur métier
+ID;Identifier;ID.AM;Gestion des actifs;ID.AM-07;Les inventaires des données et types de données correspondants sont maintenus
+ID;Identifier;ID.AM;Gestion des actifs;ID.AM-08;Les systèmes, matériels, logiciels, services et données sont gérés tout au long de leur cycle de vie
+ID;Identifier;ID.RA;Évaluation des risques;ID.RA-01;Les vulnérabilités des actifs sont identifiées, validées et enregistrées
+ID;Identifier;ID.RA;Évaluation des risques;ID.RA-02;Les renseignements sur les menaces cyber sont reçus de forums et sources de partage
+ID;Identifier;ID.RA;Évaluation des risques;ID.RA-03;Les menaces internes et externes contre l'organisation sont identifiées et enregistrées
+ID;Identifier;ID.RA;Évaluation des risques;ID.RA-04;Les impacts potentiels et probabilités des menaces exploitant les vulnérabilités sont identifiés
+ID;Identifier;ID.RA;Évaluation des risques;ID.RA-05;Les menaces, vulnérabilités, probabilités et impacts sont utilisés pour comprendre les risques inhérents
+ID;Identifier;ID.RA;Évaluation des risques;ID.RA-06;Les réponses aux risques sont choisies, priorisées, planifiées, suivies et communiquées
+ID;Identifier;ID.RA;Évaluation des risques;ID.RA-07;Les changements et exceptions sont gérés, évalués pour l'impact du risque et documentés
+ID;Identifier;ID.RA;Évaluation des risques;ID.RA-08;Les processus de réception, analyse et réponse aux divulgations de vulnérabilités sont établis
+ID;Identifier;ID.RA;Évaluation des risques;ID.RA-09;L'authenticité et l'intégrité des composants matériels et logiciels sont évaluées avant acquisition
+ID;Identifier;ID.RA;Évaluation des risques;ID.RA-10;Les fournisseurs critiques sont évalués avant engagement
+ID;Identifier;ID.IM;Amélioration;ID.IM-01;Les améliorations sont identifiées à partir des évaluations
+ID;Identifier;ID.IM;Amélioration;ID.IM-02;Les améliorations sont identifiées à partir des tests et exercices de sécurité
+ID;Identifier;ID.IM;Amélioration;ID.IM-03;Les améliorations sont identifiées à partir de l'exécution des processus et procédures opérationnels
+ID;Identifier;ID.IM;Amélioration;ID.IM-04;Les améliorations sont communiquées aux fonctions internes et externes appropriées
+PR;Protéger;PR.AA;Gestion des identités, authentification et contrôle d'accès;PR.AA-01;Les identités et accréditations sont gérées pour les utilisateurs, services et matériels autorisés
+PR;Protéger;PR.AA;Gestion des identités, authentification et contrôle d'accès;PR.AA-02;Les identités sont prouvées et liées aux accréditations basées sur le contexte des interactions
+PR;Protéger;PR.AA;Gestion des identités, authentification et contrôle d'accès;PR.AA-03;Les utilisateurs, services et matériels sont authentifiés
+PR;Protéger;PR.AA;Gestion des identités, authentification et contrôle d'accès;PR.AA-04;Les déclarations d'identité sont protégées, transmises et vérifiées
+PR;Protéger;PR.AA;Gestion des identités, authentification et contrôle d'accès;PR.AA-05;Les permissions d'accès, droits et autorisations sont définis dans une politique et gérés
+PR;Protéger;PR.AA;Gestion des identités, authentification et contrôle d'accès;PR.AA-06;L'accès physique aux actifs est géré, surveillé et appliqué proportionnellement aux risques
+PR;Protéger;PR.AT;Sensibilisation et formation;PR.AT-01;Le personnel est sensibilisé et formé pour accomplir ses tâches de cybersécurité
+PR;Protéger;PR.AT;Sensibilisation et formation;PR.AT-02;Les individus en rôles spécialisés sont sensibilisés et formés
+PR;Protéger;PR.DS;Sécurité des données;PR.DS-01;La confidentialité, l'intégrité et la disponibilité des données au repos sont protégées
+PR;Protéger;PR.DS;Sécurité des données;PR.DS-02;La confidentialité, l'intégrité et la disponibilité des données en transit sont protégées
+PR;Protéger;PR.DS;Sécurité des données;PR.DS-10;La confidentialité, l'intégrité et la disponibilité des données en cours d'utilisation sont protégées
+PR;Protéger;PR.DS;Sécurité des données;PR.DS-11;Les sauvegardes des données sont créées, protégées et testées
+PR;Protéger;PR.PS;Sécurité des plateformes;PR.PS-01;Les pratiques de gestion de la configuration sont établies et appliquées
+PR;Protéger;PR.PS;Sécurité des plateformes;PR.PS-02;Le logiciel est maintenu, remplacé et supprimé proportionnellement aux risques
+PR;Protéger;PR.PS;Sécurité des plateformes;PR.PS-03;Le matériel est maintenu, remplacé et supprimé proportionnellement aux risques
+PR;Protéger;PR.PS;Sécurité des plateformes;PR.PS-04;Les mécanismes de génération de journaux et d'enregistrement sont configurés
+PR;Protéger;PR.PS;Sécurité des plateformes;PR.PS-05;L'installation et l'exécution de logiciels non autorisés sont empêchées
+PR;Protéger;PR.PS;Sécurité des plateformes;PR.PS-06;Les pratiques de développement logiciel sécurisé sont intégrées et leur performance surveillée
+PR;Protéger;PR.IR;Résilience de l'infrastructure;PR.IR-01;Les réseaux et environnements sont protégés contre les accès logiques non autorisés
+PR;Protéger;PR.IR;Résilience de l'infrastructure;PR.IR-02;Les actifs technologiques de l'organisation sont protégés contre les menaces environnementales
+PR;Protéger;PR.IR;Résilience de l'infrastructure;PR.IR-03;Des mécanismes sont mis en œuvre pour atteindre les exigences de résilience
+PR;Protéger;PR.IR;Résilience de l'infrastructure;PR.IR-04;Des ressources adéquates sont fournies pour assurer les niveaux de disponibilité
+DE;Détecter;DE.CM;Surveillance continue;DE.CM-01;Les réseaux sont surveillés pour détecter les événements de cybersécurité potentiellement indésirables
+DE;Détecter;DE.CM;Surveillance continue;DE.CM-02;L'environnement physique est surveillé pour détecter les événements potentiellement indésirables
+DE;Détecter;DE.CM;Surveillance continue;DE.CM-03;Les activités du personnel et l'utilisation de la technologie sont surveillées
+DE;Détecter;DE.CM;Surveillance continue;DE.CM-06;Les activités et services des prestataires externes sont surveillés
+DE;Détecter;DE.CM;Surveillance continue;DE.CM-09;Les ressources informatiques sont surveillées pour détecter les événements potentiellement indésirables
+DE;Détecter;DE.AE;Analyse des événements indésirables;DE.AE-02;Les événements potentiellement indésirables sont analysés pour mieux comprendre les événements associés
+DE;Détecter;DE.AE;Analyse des événements indésirables;DE.AE-03;Les informations sont corrélées provenant de sources multiples
+DE;Détecter;DE.AE;Analyse des événements indésirables;DE.AE-04;L'impact estimé et la portée des événements indésirables sont compris
+DE;Détecter;DE.AE;Analyse des événements indésirables;DE.AE-06;Les informations sur les événements indésirables sont fournies au personnel et outils autorisés
+DE;Détecter;DE.AE;Analyse des événements indésirables;DE.AE-07;Les renseignements sur les menaces cyber et autres informations contextuelles sont intégrés dans l'analyse
+DE;Détecter;DE.AE;Analyse des événements indésirables;DE.AE-08;Les incidents sont déclarés lorsque les événements indésirables répondent aux critères définis
+RS;Répondre;RS.MA;Gestion des incidents;RS.MA-01;Le plan de réponse aux incidents est exécuté en coordination avec les tiers pertinents
+RS;Répondre;RS.MA;Gestion des incidents;RS.MA-02;Les rapports d'incidents sont triés et validés
+RS;Répondre;RS.MA;Gestion des incidents;RS.MA-03;Les incidents sont catégorisés et priorisés
+RS;Répondre;RS.MA;Gestion des incidents;RS.MA-04;Les incidents sont escaladés ou élevés selon les besoins
+RS;Répondre;RS.MA;Gestion des incidents;RS.MA-05;Les critères d'initiation de la récupération des incidents sont appliqués
+RS;Répondre;RS.AN;Analyse des incidents;RS.AN-03;L'analyse est effectuée pour établir ce qui s'est passé pendant un incident
+RS;Répondre;RS.AN;Analyse des incidents;RS.AN-06;Les actions effectuées pendant une investigation sont enregistrées
+RS;Répondre;RS.AN;Analyse des incidents;RS.AN-07;Les données et métadonnées des incidents sont collectées et leur intégrité et provenance préservées
+RS;Répondre;RS.AN;Analyse des incidents;RS.AN-08;L'ampleur d'un incident est estimée et validée
+RS;Répondre;RS.CO;Signalement et communication des incidents;RS.CO-02;Les parties prenantes internes sont notifiées des incidents
+RS;Répondre;RS.CO;Signalement et communication des incidents;RS.CO-03;Les informations sont partagées avec les parties prenantes désignées
+RS;Répondre;RS.MI;Atténuation des incidents;RS.MI-01;Les incidents sont contenus
+RS;Répondre;RS.MI;Atténuation des incidents;RS.MI-02;Les incidents sont éradiqués
+RC;Récupérer;RC.RP;Exécution du plan de récupération des incidents;RC.RP-01;La partie récupération du plan de réponse aux incidents est exécutée
+RC;Récupérer;RC.RP;Exécution du plan de récupération des incidents;RC.RP-02;Les actions de récupération sont sélectionnées, priorisées et effectuées
+RC;Récupérer;RC.RP;Exécution du plan de récupération des incidents;RC.RP-03;L'intégrité des sauvegardes et autres actifs de restauration est vérifiée avant utilisation
+RC;Récupérer;RC.RP;Exécution du plan de récupération des incidents;RC.RP-04;Les fonctions et services critiques de la mission sont restaurés
+RC;Récupérer;RC.RP;Exécution du plan de récupération des incidents;RC.RP-05;L'intégrité des actifs restaurés est vérifiée, les systèmes et services sont restaurés
+RC;Récupérer;RC.RP;Exécution du plan de récupération des incidents;RC.RP-06;La fin de la récupération de l'incident est déclarée basée sur des critères
+RC;Récupérer;RC.CO;Communication de récupération des incidents;RC.CO-03;Les activités de récupération et la progression de la restauration sont communiquées
+RC;Récupérer;RC.CO;Communication de récupération des incidents;RC.CO-04;Les informations publiques sur les incidents sont partagées selon la politique approuvée

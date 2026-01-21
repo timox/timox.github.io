@@ -1,0 +1,76 @@
+Domaine_Code;Domaine_Nom;Principe_Code;Principe_Nom;Description
+PRINC;Principes de gestion de projet;PRINC.01;Être un intendant diligent, respectueux et attentionné;Agir avec intégrité, attention et fiabilité tout en maintenant la conformité
+PRINC;Principes de gestion de projet;PRINC.02;Créer un environnement d'équipe collaboratif;Favoriser la collaboration et créer un environnement où l'équipe peut réussir
+PRINC;Principes de gestion de projet;PRINC.03;S'engager efficacement avec les parties prenantes;Interagir de manière proactive avec les parties prenantes pour atteindre les objectifs
+PRINC;Principes de gestion de projet;PRINC.04;Se concentrer sur la valeur;Évaluer et ajuster continuellement l'alignement du projet avec les objectifs métier
+PRINC;Principes de gestion de projet;PRINC.05;Reconnaître, évaluer et répondre aux interactions système;Adopter une vision holistique du projet et de son environnement
+PRINC;Principes de gestion de projet;PRINC.06;Démontrer des comportements de leadership;Adapter le style de leadership au contexte et à l'équipe
+PRINC;Principes de gestion de projet;PRINC.07;Adapter en fonction du contexte;Concevoir l'approche de développement et les processus selon le contexte
+PRINC;Principes de gestion de projet;PRINC.08;Intégrer la qualité dans les processus et les livrables;Maintenir la qualité tout au long du projet
+PRINC;Principes de gestion de projet;PRINC.09;Naviguer dans la complexité;Évaluer et naviguer continuellement dans la complexité du projet
+PRINC;Principes de gestion de projet;PRINC.10;Optimiser les réponses aux risques;Évaluer l'exposition aux risques et prioriser les réponses
+PRINC;Principes de gestion de projet;PRINC.11;Embrasser l'adaptabilité et la résilience;S'adapter aux changements et se remettre des revers
+PRINC;Principes de gestion de projet;PRINC.12;Permettre le changement pour atteindre l'état futur envisagé;Faciliter le changement nécessaire pour créer de la valeur
+PERF;Domaines de performance;PERF.STAKEHOLDER;Parties prenantes;Activités et fonctions associées aux parties prenantes
+PERF;Domaines de performance;PERF.STAKEHOLDER.01;Identifier les parties prenantes;Reconnaître et documenter toutes les parties prenantes du projet
+PERF;Domaines de performance;PERF.STAKEHOLDER.02;Comprendre et analyser les parties prenantes;Évaluer les intérêts, droits, pouvoir et impact des parties prenantes
+PERF;Domaines de performance;PERF.STAKEHOLDER.03;Prioriser les parties prenantes;Déterminer les priorités d'engagement basées sur l'analyse
+PERF;Domaines de performance;PERF.STAKEHOLDER.04;Engager les parties prenantes;Travailler avec les parties prenantes pour atteindre les objectifs
+PERF;Domaines de performance;PERF.STAKEHOLDER.05;Surveiller les parties prenantes;Suivre l'évolution des parties prenantes et ajuster l'engagement
+PERF;Domaines de performance;PERF.TEAM;Équipe;Activités et fonctions associées à l'équipe projet
+PERF;Domaines de performance;PERF.TEAM.01;Management de l'équipe projet;Gérer et diriger l'équipe pour atteindre les objectifs
+PERF;Domaines de performance;PERF.TEAM.02;Leadership de l'équipe projet;Inspirer et guider l'équipe vers le succès
+PERF;Domaines de performance;PERF.TEAM.03;Culture d'équipe projet;Créer et maintenir une culture d'équipe positive et productive
+PERF;Domaines de performance;PERF.TEAM.04;Équipes projet hautement performantes;Développer les conditions pour la haute performance
+PERF;Domaines de performance;PERF.APPROACH;Approche de développement et cycle de vie;Activités et fonctions associées à l'approche de développement
+PERF;Domaines de performance;PERF.APPROACH.01;Lien entre livrables et approche;Aligner l'approche de développement avec les livrables souhaités
+PERF;Domaines de performance;PERF.APPROACH.02;Cadence de livraison;Déterminer la fréquence et le calendrier des livraisons
+PERF;Domaines de performance;PERF.APPROACH.03;Phases du cycle de vie;Définir les phases appropriées pour le projet
+PERF;Domaines de performance;PERF.APPROACH.04;Approches de développement;Sélectionner l'approche appropriée (prédictive, adaptative, hybride)
+PERF;Domaines de performance;PERF.PLANNING;Planification;Activités et fonctions associées à la planification
+PERF;Domaines de performance;PERF.PLANNING.01;Variables de planification;Identifier et gérer les variables qui influencent la planification
+PERF;Domaines de performance;PERF.PLANNING.02;Composition de l'équipe et structure;Planifier la composition et l'organisation de l'équipe
+PERF;Domaines de performance;PERF.PLANNING.03;Communication;Planifier les communications du projet
+PERF;Domaines de performance;PERF.PLANNING.04;Ressources physiques;Planifier les ressources matérielles nécessaires
+PERF;Domaines de performance;PERF.PLANNING.05;Approvisionnement;Planifier l'acquisition de biens et services
+PERF;Domaines de performance;PERF.PLANNING.06;Changements;Planifier la gestion des changements
+PERF;Domaines de performance;PERF.PLANNING.07;Métriques;Définir les indicateurs de suivi du projet
+PERF;Domaines de performance;PERF.WORK;Travail du projet;Activités et fonctions associées au travail du projet
+PERF;Domaines de performance;PERF.WORK.01;Processus du travail projet;Établir les processus pour accomplir le travail
+PERF;Domaines de performance;PERF.WORK.02;Équilibrer les contraintes concurrentes;Gérer les compromis entre périmètre, calendrier, coût et qualité
+PERF;Domaines de performance;PERF.WORK.03;Maintenir le focus de l'équipe;Garder l'équipe concentrée sur les objectifs
+PERF;Domaines de performance;PERF.WORK.04;Communications et engagement;Maintenir une communication efficace
+PERF;Domaines de performance;PERF.WORK.05;Gérer les ressources physiques;Superviser les ressources matérielles
+PERF;Domaines de performance;PERF.WORK.06;Travailler avec les approvisionnements;Gérer les achats et contrats
+PERF;Domaines de performance;PERF.WORK.07;Surveiller les nouveaux travaux et changements;Identifier et gérer les nouveaux travaux
+PERF;Domaines de performance;PERF.WORK.08;Apprentissage tout au long du projet;Capturer et appliquer les leçons apprises
+PERF;Domaines de performance;PERF.DELIVERY;Livraison;Activités et fonctions associées à la livraison de valeur
+PERF;Domaines de performance;PERF.DELIVERY.01;Livrer de la valeur;S'assurer que le projet génère la valeur attendue
+PERF;Domaines de performance;PERF.DELIVERY.02;Livrables;Produire les livrables conformes aux exigences
+PERF;Domaines de performance;PERF.DELIVERY.03;Qualité;Assurer la qualité des livrables et processus
+PERF;Domaines de performance;PERF.DELIVERY.04;Résultats sous-optimaux;Traiter les écarts de performance
+PERF;Domaines de performance;PERF.MEASUREMENT;Mesure;Activités et fonctions associées à la mesure
+PERF;Domaines de performance;PERF.MEASUREMENT.01;Établir des mesures efficaces;Définir des indicateurs pertinents et mesurables
+PERF;Domaines de performance;PERF.MEASUREMENT.02;Ce qu'il faut mesurer;Déterminer les éléments critiques à surveiller
+PERF;Domaines de performance;PERF.MEASUREMENT.03;Présenter l'information;Communiquer les mesures de manière efficace
+PERF;Domaines de performance;PERF.MEASUREMENT.04;Pièges de la mesure;Éviter les erreurs courantes de mesure
+PERF;Domaines de performance;PERF.MEASUREMENT.05;Diagnostiquer la performance;Analyser les données pour améliorer la performance
+PERF;Domaines de performance;PERF.UNCERTAINTY;Incertitude;Activités et fonctions associées à l'incertitude
+PERF;Domaines de performance;PERF.UNCERTAINTY.01;Incertitude générale;Reconnaître et gérer l'incertitude inhérente aux projets
+PERF;Domaines de performance;PERF.UNCERTAINTY.02;Ambiguïté;Traiter les situations où l'information est incomplète
+PERF;Domaines de performance;PERF.UNCERTAINTY.03;Complexité;Naviguer dans les systèmes complexes
+PERF;Domaines de performance;PERF.UNCERTAINTY.04;Volatilité;Gérer les environnements changeants rapidement
+PERF;Domaines de performance;PERF.UNCERTAINTY.05;Risque;Identifier et répondre aux événements incertains
+PERF;Domaines de performance;PERF.UNCERTAINTY.06;Réponses aux risques;Sélectionner et implémenter les réponses appropriées
+TAILOR;Adaptation;TAILOR.01;Sélectionner l'approche de développement;Choisir l'approche adaptée au contexte du projet
+TAILOR;Adaptation;TAILOR.02;Adapter pour l'organisation;Aligner avec la culture et les processus organisationnels
+TAILOR;Adaptation;TAILOR.03;Adapter pour le projet;Ajuster selon les caractéristiques spécifiques du projet
+TAILOR;Adaptation;TAILOR.04;Amélioration continue;Améliorer les processus basé sur les retours d'expérience
+MODEL;Modèles, méthodes et artefacts;MODEL.COMMON;Modèles couramment utilisés;Modèles de représentation et d'analyse
+MODEL;Modèles, méthodes et artefacts;MODEL.COMMON.01;Modèles de leadership situationnel;Adapter le style de leadership au contexte
+MODEL;Modèles, méthodes et artefacts;MODEL.COMMON.02;Modèles de communication;Structurer les communications efficaces
+MODEL;Modèles, méthodes et artefacts;MODEL.COMMON.03;Modèles de motivation;Comprendre et stimuler la motivation de l'équipe
+MODEL;Modèles, méthodes et artefacts;MODEL.COMMON.04;Modèles de changement;Gérer les transitions organisationnelles
+MODEL;Modèles, méthodes et artefacts;MODEL.COMMON.05;Modèles de complexité;Analyser et naviguer dans la complexité
+MODEL;Modèles, méthodes et artefacts;MODEL.COMMON.06;Modèles de développement d'équipe;Faire progresser la maturité de l'équipe
+MODEL;Modèles, méthodes et artefacts;MODEL.COMMON.07;Autres modèles;Modèles additionnels selon le contexte

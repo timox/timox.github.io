@@ -1,0 +1,75 @@
+Niveau;Composant_Code;Composant_Nom;Element_Code;Element_Nom;Description
+Portfolio;PORTFOLIO.STRAT;Gestion stratégique du portefeuille;PORTFOLIO.STRAT.01;Vision du portefeuille;Définir la direction stratégique du portefeuille
+Portfolio;PORTFOLIO.STRAT;Gestion stratégique du portefeuille;PORTFOLIO.STRAT.02;Thèmes stratégiques;Objectifs métier différenciants qui connectent le portefeuille à la stratégie
+Portfolio;PORTFOLIO.STRAT;Gestion stratégique du portefeuille;PORTFOLIO.STRAT.03;Flux de valeur du portefeuille;Séquence d'étapes pour livrer la valeur aux clients
+Portfolio;PORTFOLIO.STRAT;Gestion stratégique du portefeuille;PORTFOLIO.STRAT.04;Guardrails;Contraintes de budget et de conformité pour les décisions décentralisées
+Portfolio;PORTFOLIO.EPIC;Gestion des Epics;PORTFOLIO.EPIC.01;Backlog du portefeuille;Liste priorisée des Epics métier et enablers
+Portfolio;PORTFOLIO.EPIC;Gestion des Epics;PORTFOLIO.EPIC.02;Epic;Initiative de développement significative nécessitant une analyse Lean
+Portfolio;PORTFOLIO.EPIC;Gestion des Epics;PORTFOLIO.EPIC.03;Epic Owner;Responsable de la coordination et de l'implémentation de l'Epic
+Portfolio;PORTFOLIO.EPIC;Gestion des Epics;PORTFOLIO.EPIC.04;Lean Business Case;Analyse économique légère pour justifier l'investissement
+Portfolio;PORTFOLIO.FUND;Financement Lean;PORTFOLIO.FUND.01;Budgets Lean;Allocation budgétaire aux flux de valeur plutôt qu'aux projets
+Portfolio;PORTFOLIO.FUND;Financement Lean;PORTFOLIO.FUND.02;Participatory Budgeting;Processus collaboratif d'allocation des ressources
+Portfolio;PORTFOLIO.FUND;Financement Lean;PORTFOLIO.FUND.03;Économie Lean;Approche financière basée sur le flux et la valeur
+Portfolio;PORTFOLIO.GOVERN;Gouvernance agile;PORTFOLIO.GOVERN.01;Mesures du portefeuille;KPIs pour évaluer la santé du portefeuille
+Portfolio;PORTFOLIO.GOVERN;Gouvernance agile;PORTFOLIO.GOVERN.02;Conformité;Assurer la conformité réglementaire de manière agile
+Portfolio;PORTFOLIO.GOVERN;Gouvernance agile;PORTFOLIO.GOVERN.03;Coordination du portefeuille;Synchroniser les activités à travers le portefeuille
+Large Solution;SOLUTION.CONTEXT;Contexte de la solution;SOLUTION.CONTEXT.01;Solution;Ensemble de produits et services qui apportent de la valeur
+Large Solution;SOLUTION.CONTEXT;Contexte de la solution;SOLUTION.CONTEXT.02;Backlog de la solution;Backlog regroupant les capacités et enablers de la solution
+Large Solution;SOLUTION.CONTEXT;Contexte de la solution;SOLUTION.CONTEXT.03;Contexte de la solution;Environnement dans lequel la solution fonctionne
+Large Solution;SOLUTION.MGMT;Gestion de la solution;SOLUTION.MGMT.01;Solution Train;Organisation qui construit de grandes solutions
+Large Solution;SOLUTION.MGMT;Gestion de la solution;SOLUTION.MGMT.02;Solution Train Engineer;Facilitateur du Solution Train
+Large Solution;SOLUTION.MGMT;Gestion de la solution;SOLUTION.MGMT.03;Solution Management;Définir et prioriser les capacités de la solution
+Large Solution;SOLUTION.COORD;Coordination;SOLUTION.COORD.01;Pre-PI Planning;Préparer le PI Planning avec les fournisseurs
+Large Solution;SOLUTION.COORD;Coordination;SOLUTION.COORD.02;Post-PI Planning;Consolider les plans après le PI Planning
+Large Solution;SOLUTION.COORD;Coordination;SOLUTION.COORD.03;Solution Demo;Démonstration intégrée de la solution complète
+Large Solution;SOLUTION.COORD;Coordination;SOLUTION.COORD.04;Inspect and Adapt (Solution);Rétrospective et amélioration au niveau solution
+ART;ART.CONTEXT;Contexte de l'ART;ART.CONTEXT.01;Agile Release Train;Équipe d'équipes agiles qui développent et livrent ensemble
+ART;ART.CONTEXT;Contexte de l'ART;ART.CONTEXT.02;Vision de l'ART;Description de l'état futur du produit ou service
+ART;ART.CONTEXT;Contexte de l'ART;ART.CONTEXT.03;Feuille de route;Plan de livraison des fonctionnalités sur plusieurs PIs
+ART;ART.CONTEXT;Contexte de l'ART;ART.CONTEXT.04;Program Backlog;Backlog des Features et Enablers pour l'ART
+ART;ART.ROLES;Rôles de l'ART;ART.ROLES.01;Release Train Engineer;Servant leader qui facilite les événements et processus
+ART;ART.ROLES;Rôles de l'ART;ART.ROLES.02;Product Management;Responsable du quoi - définit et priorise les features
+ART;ART.ROLES;Rôles de l'ART;ART.ROLES.03;System Architect;Responsable de l'architecture technique de l'ART
+ART;ART.ROLES;Rôles de l'ART;ART.ROLES.04;Business Owners;Parties prenantes métier responsables du ROI
+ART;ART.EVENTS;Événements de l'ART;ART.EVENTS.01;PI Planning;Événement de planification de l'incrément de programme
+ART;ART.EVENTS;Événements de l'ART;ART.EVENTS.02;System Demo;Démonstration intégrée de toutes les équipes à chaque itération
+ART;ART.EVENTS;Événements de l'ART;ART.EVENTS.03;Inspect and Adapt;Rétrospective et amélioration à la fin de chaque PI
+ART;ART.EVENTS;Événements de l'ART;ART.EVENTS.04;ART Sync;Synchronisation hebdomadaire des équipes de l'ART
+ART;ART.EVENTS;Événements de l'ART;ART.EVENTS.05;PO Sync;Synchronisation des Product Owners
+ART;ART.EVENTS;Événements de l'ART;ART.EVENTS.06;Scrum of Scrums;Coordination quotidienne ou hebdomadaire des Scrum Masters
+ART;ART.ARTIFACTS;Artefacts de l'ART;ART.ARTIFACTS.01;Feature;Service qui remplit un besoin d'une partie prenante
+ART;ART.ARTIFACTS;Artefacts de l'ART;ART.ARTIFACTS.02;Enabler;Activité technique nécessaire à l'évolution de l'architecture
+ART;ART.ARTIFACTS;Artefacts de l'ART;ART.ARTIFACTS.03;PI Objectives;Résumé des objectifs métier et techniques du PI
+ART;ART.ARTIFACTS;Artefacts de l'ART;ART.ARTIFACTS.04;Program Board;Visualisation des dépendances et jalons du PI
+Team;TEAM.CONTEXT;Contexte de l'équipe;TEAM.CONTEXT.01;Équipe Agile;Équipe cross-fonctionnelle de 5-11 personnes
+Team;TEAM.CONTEXT;Contexte de l'équipe;TEAM.CONTEXT.02;Team Backlog;Liste priorisée des stories et tâches de l'équipe
+Team;TEAM.CONTEXT;Contexte de l'équipe;TEAM.CONTEXT.03;Iteration;Timebox de 2 semaines pour développer un incrément
+Team;TEAM.ROLES;Rôles de l'équipe;TEAM.ROLES.01;Scrum Master;Facilitateur de l'équipe et coach agile
+Team;TEAM.ROLES;Rôles de l'équipe;TEAM.ROLES.02;Product Owner;Responsable de maximiser la valeur du produit
+Team;TEAM.ROLES;Rôles de l'équipe;TEAM.ROLES.03;Développeurs;Membres de l'équipe qui créent l'incrément
+Team;TEAM.EVENTS;Événements de l'équipe;TEAM.EVENTS.01;Iteration Planning;Planification du travail de l'itération
+Team;TEAM.EVENTS;Événements de l'équipe;TEAM.EVENTS.02;Daily Standup;Synchronisation quotidienne de 15 minutes
+Team;TEAM.EVENTS;Événements de l'équipe;TEAM.EVENTS.03;Iteration Review;Démonstration du travail accompli aux parties prenantes
+Team;TEAM.EVENTS;Événements de l'équipe;TEAM.EVENTS.04;Iteration Retrospective;Amélioration continue des pratiques de l'équipe
+Team;TEAM.EVENTS;Événements de l'équipe;TEAM.EVENTS.05;Backlog Refinement;Clarification et estimation des stories à venir
+Team;TEAM.ARTIFACTS;Artefacts de l'équipe;TEAM.ARTIFACTS.01;Story;Description d'une fonctionnalité du point de vue utilisateur
+Team;TEAM.ARTIFACTS;Artefacts de l'équipe;TEAM.ARTIFACTS.02;Story Point;Estimation relative de l'effort de développement
+Team;TEAM.ARTIFACTS;Artefacts de l'équipe;TEAM.ARTIFACTS.03;Iteration Goals;Objectifs de haut niveau de l'itération
+Team;TEAM.ARTIFACTS;Artefacts de l'équipe;TEAM.ARTIFACTS.04;Definition of Done;Critères d'acceptation pour considérer une story terminée
+Foundation;FOUND.PRINCIPLES;Principes SAFe;FOUND.PRINCIPLES.01;Prendre une vision économique;Livrer la valeur économique la plus tôt possible
+Foundation;FOUND.PRINCIPLES;Principes SAFe;FOUND.PRINCIPLES.02;Appliquer la pensée systémique;Comprendre et optimiser le système dans son ensemble
+Foundation;FOUND.PRINCIPLES;Principes SAFe;FOUND.PRINCIPLES.03;Assumer la variabilité; préserver les options;Maintenir les options ouvertes face à l'incertitude
+Foundation;FOUND.PRINCIPLES;Principes SAFe;FOUND.PRINCIPLES.04;Construire de manière incrémentale avec des cycles d'apprentissage rapides;Livrer en petits lots pour apprendre rapidement
+Foundation;FOUND.PRINCIPLES;Principes SAFe;FOUND.PRINCIPLES.05;Baser les jalons sur l'évaluation objective des systèmes fonctionnels;Évaluer les progrès sur du logiciel qui fonctionne
+Foundation;FOUND.PRINCIPLES;Principes SAFe;FOUND.PRINCIPLES.06;Visualiser et limiter le WIP, réduire la taille des lots;Optimiser le flux de valeur
+Foundation;FOUND.PRINCIPLES;Principes SAFe;FOUND.PRINCIPLES.07;Appliquer la cadence, synchroniser avec la planification inter-domaines;Créer un rythme prévisible de livraison
+Foundation;FOUND.PRINCIPLES;Principes SAFe;FOUND.PRINCIPLES.08;Libérer la motivation intrinsèque des travailleurs du savoir;Créer les conditions de l'engagement
+Foundation;FOUND.PRINCIPLES;Principes SAFe;FOUND.PRINCIPLES.09;Décentraliser la prise de décision;Prendre les décisions au niveau approprié
+Foundation;FOUND.PRINCIPLES;Principes SAFe;FOUND.PRINCIPLES.10;Organiser autour de la valeur;Structurer l'organisation pour optimiser la livraison de valeur
+Foundation;FOUND.CORE;Compétences core;FOUND.CORE.01;Agilité organisationnelle;Capacité à s'adapter rapidement aux changements du marché
+Foundation;FOUND.CORE;Compétences core;FOUND.CORE.02;Lean Portfolio Management;Gestion agile du portefeuille d'investissements
+Foundation;FOUND.CORE;Compétences core;FOUND.CORE.03;Enterprise Solution Delivery;Construire et déployer de grandes solutions
+Foundation;FOUND.CORE;Compétences core;FOUND.CORE.04;Agile Product Delivery;Définir et livrer des produits de valeur
+Foundation;FOUND.CORE;Compétences core;FOUND.CORE.05;Team and Technical Agility;Équipes de haute performance avec excellence technique
+Foundation;FOUND.CORE;Compétences core;FOUND.CORE.06;Lean-Agile Leadership;Leaders qui modélisent et promeuvent l'agilité
+Foundation;FOUND.CORE;Compétences core;FOUND.CORE.07;Continuous Learning Culture;Organisation apprenante en amélioration continue

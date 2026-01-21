@@ -1,0 +1,229 @@
+Domaine_Code;Domaine_Nom;Objectif_Code;Objectif_Nom;Pratique_Code;Pratique_Nom
+EDM;Évaluer, Diriger et Surveiller;EDM01;Assurer la mise en place et la maintenance du cadre de gouvernance;EDM01.01;Évaluer le système de gouvernance
+EDM;Évaluer, Diriger et Surveiller;EDM01;Assurer la mise en place et la maintenance du cadre de gouvernance;EDM01.02;Diriger le système de gouvernance
+EDM;Évaluer, Diriger et Surveiller;EDM01;Assurer la mise en place et la maintenance du cadre de gouvernance;EDM01.03;Surveiller le système de gouvernance
+EDM;Évaluer, Diriger et Surveiller;EDM02;Assurer la création de valeur;EDM02.01;Évaluer l'optimisation de la valeur
+EDM;Évaluer, Diriger et Surveiller;EDM02;Assurer la création de valeur;EDM02.02;Diriger l'optimisation de la valeur
+EDM;Évaluer, Diriger et Surveiller;EDM02;Assurer la création de valeur;EDM02.03;Surveiller l'optimisation de la valeur
+EDM;Évaluer, Diriger et Surveiller;EDM03;Assurer l'optimisation des risques;EDM03.01;Évaluer la gestion des risques
+EDM;Évaluer, Diriger et Surveiller;EDM03;Assurer l'optimisation des risques;EDM03.02;Diriger la gestion des risques
+EDM;Évaluer, Diriger et Surveiller;EDM03;Assurer l'optimisation des risques;EDM03.03;Surveiller la gestion des risques
+EDM;Évaluer, Diriger et Surveiller;EDM04;Assurer l'optimisation des ressources;EDM04.01;Évaluer la gestion des ressources
+EDM;Évaluer, Diriger et Surveiller;EDM04;Assurer l'optimisation des ressources;EDM04.02;Diriger la gestion des ressources
+EDM;Évaluer, Diriger et Surveiller;EDM04;Assurer l'optimisation des ressources;EDM04.03;Surveiller la gestion des ressources
+EDM;Évaluer, Diriger et Surveiller;EDM05;Assurer l'engagement des parties prenantes;EDM05.01;Évaluer les exigences de reporting des parties prenantes
+EDM;Évaluer, Diriger et Surveiller;EDM05;Assurer l'engagement des parties prenantes;EDM05.02;Diriger la communication et le reporting aux parties prenantes
+EDM;Évaluer, Diriger et Surveiller;EDM05;Assurer l'engagement des parties prenantes;EDM05.03;Surveiller l'engagement des parties prenantes
+APO;Aligner, Planifier et Organiser;APO01;Gérer le cadre de management des TI;APO01.01;Concevoir le système de management des TI de l'entreprise
+APO;Aligner, Planifier et Organiser;APO01;Gérer le cadre de management des TI;APO01.02;Clarifier les rôles et responsabilités
+APO;Aligner, Planifier et Organiser;APO01;Gérer le cadre de management des TI;APO01.03;Maintenir les facilitateurs du système de management
+APO;Aligner, Planifier et Organiser;APO01;Gérer le cadre de management des TI;APO01.04;Communiquer les objectifs et orientations de management
+APO;Aligner, Planifier et Organiser;APO01;Gérer le cadre de management des TI;APO01.05;Optimiser le positionnement de la fonction TI
+APO;Aligner, Planifier et Organiser;APO01;Gérer le cadre de management des TI;APO01.06;Définir la propriété de l'information et des systèmes
+APO;Aligner, Planifier et Organiser;APO01;Gérer le cadre de management des TI;APO01.07;Gérer l'amélioration continue du système de management
+APO;Aligner, Planifier et Organiser;APO02;Gérer la stratégie;APO02.01;Comprendre l'orientation de l'entreprise
+APO;Aligner, Planifier et Organiser;APO02;Gérer la stratégie;APO02.02;Évaluer l'environnement actuel, les capacités et la performance
+APO;Aligner, Planifier et Organiser;APO02;Gérer la stratégie;APO02.03;Définir les capacités TI cibles
+APO;Aligner, Planifier et Organiser;APO02;Gérer la stratégie;APO02.04;Réaliser une analyse des écarts
+APO;Aligner, Planifier et Organiser;APO02;Gérer la stratégie;APO02.05;Définir le plan stratégique et la feuille de route
+APO;Aligner, Planifier et Organiser;APO02;Gérer la stratégie;APO02.06;Communiquer la stratégie et l'orientation TI
+APO;Aligner, Planifier et Organiser;APO03;Gérer l'architecture d'entreprise;APO03.01;Développer la vision de l'architecture d'entreprise
+APO;Aligner, Planifier et Organiser;APO03;Gérer l'architecture d'entreprise;APO03.02;Définir l'architecture de référence
+APO;Aligner, Planifier et Organiser;APO03;Gérer l'architecture d'entreprise;APO03.03;Sélectionner les opportunités et solutions
+APO;Aligner, Planifier et Organiser;APO03;Gérer l'architecture d'entreprise;APO03.04;Définir l'implémentation de l'architecture
+APO;Aligner, Planifier et Organiser;APO03;Gérer l'architecture d'entreprise;APO03.05;Fournir les services d'architecture d'entreprise
+APO;Aligner, Planifier et Organiser;APO04;Gérer l'innovation;APO04.01;Créer un environnement propice à l'innovation
+APO;Aligner, Planifier et Organiser;APO04;Gérer l'innovation;APO04.02;Maintenir une compréhension de l'environnement de l'entreprise
+APO;Aligner, Planifier et Organiser;APO04;Gérer l'innovation;APO04.03;Surveiller et scanner l'environnement technologique
+APO;Aligner, Planifier et Organiser;APO04;Gérer l'innovation;APO04.04;Évaluer le potentiel des technologies émergentes et des idées innovantes
+APO;Aligner, Planifier et Organiser;APO04;Gérer l'innovation;APO04.05;Recommander les initiatives appropriées
+APO;Aligner, Planifier et Organiser;APO04;Gérer l'innovation;APO04.06;Surveiller l'implémentation et l'utilisation de l'innovation
+APO;Aligner, Planifier et Organiser;APO05;Gérer le portefeuille;APO05.01;Établir le mix d'investissements cible
+APO;Aligner, Planifier et Organiser;APO05;Gérer le portefeuille;APO05.02;Déterminer la disponibilité et les sources de financement
+APO;Aligner, Planifier et Organiser;APO05;Gérer le portefeuille;APO05.03;Évaluer et sélectionner les programmes à financer
+APO;Aligner, Planifier et Organiser;APO05;Gérer le portefeuille;APO05.04;Surveiller, optimiser et rendre compte de la performance du portefeuille d'investissements
+APO;Aligner, Planifier et Organiser;APO05;Gérer le portefeuille;APO05.05;Maintenir les portefeuilles
+APO;Aligner, Planifier et Organiser;APO06;Gérer le budget et les coûts;APO06.01;Gérer les finances et la comptabilité
+APO;Aligner, Planifier et Organiser;APO06;Gérer le budget et les coûts;APO06.02;Prioriser l'allocation des ressources
+APO;Aligner, Planifier et Organiser;APO06;Gérer le budget et les coûts;APO06.03;Créer et maintenir les budgets
+APO;Aligner, Planifier et Organiser;APO06;Gérer le budget et les coûts;APO06.04;Modéliser et allouer les coûts
+APO;Aligner, Planifier et Organiser;APO06;Gérer le budget et les coûts;APO06.05;Gérer les coûts
+APO;Aligner, Planifier et Organiser;APO07;Gérer les ressources humaines;APO07.01;Acquérir et maintenir un effectif adéquat et approprié
+APO;Aligner, Planifier et Organiser;APO07;Gérer les ressources humaines;APO07.02;Identifier le personnel TI clé
+APO;Aligner, Planifier et Organiser;APO07;Gérer les ressources humaines;APO07.03;Maintenir les compétences et aptitudes du personnel
+APO;Aligner, Planifier et Organiser;APO07;Gérer les ressources humaines;APO07.04;Évaluer la performance professionnelle des employés
+APO;Aligner, Planifier et Organiser;APO07;Gérer les ressources humaines;APO07.05;Planifier et suivre l'utilisation des ressources humaines TI et métier
+APO;Aligner, Planifier et Organiser;APO07;Gérer les ressources humaines;APO07.06;Gérer le personnel contractuel
+APO;Aligner, Planifier et Organiser;APO08;Gérer les relations;APO08.01;Comprendre les attentes métier
+APO;Aligner, Planifier et Organiser;APO08;Gérer les relations;APO08.02;Identifier les opportunités, risques et contraintes pour les TI afin d'améliorer l'activité
+APO;Aligner, Planifier et Organiser;APO08;Gérer les relations;APO08.03;Gérer la relation métier
+APO;Aligner, Planifier et Organiser;APO08;Gérer les relations;APO08.04;Coordonner et communiquer
+APO;Aligner, Planifier et Organiser;APO08;Gérer les relations;APO08.05;Contribuer à l'amélioration continue des services
+APO;Aligner, Planifier et Organiser;APO09;Gérer les accords de service;APO09.01;Identifier les services TI
+APO;Aligner, Planifier et Organiser;APO09;Gérer les accords de service;APO09.02;Cataloguer les services basés sur les TI
+APO;Aligner, Planifier et Organiser;APO09;Gérer les accords de service;APO09.03;Définir et préparer les accords de service
+APO;Aligner, Planifier et Organiser;APO09;Gérer les accords de service;APO09.04;Surveiller et rendre compte des niveaux de service
+APO;Aligner, Planifier et Organiser;APO09;Gérer les accords de service;APO09.05;Réviser les accords de service et les contrats
+APO;Aligner, Planifier et Organiser;APO10;Gérer les fournisseurs;APO10.01;Identifier et évaluer les relations et contrats fournisseurs
+APO;Aligner, Planifier et Organiser;APO10;Gérer les fournisseurs;APO10.02;Sélectionner les fournisseurs
+APO;Aligner, Planifier et Organiser;APO10;Gérer les fournisseurs;APO10.03;Gérer les relations et contrats fournisseurs
+APO;Aligner, Planifier et Organiser;APO10;Gérer les fournisseurs;APO10.04;Gérer le risque fournisseur
+APO;Aligner, Planifier et Organiser;APO10;Gérer les fournisseurs;APO10.05;Surveiller la performance et la conformité des fournisseurs
+APO;Aligner, Planifier et Organiser;APO11;Gérer la qualité;APO11.01;Établir un système de management de la qualité
+APO;Aligner, Planifier et Organiser;APO11;Gérer la qualité;APO11.02;Définir et gérer les standards, pratiques et procédures de qualité
+APO;Aligner, Planifier et Organiser;APO11;Gérer la qualité;APO11.03;Orienter le management de la qualité vers les clients
+APO;Aligner, Planifier et Organiser;APO11;Gérer la qualité;APO11.04;Effectuer le suivi, le contrôle et les revues de qualité
+APO;Aligner, Planifier et Organiser;APO11;Gérer la qualité;APO11.05;Intégrer le management de la qualité dans les solutions de développement et de fourniture de services
+APO;Aligner, Planifier et Organiser;APO11;Gérer la qualité;APO11.06;Maintenir l'amélioration continue
+APO;Aligner, Planifier et Organiser;APO12;Gérer les risques;APO12.01;Collecter les données
+APO;Aligner, Planifier et Organiser;APO12;Gérer les risques;APO12.02;Analyser les risques
+APO;Aligner, Planifier et Organiser;APO12;Gérer les risques;APO12.03;Maintenir un profil de risque
+APO;Aligner, Planifier et Organiser;APO12;Gérer les risques;APO12.04;Articuler les risques
+APO;Aligner, Planifier et Organiser;APO12;Gérer les risques;APO12.05;Définir un portefeuille d'actions de gestion des risques
+APO;Aligner, Planifier et Organiser;APO12;Gérer les risques;APO12.06;Répondre aux risques
+APO;Aligner, Planifier et Organiser;APO13;Gérer la sécurité;APO13.01;Établir et maintenir un système de management de la sécurité de l'information
+APO;Aligner, Planifier et Organiser;APO13;Gérer la sécurité;APO13.02;Définir et gérer un plan de traitement des risques de sécurité de l'information et de confidentialité
+APO;Aligner, Planifier et Organiser;APO13;Gérer la sécurité;APO13.03;Surveiller et réviser le système de management de la sécurité de l'information
+APO;Aligner, Planifier et Organiser;APO14;Gérer les données;APO14.01;Définir et communiquer la vision et la stratégie de gestion des données de l'organisation
+APO;Aligner, Planifier et Organiser;APO14;Gérer les données;APO14.02;Définir l'architecture de l'information
+APO;Aligner, Planifier et Organiser;APO14;Gérer les données;APO14.03;Développer une stratégie de qualité des données
+APO;Aligner, Planifier et Organiser;APO14;Gérer les données;APO14.04;Établir une approche de mesure et d'évaluation de la qualité des données
+APO;Aligner, Planifier et Organiser;APO14;Gérer les données;APO14.05;Identifier les problèmes de qualité des données
+APO;Aligner, Planifier et Organiser;APO14;Gérer les données;APO14.06;Appliquer des méthodes de nettoyage des données pour améliorer la qualité
+APO;Aligner, Planifier et Organiser;APO14;Gérer les données;APO14.07;Adopter des pratiques de gouvernance des données
+APO;Aligner, Planifier et Organiser;APO14;Gérer les données;APO14.08;Établir des standards de données
+APO;Aligner, Planifier et Organiser;APO14;Gérer les données;APO14.09;Définir la classification des données
+APO;Aligner, Planifier et Organiser;APO14;Gérer les données;APO14.10;Gérer l'accès aux actifs de données
+BAI;Bâtir, Acquérir et Implémenter;BAI01;Gérer les programmes;BAI01.01;Maintenir une approche standard de gestion des programmes
+BAI;Bâtir, Acquérir et Implémenter;BAI01;Gérer les programmes;BAI01.02;Initier un programme
+BAI;Bâtir, Acquérir et Implémenter;BAI01;Gérer les programmes;BAI01.03;Gérer l'engagement des parties prenantes
+BAI;Bâtir, Acquérir et Implémenter;BAI01;Gérer les programmes;BAI01.04;Planifier le programme
+BAI;Bâtir, Acquérir et Implémenter;BAI01;Gérer les programmes;BAI01.05;Gérer la qualité du programme
+BAI;Bâtir, Acquérir et Implémenter;BAI01;Gérer les programmes;BAI01.06;Gérer les risques du programme
+BAI;Bâtir, Acquérir et Implémenter;BAI01;Gérer les programmes;BAI01.07;Surveiller et contrôler le programme
+BAI;Bâtir, Acquérir et Implémenter;BAI01;Gérer les programmes;BAI01.08;Gérer les ressources du programme
+BAI;Bâtir, Acquérir et Implémenter;BAI01;Gérer les programmes;BAI01.09;Gérer les bénéfices du programme
+BAI;Bâtir, Acquérir et Implémenter;BAI01;Gérer les programmes;BAI01.10;Gérer les projets composants
+BAI;Bâtir, Acquérir et Implémenter;BAI01;Gérer les programmes;BAI01.11;Clôturer le programme
+BAI;Bâtir, Acquérir et Implémenter;BAI02;Gérer la définition des exigences;BAI02.01;Définir et maintenir les exigences fonctionnelles métier et techniques
+BAI;Bâtir, Acquérir et Implémenter;BAI02;Gérer la définition des exigences;BAI02.02;Réaliser une étude de faisabilité et formuler des solutions alternatives
+BAI;Bâtir, Acquérir et Implémenter;BAI02;Gérer la définition des exigences;BAI02.03;Gérer les risques liés aux exigences
+BAI;Bâtir, Acquérir et Implémenter;BAI02;Gérer la définition des exigences;BAI02.04;Obtenir l'approbation des exigences et des solutions
+BAI;Bâtir, Acquérir et Implémenter;BAI03;Gérer l'identification et la construction des solutions;BAI03.01;Concevoir des solutions de haut niveau
+BAI;Bâtir, Acquérir et Implémenter;BAI03;Gérer l'identification et la construction des solutions;BAI03.02;Concevoir les composants détaillés de la solution
+BAI;Bâtir, Acquérir et Implémenter;BAI03;Gérer l'identification et la construction des solutions;BAI03.03;Développer les composants de la solution
+BAI;Bâtir, Acquérir et Implémenter;BAI03;Gérer l'identification et la construction des solutions;BAI03.04;Acquérir les composants de la solution
+BAI;Bâtir, Acquérir et Implémenter;BAI03;Gérer l'identification et la construction des solutions;BAI03.05;Construire les solutions
+BAI;Bâtir, Acquérir et Implémenter;BAI03;Gérer l'identification et la construction des solutions;BAI03.06;Réaliser l'assurance qualité
+BAI;Bâtir, Acquérir et Implémenter;BAI03;Gérer l'identification et la construction des solutions;BAI03.07;Préparer les tests de la solution
+BAI;Bâtir, Acquérir et Implémenter;BAI03;Gérer l'identification et la construction des solutions;BAI03.08;Exécuter les tests de la solution
+BAI;Bâtir, Acquérir et Implémenter;BAI03;Gérer l'identification et la construction des solutions;BAI03.09;Gérer les changements aux exigences
+BAI;Bâtir, Acquérir et Implémenter;BAI03;Gérer l'identification et la construction des solutions;BAI03.10;Maintenir les solutions
+BAI;Bâtir, Acquérir et Implémenter;BAI03;Gérer l'identification et la construction des solutions;BAI03.11;Définir les services et niveaux de service TI
+BAI;Bâtir, Acquérir et Implémenter;BAI04;Gérer la disponibilité et la capacité;BAI04.01;Évaluer la disponibilité, la performance et la capacité actuelles et créer une référence
+BAI;Bâtir, Acquérir et Implémenter;BAI04;Gérer la disponibilité et la capacité;BAI04.02;Évaluer l'impact métier
+BAI;Bâtir, Acquérir et Implémenter;BAI04;Gérer la disponibilité et la capacité;BAI04.03;Planifier les exigences de service nouvelles ou modifiées
+BAI;Bâtir, Acquérir et Implémenter;BAI04;Gérer la disponibilité et la capacité;BAI04.04;Surveiller et réviser la disponibilité et la capacité
+BAI;Bâtir, Acquérir et Implémenter;BAI04;Gérer la disponibilité et la capacité;BAI04.05;Investiguer et traiter les problèmes de disponibilité, de performance et de capacité
+BAI;Bâtir, Acquérir et Implémenter;BAI05;Gérer le changement organisationnel;BAI05.01;Établir le désir de changement
+BAI;Bâtir, Acquérir et Implémenter;BAI05;Gérer le changement organisationnel;BAI05.02;Former une équipe d'implémentation efficace
+BAI;Bâtir, Acquérir et Implémenter;BAI05;Gérer le changement organisationnel;BAI05.03;Communiquer la vision souhaitée
+BAI;Bâtir, Acquérir et Implémenter;BAI05;Gérer le changement organisationnel;BAI05.04;Responsabiliser les acteurs et identifier les gains rapides
+BAI;Bâtir, Acquérir et Implémenter;BAI05;Gérer le changement organisationnel;BAI05.05;Permettre l'exploitation et l'utilisation
+BAI;Bâtir, Acquérir et Implémenter;BAI05;Gérer le changement organisationnel;BAI05.06;Intégrer les nouvelles approches
+BAI;Bâtir, Acquérir et Implémenter;BAI05;Gérer le changement organisationnel;BAI05.07;Maintenir les changements
+BAI;Bâtir, Acquérir et Implémenter;BAI06;Gérer les changements TI;BAI06.01;Évaluer, prioriser et autoriser les demandes de changement
+BAI;Bâtir, Acquérir et Implémenter;BAI06;Gérer les changements TI;BAI06.02;Gérer les changements d'urgence
+BAI;Bâtir, Acquérir et Implémenter;BAI06;Gérer les changements TI;BAI06.03;Suivre et rendre compte de l'état des changements
+BAI;Bâtir, Acquérir et Implémenter;BAI06;Gérer les changements TI;BAI06.04;Clôturer et documenter les changements
+BAI;Bâtir, Acquérir et Implémenter;BAI07;Gérer l'acceptation et la transition des changements TI;BAI07.01;Établir un plan d'implémentation
+BAI;Bâtir, Acquérir et Implémenter;BAI07;Gérer l'acceptation et la transition des changements TI;BAI07.02;Planifier la conversion des processus métier, des systèmes et des données
+BAI;Bâtir, Acquérir et Implémenter;BAI07;Gérer l'acceptation et la transition des changements TI;BAI07.03;Planifier les tests d'acceptation
+BAI;Bâtir, Acquérir et Implémenter;BAI07;Gérer l'acceptation et la transition des changements TI;BAI07.04;Établir un environnement de test
+BAI;Bâtir, Acquérir et Implémenter;BAI07;Gérer l'acceptation et la transition des changements TI;BAI07.05;Effectuer les tests d'acceptation
+BAI;Bâtir, Acquérir et Implémenter;BAI07;Gérer l'acceptation et la transition des changements TI;BAI07.06;Promouvoir en production et gérer les mises en production
+BAI;Bâtir, Acquérir et Implémenter;BAI07;Gérer l'acceptation et la transition des changements TI;BAI07.07;Fournir un support en début de production
+BAI;Bâtir, Acquérir et Implémenter;BAI07;Gérer l'acceptation et la transition des changements TI;BAI07.08;Effectuer une revue post-implémentation
+BAI;Bâtir, Acquérir et Implémenter;BAI08;Gérer les connaissances;BAI08.01;Identifier et classifier les sources d'information pour la gouvernance et le management des TI
+BAI;Bâtir, Acquérir et Implémenter;BAI08;Gérer les connaissances;BAI08.02;Organiser et contextualiser l'information en connaissances
+BAI;Bâtir, Acquérir et Implémenter;BAI08;Gérer les connaissances;BAI08.03;Utiliser et partager les connaissances
+BAI;Bâtir, Acquérir et Implémenter;BAI08;Gérer les connaissances;BAI08.04;Évaluer et mettre à jour ou retirer l'information
+BAI;Bâtir, Acquérir et Implémenter;BAI09;Gérer les actifs;BAI09.01;Identifier et enregistrer les actifs actuels
+BAI;Bâtir, Acquérir et Implémenter;BAI09;Gérer les actifs;BAI09.02;Gérer les actifs critiques
+BAI;Bâtir, Acquérir et Implémenter;BAI09;Gérer les actifs;BAI09.03;Gérer le cycle de vie des actifs
+BAI;Bâtir, Acquérir et Implémenter;BAI09;Gérer les actifs;BAI09.04;Optimiser le coût des actifs
+BAI;Bâtir, Acquérir et Implémenter;BAI09;Gérer les actifs;BAI09.05;Gérer les licences
+BAI;Bâtir, Acquérir et Implémenter;BAI10;Gérer la configuration;BAI10.01;Établir et maintenir un modèle de configuration
+BAI;Bâtir, Acquérir et Implémenter;BAI10;Gérer la configuration;BAI10.02;Établir et maintenir un référentiel de configuration et une référence
+BAI;Bâtir, Acquérir et Implémenter;BAI10;Gérer la configuration;BAI10.03;Maintenir et contrôler les éléments de configuration
+BAI;Bâtir, Acquérir et Implémenter;BAI10;Gérer la configuration;BAI10.04;Produire des rapports d'état et de configuration
+BAI;Bâtir, Acquérir et Implémenter;BAI10;Gérer la configuration;BAI10.05;Vérifier et réviser l'intégrité du référentiel de configuration
+BAI;Bâtir, Acquérir et Implémenter;BAI11;Gérer les projets;BAI11.01;Maintenir une approche standard de gestion des projets
+BAI;Bâtir, Acquérir et Implémenter;BAI11;Gérer les projets;BAI11.02;Démarrer un projet
+BAI;Bâtir, Acquérir et Implémenter;BAI11;Gérer les projets;BAI11.03;Gérer l'engagement des parties prenantes
+BAI;Bâtir, Acquérir et Implémenter;BAI11;Gérer les projets;BAI11.04;Développer et maintenir le plan de projet
+BAI;Bâtir, Acquérir et Implémenter;BAI11;Gérer les projets;BAI11.05;Gérer la qualité du projet
+BAI;Bâtir, Acquérir et Implémenter;BAI11;Gérer les projets;BAI11.06;Gérer les risques du projet
+BAI;Bâtir, Acquérir et Implémenter;BAI11;Gérer les projets;BAI11.07;Surveiller et contrôler le projet
+BAI;Bâtir, Acquérir et Implémenter;BAI11;Gérer les projets;BAI11.08;Gérer les ressources et les lots de travail du projet
+BAI;Bâtir, Acquérir et Implémenter;BAI11;Gérer les projets;BAI11.09;Clôturer un projet
+DSS;Délivrer, Servir et Supporter;DSS01;Gérer les opérations;DSS01.01;Exécuter les procédures opérationnelles
+DSS;Délivrer, Servir et Supporter;DSS01;Gérer les opérations;DSS01.02;Gérer les services TI externalisés
+DSS;Délivrer, Servir et Supporter;DSS01;Gérer les opérations;DSS01.03;Surveiller l'infrastructure TI
+DSS;Délivrer, Servir et Supporter;DSS01;Gérer les opérations;DSS01.04;Gérer l'environnement
+DSS;Délivrer, Servir et Supporter;DSS01;Gérer les opérations;DSS01.05;Gérer les installations
+DSS;Délivrer, Servir et Supporter;DSS02;Gérer les demandes de service et les incidents;DSS02.01;Définir les schémas de classification des incidents et des demandes de service
+DSS;Délivrer, Servir et Supporter;DSS02;Gérer les demandes de service et les incidents;DSS02.02;Enregistrer, classifier et prioriser les demandes et les incidents
+DSS;Délivrer, Servir et Supporter;DSS02;Gérer les demandes de service et les incidents;DSS02.03;Vérifier, approuver et traiter les demandes de service
+DSS;Délivrer, Servir et Supporter;DSS02;Gérer les demandes de service et les incidents;DSS02.04;Investiguer, diagnostiquer et allouer les incidents
+DSS;Délivrer, Servir et Supporter;DSS02;Gérer les demandes de service et les incidents;DSS02.05;Résoudre et récupérer des incidents
+DSS;Délivrer, Servir et Supporter;DSS02;Gérer les demandes de service et les incidents;DSS02.06;Clôturer les demandes de service et les incidents
+DSS;Délivrer, Servir et Supporter;DSS02;Gérer les demandes de service et les incidents;DSS02.07;Suivre l'état et produire des rapports
+DSS;Délivrer, Servir et Supporter;DSS03;Gérer les problèmes;DSS03.01;Identifier et classifier les problèmes
+DSS;Délivrer, Servir et Supporter;DSS03;Gérer les problèmes;DSS03.02;Investiguer et diagnostiquer les problèmes
+DSS;Délivrer, Servir et Supporter;DSS03;Gérer les problèmes;DSS03.03;Soulever les erreurs connues
+DSS;Délivrer, Servir et Supporter;DSS03;Gérer les problèmes;DSS03.04;Résoudre et clôturer les problèmes
+DSS;Délivrer, Servir et Supporter;DSS03;Gérer les problèmes;DSS03.05;Effectuer une gestion proactive des problèmes
+DSS;Délivrer, Servir et Supporter;DSS04;Gérer la continuité;DSS04.01;Définir la politique, les objectifs et le périmètre de continuité d'activité
+DSS;Délivrer, Servir et Supporter;DSS04;Gérer la continuité;DSS04.02;Maintenir une stratégie de continuité
+DSS;Délivrer, Servir et Supporter;DSS04;Gérer la continuité;DSS04.03;Développer et implémenter une réponse à la continuité d'activité
+DSS;Délivrer, Servir et Supporter;DSS04;Gérer la continuité;DSS04.04;Exercer, tester et réviser le PCA et le PRA
+DSS;Délivrer, Servir et Supporter;DSS04;Gérer la continuité;DSS04.05;Réviser, maintenir et améliorer le plan de continuité
+DSS;Délivrer, Servir et Supporter;DSS04;Gérer la continuité;DSS04.06;Organiser la formation à la continuité
+DSS;Délivrer, Servir et Supporter;DSS04;Gérer la continuité;DSS04.07;Gérer les arrangements de sauvegarde
+DSS;Délivrer, Servir et Supporter;DSS04;Gérer la continuité;DSS04.08;Conduire une revue post-reprise
+DSS;Délivrer, Servir et Supporter;DSS05;Gérer les services de sécurité;DSS05.01;Protéger contre les logiciels malveillants
+DSS;Délivrer, Servir et Supporter;DSS05;Gérer les services de sécurité;DSS05.02;Gérer la sécurité du réseau et de la connectivité
+DSS;Délivrer, Servir et Supporter;DSS05;Gérer les services de sécurité;DSS05.03;Gérer la sécurité des terminaux
+DSS;Délivrer, Servir et Supporter;DSS05;Gérer les services de sécurité;DSS05.04;Gérer l'identité des utilisateurs et l'accès logique
+DSS;Délivrer, Servir et Supporter;DSS05;Gérer les services de sécurité;DSS05.05;Gérer l'accès physique aux actifs TI
+DSS;Délivrer, Servir et Supporter;DSS05;Gérer les services de sécurité;DSS05.06;Gérer les documents sensibles et les dispositifs de sortie
+DSS;Délivrer, Servir et Supporter;DSS05;Gérer les services de sécurité;DSS05.07;Surveiller l'infrastructure pour les événements liés à la sécurité
+DSS;Délivrer, Servir et Supporter;DSS06;Gérer les contrôles des processus métier;DSS06.01;Aligner les activités de contrôle intégrées dans les processus métier avec les objectifs de l'entreprise
+DSS;Délivrer, Servir et Supporter;DSS06;Gérer les contrôles des processus métier;DSS06.02;Contrôler le traitement de l'information
+DSS;Délivrer, Servir et Supporter;DSS06;Gérer les contrôles des processus métier;DSS06.03;Gérer les rôles, responsabilités, droits d'accès et niveaux d'autorité
+DSS;Délivrer, Servir et Supporter;DSS06;Gérer les contrôles des processus métier;DSS06.04;Gérer les erreurs et les exceptions
+DSS;Délivrer, Servir et Supporter;DSS06;Gérer les contrôles des processus métier;DSS06.05;Assurer la traçabilité et la responsabilité des événements d'information
+DSS;Délivrer, Servir et Supporter;DSS06;Gérer les contrôles des processus métier;DSS06.06;Sécuriser les actifs d'information
+MEA;Mesurer, Évaluer et Apprécier;MEA01;Gérer le suivi de la performance et de la conformité;MEA01.01;Établir une approche de suivi
+MEA;Mesurer, Évaluer et Apprécier;MEA01;Gérer le suivi de la performance et de la conformité;MEA01.02;Définir les objectifs de performance et de conformité
+MEA;Mesurer, Évaluer et Apprécier;MEA01;Gérer le suivi de la performance et de la conformité;MEA01.03;Collecter et traiter les données de performance et de conformité
+MEA;Mesurer, Évaluer et Apprécier;MEA01;Gérer le suivi de la performance et de la conformité;MEA01.04;Analyser et rendre compte de la performance
+MEA;Mesurer, Évaluer et Apprécier;MEA01;Gérer le suivi de la performance et de la conformité;MEA01.05;Assurer l'implémentation des mesures correctives
+MEA;Mesurer, Évaluer et Apprécier;MEA02;Gérer le système de contrôle interne;MEA02.01;Surveiller le contrôle interne
+MEA;Mesurer, Évaluer et Apprécier;MEA02;Gérer le système de contrôle interne;MEA02.02;Réviser l'efficacité des contrôles des processus métier
+MEA;Mesurer, Évaluer et Apprécier;MEA02;Gérer le système de contrôle interne;MEA02.03;Effectuer des auto-évaluations de contrôle
+MEA;Mesurer, Évaluer et Apprécier;MEA02;Gérer le système de contrôle interne;MEA02.04;Identifier et signaler les déficiences de contrôle
+MEA;Mesurer, Évaluer et Apprécier;MEA02;Gérer le système de contrôle interne;MEA02.05;Assurer que les fournisseurs d'assurance sont indépendants et qualifiés
+MEA;Mesurer, Évaluer et Apprécier;MEA02;Gérer le système de contrôle interne;MEA02.06;Planifier les initiatives d'assurance
+MEA;Mesurer, Évaluer et Apprécier;MEA02;Gérer le système de contrôle interne;MEA02.07;Définir le périmètre des initiatives d'assurance
+MEA;Mesurer, Évaluer et Apprécier;MEA02;Gérer le système de contrôle interne;MEA02.08;Exécuter les initiatives d'assurance
+MEA;Mesurer, Évaluer et Apprécier;MEA03;Gérer la conformité aux exigences externes;MEA03.01;Identifier les exigences de conformité externes
+MEA;Mesurer, Évaluer et Apprécier;MEA03;Gérer la conformité aux exigences externes;MEA03.02;Optimiser la réponse aux exigences externes
+MEA;Mesurer, Évaluer et Apprécier;MEA03;Gérer la conformité aux exigences externes;MEA03.03;Confirmer la conformité aux exigences externes
+MEA;Mesurer, Évaluer et Apprécier;MEA03;Gérer la conformité aux exigences externes;MEA03.04;Obtenir l'assurance de la conformité aux exigences externes
+MEA;Mesurer, Évaluer et Apprécier;MEA04;Gérer l'assurance;MEA04.01;Identifier les exigences d'assurance et les standards
+MEA;Mesurer, Évaluer et Apprécier;MEA04;Gérer l'assurance;MEA04.02;Développer une approche d'assurance commune
+MEA;Mesurer, Évaluer et Apprécier;MEA04;Gérer l'assurance;MEA04.03;Établir des critères d'assurance
+MEA;Mesurer, Évaluer et Apprécier;MEA04;Gérer l'assurance;MEA04.04;Effectuer les engagements d'assurance
+MEA;Mesurer, Évaluer et Apprécier;MEA04;Gérer l'assurance;MEA04.05;Examiner et évaluer le rapport d'assurance

@@ -1,0 +1,128 @@
+Clause_Code;Clause_Nom;SousClause_Code;SousClause_Nom;Description
+4;Contexte de l'organisation;4.1;Compréhension de l'organisation et de son contexte;Déterminer les enjeux externes et internes pertinents
+4;Contexte de l'organisation;4.2;Compréhension des besoins et attentes des parties intéressées;Identifier les parties intéressées et leurs exigences
+4;Contexte de l'organisation;4.3;Détermination du domaine d'application du SMSI;Définir les limites et l'applicabilité du SMSI
+4;Contexte de l'organisation;4.4;Système de management de la sécurité de l'information;Établir, mettre en œuvre, tenir à jour et améliorer le SMSI
+5;Leadership;5.1;Leadership et engagement;Démontrer le leadership et l'engagement de la direction
+5;Leadership;5.2;Politique;Établir une politique de sécurité de l'information
+5;Leadership;5.3;Rôles, responsabilités et autorités au sein de l'organisation;Attribuer et communiquer les responsabilités et autorités
+6;Planification;6.1;Actions à mettre en œuvre face aux risques et opportunités;Planifier les actions face aux risques et opportunités
+6;Planification;6.1.1;Généralités;Déterminer les risques et opportunités à traiter
+6;Planification;6.1.2;Appréciation des risques de sécurité de l'information;Définir et appliquer un processus d'appréciation des risques
+6;Planification;6.1.3;Traitement des risques de sécurité de l'information;Définir et appliquer un processus de traitement des risques
+6;Planification;6.2;Objectifs de sécurité de l'information et plans pour les atteindre;Établir des objectifs mesurables et planifier leur atteinte
+6;Planification;6.3;Planification des modifications;Planifier les changements du SMSI de manière maîtrisée
+7;Support;7.1;Ressources;Déterminer et fournir les ressources nécessaires
+7;Support;7.2;Compétences;Déterminer et assurer les compétences nécessaires
+7;Support;7.3;Sensibilisation;Sensibiliser le personnel à la politique et aux contributions
+7;Support;7.4;Communication;Déterminer les besoins de communication interne et externe
+7;Support;7.5;Informations documentées;Créer et maîtriser les informations documentées requises
+7;Support;7.5.1;Généralités;Inclure les informations documentées exigées par la norme
+7;Support;7.5.2;Création et mise à jour;Assurer l'identification et le format appropriés
+7;Support;7.5.3;Maîtrise des informations documentées;Maîtriser la disponibilité et la protection des documents
+8;Réalisation des activités opérationnelles;8.1;Planification et maîtrise opérationnelles;Planifier, mettre en œuvre et maîtriser les processus
+8;Réalisation des activités opérationnelles;8.2;Appréciation des risques de sécurité de l'information;Réaliser des appréciations des risques à intervalles planifiés
+8;Réalisation des activités opérationnelles;8.3;Traitement des risques de sécurité de l'information;Mettre en œuvre le plan de traitement des risques
+9;Évaluation de la performance;9.1;Surveillance, mesures, analyse et évaluation;Évaluer la performance et l'efficacité du SMSI
+9;Évaluation de la performance;9.2;Audit interne;Réaliser des audits internes à intervalles planifiés
+9;Évaluation de la performance;9.2.1;Généralités;Fournir des informations sur la conformité du SMSI
+9;Évaluation de la performance;9.2.2;Programme d'audit interne;Planifier et établir un programme d'audit
+9;Évaluation de la performance;9.3;Revue de direction;Procéder à la revue du SMSI par la direction
+9;Évaluation de la performance;9.3.1;Généralités;Revoir le SMSI à intervalles planifiés
+9;Évaluation de la performance;9.3.2;Éléments d'entrée de la revue de direction;Inclure les éléments d'entrée requis
+9;Évaluation de la performance;9.3.3;Résultats de la revue de direction;Inclure les décisions relatives aux opportunités d'amélioration
+10;Amélioration;10.1;Amélioration continue;Améliorer en continu la pertinence et l'efficacité du SMSI
+10;Amélioration;10.2;Non-conformité et action corrective;Réagir aux non-conformités et prendre des actions correctives
+A.5;Mesures organisationnelles;A.5.1;Politiques de sécurité de l'information;Définir et approuver une politique de sécurité de l'information
+A.5;Mesures organisationnelles;A.5.2;Fonctions et responsabilités liées à la sécurité de l'information;Définir et attribuer les responsabilités de sécurité
+A.5;Mesures organisationnelles;A.5.3;Séparation des tâches;Séparer les tâches et domaines de responsabilité conflictuels
+A.5;Mesures organisationnelles;A.5.4;Responsabilités de la direction;S'assurer que le personnel applique la politique de sécurité
+A.5;Mesures organisationnelles;A.5.5;Contact avec les autorités;Maintenir des contacts avec les autorités compétentes
+A.5;Mesures organisationnelles;A.5.6;Contact avec des groupes de travail spécialisés;Maintenir des contacts avec des groupes spécialisés
+A.5;Mesures organisationnelles;A.5.7;Renseignement sur les menaces;Collecter et analyser les informations sur les menaces
+A.5;Mesures organisationnelles;A.5.8;Sécurité de l'information dans la gestion de projet;Intégrer la sécurité dans la gestion de projet
+A.5;Mesures organisationnelles;A.5.9;Inventaire des informations et autres actifs associés;Établir et tenir à jour un inventaire des actifs
+A.5;Mesures organisationnelles;A.5.10;Utilisation correcte des informations et autres actifs associés;Définir et documenter les règles d'utilisation acceptable
+A.5;Mesures organisationnelles;A.5.11;Restitution des actifs;Restituer les actifs en fin de contrat ou d'emploi
+A.5;Mesures organisationnelles;A.5.12;Classification des informations;Classifier les informations selon les besoins de protection
+A.5;Mesures organisationnelles;A.5.13;Marquage des informations;Mettre en œuvre des procédures de marquage appropriées
+A.5;Mesures organisationnelles;A.5.14;Transfert des informations;Mettre en place des règles et procédures de transfert
+A.5;Mesures organisationnelles;A.5.15;Contrôle d'accès;Définir et mettre en œuvre des règles de contrôle d'accès
+A.5;Mesures organisationnelles;A.5.16;Gestion des identités;Gérer le cycle de vie complet des identités
+A.5;Mesures organisationnelles;A.5.17;Informations d'authentification;Contrôler l'attribution des informations d'authentification
+A.5;Mesures organisationnelles;A.5.18;Droits d'accès;Provisionner et révoquer les droits d'accès
+A.5;Mesures organisationnelles;A.5.19;Sécurité de l'information dans les relations avec les fournisseurs;Définir les exigences de sécurité pour les fournisseurs
+A.5;Mesures organisationnelles;A.5.20;La sécurité de l'information dans les accords conclus avec les fournisseurs;Établir des accords de sécurité avec les fournisseurs
+A.5;Mesures organisationnelles;A.5.21;Gestion de la sécurité de l'information dans la chaîne d'approvisionnement TIC;Gérer les risques de la chaîne d'approvisionnement TIC
+A.5;Mesures organisationnelles;A.5.22;Surveillance, révision et gestion des changements des services fournisseurs;Surveiller et réviser les services des fournisseurs
+A.5;Mesures organisationnelles;A.5.23;Sécurité de l'information pour l'utilisation de services en nuage;Définir les exigences de sécurité pour les services cloud
+A.5;Mesures organisationnelles;A.5.24;Planification et préparation de la gestion des incidents de sécurité de l'information;Planifier la gestion des incidents de sécurité
+A.5;Mesures organisationnelles;A.5.25;Évaluation des événements de sécurité de l'information et prise de décision;Évaluer et décider si un événement est un incident
+A.5;Mesures organisationnelles;A.5.26;Réponse aux incidents de sécurité de l'information;Répondre aux incidents selon les procédures
+A.5;Mesures organisationnelles;A.5.27;Tirer des enseignements des incidents de sécurité de l'information;Utiliser les incidents pour améliorer la sécurité
+A.5;Mesures organisationnelles;A.5.28;Collecte de preuves;Établir des procédures de collecte de preuves
+A.5;Mesures organisationnelles;A.5.29;Sécurité de l'information durant une perturbation;Maintenir la sécurité pendant les perturbations
+A.5;Mesures organisationnelles;A.5.30;Préparation des TIC pour la continuité d'activité;Planifier la continuité des TIC
+A.5;Mesures organisationnelles;A.5.31;Exigences légales, statutaires, réglementaires et contractuelles;Identifier et respecter les exigences légales
+A.5;Mesures organisationnelles;A.5.32;Droits de propriété intellectuelle;Protéger les droits de propriété intellectuelle
+A.5;Mesures organisationnelles;A.5.33;Protection des enregistrements;Protéger les enregistrements contre la perte ou la falsification
+A.5;Mesures organisationnelles;A.5.34;Vie privée et protection des données à caractère personnel;Assurer la conformité à la protection des données personnelles
+A.5;Mesures organisationnelles;A.5.35;Revue indépendante de la sécurité de l'information;Faire réviser indépendamment l'approche de sécurité
+A.5;Mesures organisationnelles;A.5.36;Conformité avec les politiques et normes de sécurité de l'information;Vérifier la conformité aux politiques et normes
+A.5;Mesures organisationnelles;A.5.37;Procédures d'exploitation documentées;Documenter les procédures d'exploitation
+A.6;Mesures liées aux personnes;A.6.1;Sélection des candidats;Vérifier les antécédents des candidats
+A.6;Mesures liées aux personnes;A.6.2;Termes et conditions d'embauche;Inclure les responsabilités de sécurité dans les contrats
+A.6;Mesures liées aux personnes;A.6.3;Sensibilisation, apprentissage et formation à la sécurité de l'information;Former et sensibiliser le personnel à la sécurité
+A.6;Mesures liées aux personnes;A.6.4;Processus disciplinaire;Mettre en œuvre un processus disciplinaire
+A.6;Mesures liées aux personnes;A.6.5;Responsabilités après la fin ou le changement d'emploi;Définir les responsabilités post-emploi
+A.6;Mesures liées aux personnes;A.6.6;Accords de confidentialité ou de non-divulgation;Identifier et documenter les exigences de confidentialité
+A.6;Mesures liées aux personnes;A.6.7;Travail à distance;Mettre en œuvre des mesures pour le travail à distance
+A.6;Mesures liées aux personnes;A.6.8;Signalement des événements de sécurité de l'information;Permettre le signalement des événements de sécurité
+A.7;Mesures physiques;A.7.1;Périmètres de sécurité physique;Définir et utiliser des périmètres de sécurité
+A.7;Mesures physiques;A.7.2;Les accès physiques;Protéger les zones sécurisées par des contrôles d'accès
+A.7;Mesures physiques;A.7.3;Sécurisation des bureaux, des salles et des équipements;Concevoir et appliquer une sécurité physique appropriée
+A.7;Mesures physiques;A.7.4;Surveillance de la sécurité physique;Surveiller en continu les locaux pour détecter les accès non autorisés
+A.7;Mesures physiques;A.7.5;Protection contre les menaces physiques et environnementales;Concevoir une protection contre les menaces physiques
+A.7;Mesures physiques;A.7.6;Travail dans les zones sécurisées;Définir des règles de travail dans les zones sécurisées
+A.7;Mesures physiques;A.7.7;Bureau propre et écran vide;Mettre en œuvre une politique de bureau propre
+A.7;Mesures physiques;A.7.8;Emplacement et protection du matériel;Protéger le matériel contre les menaces physiques
+A.7;Mesures physiques;A.7.9;Sécurité des actifs hors des locaux;Appliquer des mesures de sécurité hors site
+A.7;Mesures physiques;A.7.10;Supports de stockage;Gérer les supports selon leur classification
+A.7;Mesures physiques;A.7.11;Services généraux;Protéger le matériel contre les pannes d'alimentation
+A.7;Mesures physiques;A.7.12;Sécurité du câblage;Protéger les câbles contre l'interception ou les dommages
+A.7;Mesures physiques;A.7.13;Maintenance du matériel;Maintenir correctement le matériel
+A.7;Mesures physiques;A.7.14;Mise au rebut ou recyclage sécurisé du matériel;Vérifier l'effacement des données avant mise au rebut
+A.8;Mesures technologiques;A.8.1;Terminaux utilisateurs;Protéger les informations sur les terminaux utilisateurs
+A.8;Mesures technologiques;A.8.2;Droits d'accès privilégiés;Restreindre et gérer les droits d'accès privilégiés
+A.8;Mesures technologiques;A.8.3;Restriction d'accès aux informations;Restreindre l'accès selon la politique de contrôle d'accès
+A.8;Mesures technologiques;A.8.4;Accès au code source;Restreindre l'accès au code source
+A.8;Mesures technologiques;A.8.5;Authentification sécurisée;Mettre en œuvre des techniques d'authentification sécurisées
+A.8;Mesures technologiques;A.8.6;Dimensionnement;Surveiller et ajuster l'utilisation des ressources
+A.8;Mesures technologiques;A.8.7;Protection contre les programmes malveillants;Mettre en œuvre une protection contre les malwares
+A.8;Mesures technologiques;A.8.8;Gestion des vulnérabilités techniques;Obtenir des informations sur les vulnérabilités et les traiter
+A.8;Mesures technologiques;A.8.9;Gestion de la configuration;Établir et documenter les configurations de sécurité
+A.8;Mesures technologiques;A.8.10;Suppression des informations;Supprimer les informations qui ne sont plus nécessaires
+A.8;Mesures technologiques;A.8.11;Masquage des données;Utiliser le masquage conformément à la politique d'accès
+A.8;Mesures technologiques;A.8.12;Prévention de la fuite de données;Appliquer des mesures de prévention de fuite de données
+A.8;Mesures technologiques;A.8.13;Sauvegarde des informations;Maintenir des copies de sauvegarde testées
+A.8;Mesures technologiques;A.8.14;Redondance des moyens de traitement de l'information;Mettre en œuvre une redondance suffisante
+A.8;Mesures technologiques;A.8.15;Journalisation;Produire et protéger des journaux d'événements
+A.8;Mesures technologiques;A.8.16;Activités de surveillance;Surveiller les réseaux et systèmes pour détecter les anomalies
+A.8;Mesures technologiques;A.8.17;Synchronisation des horloges;Synchroniser les horloges sur des sources de référence
+A.8;Mesures technologiques;A.8.18;Utilisation de programmes utilitaires à privilèges;Restreindre l'utilisation des programmes à privilèges
+A.8;Mesures technologiques;A.8.19;Installation de logiciels sur des systèmes en exploitation;Mettre en œuvre des procédures d'installation de logiciels
+A.8;Mesures technologiques;A.8.20;Sécurité des réseaux;Protéger les réseaux et les dispositifs réseau
+A.8;Mesures technologiques;A.8.21;Sécurité des services en réseau;Identifier et mettre en œuvre les mécanismes de sécurité réseau
+A.8;Mesures technologiques;A.8.22;Cloisonnement des réseaux;Segmenter les réseaux selon les besoins de sécurité
+A.8;Mesures technologiques;A.8.23;Filtrage web;Gérer l'accès aux sites web externes
+A.8;Mesures technologiques;A.8.24;Utilisation de la cryptographie;Définir des règles d'utilisation de la cryptographie
+A.8;Mesures technologiques;A.8.25;Cycle de vie de développement sécurisé;Établir des règles de développement sécurisé
+A.8;Mesures technologiques;A.8.26;Exigences de sécurité des applications;Identifier et spécifier les exigences de sécurité
+A.8;Mesures technologiques;A.8.27;Principes d'ingénierie et d'architecture des systèmes sécurisés;Établir et appliquer des principes d'ingénierie sécurisée
+A.8;Mesures technologiques;A.8.28;Codage sécurisé;Appliquer des principes de codage sécurisé
+A.8;Mesures technologiques;A.8.29;Tests de sécurité dans le développement et l'acceptation;Définir et mettre en œuvre des tests de sécurité
+A.8;Mesures technologiques;A.8.30;Développement externalisé;Diriger et surveiller le développement externalisé
+A.8;Mesures technologiques;A.8.31;Séparation des environnements de développement, de test et de production;Séparer et protéger les environnements
+A.8;Mesures technologiques;A.8.32;Gestion des changements;Soumettre les changements à des procédures de gestion
+A.8;Mesures technologiques;A.8.33;Informations de test;Sélectionner et protéger les données de test
+A.8;Mesures technologiques;A.8.34;Protection des systèmes d'information pendant les audits et tests;Planifier les audits pour minimiser les perturbations
