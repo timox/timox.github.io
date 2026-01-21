@@ -1,4 +1,79 @@
-# Log de travail Claude - Migration EventCentralizer
+# Log de travail Claude
+
+---
+
+## 2026-01-21 - Migration V3 : Classification et Nettoyage des Données
+
+### Contexte
+Plusieurs problèmes signalés par l'utilisateur :
+1. Bouton "Classifier" (Affecter) ne fonctionnait pas dans missions.html
+2. Doublons d'enregistrements [MISSION] et [SA] empêchant les modifications
+3. Setup.html ne créait pas les colonnes V3 (erreur silencieuse)
+4. Migration échouait avec KeyError 'nature_activite' / 'genre_action'
+
+### Corrections Effectuées
+
+#### 1. Classification des Tâches (missions.html)
+**Problème** : Le bouton `.btn-classify-task` n'avait pas de handler
+
+**Solution** : Ajout complet du système de classification
+- Event listener pour `.btn-classify-task`
+- Fonction `handleClassifyTask()` pour ouvrir le modal
+- Fonction `saveClassification()` pour sauvegarder
+- Modal `#modal-classify` avec sélecteurs mission/sous-action
+
+**Fichiers modifiés** :
+- `kanbantest/js/missions-app.js`
+- `kanbantest/missions.html`
+
+#### 2. Détection et Suppression des Doublons
+**Problème** : Données dupliquées créées lors de multiples exécutions du setup
+
+**Solution** : Ajout de la détection et suppression
+- Détection dans `analyze()` : grouper par titre, identifier les doublons
+- Logique : garder le premier (ID le plus bas), supprimer les autres
+- Nouvelle méthode `deleteDuplicates()` avec suppression par lots de 50
+- UI : nouveau bouton "3. Suppr. doublons" + compteur + stats
+
+**Fichiers modifiés** :
+- `kanbantest/js/migration-app.js`
+- `kanbantest/migration.html`
+- `kanbantest/setup.html`
+
+#### 3. Correction Création Colonnes Grist
+**Problème** : La logique `ModifyColumn` d'abord, puis `AddColumn` sur erreur "not found" ne fonctionnait pas
+
+**Cause** : Le format d'erreur Grist n'était pas détecté correctement
+
+**Solution** : Inverser la logique
+```javascript
+// AVANT (ne fonctionnait pas)
+try { ModifyColumn } catch { if "not found" → AddColumn }
+
+// APRÈS (fonctionne)
+try { AddColumn } catch { if "already exists" → ModifyColumn }
+```
+
+**Fichiers modifiés** :
+- `kanbantest/setup.html` (btnRunAll, btnSetup, btnAddHierarchyCols)
+- `kanbantest/js/migration-app.js`
+
+#### 4. Auto-création Colonnes V3 en Migration
+**Problème** : 269 tâches échouaient avec KeyError car les colonnes V3 n'existaient pas
+
+**Solution** : Nouvelle méthode `ensureV3Columns()` appelée avant migration
+- Crée automatiquement : nature_activite, genre_action, etape_code, previsibilite
+- Utilise le pattern AddColumn-first corrigé
+- Inclut les widgetOptions avec les choix disponibles
+
+**Fichier modifié** :
+- `kanbantest/js/migration-app.js`
+
+### Commits
+- `cddbca8` - feat(migration): add duplicate detection and cleanup
+- `c04787e` - feat(missions): add task classification functionality
+
+---
 
 ## 2025-11-10 - Migration des événements vers EventCentralizer
 

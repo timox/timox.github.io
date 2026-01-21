@@ -420,10 +420,16 @@ Sinon → ok
 
 ## ✅ Checklist implémentation
 
-### Phase 1 : Grist (UTILISATEUR)
-- [ ] Créer colonnes `previsibilite`, `type_tache`
-- [ ] Créer `temps_estime_heures`, `est_dette_technique` (optionnel)
-- [ ] Ajouter statut "En pause"
+### Phase 1 : Grist (UTILISATEUR) - ✅ COMPLÉTÉ
+- [x] Créer colonnes `previsibilite`, `type_tache` → **Auto-créées via setup.html/migration.html**
+- [x] Créer `temps_estime_heures`, `est_dette_technique` (optionnel)
+- [x] Ajouter statut "En pause"
+
+### Phase 1bis : Migration V3 (2026-01-21) - ✅ NOUVEAU
+- [x] Classification des tâches via modal (missions.html)
+- [x] Détection et suppression des doublons [MISSION]/[SA]
+- [x] Auto-création colonnes V3 (nature_activite, genre_action, etape_code)
+- [x] Correction pattern création colonnes Grist (AddColumn-first)
 
 ### Phase 2 : Dashboard (TOI)
 - [ ] Ajouter constantes (PREVISIBILITE, TYPE_TACHES, CIBLES, etc.)

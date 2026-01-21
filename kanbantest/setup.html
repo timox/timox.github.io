@@ -578,6 +578,7 @@
 
         // Étape 3: Table Agents
         log('--- Étape 3: Table Agents ---', 'info');
+        let agentsTableCreated = false;
         try {
           const columns = AGENTS_TABLE.columns.map(col => ({
             id: col.id,
@@ -592,12 +593,73 @@
           ]);
           log(`✓ Table ${AGENTS_TABLE.name} créée`, 'success');
           setStatus('status-agents', 'done');
+          agentsTableCreated = true;
         } catch (e) {
           if (e.message && e.message.includes('already exists')) {
             log(`✓ Table ${AGENTS_TABLE.name} existe déjà`, 'success');
             setStatus('status-agents', 'done');
           } else {
             log(`⚠ Agents: ${e.message}`, 'error');
+          }
+        }
+
+        // Importer les vrais agents si la table vient d'être créée
+        if (agentsTableCreated) {
+          log('Extraction des agents réels depuis les tâches...', 'info');
+          try {
+            const tableData = await grist.docApi.fetchTable(TABLE_NAME);
+            const quiColumn = tableData.qui || [];
+            const bureauColumn = tableData.bureau || [];
+
+            const uniqueAgents = new Set();
+            const agentBureaux = {};
+
+            quiColumn.forEach((qui, index) => {
+              if (qui && Array.isArray(qui) && qui.length > 1) {
+                const noms = qui.slice(1);
+                noms.forEach(nom => {
+                  if (nom && nom.trim()) {
+                    uniqueAgents.add(nom.trim());
+                    if (bureauColumn[index] && Array.isArray(bureauColumn[index]) && bureauColumn[index].length > 1) {
+                      agentBureaux[nom.trim()] = bureauColumn[index][1];
+                    }
+                  }
+                });
+              }
+            });
+
+            if (uniqueAgents.size > 0) {
+              const agentsList = Array.from(uniqueAgents);
+              const agentsData = {
+                nom: [], prenom: [], email: [], bureau: [], fonction: [], telephone: [], actif: []
+              };
+
+              agentsList.forEach(fullName => {
+                const parts = fullName.split(' ');
+                let prenom = '', nom = fullName;
+                if (parts.length >= 2) {
+                  prenom = parts[0];
+                  nom = parts.slice(1).join(' ');
+                }
+                agentsData.nom.push(nom);
+                agentsData.prenom.push(prenom);
+                agentsData.email.push('');
+                agentsData.bureau.push(agentBureaux[fullName] || '');
+                agentsData.fonction.push('');
+                agentsData.telephone.push('');
+                agentsData.actif.push(true);
+              });
+
+              const rowIds = new Array(agentsList.length).fill(null);
+              await grist.docApi.applyUserActions([
+                ['BulkAddRecord', AGENTS_TABLE.name, rowIds, agentsData]
+              ]);
+              log(`✓ ${agentsList.length} agents réels importés`, 'success');
+            } else {
+              log('Aucun agent trouvé dans les données existantes', 'info');
+            }
+          } catch (extractErr) {
+            log(`Extraction agents: ${extractErr.message}`, 'error');
           }
         }
 
@@ -707,10 +769,33 @@
       log('Import des données test...', 'info');
 
       try {
-        // D'abord récupérer les colonnes existantes de la table
+        // Attendre un peu pour s'assurer que les colonnes sont bien créées
+        log('Attente de synchronisation Grist (2s)...', 'info');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // D'abord récupérer les colonnes existantes de la table via l'API schema
         log('Récupération du schéma de table...', 'info');
-        const tableData = await grist.docApi.fetchTable(TABLE_NAME);
-        const existingColumns = Object.keys(tableData);
+
+        // Utiliser l'API tables pour obtenir le vrai schéma des colonnes
+        let existingColumns = [];
+        try {
+          const tables = await grist.docApi.listTables();
+          if (tables && Array.isArray(tables)) {
+            const mainTable = tables.find(t => t.id === TABLE_NAME);
+            if (mainTable && mainTable.columns) {
+              existingColumns = mainTable.columns.map(c => c.id);
+            }
+          }
+        } catch (schemaErr) {
+          log(`Fallback vers fetchTable: ${schemaErr.message}`, 'info');
+        }
+
+        // Fallback: utiliser fetchTable si listTables ne fonctionne pas
+        if (existingColumns.length === 0) {
+          const tableData = await grist.docApi.fetchTable(TABLE_NAME);
+          existingColumns = Object.keys(tableData);
+        }
+
         log(`Colonnes existantes: ${existingColumns.length}`, 'info');
 
         // Charger le CSV
@@ -933,22 +1018,80 @@
         log(`✓ Table ${AGENTS_TABLE.name} créée avec ${columns.length} colonnes`, 'success');
         setStatus('status-agents-table', 'done');
 
-        // Ajouter quelques agents exemples
-        log('Ajout d\'agents exemples...', 'info');
-        const exempleAgents = {
-          nom: ['Dupont', 'Martin', 'Bernard', 'Petit', 'Robert'],
-          prenom: ['Jean', 'Marie', 'Pierre', 'Sophie', 'Luc'],
-          email: ['jean.dupont@sdis.fr', 'marie.martin@sdis.fr', 'pierre.bernard@sdis.fr', 'sophie.petit@sdis.fr', 'luc.robert@sdis.fr'],
-          bureau: ['Exploit', 'Réseau', 'BDD', 'RSSI', 'Chef SSIR'],
-          fonction: ['Administrateur système', 'Ingénieur réseau', 'DBA', 'RSSI adjoint', 'Chef de service'],
-          telephone: ['0123456789', '0123456790', '0123456791', '0123456792', '0123456793'],
-          actif: [true, true, true, true, true]
-        };
+        // Extraire les vrais agents depuis la colonne "qui" des tâches existantes
+        log('Extraction des agents réels depuis les tâches...', 'info');
 
-        await grist.docApi.applyUserActions([
-          ['BulkAddRecord', AGENTS_TABLE.name, [null, null, null, null, null], exempleAgents]
-        ]);
-        log('✓ 5 agents exemples créés', 'success');
+        try {
+          const tableData = await grist.docApi.fetchTable(TABLE_NAME);
+          const quiColumn = tableData.qui || [];
+          const bureauColumn = tableData.bureau || [];
+
+          // Extraire les noms uniques depuis les colonnes qui et bureau
+          const uniqueAgents = new Set();
+          const agentBureaux = {};
+
+          quiColumn.forEach((qui, index) => {
+            if (qui && Array.isArray(qui) && qui.length > 1) {
+              // Format Grist: ['L', 'Nom1', 'Nom2', ...]
+              const noms = qui.slice(1);
+              noms.forEach(nom => {
+                if (nom && nom.trim()) {
+                  uniqueAgents.add(nom.trim());
+                  // Associer le bureau si disponible
+                  if (bureauColumn[index] && Array.isArray(bureauColumn[index]) && bureauColumn[index].length > 1) {
+                    agentBureaux[nom.trim()] = bureauColumn[index][1];
+                  }
+                }
+              });
+            }
+          });
+
+          if (uniqueAgents.size > 0) {
+            const agentsList = Array.from(uniqueAgents);
+            log(`${agentsList.length} agents réels trouvés: ${agentsList.slice(0, 5).join(', ')}${agentsList.length > 5 ? '...' : ''}`, 'success');
+
+            // Préparer les données pour l'insertion
+            const agentsData = {
+              nom: [],
+              prenom: [],
+              email: [],
+              bureau: [],
+              fonction: [],
+              telephone: [],
+              actif: []
+            };
+
+            agentsList.forEach(fullName => {
+              // Séparer nom/prénom si possible (format "Prénom Nom" ou juste "Nom")
+              const parts = fullName.split(' ');
+              let prenom = '';
+              let nom = fullName;
+
+              if (parts.length >= 2) {
+                prenom = parts[0];
+                nom = parts.slice(1).join(' ');
+              }
+
+              agentsData.nom.push(nom);
+              agentsData.prenom.push(prenom);
+              agentsData.email.push('');
+              agentsData.bureau.push(agentBureaux[fullName] || '');
+              agentsData.fonction.push('');
+              agentsData.telephone.push('');
+              agentsData.actif.push(true);
+            });
+
+            const rowIds = new Array(agentsList.length).fill(null);
+            await grist.docApi.applyUserActions([
+              ['BulkAddRecord', AGENTS_TABLE.name, rowIds, agentsData]
+            ]);
+            log(`✓ ${agentsList.length} agents réels importés`, 'success');
+          } else {
+            log('Aucun agent trouvé dans les données existantes', 'info');
+          }
+        } catch (extractErr) {
+          log(`Extraction agents: ${extractErr.message}`, 'error');
+        }
 
         // Mettre à jour le statut de responsable_id si la colonne a été ajoutée
         setStatus('status-responsable-ref', 'done');
