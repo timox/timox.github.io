@@ -256,21 +256,43 @@
       <div class="card-body">
         <div class="row">
           <div class="col-md-6">
-            <h5>Principes du modèle V3</h5>
+            <h5>Principes du modèle V3 simplifié</h5>
             <ul>
-              <li><strong>Hiérarchie stratégique</strong> : Stratégie → Programme → Mission → Tâche</li>
-              <li><strong>Classification 3 axes</strong> : Chaque tâche est classifiée selon 3 dimensions orthogonales</li>
-              <li><strong>Flexibilité</strong> : Les champs V3 sont optionnels et peuvent être remplis progressivement</li>
+              <li><strong>Hiérarchie stratégique</strong> : Programme → Stratégie → Mission → Tâche</li>
+              <li><strong>Source unique</strong> : Toute la hiérarchie dans <code>Ssir_strategie2</code></li>
+              <li><strong>Classification 3 axes</strong> : Chaque tâche classifiée selon 3 dimensions orthogonales</li>
+              <li><strong>Liaison directe</strong> : <code>strategie_id</code> lie la tâche à sa Mission</li>
             </ul>
           </div>
           <div class="col-md-6">
             <h5>Avantages</h5>
             <ul>
-              <li><i class="bi bi-check-circle text-success me-1"></i>Vision stratégique claire</li>
-              <li><i class="bi bi-check-circle text-success me-1"></i>Analyses multidimensionnelles</li>
-              <li><i class="bi bi-check-circle text-success me-1"></i>Traçabilité complète</li>
-              <li><i class="bi bi-check-circle text-success me-1"></i>Reporting automatisé</li>
+              <li><i class="bi bi-check-circle text-success me-1"></i>Modèle simplifié sans sous-actions</li>
+              <li><i class="bi bi-check-circle text-success me-1"></i>Une seule source de vérité</li>
+              <li><i class="bi bi-check-circle text-success me-1"></i>Pas de doublons [MISSION]/[SA]</li>
+              <li><i class="bi bi-check-circle text-success me-1"></i>Analyses multidimensionnelles via les 3 axes</li>
             </ul>
+          </div>
+        </div>
+
+        <div class="alert alert-danger mt-3 mb-0">
+          <h6 class="alert-heading"><i class="bi bi-exclamation-octagon me-2"></i>Champs obsolètes (à ignorer)</h6>
+          <div class="row">
+            <div class="col-md-6">
+              <ul class="mb-0 small">
+                <li><code>mission_code</code> - remplacé par <code>strategie_id</code></li>
+                <li><code>mission_nom</code> - info dans Ssir_strategie2.action</li>
+                <li><code>sous_action_code</code> - concept supprimé</li>
+                <li><code>sous_action_nom</code> - concept supprimé</li>
+              </ul>
+            </div>
+            <div class="col-md-6">
+              <ul class="mb-0 small">
+                <li><code>programme_id</code> - remplacé par <code>strategie_id</code></li>
+                <li>Préfixe <code>[MISSION]</code> - plus nécessaire</li>
+                <li>Préfixe <code>[SA]</code> - concept supprimé</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
@@ -564,20 +586,25 @@
                   <td><span class="field-type">Choice</span></td>
                   <td><strong>V3</strong> - Prévisible / Imprévisible</td>
                 </tr>
-                <tr class="table-warning">
-                  <td><code class="field-name">mission_code</code></td>
-                  <td><span class="field-type">Text</span></td>
-                  <td><strong>Hiérarchie</strong> - Code de la mission parente</td>
-                </tr>
-                <tr class="table-warning">
-                  <td><code class="field-name">sous_action_code</code></td>
-                  <td><span class="field-type">Text</span></td>
-                  <td><strong>Hiérarchie</strong> - Code de la sous-action</td>
-                </tr>
-                <tr class="table-warning">
-                  <td><code class="field-name">programme_id</code></td>
+                <tr class="table-success">
+                  <td><code class="field-name">strategie_id</code> <span class="badge bg-success">PRINCIPAL</span></td>
                   <td><span class="field-type">Ref</span></td>
-                  <td><strong>Hiérarchie</strong> - Référence vers Ssir_programmes</td>
+                  <td><strong>Hiérarchie</strong> - Référence vers Ssir_strategie2 (Programme/Stratégie/Mission)</td>
+                </tr>
+                <tr class="table-secondary">
+                  <td><code class="field-name">mission_code</code> <span class="badge bg-secondary">OBSOLÈTE</span></td>
+                  <td><span class="field-type">Text</span></td>
+                  <td><del>Remplacé par strategie_id</del></td>
+                </tr>
+                <tr class="table-secondary">
+                  <td><code class="field-name">sous_action_code</code> <span class="badge bg-secondary">OBSOLÈTE</span></td>
+                  <td><span class="field-type">Text</span></td>
+                  <td><del>Concept supprimé - sous-actions n'existent plus</del></td>
+                </tr>
+                <tr class="table-secondary">
+                  <td><code class="field-name">programme_id</code> <span class="badge bg-secondary">OBSOLÈTE</span></td>
+                  <td><span class="field-type">Ref</span></td>
+                  <td><del>Remplacé par strategie_id</del></td>
                 </tr>
               </tbody>
             </table>
@@ -751,10 +778,11 @@
       <div class="card-body">
         <div class="row">
           <div class="col-md-6">
-            <h6>Exemple 1 : Incident serveur</h6>
+            <h6>Exemple 1 : Incident (non planifié)</h6>
             <div class="p-3 bg-light rounded">
               <code>
                 titre: "Serveur mail down"<br>
+                strategie_id: <span class="badge bg-secondary">null</span> (pas de mission)<br>
                 nature_activite: <span class="badge" style="background:#dc3545">INC</span><br>
                 genre_action: <span class="badge" style="background:#ef4444">COR</span><br>
                 etape_code: <span class="badge" style="background:#f59e0b">ETP.EXP</span><br>
@@ -763,17 +791,28 @@
             </div>
           </div>
           <div class="col-md-6">
-            <h6>Exemple 2 : Projet planifié</h6>
+            <h6>Exemple 2 : Tâche rattachée à une Mission</h6>
             <div class="p-3 bg-light rounded">
               <code>
-                titre: "[MISSION] Migration M365"<br>
+                titre: "Configurer tenant M365"<br>
+                strategie_id: <span class="badge" style="background:#f59e0b;color:#1e293b">→ Migration M365</span><br>
                 nature_activite: <span class="badge" style="background:#198754">PRJ</span><br>
-                genre_action: <span class="badge" style="background:#7c3aed">DEV</span><br>
+                genre_action: <span class="badge" style="background:#f97316">CFG</span><br>
                 etape_code: <span class="badge" style="background:#14b8a6">ETP.REA</span><br>
                 previsibilite: Prévisible
               </code>
             </div>
           </div>
+        </div>
+
+        <div class="mt-4">
+          <h6>Comment rattacher une tâche à une Mission ?</h6>
+          <ol class="mb-0">
+            <li>Identifier la Mission dans <code>Ssir_strategie2</code> (champ <code>action</code>)</li>
+            <li>Noter l'<code>id</code> de cette ligne</li>
+            <li>Renseigner <code>strategie_id</code> de la tâche avec cet id</li>
+            <li>La tâche hérite automatiquement du Programme et de la Stratégie</li>
+          </ol>
         </div>
       </div>
     </div>
