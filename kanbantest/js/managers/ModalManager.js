@@ -28,6 +28,7 @@ import {
 import { getUserActionManager } from '../utils/UserActionManager.js';
 import { createModuleLogger } from '../utils/LoggerManager.js';
 import { referenceManager } from '../utils/ReferenceManager.js';
+import { formatQuiDisplay, extractPrenom } from '../../utils/badges.js';
 import { safeOn, cleanNamespace } from '../utils/EventManager.js';
 
 /**
@@ -1850,11 +1851,12 @@ export class ModalManager {
     const formatList = (values) => {
       if (!values) return '-';
       if (Array.isArray(values)) {
-        const cleaned = values.filter(item => item && item !== 'L');
+        const cleaned = values.filter(item => item && item !== 'L').map(extractPrenom).filter(Boolean);
         return cleaned.length ? cleaned.join(', ') : '-';
       }
       if (typeof values === 'string') {
-        return values && values !== 'L' ? values : '-';
+        const prenom = extractPrenom(values);
+        return prenom && prenom !== 'L' ? prenom : '-';
       }
       return '-';
     };
@@ -1895,9 +1897,9 @@ export class ModalManager {
       let owners = [];
 
       if (Array.isArray(task.qui)) {
-        owners = task.qui.filter(value => value && value !== 'L');
+        owners = task.qui.filter(value => value && value !== 'L').map(extractPrenom).filter(Boolean);
       } else if (typeof task.qui === 'string' && task.qui.trim()) {
-        owners = [task.qui.trim()];
+        owners = [extractPrenom(task.qui.trim())].filter(Boolean);
       }
 
       ownersElement.textContent = owners.length > 0 ? owners.join(', ') : 'Non attribuée';

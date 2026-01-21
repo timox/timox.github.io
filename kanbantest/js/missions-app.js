@@ -646,6 +646,22 @@ function renderTasksList() {
 }
 
 /**
+ * Extrait le prénom d'une chaîne qui peut être au format "Initiale, Prénom" ou juste "Prénom"
+ * @param {string} name - Le nom à traiter
+ * @returns {string} Le prénom extrait
+ */
+function extractPrenom(name) {
+  if (!name || typeof name !== 'string') return '';
+  const trimmed = name.trim();
+  // Si le format est "X, Nom" où X est une seule lettre majuscule, extraire "Nom"
+  const match = trimmed.match(/^[A-Z],\s*(.+)$/);
+  if (match) {
+    return match[1].trim();
+  }
+  return trimmed;
+}
+
+/**
  * Format le champ qui (peut être un array)
  */
 function formatQui(qui) {
@@ -653,11 +669,11 @@ function formatQui(qui) {
   if (Array.isArray(qui)) {
     // Format Grist ChoiceList: ['L', 'val1', 'val2']
     if (qui[0] === 'L') {
-      return qui.slice(1).join(', ');
+      return qui.slice(1).map(extractPrenom).filter(Boolean).join(', ');
     }
-    return qui.join(', ');
+    return qui.map(extractPrenom).filter(Boolean).join(', ');
   }
-  return String(qui);
+  return extractPrenom(String(qui));
 }
 
 /**

@@ -13,6 +13,7 @@ import {
   getTaskType,
   getLinkType
 } from './config/constants.js';
+import { formatQuiDisplay } from '../utils/badges.js';
 
 /**
  * Application de gestion des tâches
@@ -1137,7 +1138,7 @@ class TachesApp {
     // Remplir le modal
     $('#detail-title').text(task.titre || 'Sans titre');
     $('#detail-status').html(`<span class="badge bg-secondary">${task.statut || 'N/A'}</span>`);
-    $('#detail-responsable').text(task.qui || 'Non assigné');
+    $('#detail-responsable').text(formatQuiDisplay(task.qui) || 'Non assigné');
 
     if (type) {
       $('#detail-type').html(`

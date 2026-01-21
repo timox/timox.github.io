@@ -37,7 +37,8 @@ import {
   generateProjectBadge,
   generateResponsablesBadges,
   generateHistoryBadge,
-  generateAllTaskBadges
+  generateAllTaskBadges,
+  extractPrenom
 } from './utils/badges.js';
 
 import {
@@ -1892,7 +1893,7 @@ class KanbanManager {
     this.currentRecords.forEach(record => {
       const strategy = this.getStrategyInfo(record.strategie_id);
       const bureaux = Array.isArray(record.bureau) ? record.bureau.slice(1).join(', ') : '';
-      const responsables = Array.isArray(record.qui) ? record.qui.slice(1).join(', ') : '';
+      const responsables = Array.isArray(record.qui) ? record.qui.slice(1).map(extractPrenom).filter(Boolean).join(', ') : '';
       
       const row = [
         record.id || '',

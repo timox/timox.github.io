@@ -123,14 +123,46 @@ export function generateProjectBadge(projectData) {
 }
 
 /**
+ * Extrait le prénom d'une chaîne qui peut être au format "Initiale, Prénom" ou juste "Prénom"
+ * @param {string} name - Le nom à traiter
+ * @returns {string} Le prénom extrait
+ */
+export function extractPrenom(name) {
+  if (!name || typeof name !== 'string') return '';
+  const trimmed = name.trim();
+  // Si le format est "X, Nom" où X est une seule lettre majuscule, extraire "Nom"
+  const match = trimmed.match(/^[A-Z],\s*(.+)$/);
+  if (match) {
+    return match[1].trim();
+  }
+  return trimmed;
+}
+
+/**
+ * Formate le champ qui pour l'affichage (extrait les prénoms)
+ * @param {Array|string} qui - Le champ qui (format Grist ou string)
+ * @returns {string} Les prénoms formatés
+ */
+export function formatQuiDisplay(qui) {
+  if (!qui) return '';
+  if (Array.isArray(qui)) {
+    // Format Grist ChoiceList: ['L', 'val1', 'val2']
+    const values = qui[0] === 'L' ? qui.slice(1) : qui;
+    return values.map(extractPrenom).filter(Boolean).join(', ');
+  }
+  return extractPrenom(String(qui));
+}
+
+/**
  * Génère un badge de responsable
  * @param {string} responsable - Nom du responsable
  * @returns {string} HTML du badge responsable
  */
 export function generateResponsableBadge(responsable) {
   if (!responsable) return '';
-  
-  return `<span class="personne-badge">${responsable}</span>`;
+  const prenom = extractPrenom(responsable);
+  if (!prenom) return '';
+  return `<span class="personne-badge">${prenom}</span>`;
 }
 
 /**
