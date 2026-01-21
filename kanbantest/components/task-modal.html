@@ -1,0 +1,206 @@
+<!-- Composant Modal Tâche Partagé -->
+<!-- Peut être chargé dynamiquement via SharedTaskModal.js -->
+
+<div class="modal fade" id="shared-task-modal" tabindex="-1" aria-labelledby="shared-task-modal-label" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="shared-task-modal-label">
+          <i class="bi bi-card-checklist me-2"></i>
+          <span id="stm-modal-title">Détails Tâche</span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+
+      <div class="modal-body">
+        <form id="shared-task-form" novalidate>
+          <input type="hidden" id="stm-task-id" value="">
+
+          <!-- Section principale -->
+          <div class="row g-3 mb-4">
+            <div class="col-12 col-md-8">
+              <label for="stm-titre" class="form-label fw-bold">
+                <i class="bi bi-card-text me-1"></i>Titre *
+              </label>
+              <input type="text" class="form-control form-control-lg" id="stm-titre" required>
+            </div>
+            <div class="col-12 col-md-4">
+              <label for="stm-statut" class="form-label fw-bold">Statut</label>
+              <select class="form-select" id="stm-statut">
+                <option value="Backlog">Backlog</option>
+                <option value="À faire">À faire</option>
+                <option value="En cours">En cours</option>
+                <option value="En attente">En attente</option>
+                <option value="Validation">Validation</option>
+                <option value="Terminé">Terminé</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Classification V3 -->
+          <div class="card mb-4">
+            <div class="card-header py-2">
+              <i class="bi bi-tags me-2"></i>Classification (3 axes)
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label for="stm-nature" class="form-label small">Nature (WHY)</label>
+                  <select class="form-select" id="stm-nature">
+                    <option value="">-- Nature --</option>
+                    <option value="INC">INC - Incident</option>
+                    <option value="SUP">SUP - Support</option>
+                    <option value="MCO">MCO - Maintien</option>
+                    <option value="PRJ">PRJ - Projet</option>
+                    <option value="OVH">OVH - Overhead</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label for="stm-genre" class="form-label small">Genre (HOW)</label>
+                  <select class="form-select" id="stm-genre">
+                    <option value="">-- Genre --</option>
+                    <option value="DOC">DOC - Documentation</option>
+                    <option value="ANA">ANA - Analyse</option>
+                    <option value="CON">CON - Conception</option>
+                    <option value="RCH">RCH - Recherche</option>
+                    <option value="DEV">DEV - Développement</option>
+                    <option value="TST">TST - Tests</option>
+                    <option value="VAL">VAL - Validation</option>
+                    <option value="VER">VER - Vérification</option>
+                    <option value="COR">COR - Correction</option>
+                    <option value="INS">INS - Installation</option>
+                    <option value="CFG">CFG - Configuration</option>
+                    <option value="INV">INV - Inventaire</option>
+                    <option value="SEC">SEC - Sécurité</option>
+                    <option value="REU">REU - Réunion</option>
+                    <option value="FOR">FOR - Formation</option>
+                    <option value="SUI">SUI - Suivi</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label for="stm-etape" class="form-label small">Étape (WHERE)</label>
+                  <select class="form-select" id="stm-etape">
+                    <option value="">-- Étape --</option>
+                    <option value="ETP.VIS">VIS - Vision</option>
+                    <option value="ETP.ANA">ANA - Analyse</option>
+                    <option value="ETP.CON">CON - Conception</option>
+                    <option value="ETP.PLN">PLN - Planification</option>
+                    <option value="ETP.REA">REA - Réalisation</option>
+                    <option value="ETP.DEP">DEP - Déploiement</option>
+                    <option value="ETP.EXP">EXP - Exploitation</option>
+                    <option value="ETP.AME">AME - Amélioration</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label for="stm-previsibilite" class="form-label small">Prévisibilité</label>
+                  <select class="form-select" id="stm-previsibilite">
+                    <option value="">-- Auto --</option>
+                    <option value="Prévisible">Prévisible</option>
+                    <option value="Imprévisible">Imprévisible</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Métadonnées -->
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label for="stm-projet" class="form-label small">Projet / Mission</label>
+              <input type="text" class="form-control" id="stm-projet">
+            </div>
+            <div class="col-md-4">
+              <label for="stm-responsable" class="form-label small">Responsable</label>
+              <input type="text" class="form-control" id="stm-responsable">
+            </div>
+            <div class="col-md-4">
+              <label for="stm-bureau" class="form-label small">Bureau</label>
+              <input type="text" class="form-control" id="stm-bureau">
+            </div>
+          </div>
+
+          <!-- Urgence / Impact -->
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label for="stm-urgence" class="form-label small">Urgence</label>
+              <select class="form-select" id="stm-urgence">
+                <option value="">-- Urgence --</option>
+                <option value="Immédiate">Immédiate</option>
+                <option value="Courte">Courte</option>
+                <option value="Moyenne">Moyenne</option>
+                <option value="Longue">Longue</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label for="stm-impact" class="form-label small">Impact</label>
+              <select class="form-select" id="stm-impact">
+                <option value="">-- Impact --</option>
+                <option value="Critique">Critique</option>
+                <option value="Important">Important</option>
+                <option value="Modéré">Modéré</option>
+                <option value="Mineur">Mineur</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label for="stm-echeance" class="form-label small">Échéance</label>
+              <input type="date" class="form-control" id="stm-echeance">
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div class="mb-4">
+            <label for="stm-description" class="form-label">
+              <i class="bi bi-chat-left-text me-1"></i>Description
+            </label>
+            <textarea class="form-control" id="stm-description" rows="4" placeholder="Description de la tâche..."></textarea>
+          </div>
+
+          <!-- Section temps (optionnelle) -->
+          <div class="card mb-4" id="stm-temps-section">
+            <div class="card-header py-2">
+              <i class="bi bi-clock me-2"></i>Volume horaire
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="stm-temps-estime" class="form-label small">Temps estimé (h)</label>
+                  <input type="number" class="form-control" id="stm-temps-estime" min="0" step="0.5">
+                </div>
+                <div class="col-md-6">
+                  <label for="stm-temps-reel" class="form-label small">Temps réel (h)</label>
+                  <input type="number" class="form-control" id="stm-temps-reel" min="0" step="0.5">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section liens (optionnelle) -->
+          <div class="card" id="stm-liens-section" style="display: none;">
+            <div class="card-header py-2 d-flex justify-content-between align-items-center">
+              <span><i class="bi bi-link-45deg me-2"></i>Liaisons</span>
+              <span class="badge bg-secondary" id="stm-liens-count">0</span>
+            </div>
+            <div class="card-body">
+              <div id="stm-liens-list" class="mb-2">
+                <p class="text-muted small mb-0">Aucune liaison</p>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-primary" id="stm-btn-add-link">
+                <i class="bi bi-plus-lg me-1"></i>Ajouter une liaison
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-danger me-auto" id="stm-btn-delete" style="display: none;">
+          <i class="bi bi-trash me-1"></i>Supprimer
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="button" class="btn btn-primary" id="stm-btn-save">
+          <i class="bi bi-check-lg me-1"></i>Enregistrer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

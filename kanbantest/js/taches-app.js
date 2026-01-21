@@ -20,6 +20,7 @@ class TachesApp {
   constructor() {
     this.gristManager = null;
     this.taskLinksManager = null;
+    this.sharedTaskModal = null;
     this.network = null;
     this.nodes = null;
     this.edges = null;
@@ -48,6 +49,9 @@ class TachesApp {
     // Charger les tâches
     this.tasks = this.gristManager.currentRecords || [];
 
+    // Initialiser la modale partagée
+    await this.initSharedTaskModal();
+
     // Initialiser l'interface
     this.setupFilters();
     this.setupEventListeners();
@@ -56,6 +60,96 @@ class TachesApp {
     this.updateStats();
 
     console.log('TachesApp: Ready with', this.tasks.length, 'tasks');
+  }
+
+  /**
+   * Initialise la modale partagée pour l'édition des tâches
+   */
+  async initSharedTaskModal() {
+    if (typeof SharedTaskModal === 'undefined') {
+      console.warn('SharedTaskModal not available, using fallback modal');
+      return;
+    }
+
+    this.sharedTaskModal = new SharedTaskModal({
+      showTimes: true,
+      showLinks: true,
+      gristManager: this.gristManager,
+      onSave: async (taskData) => {
+        await this.saveTask(taskData);
+      },
+      onDelete: async (taskId) => {
+        await this.deleteTask(taskId);
+      },
+      onAddLink: (task) => {
+        this.sharedTaskModal.close();
+        this.openAddLinkModal('RELATED_TO', task?.id);
+      }
+    });
+
+    await this.sharedTaskModal.init();
+    console.log('TachesApp: SharedTaskModal initialized');
+  }
+
+  /**
+   * Sauvegarde une tâche
+   */
+  async saveTask(taskData) {
+    try {
+      // Mise à jour des temps dans le gestionnaire local
+      if (taskData.id && this.taskLinksManager) {
+        if (taskData.temps_estime !== undefined) {
+          this.taskLinksManager.setTempsEstime(taskData.id, taskData.temps_estime);
+        }
+        if (taskData.temps_reel !== undefined) {
+          this.taskLinksManager.setTempsReel(taskData.id, taskData.temps_reel);
+        }
+      }
+
+      // Sauvegarder dans Grist
+      await this.gristManager.saveRecord(taskData);
+
+      // Rafraîchir les données
+      this.tasks = this.gristManager.currentRecords || [];
+      this.renderTasksList();
+      this.updateStats();
+      this.updateGraph();
+
+      this.showToast('Tâche enregistrée', 'success');
+    } catch (error) {
+      console.error('TachesApp: Save error:', error);
+      this.showToast('Erreur lors de la sauvegarde', 'danger');
+      throw error;
+    }
+  }
+
+  /**
+   * Supprime une tâche
+   */
+  async deleteTask(taskId) {
+    try {
+      await this.gristManager.deleteRecord(taskId);
+
+      // Supprimer les liaisons
+      if (this.taskLinksManager) {
+        const links = this.taskLinksManager.getTaskLinks(taskId);
+        for (const link of links) {
+          this.taskLinksManager.removeLink(taskId, link.targetId);
+        }
+      }
+
+      // Rafraîchir
+      this.tasks = this.gristManager.currentRecords || [];
+      this.renderTasksList();
+      this.updateStats();
+      this.updateGraph();
+
+      this.showToast('Tâche supprimée', 'success');
+    } catch (error) {
+      console.error('TachesApp: Delete error:', error);
+      this.showToast('Erreur lors de la suppression', 'danger');
+      throw error;
+    }
   }
 
   /**
@@ -359,6 +453,59 @@ class TachesApp {
   }
 
   /**
+   * Met à jour le graphe avec les données actuelles
+   */
+  updateGraph() {
+    if (!this.nodes || !this.edges) return;
+
+    // Mettre à jour les nœuds existants et ajouter les nouveaux
+    const existingIds = new Set(this.nodes.getIds());
+    const currentIds = new Set(this.tasks.map(t => t.id));
+
+    // Supprimer les nœuds qui n'existent plus
+    for (const id of existingIds) {
+      if (!currentIds.has(id)) {
+        this.nodes.remove(id);
+      }
+    }
+
+    // Ajouter ou mettre à jour les nœuds
+    for (const task of this.tasks) {
+      const type = getTaskType(task.type_tache_id);
+      const color = type ? type.couleur : '#6b7280';
+
+      const nodeData = {
+        id: task.id,
+        label: this.truncate(task.titre || 'Sans titre', 30),
+        title: `#${task.id} - ${task.titre}\nStatut: ${task.statut || 'N/A'}\nType: ${type?.nom || 'Non défini'}`,
+        color: {
+          background: color,
+          border: this.adjustColor(color, -20),
+          highlight: {
+            background: this.adjustColor(color, 20),
+            border: this.adjustColor(color, -40)
+          }
+        }
+      };
+
+      if (existingIds.has(task.id)) {
+        this.nodes.update(nodeData);
+      } else {
+        this.nodes.add({
+          ...nodeData,
+          font: { color: '#ffffff', size: 12 },
+          shape: 'box',
+          margin: 10,
+          borderWidth: 2
+        });
+      }
+    }
+
+    // Rafraîchir les arêtes
+    this.refreshEdges();
+  }
+
+  /**
    * Active/désactive la physique
    */
   togglePhysics() {
@@ -447,6 +594,28 @@ class TachesApp {
     if (!task) return;
 
     this.selectedTaskId = taskId;
+
+    // Utiliser la modale partagée si disponible
+    if (this.sharedTaskModal) {
+      // Enrichir la tâche avec les données de temps du gestionnaire local
+      const time = this.taskLinksManager.getTaskTime(taskId);
+      const enrichedTask = {
+        ...task,
+        temps_estime: time.estime,
+        temps_reel: time.reel
+      };
+      this.sharedTaskModal.open(enrichedTask);
+      return;
+    }
+
+    // Fallback: ancienne modale (si SharedTaskModal non disponible)
+    this.openLegacyTaskDetail(taskId, task);
+  }
+
+  /**
+   * Ouvre l'ancienne modale de détail (fallback)
+   */
+  openLegacyTaskDetail(taskId, task) {
     const type = getTaskType(task.type_tache_id);
     const time = this.taskLinksManager.getTaskTime(taskId);
     const totalTime = this.taskLinksManager.getTotalEstimatedTime(taskId);
