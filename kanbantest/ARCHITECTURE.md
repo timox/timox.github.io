@@ -601,8 +601,122 @@ window.kanbanManager.getApplicationState(); // Vérifier l'init
 
 ---
 
-*Dernière mise à jour: 2025-07-14 - Notes Migration*
-*Version: 1.3 - Système de Logs + Migration Notes*
+*Dernière mise à jour: 2026-01-21 - Migration V3 + Classification*
+*Version: 1.4 - Migration V3, Classification, Nettoyage Doublons*
+
+---
+
+## 🚀 **Migration V3 et Classification des Tâches** - 2026-01-21
+
+### **Système de Classification (missions.html)**
+
+Le système de classification permet d'attacher des tâches non classifiées à des missions.
+
+#### Flux de Classification :
+```
+1. Bouton "Classifier" sur tâche non classifiée
+   ↓
+2. Modal de classification s'ouvre
+   ↓
+3. Sélection Mission → Sous-action (optionnel)
+   ↓
+4. MissionsManager.attachTaskToMission()
+   ↓
+5. Mise à jour Grist : mission_code, sous_action_code, taxonomie V3
+```
+
+#### Fichiers impliqués :
+- `js/missions-app.js` - handlers `.btn-classify-task`, `handleClassifyTask()`, `saveClassification()`
+- `missions.html` - Modal `#modal-classify`
+
+### **Outils de Migration (setup.html, migration.html)**
+
+#### Création de Colonnes Grist - Pattern Corrigé :
+```javascript
+// ✅ PATTERN CORRECT (AddColumn d'abord)
+try {
+  await grist.docApi.applyUserActions([
+    ['AddColumn', TABLE_ID, colId, { type, label, widgetOptions }]
+  ]);
+  console.log(`✓ ${colId} créée`);
+} catch (addError) {
+  if (addError.message && addError.message.includes('already exists')) {
+    // Colonne existe déjà → ModifyColumn
+    await grist.docApi.applyUserActions([
+      ['ModifyColumn', TABLE_ID, colId, { type, label, widgetOptions }]
+    ]);
+    console.log(`⚡ ${colId} mise à jour`);
+  } else {
+    throw addError;
+  }
+}
+
+// ❌ ANCIEN PATTERN (ne fonctionnait pas)
+// ModifyColumn d'abord, puis AddColumn sur erreur "not found"
+// L'erreur n'était pas détectée correctement
+```
+
+#### Détection et Suppression des Doublons :
+```javascript
+// Détection dans analyze()
+const titleCounts = {};
+for (const record of this.records) {
+  if (record.titre?.startsWith('[MISSION]') || record.titre?.startsWith('[SA]')) {
+    titleCounts[record.titre] = titleCounts[record.titre] || [];
+    titleCounts[record.titre].push(record);
+  }
+}
+// Garder le premier (ID le plus bas), marquer les autres comme doublons
+for (const [title, records] of Object.entries(titleCounts)) {
+  if (records.length > 1) {
+    records.sort((a, b) => a.id - b.id);
+    this.duplicates.push(...records.slice(1));
+  }
+}
+
+// Suppression par lots
+async deleteDuplicates() {
+  const batchSize = 50;
+  for (let i = 0; i < this.duplicates.length; i += batchSize) {
+    const batch = this.duplicates.slice(i, i + batchSize);
+    await grist.docApi.applyUserActions([
+      ['BulkRemoveRecord', TABLE_ID, batch.map(r => r.id)]
+    ]);
+  }
+}
+```
+
+#### Auto-création des Colonnes V3 :
+```javascript
+// Dans migration-app.js
+async ensureV3Columns() {
+  const columns = {
+    nature_activite: { type: 'Choice', label: 'Nature activité', ... },
+    genre_action: { type: 'Choice', label: 'Genre action', ... },
+    etape_code: { type: 'Choice', label: 'Étape cycle', ... },
+    previsibilite: { type: 'Choice', label: 'Prévisibilité', ... }
+  };
+  // Créer chaque colonne avec le pattern AddColumn-first
+}
+```
+
+### **Taxonomie V3 - 3 Axes Orthogonaux**
+
+| Axe | Colonne | Question | Valeurs |
+|-----|---------|----------|---------|
+| Nature | `nature_activite` | Pourquoi ? | INC, SUP, MCO, PRJ, OVH |
+| Genre | `genre_action` | Comment ? | DOC, ANA, DEV, TST, ... |
+| Étape | `etape_code` | Où ? | ETP.VIS, ETP.ANA, ETP.CON, ... |
+
+### **Hiérarchie des Données**
+
+```
+Stratégie
+  └── Programme
+       └── Mission ([MISSION] prefix)
+            └── Sous-action ([SA] prefix)
+                 └── Tâche
+```
 
 ---
 

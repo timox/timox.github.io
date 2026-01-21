@@ -4,6 +4,42 @@ Historique des modifications du projet kanbantest.
 
 ---
 
+## [2026-01-21] - Migration V3 : Classification et Nettoyage
+
+### Classification des Taches (missions.html)
+- Ajout du bouton "Classifier" pour les taches non classifiees
+- Modal de classification avec selecteur de mission et sous-action
+- Integration avec MissionsManager.attachTaskToMission()
+- Mise a jour automatique de la taxonomie V3 (nature_activite, genre_action, etape_code)
+
+### Detection et Suppression des Doublons
+- Ajout de la detection des doublons [MISSION] et [SA] dans setup.html et migration.html
+- Nouveau bouton "3. Suppr. doublons" dans migration.html avec compteur
+- Section "4. Nettoyage des donnees" dans setup.html
+- Logique : conserver le premier enregistrement (ID le plus bas), supprimer les autres
+- Suppression par lots de 50 pour eviter les timeouts
+
+### Correction Creation Colonnes Grist
+- **Probleme** : Les colonnes V3 n'etaient pas creees (erreur silencieuse)
+- **Cause** : Logique ModifyColumn-first ne detectait pas l'erreur "not found"
+- **Solution** : Inverser la logique → AddColumn d'abord, puis ModifyColumn si "already exists"
+- Applique a : setup.html (btnRunAll, btnSetup, btnAddHierarchyCols) et migration-app.js
+
+### Auto-creation des Colonnes V3 en Migration
+- Nouvelle methode `ensureV3Columns()` dans migration-app.js
+- Cree automatiquement nature_activite, genre_action, etape_code, previsibilite
+- Appelee avant toute tentative de migration
+- Evite les erreurs KeyError lors de la migration
+
+### Fichiers Modifies
+- `kanbantest/js/missions-app.js` - Ajout classification handlers
+- `kanbantest/missions.html` - Ajout modal de classification
+- `kanbantest/js/migration-app.js` - ensureV3Columns(), deleteDuplicates(), correction logique colonnes
+- `kanbantest/migration.html` - Stats et bouton doublons
+- `kanbantest/setup.html` - Section nettoyage, correction logique colonnes
+
+---
+
 ## [2025-08-20] - V3 : Timeline, Dashboard et Strategie
 
 ### Timeline V3 (planification)
