@@ -26,12 +26,13 @@ class TachesApp {
     this.nodes = null;
     this.edges = null;
     this.tasks = [];
+    this.missions = []; // Missions depuis Ssir_strategie2
     this.selectedTaskId = null;
     this.pendingLinkType = null;
     this.physicsEnabled = true;
-    this.tooltipsEnabled = true;
     this.originalNodeColors = null;
     this.contextMenuTaskId = null;
+    this.missionClustersEnabled = false;
   }
 
   /**
@@ -55,6 +56,9 @@ class TachesApp {
 
     // Charger les tâches
     this.tasks = this.gristManager.currentRecords || [];
+
+    // Charger les missions depuis Ssir_strategie2
+    await this.loadMissions();
 
     // Initialiser la modale partagée
     await this.initSharedTaskModal();
@@ -96,6 +100,55 @@ class TachesApp {
 
     await this.sharedTaskModal.init();
     console.log('TachesApp: SharedTaskModal initialized');
+  }
+
+  /**
+   * Charge les missions depuis Ssir_strategie2
+   */
+  async loadMissions() {
+    try {
+      const data = await window.grist.docApi.fetchTable('Ssir_strategie2');
+      if (!data || !data.id2) {
+        this.missions = [];
+        return;
+      }
+
+      this.missions = [];
+      for (let i = 0; i < data.id2.length; i++) {
+        this.missions.push({
+          id: data.id2[i],
+          nom: data.axe_strategique?.[i] || '',
+          objectif: data.objectif?.[i] || '',
+          sous_objectif: data.sous_objectif?.[i] || ''
+        });
+      }
+      console.log('TachesApp: Loaded', this.missions.length, 'missions');
+    } catch (e) {
+      console.warn('TachesApp: Could not load missions:', e);
+      this.missions = [];
+    }
+  }
+
+  /**
+   * Retourne le nom d'une mission par son ID
+   */
+  getMissionName(missionId) {
+    if (!missionId) return null;
+    const mission = this.missions.find(m => m.id === missionId);
+    return mission ? (mission.nom || `Mission #${mission.id}`) : null;
+  }
+
+  /**
+   * Extrait la valeur d'un ChoiceList Grist
+   */
+  extractChoiceValue(value) {
+    if (!value) return '';
+    if (Array.isArray(value)) {
+      // Format ChoiceList: ['L', 'val1', 'val2']
+      if (value[0] === 'L') return value.slice(1).join(', ');
+      return value.join(', ');
+    }
+    return String(value);
   }
 
   /**
@@ -206,12 +259,12 @@ class TachesApp {
     // Graphe
     $('#btn-zoom-fit').on('click', () => this.network?.fit());
     $('#btn-toggle-physics').on('click', () => this.togglePhysics());
+    $('#btn-group-missions').on('click', () => this.toggleMissionClusters());
 
     // Recherche dans le graphe avec surbrillance
     $('#graph-search').on('input', () => this.highlightGraphNodes());
     $('#graph-highlight-color').on('change', () => this.highlightGraphNodes());
     $('#btn-clear-highlight').on('click', () => this.clearGraphHighlight());
-    $('#btn-toggle-tooltips').on('click', () => this.toggleGraphTooltips());
 
     // Ajout de liaison depuis dropdown
     $('[data-link-type]').on('click', (e) => {
@@ -356,6 +409,23 @@ class TachesApp {
       const links = this.taskLinksManager.getTaskLinks(task.id);
       const isSelected = task.id === this.selectedTaskId;
 
+      // Extraire les trigrammes V3
+      const nature = this.extractChoiceValue(task.nature_activite);
+      const genre = this.extractChoiceValue(task.genre_action);
+      const etape = this.extractChoiceValue(task.etape_code);
+      const missionName = this.getMissionName(task.strategie_id);
+
+      // Construire les badges trigrammes
+      let trigrammes = '';
+      if (nature || genre || etape || missionName) {
+        trigrammes = '<div class="task-card-trigrammes">';
+        if (nature) trigrammes += `<span class="trigramme nature">${this.escapeHtml(nature)}</span>`;
+        if (genre) trigrammes += `<span class="trigramme genre">${this.escapeHtml(genre)}</span>`;
+        if (etape) trigrammes += `<span class="trigramme etape">${this.escapeHtml(etape)}</span>`;
+        if (missionName) trigrammes += `<span class="trigramme mission" title="${this.escapeHtml(missionName)}">${this.escapeHtml(missionName.substring(0, 15))}${missionName.length > 15 ? '...' : ''}</span>`;
+        trigrammes += '</div>';
+      }
+
       return `
         <div class="task-card ${isSelected ? 'selected' : ''}" data-task-id="${task.id}">
           <div class="task-card-title">${this.escapeHtml(task.titre || 'Sans titre')}</div>
@@ -365,6 +435,7 @@ class TachesApp {
             ${time.estime > 0 ? `<span><i class="bi bi-clock"></i> ${time.estime}h</span>` : ''}
             ${links.length > 0 ? `<span><i class="bi bi-link-45deg"></i> ${links.length}</span>` : ''}
           </div>
+          ${trigrammes}
         </div>
       `;
     }).join('');
@@ -417,7 +488,6 @@ class TachesApp {
       this.nodes.add({
         id: task.id,
         label: this.truncate(task.titre || 'Sans titre', 30),
-        title: `#${task.id} - ${task.titre}\nStatut: ${task.statut || 'N/A'}\nType: ${type?.nom || 'Non défini'}`,
         color: {
           background: color,
           border: this.adjustColor(color, -20),
@@ -464,7 +534,8 @@ class TachesApp {
       interaction: {
         hover: true,
         selectConnectedEdges: true,
-        tooltipDelay: 200,
+        tooltipDelay: 0,
+        hideNodesOnDrag: false,
         dragNodes: true,
         dragView: true,
         zoomView: true
@@ -498,7 +569,33 @@ class TachesApp {
 
     this.network.on('doubleClick', (params) => {
       if (params.nodes.length > 0) {
-        this.openTaskDetail(params.nodes[0]);
+        const nodeId = params.nodes[0];
+        // Vérifier si c'est un cluster
+        if (this.network.isCluster(nodeId)) {
+          this.network.openCluster(nodeId);
+        } else {
+          this.openTaskDetail(nodeId);
+        }
+      }
+    });
+
+    // Menu contextuel sur les nœuds
+    this.network.on('oncontext', (params) => {
+      params.event.preventDefault();
+      if (params.nodes.length > 0) {
+        const nodeId = params.nodes[0];
+        // Ne pas afficher le menu pour les clusters
+        if (this.network.isCluster(nodeId)) return;
+
+        this.contextMenuTaskId = nodeId;
+        this.selectTask(nodeId);
+
+        const $contextMenu = $('#task-context-menu');
+        $contextMenu.css({
+          display: 'block',
+          left: params.event.pageX,
+          top: params.event.pageY
+        });
       }
     });
 
@@ -720,37 +817,115 @@ class TachesApp {
   }
 
   /**
-   * Activer/désactiver les tooltips sur les nœuds du graphe
+   * Active/désactive le clustering par mission
    */
-  toggleGraphTooltips() {
-    if (!this.nodes) return;
+  toggleMissionClusters() {
+    if (!this.network) return;
 
-    this.tooltipsEnabled = !this.tooltipsEnabled;
+    this.missionClustersEnabled = !this.missionClustersEnabled;
+    const $btn = $('#btn-group-missions');
 
-    // Mettre à jour tous les nœuds
-    const updates = [];
-    this.tasks.forEach(task => {
-      const type = getTaskType(task.type_tache_id);
-      updates.push({
-        id: task.id,
-        title: this.tooltipsEnabled
-          ? `#${task.id} - ${task.titre}\nStatut: ${task.statut || 'N/A'}\nType: ${type?.nom || 'Non défini'}`
-          : undefined
-      });
-    });
-    this.nodes.update(updates);
-
-    // Mettre à jour le bouton
-    const $btn = $('#btn-toggle-tooltips');
-    if (this.tooltipsEnabled) {
-      $btn.removeClass('btn-secondary').addClass('btn-outline-secondary');
-      $btn.attr('title', 'Désactiver les tooltips');
-      this.showToast('Tooltips activés', 'info');
+    if (this.missionClustersEnabled) {
+      // Créer les clusters par mission
+      this.createMissionClusters();
+      $btn.removeClass('btn-outline-primary').addClass('btn-primary');
+      this.showToast('Groupement par mission activé', 'info');
     } else {
-      $btn.removeClass('btn-outline-secondary').addClass('btn-secondary');
-      $btn.attr('title', 'Activer les tooltips');
-      this.showToast('Tooltips désactivés', 'info');
+      // Ouvrir tous les clusters
+      this.openAllClusters();
+      $btn.removeClass('btn-primary').addClass('btn-outline-primary');
+      this.showToast('Groupement par mission désactivé', 'info');
     }
+  }
+
+  /**
+   * Crée les clusters par mission
+   */
+  createMissionClusters() {
+    if (!this.network || !this.missions) return;
+
+    // Couleurs pour les missions
+    const missionColors = [
+      '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3',
+      '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#ff9800'
+    ];
+
+    // Cluster pour chaque mission
+    this.missions.forEach((mission, index) => {
+      const missionTasks = this.tasks.filter(t => t.strategie_id === mission.id);
+      if (missionTasks.length === 0) return;
+
+      const clusterColor = missionColors[index % missionColors.length];
+      const missionName = mission.nom || `Mission #${mission.id}`;
+
+      const clusterOptions = {
+        joinCondition: (nodeOptions) => {
+          const task = this.tasks.find(t => t.id === nodeOptions.id);
+          return task && task.strategie_id === mission.id;
+        },
+        clusterNodeProperties: {
+          id: `cluster_mission_${mission.id}`,
+          label: `📁 ${missionName}\n(${missionTasks.length} tâches)`,
+          shape: 'box',
+          color: {
+            background: clusterColor,
+            border: this.adjustColor(clusterColor, -30)
+          },
+          font: { color: '#ffffff', size: 14, bold: true },
+          margin: 15,
+          borderWidth: 3
+        }
+      };
+
+      this.network.cluster(clusterOptions);
+    });
+
+    // Cluster pour les tâches orphelines (sans mission)
+    const orphanTasks = this.tasks.filter(t => !t.strategie_id);
+    if (orphanTasks.length > 0) {
+      const clusterOptions = {
+        joinCondition: (nodeOptions) => {
+          const task = this.tasks.find(t => t.id === nodeOptions.id);
+          return task && !task.strategie_id;
+        },
+        clusterNodeProperties: {
+          id: 'cluster_orphan',
+          label: `📁 Sans mission\n(${orphanTasks.length} tâches)`,
+          shape: 'box',
+          color: {
+            background: '#6b7280',
+            border: '#4b5563'
+          },
+          font: { color: '#ffffff', size: 14, bold: true },
+          margin: 15,
+          borderWidth: 3
+        }
+      };
+
+      this.network.cluster(clusterOptions);
+    }
+
+    // Ajuster la vue
+    setTimeout(() => this.network.fit(), 100);
+  }
+
+  /**
+   * Ouvre tous les clusters
+   */
+  openAllClusters() {
+    if (!this.network) return;
+
+    // Récupérer tous les nœuds qui sont des clusters
+    const allNodeIds = this.network.body.data.nodes.getIds();
+
+    for (const nodeId of allNodeIds) {
+      if (this.network.isCluster(nodeId)) {
+        this.network.openCluster(nodeId);
+      }
+    }
+
+    // Ajuster la vue
+    setTimeout(() => this.network.fit(), 100);
   }
 
   /**
