@@ -402,51 +402,46 @@ export class TimelineManager {
     const data = item.customData || {};
     const badges = [];
 
-    // Icones Bootstrap par nature (plus intuitif que les acronymes)
+    // Icones simples par nature
     const NATURE_INFO = {
-      'Projet': { icon: 'bi-folder-fill', bg: '#6366f1', label: 'Projet' },
-      'PRJ': { icon: 'bi-folder-fill', bg: '#6366f1', label: 'Projet' },
-      'Support': { icon: 'bi-headset', bg: '#f97316', label: 'Support' },
-      'SUP': { icon: 'bi-headset', bg: '#f97316', label: 'Support' },
-      'Incident': { icon: 'bi-exclamation-triangle-fill', bg: '#ef4444', label: 'Incident' },
-      'INC': { icon: 'bi-exclamation-triangle-fill', bg: '#ef4444', label: 'Incident' },
-      'MCO': { icon: 'bi-gear-fill', bg: '#10b981', label: 'Maintenance' },
-      'Overhead': { icon: 'bi-clock-fill', bg: '#78716c', label: 'Overhead' },
-      'OVH': { icon: 'bi-clock-fill', bg: '#78716c', label: 'Overhead' }
+      'Projet': { icon: 'bi-folder', bg: '#6366f1', label: 'Projet' },
+      'PRJ': { icon: 'bi-folder', bg: '#6366f1', label: 'Projet' },
+      'Support': { icon: 'bi-wrench', bg: '#f97316', label: 'Support' },
+      'SUP': { icon: 'bi-wrench', bg: '#f97316', label: 'Support' },
+      'Incident': { icon: 'bi-lightning', bg: '#ef4444', label: 'Incident' },
+      'INC': { icon: 'bi-lightning', bg: '#ef4444', label: 'Incident' },
+      'MCO': { icon: 'bi-gear', bg: '#10b981', label: 'Maintenance' },
+      'Overhead': { icon: 'bi-clock', bg: '#78716c', label: 'Overhead' },
+      'OVH': { icon: 'bi-clock', bg: '#78716c', label: 'Overhead' }
     };
 
-    // Icones Bootstrap par statut
+    // Icones simples par statut
     const STATUT_INFO = {
-      'En cours': { icon: 'bi-play-fill', bg: '#3b82f6' },
+      'En cours': { icon: 'bi-caret-right-fill', bg: '#3b82f6' },
       'À faire': { icon: 'bi-circle', bg: '#f59e0b' },
-      'Terminé': { icon: 'bi-check-lg', bg: '#10b981' },
-      'Bloqué': { icon: 'bi-x-lg', bg: '#ef4444' },
-      'En attente': { icon: 'bi-pause-fill', bg: '#8b5cf6' },
-      'Backlog': { icon: 'bi-list-ul', bg: '#9ca3af' },
-      'Validation': { icon: 'bi-check2-circle', bg: '#06b6d4' }
+      'Terminé': { icon: 'bi-check', bg: '#10b981' },
+      'Bloqué': { icon: 'bi-dash', bg: '#ef4444' },
+      'En attente': { icon: 'bi-hourglass', bg: '#8b5cf6' },
+      'Backlog': { icon: 'bi-inbox', bg: '#9ca3af' },
+      'Validation': { icon: 'bi-check-circle', bg: '#06b6d4' }
     };
 
-    // Badge Nature (icone)
+    // Badge Nature
     if (data.nature) {
-      const info = NATURE_INFO[data.nature] || { icon: 'bi-question-circle', bg: '#6b7280', label: data.nature };
+      const info = NATURE_INFO[data.nature] || { icon: 'bi-question', bg: '#6b7280', label: data.nature };
       badges.push(`<span class="tl-b" style="background:${info.bg}" title="${info.label}"><i class="${info.icon}"></i></span>`);
     }
 
-    // Badge Statut (icone)
+    // Badge Statut
     if (data.statut) {
       const info = STATUT_INFO[data.statut] || { icon: 'bi-circle', bg: '#6b7280' };
       badges.push(`<span class="tl-b" style="background:${info.bg}" title="${data.statut}"><i class="${info.icon}"></i></span>`);
     }
 
-    // Badge Assignee (initiales)
+    // Assignee (initiales)
     if (data.assignee && data.assignee !== 'Non défini') {
       const initials = data.assignee.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
       badges.push(`<span class="tl-b tl-u" title="${data.assignee}">${initials}</span>`);
-    }
-
-    // Badge Temps
-    if (Number.isFinite(data.temps_estime) && data.temps_estime > 0) {
-      badges.push(`<span class="tl-b tl-t" title="Estimé: ${data.temps_estime}h">${data.temps_estime}h</span>`);
     }
 
     return `<div class="tl-item"><span class="tl-title" title="${item.content}">${item.content}</span><span class="tl-badges">${badges.join('')}</span></div>`;
