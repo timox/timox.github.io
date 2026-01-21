@@ -119,18 +119,162 @@ export const TIME_THRESHOLDS = {
 };
 
 // === TAXONOMIE V3 ===
+
+// Prévisibilité (attribut dérivé ou surchargé)
 export const PREVISIBILITE = [
   { id: 'Imprévisible', emoji: '⚡', couleur: '#dc3545', classe: 'imprevisible' },
   { id: 'Prévisible', emoji: '📅', couleur: '#198754', classe: 'previsible' }
 ];
 
-export const TYPE_TACHES = [
-  { id: 'Incident', emoji: '🔥', couleur: '#dc3545', classe: 'type-incident' },
-  { id: 'Support', emoji: '💬', couleur: '#0d6efd', classe: 'type-support' },
-  { id: 'MCO', emoji: '🔧', couleur: '#6f42c1', classe: 'type-mco' },
-  { id: 'Projet', emoji: '🚀', couleur: '#198754', classe: 'type-projet' },
-  { id: 'Overhead', emoji: '📋', couleur: '#6c757d', classe: 'type-overhead' }
-];
+// === NATURE D'ACTIVITÉ (Pourquoi fait-on cette tâche ?) ===
+// Remplace l'ancien TYPE_TACHES - aligné ITIL 4
+export const NATURE_ACTIVITE = {
+  INC: {
+    code: 'INC',
+    id: 'Incident',           // Rétrocompatibilité
+    nom: 'Incident',
+    description: 'Résolution d\'un dysfonctionnement imprévu',
+    couleur: '#dc3545',
+    classe: 'nature-incident',
+    previsibiliteDefaut: 'Imprévisible',
+    alignementITIL: 'ITIL.SM.INC'
+  },
+  SUP: {
+    code: 'SUP',
+    id: 'Support',
+    nom: 'Support',
+    description: 'Assistance aux utilisateurs',
+    couleur: '#0d6efd',
+    classe: 'nature-support',
+    previsibiliteDefaut: 'Imprévisible',
+    alignementITIL: 'ITIL.SM.SD'
+  },
+  MCO: {
+    code: 'MCO',
+    id: 'MCO',
+    nom: 'MCO',
+    description: 'Maintien en condition opérationnelle',
+    couleur: '#6f42c1',
+    classe: 'nature-mco',
+    previsibiliteDefaut: null,  // Variable - doit être spécifié
+    alignementITIL: 'ITIL.SM.ITAM'
+  },
+  PRJ: {
+    code: 'PRJ',
+    id: 'Projet',
+    nom: 'Projet',
+    description: 'Travail planifié créant de la valeur',
+    couleur: '#198754',
+    classe: 'nature-projet',
+    previsibiliteDefaut: 'Prévisible',
+    alignementITIL: 'ITIL.GP.PM'
+  },
+  OVH: {
+    code: 'OVH',
+    id: 'Overhead',
+    nom: 'Overhead',
+    description: 'Gestion, coordination, reporting',
+    couleur: '#6c757d',
+    classe: 'nature-overhead',
+    previsibiliteDefaut: 'Prévisible',
+    alignementITIL: 'ITIL.GP.WFM'
+  }
+};
+
+// === ÉTAPE DU CYCLE (Où en est-on dans la transformation ?) ===
+// Inspiré TOGAF ADM - aligné NIST CSF 2.0
+export const ETAPE_CYCLE = {
+  VIS: {
+    code: 'ETP.VIS',
+    nom: 'Vision',
+    description: 'Définition des objectifs et du périmètre',
+    couleur: '#8b5cf6',
+    classe: 'etape-vision',
+    ordre: 1,
+    alignementTOGAF: 'Phase A',
+    alignementNIST: 'GV'
+  },
+  ANA: {
+    code: 'ETP.ANA',
+    nom: 'Analyse',
+    description: 'État des lieux, diagnostic, cartographie',
+    couleur: '#6366f1',
+    classe: 'etape-analyse',
+    ordre: 2,
+    alignementTOGAF: 'Phase B-C-D (référence)',
+    alignementNIST: 'ID'
+  },
+  CON: {
+    code: 'ETP.CON',
+    nom: 'Conception',
+    description: 'Design de la solution cible',
+    couleur: '#3b82f6',
+    classe: 'etape-conception',
+    ordre: 3,
+    alignementTOGAF: 'Phase B-C-D (cible)',
+    alignementNIST: 'PR'
+  },
+  PLN: {
+    code: 'ETP.PLN',
+    nom: 'Planification',
+    description: 'Feuille de route, planning, estimation',
+    couleur: '#0ea5e9',
+    classe: 'etape-planification',
+    ordre: 4,
+    alignementTOGAF: 'Phase E-F',
+    alignementNIST: 'PR'
+  },
+  REA: {
+    code: 'ETP.REA',
+    nom: 'Réalisation',
+    description: 'Développement, construction, intégration',
+    couleur: '#14b8a6',
+    classe: 'etape-realisation',
+    ordre: 5,
+    alignementTOGAF: 'Phase G (build)',
+    alignementNIST: 'PR'
+  },
+  DEP: {
+    code: 'ETP.DEP',
+    nom: 'Déploiement',
+    description: 'Mise en production, migration',
+    couleur: '#22c55e',
+    classe: 'etape-deploiement',
+    ordre: 6,
+    alignementTOGAF: 'Phase G (deploy)',
+    alignementNIST: 'PR'
+  },
+  EXP: {
+    code: 'ETP.EXP',
+    nom: 'Exploitation',
+    description: 'Run, maintenance, support niveau 2-3',
+    couleur: '#f59e0b',
+    classe: 'etape-exploitation',
+    ordre: 7,
+    alignementTOGAF: 'Phase H (run)',
+    alignementNIST: 'DE+RS'
+  },
+  AME: {
+    code: 'ETP.AME',
+    nom: 'Amélioration',
+    description: 'Optimisation continue, retex',
+    couleur: '#eab308',
+    classe: 'etape-amelioration',
+    ordre: 8,
+    alignementTOGAF: 'Phase H (improve)',
+    alignementNIST: 'RC+ID.IM'
+  }
+};
+
+// Alias pour rétrocompatibilité avec l'ancien TYPE_TACHES (format tableau)
+// Les emojis sont conservés pour l'affichage legacy
+const NATURE_EMOJIS = { INC: '🔥', SUP: '💬', MCO: '🔧', PRJ: '🚀', OVH: '📋' };
+export const TYPE_TACHES = Object.entries(NATURE_ACTIVITE).map(([code, n]) => ({
+  id: n.id,
+  emoji: NATURE_EMOJIS[code],
+  couleur: n.couleur,
+  classe: n.classe.replace('nature-', 'type-')
+}));
 
 export const CIBLES_POURCENTAGES = {
   previsibilite: {
@@ -506,156 +650,187 @@ export const LOG_CONFIG = {
   }
 };
 
-// === TYPES DE TACHES ===
-// Nomenclature explicite des types de tâches avec catégories
-export const TASK_TYPES = {
-  // === PRODUCTION DOCUMENTAIRE ===
+// === GENRE D'ACTION (Comment réalise-t-on la tâche ?) ===
+// Nomenclature explicite avec catégories - aligné COBIT 2019
+export const GENRE_ACTION = {
+  // === PRODUCTION (aligné COBIT BAI) ===
   DOC: {
     code: 'DOC',
     nom: 'Documentation',
     description: 'Rédaction, mise à jour de documentation technique ou fonctionnelle',
-    categorie: 'production',
-    couleur: '#3b82f6', // blue
-    icone: 'bi-file-earmark-text'
+    famille: 'production',
+    couleur: '#3b82f6',
+    icone: 'bi-file-earmark-text',
+    alignementCOBIT: 'BAI'
   },
   ANA: {
     code: 'ANA',
     nom: 'Analyse',
-    description: 'Analyse de besoins, de problèmes, études préalables',
-    categorie: 'production',
-    couleur: '#8b5cf6', // violet
-    icone: 'bi-graph-up'
+    description: 'Étude, investigation, diagnostic',
+    famille: 'production',
+    couleur: '#8b5cf6',
+    icone: 'bi-graph-up',
+    alignementCOBIT: 'BAI'
   },
   CON: {
     code: 'CON',
     nom: 'Conception',
-    description: 'Conception technique ou fonctionnelle, architecture',
-    categorie: 'production',
-    couleur: '#6366f1', // indigo
-    icone: 'bi-lightbulb'
+    description: 'Design, architecture',
+    famille: 'production',
+    couleur: '#6366f1',
+    icone: 'bi-lightbulb',
+    alignementCOBIT: 'BAI'
   },
   RCH: {
     code: 'RCH',
     nom: 'Recherche',
-    description: 'Recherche de solutions, investigation, POC',
-    categorie: 'production',
-    couleur: '#a855f7', // purple
-    icone: 'bi-search'
+    description: 'POC, exploration, benchmark',
+    famille: 'production',
+    couleur: '#a855f7',
+    icone: 'bi-search',
+    alignementCOBIT: 'BAI'
+  },
+  DEV: {
+    code: 'DEV',
+    nom: 'Développement',
+    description: 'Codage, scripting, configuration avancée',
+    famille: 'production',
+    couleur: '#7c3aed',
+    icone: 'bi-code-slash',
+    alignementCOBIT: 'BAI'
   },
 
-  // === QUALITE / VERIFICATION ===
-  VAL: {
-    code: 'VAL',
-    nom: 'Validation',
-    description: 'Validation fonctionnelle, recette, approbation',
-    categorie: 'qualite',
-    couleur: '#22c55e', // green
-    icone: 'bi-check-circle'
-  },
+  // === QUALITE (aligné COBIT MEA) ===
   TST: {
     code: 'TST',
     nom: 'Test',
-    description: 'Tests techniques, tests unitaires, tests d\'intégration',
-    categorie: 'qualite',
-    couleur: '#10b981', // emerald
-    icone: 'bi-bug'
+    description: 'Tests techniques, non-régression',
+    famille: 'qualite',
+    couleur: '#10b981',
+    icone: 'bi-bug',
+    alignementCOBIT: 'MEA'
+  },
+  VAL: {
+    code: 'VAL',
+    nom: 'Validation',
+    description: 'Recette fonctionnelle, UAT',
+    famille: 'qualite',
+    couleur: '#22c55e',
+    icone: 'bi-check-circle',
+    alignementCOBIT: 'MEA'
   },
   VER: {
     code: 'VER',
     nom: 'Vérification',
-    description: 'Contrôle de conformité, audit interne, vérification',
-    categorie: 'qualite',
-    couleur: '#14b8a6', // teal
-    icone: 'bi-clipboard-check'
+    description: 'Audit, contrôle de conformité',
+    famille: 'qualite',
+    couleur: '#14b8a6',
+    icone: 'bi-clipboard-check',
+    alignementCOBIT: 'MEA'
   },
   COR: {
     code: 'COR',
     nom: 'Correction',
-    description: 'Correction de bugs, résolution d\'anomalies',
-    categorie: 'qualite',
-    couleur: '#ef4444', // red
-    icone: 'bi-wrench'
+    description: 'Fix, résolution de bug, patch',
+    famille: 'qualite',
+    couleur: '#ef4444',
+    icone: 'bi-wrench',
+    alignementCOBIT: 'MEA'
   },
 
-  // === OPERATIONNEL ===
+  // === OPERATIONNEL (aligné COBIT DSS) ===
+  INS: {
+    code: 'INS',
+    nom: 'Installation',
+    description: 'Déploiement, mise en production',
+    famille: 'operationnel',
+    couleur: '#059669',
+    icone: 'bi-download',
+    alignementCOBIT: 'DSS'
+  },
+  CFG: {
+    code: 'CFG',
+    nom: 'Configuration',
+    description: 'Paramétrage, tuning',
+    famille: 'operationnel',
+    couleur: '#f97316',
+    icone: 'bi-sliders',
+    alignementCOBIT: 'DSS'
+  },
   INV: {
     code: 'INV',
     nom: 'Inventaire',
-    description: 'Inventaire matériel, logiciel, recensement',
-    categorie: 'operationnel',
-    couleur: '#f59e0b', // amber
-    icone: 'bi-box-seam'
-  },
-  PRE: {
-    code: 'PRE',
-    nom: 'Préparation matériel',
-    description: 'Préparation, configuration de matériel',
-    categorie: 'operationnel',
-    couleur: '#f97316', // orange
-    icone: 'bi-tools'
-  },
-  ADM: {
-    code: 'ADM',
-    nom: 'Administration',
-    description: 'Tâches administratives, gestion documentaire',
-    categorie: 'operationnel',
-    couleur: '#64748b', // slate
-    icone: 'bi-folder2'
+    description: 'Recensement, cartographie',
+    famille: 'operationnel',
+    couleur: '#f59e0b',
+    icone: 'bi-box-seam',
+    alignementCOBIT: 'DSS'
   },
   SEC: {
     code: 'SEC',
     nom: 'Sécurisation',
-    description: 'Actions de sécurisation, durcissement, mise en conformité sécurité',
-    categorie: 'operationnel',
-    couleur: '#dc2626', // red-600
-    icone: 'bi-shield-lock'
+    description: 'Durcissement, remédiation',
+    famille: 'operationnel',
+    couleur: '#dc2626',
+    icone: 'bi-shield-lock',
+    alignementCOBIT: 'DSS'
   },
 
   // === COLLABORATION ===
   REU: {
     code: 'REU',
     nom: 'Réunion',
-    description: 'Réunion, point d\'équipe, comité, atelier',
-    categorie: 'collaboration',
-    couleur: '#0ea5e9', // sky
-    icone: 'bi-people'
+    description: 'Point, comité, atelier',
+    famille: 'collaboration',
+    couleur: '#0ea5e9',
+    icone: 'bi-people',
+    alignementCOBIT: 'APO'
   },
-  PST: {
-    code: 'PST',
-    nom: 'Prestation',
-    description: 'Intervention prestataire, support externe',
-    categorie: 'collaboration',
-    couleur: '#06b6d4', // cyan
-    icone: 'bi-person-badge'
+  FOR: {
+    code: 'FOR',
+    nom: 'Formation',
+    description: 'Montée en compétence, transfert',
+    famille: 'collaboration',
+    couleur: '#06b6d4',
+    icone: 'bi-mortarboard',
+    alignementCOBIT: 'APO'
   },
 
-  // === SUIVI / VEILLE ===
+  // === PILOTAGE (aligné COBIT EDM) ===
   SUI: {
     code: 'SUI',
     nom: 'Suivi',
-    description: 'Suivi de projet, suivi d\'indicateurs, reporting',
-    categorie: 'suivi',
-    couleur: '#eab308', // yellow
-    icone: 'bi-bar-chart'
+    description: 'Pilotage, reporting, dashboard',
+    famille: 'pilotage',
+    couleur: '#eab308',
+    icone: 'bi-bar-chart',
+    alignementCOBIT: 'EDM'
   },
   VEI: {
     code: 'VEI',
     nom: 'Veille',
-    description: 'Veille technologique, veille sécurité, surveillance',
-    categorie: 'suivi',
-    couleur: '#84cc16', // lime
-    icone: 'bi-eye'
+    description: 'Surveillance, monitoring, alerting',
+    famille: 'pilotage',
+    couleur: '#84cc16',
+    icone: 'bi-eye',
+    alignementCOBIT: 'EDM'
   }
 };
 
-// Catégories de types de tâches
-export const TASK_TYPE_CATEGORIES = {
-  production: { nom: 'Production', couleur: '#6366f1', icone: 'bi-gear' },
-  qualite: { nom: 'Qualité', couleur: '#22c55e', icone: 'bi-check2-all' },
-  operationnel: { nom: 'Opérationnel', couleur: '#f59e0b', icone: 'bi-wrench-adjustable' },
-  collaboration: { nom: 'Collaboration', couleur: '#0ea5e9', icone: 'bi-people-fill' },
-  suivi: { nom: 'Suivi & Veille', couleur: '#eab308', icone: 'bi-binoculars' }
+// Familles de genres d'action (alignées COBIT 2019)
+export const FAMILLE_ACTION = {
+  production: { nom: 'Production', couleur: '#6366f1', icone: 'bi-gear', alignementCOBIT: 'BAI' },
+  qualite: { nom: 'Qualité', couleur: '#22c55e', icone: 'bi-check2-all', alignementCOBIT: 'MEA' },
+  operationnel: { nom: 'Opérationnel', couleur: '#f59e0b', icone: 'bi-wrench-adjustable', alignementCOBIT: 'DSS' },
+  collaboration: { nom: 'Collaboration', couleur: '#0ea5e9', icone: 'bi-people-fill', alignementCOBIT: 'APO' },
+  pilotage: { nom: 'Pilotage', couleur: '#eab308', icone: 'bi-binoculars', alignementCOBIT: 'EDM' }
 };
+
+// Alias pour rétrocompatibilité avec TASK_TYPES
+export const TASK_TYPES = GENRE_ACTION;
+
+// Alias pour rétrocompatibilité avec TASK_TYPE_CATEGORIES
+export const TASK_TYPE_CATEGORIES = FAMILLE_ACTION;
 
 // Types de liaisons entre tâches
 export const TASK_LINK_TYPES = {
@@ -701,17 +876,58 @@ export const TASK_LINK_TYPES = {
   }
 };
 
-// Utilitaires pour les types de tâches
-export const getTaskType = (code) => TASK_TYPES[code] || null;
-export const getTaskTypesByCategory = (categorie) =>
-  Object.values(TASK_TYPES).filter(t => t.categorie === categorie);
-export const getAllTaskTypes = () => Object.values(TASK_TYPES);
-export const getTaskTypesList = () => Object.keys(TASK_TYPES);
+// === UTILITAIRES TAXONOMIE V3 ===
+
+// Nature d'activité
+export const getNatureActivite = (code) => NATURE_ACTIVITE[code] || null;
+export const getNatureActiviteByLegacyId = (id) =>
+  Object.values(NATURE_ACTIVITE).find(n => n.id === id) || null;
+export const getAllNaturesActivite = () => Object.values(NATURE_ACTIVITE);
+export const getNaturesActiviteList = () => Object.keys(NATURE_ACTIVITE);
+
+// Genre d'action
+export const getGenreAction = (code) => GENRE_ACTION[code] || null;
+export const getGenresActionByFamille = (famille) =>
+  Object.values(GENRE_ACTION).filter(g => g.famille === famille);
+export const getAllGenresAction = () => Object.values(GENRE_ACTION);
+export const getGenresActionList = () => Object.keys(GENRE_ACTION);
+
+// Étape du cycle
+export const getEtapeCycle = (code) => {
+  // Accepte 'ETP.VIS' ou 'VIS'
+  const shortCode = code?.replace('ETP.', '');
+  return ETAPE_CYCLE[shortCode] || null;
+};
+export const getAllEtapesCycle = () => Object.values(ETAPE_CYCLE).sort((a, b) => a.ordre - b.ordre);
+export const getEtapesCycleList = () => Object.keys(ETAPE_CYCLE);
+
+// Famille d'action
+export const getFamilleAction = (code) => FAMILLE_ACTION[code] || null;
+export const getAllFamillesAction = () => Object.values(FAMILLE_ACTION);
+
+// Prévisibilité calculée
+export const calculerPrevisibilite = (natureCode, previsibiliteManuelle) => {
+  if (previsibiliteManuelle) return previsibiliteManuelle;
+  const nature = NATURE_ACTIVITE[natureCode];
+  return nature?.previsibiliteDefaut || null;
+};
+
+// Alias rétrocompatibilité (anciens noms)
+export const getTaskType = (code) => GENRE_ACTION[code] || null;
+export const getTaskTypesByCategory = (famille) => getGenresActionByFamille(famille);
+export const getAllTaskTypes = () => getAllGenresAction();
+export const getTaskTypesList = () => getGenresActionList();
 export const getLinkType = (code) => TASK_LINK_TYPES[code] || null;
 
 // === VALIDATION ===
 export const isValidStatut = (statut) => STATUTS.some(s => s.id === statut);
 export const isValidPriority = (priority) => Object.values(PRIORITY_LEVELS).includes(priority);
 export const isValidViewMode = (mode) => Object.values(VIEW_MODES).includes(mode);
-export const isValidTaskType = (code) => code in TASK_TYPES;
+export const isValidNatureActivite = (code) => code in NATURE_ACTIVITE;
+export const isValidGenreAction = (code) => code in GENRE_ACTION;
+export const isValidEtapeCycle = (code) => {
+  const shortCode = code?.replace('ETP.', '');
+  return shortCode in ETAPE_CYCLE;
+};
+export const isValidTaskType = (code) => isValidGenreAction(code); // Alias
 export const isValidLinkType = (code) => code in TASK_LINK_TYPES;
