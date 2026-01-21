@@ -261,38 +261,46 @@ export class KanbanAppInitializer {
    * Initialise les tooltips Bootstrap
    */
   initializeTooltips() {
-    // D'abord, disposer de tous les tooltips existants
+    // D'abord, disposer de tous les tooltips existants et nettoyer
     this.disposeExistingTooltips();
-    
-    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"], [title]:not(select):not(option)');
+    this.forceTooltipCleanup();
+
+    // Ne créer les tooltips QUE sur les éléments avec data-bs-toggle="tooltip"
+    // Éviter de créer des tooltips automatiques sur tous les title pour éviter les orphelins
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
     const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => {
       // Éviter de créer un tooltip s'il en existe déjà un
       const existingTooltip = bootstrap.Tooltip.getInstance(tooltipTriggerEl);
       if (existingTooltip) {
         existingTooltip.dispose();
       }
-      
+
       return new bootstrap.Tooltip(tooltipTriggerEl, {
         delay: { show: 500, hide: 100 },
         placement: 'top',
         trigger: 'hover focus'
       });
     });
-    
+
   }
-  
+
   /**
    * Dispose tous les tooltips existants
    */
   disposeExistingTooltips() {
     // Trouver tous les éléments avec des tooltips Bootstrap
-    document.querySelectorAll('[data-bs-toggle="tooltip"], [title]:not(select):not(option)').forEach(element => {
+    document.querySelectorAll('[data-bs-toggle="tooltip"], [title]').forEach(element => {
       const tooltip = bootstrap.Tooltip.getInstance(element);
       if (tooltip) {
-        tooltip.dispose();
+        try {
+          tooltip.hide();
+          tooltip.dispose();
+        } catch (e) {
+          // Ignore errors during cleanup
+        }
       }
     });
-    
+
     // Nettoyer les tooltips "orphelins" qui pourraient rester dans le DOM
     document.querySelectorAll('.tooltip').forEach(tooltipEl => {
       if (tooltipEl.parentNode) {
