@@ -134,6 +134,7 @@ export class TimelineManager {
         remove: false
       },
       locale: 'fr',
+      xss: { disabled: true },
       template: (item) => this.createTimelineItemTemplate(item),
       onMove: (item, callback) => this.handleTimelineMove(item, callback)
     };
@@ -401,66 +402,54 @@ export class TimelineManager {
     const data = item.customData || {};
     const badges = [];
 
-    // Ligne 1: Nature + Genre + Etape (axes V3)
+    // Icones Bootstrap par nature (plus intuitif que les acronymes)
+    const NATURE_INFO = {
+      'Projet': { icon: 'bi-folder-fill', bg: '#6366f1', label: 'Projet' },
+      'PRJ': { icon: 'bi-folder-fill', bg: '#6366f1', label: 'Projet' },
+      'Support': { icon: 'bi-headset', bg: '#f97316', label: 'Support' },
+      'SUP': { icon: 'bi-headset', bg: '#f97316', label: 'Support' },
+      'Incident': { icon: 'bi-exclamation-triangle-fill', bg: '#ef4444', label: 'Incident' },
+      'INC': { icon: 'bi-exclamation-triangle-fill', bg: '#ef4444', label: 'Incident' },
+      'MCO': { icon: 'bi-gear-fill', bg: '#10b981', label: 'Maintenance' },
+      'Overhead': { icon: 'bi-clock-fill', bg: '#78716c', label: 'Overhead' },
+      'OVH': { icon: 'bi-clock-fill', bg: '#78716c', label: 'Overhead' }
+    };
+
+    // Icones Bootstrap par statut
+    const STATUT_INFO = {
+      'En cours': { icon: 'bi-play-fill', bg: '#3b82f6' },
+      'À faire': { icon: 'bi-circle', bg: '#f59e0b' },
+      'Terminé': { icon: 'bi-check-lg', bg: '#10b981' },
+      'Bloqué': { icon: 'bi-x-lg', bg: '#ef4444' },
+      'En attente': { icon: 'bi-pause-fill', bg: '#8b5cf6' },
+      'Backlog': { icon: 'bi-list-ul', bg: '#9ca3af' },
+      'Validation': { icon: 'bi-check2-circle', bg: '#06b6d4' }
+    };
+
+    // Badge Nature (icone)
     if (data.nature) {
-      const natureData = getNatureActiviteByLegacyId(data.nature) || {};
-      const color = natureData.couleur || '#6c757d';
-      badges.push(`<span class="timeline-meta-pill timeline-meta-nature" style="--pill-color: ${color};">${data.nature}</span>`);
-    }
-    if (data.genre) {
-      const genreData = getGenreAction(data.genre?.toUpperCase?.()) || {};
-      const color = genreData.couleur || '#64748b';
-      badges.push(`<span class="timeline-meta-pill timeline-meta-genre" style="--pill-color: ${color};">${data.genre}</span>`);
-    }
-    if (data.etape) {
-      const etapeData = getEtapeCycle(data.etape) || {};
-      const color = etapeData.couleur || '#8b5cf6';
-      badges.push(`<span class="timeline-meta-pill timeline-meta-etape" style="--pill-color: ${color};">${data.etape}</span>`);
+      const info = NATURE_INFO[data.nature] || { icon: 'bi-question-circle', bg: '#6b7280', label: data.nature };
+      badges.push(`<span class="tl-b" style="background:${info.bg}" title="${info.label}"><i class="${info.icon}"></i></span>`);
     }
 
-    // Ligne 2: Prévisibilité + Statut
-    if (data.previsibilite) {
-      const isImprevisible = data.previsibilite === 'Imprévisible';
-      const prevColor = isImprevisible ? '#dc3545' : '#198754';
-      badges.push(`<span class="timeline-meta-pill timeline-meta-previsibilite" style="--pill-color: ${prevColor};">${data.previsibilite}</span>`);
-    }
+    // Badge Statut (icone)
     if (data.statut) {
-      const statusColor = data.statut_color || '#64748b';
-      badges.push(
-        `<span class="timeline-meta-pill timeline-meta-status" style="--pill-color: ${statusColor};">${data.statut}</span>`
-      );
+      const info = STATUT_INFO[data.statut] || { icon: 'bi-circle', bg: '#6b7280' };
+      badges.push(`<span class="tl-b" style="background:${info.bg}" title="${data.statut}"><i class="${info.icon}"></i></span>`);
     }
 
-    // Indicateurs secondaires
-    if (data.est_dette) {
-      badges.push(`<span class="timeline-meta-pill timeline-meta-dette">Dette</span>`);
-    }
-    if (data.age) {
-      badges.push(`<span class="timeline-meta-pill timeline-meta-age">${data.age}</span>`);
-    }
+    // Badge Assignee (initiales)
     if (data.assignee && data.assignee !== 'Non défini') {
-      badges.push(`<span class="timeline-meta-pill timeline-meta-assignee">${data.assignee}</span>`);
+      const initials = data.assignee.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+      badges.push(`<span class="tl-b tl-u" title="${data.assignee}">${initials}</span>`);
     }
+
+    // Badge Temps
     if (Number.isFinite(data.temps_estime) && data.temps_estime > 0) {
-      const hours = data.temps_estime.toString().replace('.', ',');
-      badges.push(`<span class="timeline-meta-pill timeline-meta-charge">${hours}h</span>`);
+      badges.push(`<span class="tl-b tl-t" title="Estimé: ${data.temps_estime}h">${data.temps_estime}h</span>`);
     }
 
-    const projectLine = data.projet ? `<div class="timeline-item-subtitle">Projet : ${data.projet}</div>` : '';
-    const strategyLine = data.strategy_summary
-      ? `<div class="timeline-item-subtitle">Mission : ${data.strategy_summary}</div>`
-      : '';
-
-    return `
-      <div class="timeline-item-content">
-        <div class="timeline-item-title">${item.content}</div>
-        ${projectLine}
-        ${strategyLine}
-        <div class="timeline-item-meta">
-          ${badges.join('')}
-        </div>
-      </div>
-    `;
+    return `<div class="tl-item"><span class="tl-title" title="${item.content}">${item.content}</span><span class="tl-badges">${badges.join('')}</span></div>`;
   }
 
   async handleTimelineMove(item, callback) {
