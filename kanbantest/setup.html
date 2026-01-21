@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Setup V3 - Kanban SSIR</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body { background: #0f172a; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; }
+    .setup-container { max-width: 800px; margin: 2rem auto; padding: 1rem; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; }
+    .card-header { background: #334155; border-bottom: 1px solid #475569; font-weight: 600; }
+    .btn-action { background: linear-gradient(135deg, #6366f1, #8b5cf6); border: none; }
+    .btn-action:hover { background: linear-gradient(135deg, #4f46e5, #7c3aed); }
+    .log-area { background: #0f172a; border: 1px solid #334155; border-radius: 8px; font-family: monospace; font-size: 0.85rem; height: 200px; overflow-y: auto; padding: 0.75rem; }
+    .log-success { color: #22c55e; }
+    .log-error { color: #ef4444; }
+    .log-info { color: #0ea5e9; }
+    .status-badge { font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 4px; }
+    .status-pending { background: #475569; }
+    .status-done { background: #166534; }
+    .status-error { background: #991b1b; }
+    .checklist-item { padding: 0.5rem 0; border-bottom: 1px solid #334155; }
+    .checklist-item:last-child { border-bottom: none; }
+    .preview-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; margin: 2px; font-size: 0.8rem; color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="setup-container">
+    <h1 class="mb-4"><i class="bi bi-gear-wide-connected me-2"></i>Setup Taxonomie V3</h1>
+
+    <!-- Status Grist -->
+    <div class="alert alert-secondary d-flex align-items-center mb-4" id="grist-status">
+      <i class="bi bi-hourglass-split me-2"></i>
+      <span>Connexion à Grist...</span>
+    </div>
+
+    <!-- Étapes -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <i class="bi bi-list-check me-2"></i>Étapes de configuration
+      </div>
+      <div class="card-body">
+        <div class="checklist-item d-flex justify-content-between align-items-center">
+          <div>
+            <strong>1. Colonnes V3</strong>
+            <div class="text-muted small">nature_activite, genre_action, etape_code, previsibilite</div>
+          </div>
+          <span class="status-badge status-pending" id="status-columns">En attente</span>
+        </div>
+        <div class="checklist-item d-flex justify-content-between align-items-center">
+          <div>
+            <strong>2. Couleurs des Choices</strong>
+            <div class="text-muted small">Widget options avec couleurs pour chaque valeur</div>
+          </div>
+          <span class="status-badge status-pending" id="status-colors">En attente</span>
+        </div>
+        <div class="checklist-item d-flex justify-content-between align-items-center">
+          <div>
+            <strong>3. Données test (optionnel)</strong>
+            <div class="text-muted small">25 tâches couvrant toute la taxonomie</div>
+          </div>
+          <span class="status-badge status-pending" id="status-data">En attente</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <i class="bi bi-play-circle me-2"></i>Actions
+      </div>
+      <div class="card-body">
+        <div class="d-flex gap-2 flex-wrap">
+          <button class="btn btn-action" id="btn-setup-columns" disabled>
+            <i class="bi bi-columns-gap me-1"></i>Configurer colonnes
+          </button>
+          <button class="btn btn-outline-light" id="btn-import-data" disabled>
+            <i class="bi bi-cloud-upload me-1"></i>Importer données test
+          </button>
+          <button class="btn btn-outline-secondary" id="btn-clear-log">
+            <i class="bi bi-trash me-1"></i>Effacer log
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Log -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <i class="bi bi-terminal me-2"></i>Journal
+      </div>
+      <div class="card-body">
+        <div class="log-area" id="log-area"></div>
+      </div>
+    </div>
+
+    <!-- Aperçu taxonomie -->
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-palette me-2"></i>Aperçu de la taxonomie
+      </div>
+      <div class="card-body">
+        <h6>Nature d'activité (WHY)</h6>
+        <div class="mb-3">
+          <span class="preview-badge" style="background:#dc3545">INC</span>
+          <span class="preview-badge" style="background:#0d6efd">SUP</span>
+          <span class="preview-badge" style="background:#6f42c1">MCO</span>
+          <span class="preview-badge" style="background:#198754">PRJ</span>
+          <span class="preview-badge" style="background:#6c757d">OVH</span>
+        </div>
+
+        <h6>Étape du cycle (WHERE - TOGAF ADM)</h6>
+        <div class="mb-3">
+          <span class="preview-badge" style="background:#8b5cf6">VIS</span>
+          <span class="preview-badge" style="background:#6366f1">ANA</span>
+          <span class="preview-badge" style="background:#3b82f6">CON</span>
+          <span class="preview-badge" style="background:#0ea5e9">PLN</span>
+          <span class="preview-badge" style="background:#14b8a6">REA</span>
+          <span class="preview-badge" style="background:#22c55e">DEP</span>
+          <span class="preview-badge" style="background:#f59e0b">EXP</span>
+          <span class="preview-badge" style="background:#eab308">AME</span>
+        </div>
+
+        <h6>Genre d'action (HOW - COBIT)</h6>
+        <div class="mb-3">
+          <span class="preview-badge" style="background:#3b82f6">DOC</span>
+          <span class="preview-badge" style="background:#8b5cf6">ANA</span>
+          <span class="preview-badge" style="background:#6366f1">CON</span>
+          <span class="preview-badge" style="background:#a855f7">RCH</span>
+          <span class="preview-badge" style="background:#7c3aed">DEV</span>
+          <span class="preview-badge" style="background:#10b981">TST</span>
+          <span class="preview-badge" style="background:#22c55e">VAL</span>
+          <span class="preview-badge" style="background:#14b8a6">VER</span>
+          <span class="preview-badge" style="background:#ef4444">COR</span>
+          <span class="preview-badge" style="background:#059669">INS</span>
+          <span class="preview-badge" style="background:#f97316">CFG</span>
+          <span class="preview-badge" style="background:#f59e0b">INV</span>
+          <span class="preview-badge" style="background:#dc2626">SEC</span>
+          <span class="preview-badge" style="background:#0ea5e9">REU</span>
+          <span class="preview-badge" style="background:#06b6d4">FOR</span>
+          <span class="preview-badge" style="background:#eab308">SUI</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instructions vues manuelles -->
+    <div class="card mt-4">
+      <div class="card-header">
+        <i class="bi bi-info-circle me-2"></i>Vues à créer manuellement
+      </div>
+      <div class="card-body">
+        <p class="text-muted small mb-3">L'API Grist ne permet pas de créer des vues automatiquement. Voici les vues recommandées :</p>
+        <ol class="small">
+          <li><strong>Page "Kanban"</strong> : Widget Custom → URL = <code>kanban.html</code></li>
+          <li><strong>Page "Graphe Tâches"</strong> : Widget Custom → URL = <code>taches.html</code></li>
+          <li><strong>Page "Par Nature"</strong> : Table groupée par <code>nature_activite</code></li>
+          <li><strong>Page "Par Étape"</strong> : Table groupée par <code>etape_code</code></li>
+          <li><strong>Page "Matrice"</strong> : Summary table groupée par <code>nature_activite</code> + <code>etape_code</code></li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+  <script>
+    const TABLE_NAME = 'Ssir_principale_task';
+    let gristReady = false;
+
+    // Configuration des colonnes
+    const COLUMNS_CONFIG = {
+      nature_activite: {
+        type: 'Choice',
+        label: 'Nature activité',
+        widgetOptions: {
+          choices: ['INC', 'SUP', 'MCO', 'PRJ', 'OVH'],
+          choiceOptions: {
+            'INC': { fillColor: '#dc3545', textColor: '#ffffff' },
+            'SUP': { fillColor: '#0d6efd', textColor: '#ffffff' },
+            'MCO': { fillColor: '#6f42c1', textColor: '#ffffff' },
+            'PRJ': { fillColor: '#198754', textColor: '#ffffff' },
+            'OVH': { fillColor: '#6c757d', textColor: '#ffffff' }
+          }
+        }
+      },
+      genre_action: {
+        type: 'Choice',
+        label: 'Genre action',
+        widgetOptions: {
+          choices: ['DOC', 'ANA', 'CON', 'RCH', 'DEV', 'TST', 'VAL', 'VER', 'COR', 'INS', 'CFG', 'INV', 'SEC', 'REU', 'FOR', 'SUI'],
+          choiceOptions: {
+            'DOC': { fillColor: '#3b82f6', textColor: '#ffffff' },
+            'ANA': { fillColor: '#8b5cf6', textColor: '#ffffff' },
+            'CON': { fillColor: '#6366f1', textColor: '#ffffff' },
+            'RCH': { fillColor: '#a855f7', textColor: '#ffffff' },
+            'DEV': { fillColor: '#7c3aed', textColor: '#ffffff' },
+            'TST': { fillColor: '#10b981', textColor: '#ffffff' },
+            'VAL': { fillColor: '#22c55e', textColor: '#ffffff' },
+            'VER': { fillColor: '#14b8a6', textColor: '#ffffff' },
+            'COR': { fillColor: '#ef4444', textColor: '#ffffff' },
+            'INS': { fillColor: '#059669', textColor: '#ffffff' },
+            'CFG': { fillColor: '#f97316', textColor: '#ffffff' },
+            'INV': { fillColor: '#f59e0b', textColor: '#ffffff' },
+            'SEC': { fillColor: '#dc2626', textColor: '#ffffff' },
+            'REU': { fillColor: '#0ea5e9', textColor: '#ffffff' },
+            'FOR': { fillColor: '#06b6d4', textColor: '#ffffff' },
+            'SUI': { fillColor: '#eab308', textColor: '#ffffff' }
+          }
+        }
+      },
+      etape_code: {
+        type: 'Choice',
+        label: 'Étape cycle',
+        widgetOptions: {
+          choices: ['ETP.VIS', 'ETP.ANA', 'ETP.CON', 'ETP.PLN', 'ETP.REA', 'ETP.DEP', 'ETP.EXP', 'ETP.AME'],
+          choiceOptions: {
+            'ETP.VIS': { fillColor: '#8b5cf6', textColor: '#ffffff' },
+            'ETP.ANA': { fillColor: '#6366f1', textColor: '#ffffff' },
+            'ETP.CON': { fillColor: '#3b82f6', textColor: '#ffffff' },
+            'ETP.PLN': { fillColor: '#0ea5e9', textColor: '#ffffff' },
+            'ETP.REA': { fillColor: '#14b8a6', textColor: '#ffffff' },
+            'ETP.DEP': { fillColor: '#22c55e', textColor: '#ffffff' },
+            'ETP.EXP': { fillColor: '#f59e0b', textColor: '#ffffff' },
+            'ETP.AME': { fillColor: '#eab308', textColor: '#ffffff' }
+          }
+        }
+      },
+      previsibilite: {
+        type: 'Choice',
+        label: 'Prévisibilité',
+        widgetOptions: {
+          choices: ['Prévisible', 'Imprévisible'],
+          choiceOptions: {
+            'Prévisible': { fillColor: '#198754', textColor: '#ffffff' },
+            'Imprévisible': { fillColor: '#dc3545', textColor: '#ffffff' }
+          }
+        }
+      }
+    };
+
+    // Éléments DOM
+    const logArea = document.getElementById('log-area');
+    const btnSetup = document.getElementById('btn-setup-columns');
+    const btnImport = document.getElementById('btn-import-data');
+    const btnClear = document.getElementById('btn-clear-log');
+    const gristStatus = document.getElementById('grist-status');
+
+    // Logging
+    function log(message, type = 'info') {
+      const time = new Date().toLocaleTimeString();
+      const className = `log-${type}`;
+      logArea.innerHTML += `<div class="${className}">[${time}] ${message}</div>`;
+      logArea.scrollTop = logArea.scrollHeight;
+    }
+
+    function setStatus(id, status) {
+      const el = document.getElementById(id);
+      el.className = `status-badge status-${status}`;
+      el.textContent = status === 'done' ? 'Fait' : status === 'error' ? 'Erreur' : 'En attente';
+    }
+
+    // Initialisation Grist
+    grist.ready({ requiredAccess: 'full' });
+
+    grist.onRecords(function(records) {
+      if (!gristReady) {
+        gristReady = true;
+        gristStatus.className = 'alert alert-success d-flex align-items-center mb-4';
+        gristStatus.innerHTML = '<i class="bi bi-check-circle me-2"></i><span>Connecté à Grist - Table détectée</span>';
+        btnSetup.disabled = false;
+        btnImport.disabled = false;
+        log('Connexion Grist établie', 'success');
+      }
+    });
+
+    setTimeout(() => {
+      if (!gristReady) {
+        gristStatus.className = 'alert alert-warning d-flex align-items-center mb-4';
+        gristStatus.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i><span>Grist non détecté - Mode démo</span>';
+        log('Grist non disponible. Exécutez depuis un widget Grist.', 'error');
+      }
+    }, 3000);
+
+    // Configuration des colonnes
+    btnSetup.addEventListener('click', async () => {
+      if (!gristReady) {
+        log('Grist non connecté', 'error');
+        return;
+      }
+
+      btnSetup.disabled = true;
+      log('Démarrage de la configuration...', 'info');
+
+      try {
+        for (const [colId, config] of Object.entries(COLUMNS_CONFIG)) {
+          log(`Configuration de ${colId}...`, 'info');
+
+          try {
+            // Essayer de modifier la colonne (si elle existe)
+            await grist.docApi.applyUserActions([
+              ['ModifyColumn', TABLE_NAME, colId, {
+                type: config.type,
+                label: config.label,
+                widgetOptions: JSON.stringify(config.widgetOptions)
+              }]
+            ]);
+            log(`✓ ${colId} configuré`, 'success');
+          } catch (e) {
+            // Si la colonne n'existe pas, la créer
+            if (e.message && e.message.includes('not found')) {
+              log(`Création de ${colId}...`, 'info');
+              await grist.docApi.applyUserActions([
+                ['AddColumn', TABLE_NAME, colId, {
+                  type: config.type,
+                  label: config.label,
+                  widgetOptions: JSON.stringify(config.widgetOptions)
+                }]
+              ]);
+              log(`✓ ${colId} créé`, 'success');
+            } else {
+              throw e;
+            }
+          }
+        }
+
+        setStatus('status-columns', 'done');
+        setStatus('status-colors', 'done');
+        log('Configuration terminée avec succès !', 'success');
+      } catch (error) {
+        log(`Erreur: ${error.message}`, 'error');
+        setStatus('status-columns', 'error');
+      }
+
+      btnSetup.disabled = false;
+    });
+
+    // Import des données
+    btnImport.addEventListener('click', async () => {
+      if (!gristReady) {
+        log('Grist non connecté', 'error');
+        return;
+      }
+
+      btnImport.disabled = true;
+      log('Import des données test...', 'info');
+
+      try {
+        // Charger le CSV
+        const csvUrl = new URL('data/test-dataset-v3.csv', window.location.href).href;
+        log(`Chargement de ${csvUrl}...`, 'info');
+
+        const response = await fetch(csvUrl);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const csvText = await response.text();
+        const lines = csvText.trim().split('\n');
+        const headers = parseCSVLine(lines[0]);
+
+        log(`${lines.length - 1} enregistrements trouvés`, 'info');
+
+        // Parser les données
+        const columns = {};
+        headers.forEach(h => { columns[h] = []; });
+
+        for (let i = 1; i < lines.length; i++) {
+          const values = parseCSVLine(lines[i]);
+          headers.forEach((header, index) => {
+            let value = values[index] || '';
+            // Convertir les dates en timestamps
+            if (header.includes('date') && value && !isNaN(Date.parse(value))) {
+              value = Math.floor(new Date(value).getTime() / 1000);
+            }
+            columns[header].push(value);
+          });
+        }
+
+        // Insérer dans Grist
+        const rowIds = new Array(lines.length - 1).fill(null);
+        await grist.docApi.applyUserActions([
+          ['BulkAddRecord', TABLE_NAME, rowIds, columns]
+        ]);
+
+        setStatus('status-data', 'done');
+        log(`✓ ${lines.length - 1} enregistrements importés`, 'success');
+      } catch (error) {
+        log(`Erreur import: ${error.message}`, 'error');
+        setStatus('status-data', 'error');
+      }
+
+      btnImport.disabled = false;
+    });
+
+    // Parser CSV
+    function parseCSVLine(line) {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim());
+      return result;
+    }
+
+    // Clear log
+    btnClear.addEventListener('click', () => {
+      logArea.innerHTML = '';
+      log('Journal effacé', 'info');
+    });
+  </script>
+</body>
+</html>
