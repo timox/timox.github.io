@@ -495,6 +495,8 @@ let configManagerInstance = null;
 export function initConfigManager() {
   if (!configManagerInstance) {
     configManagerInstance = new ConfigManager();
+    // Exposer globalement pour les scripts non-module (SharedTaskModal)
+    window._configManagerInstance = configManagerInstance;
   }
   return configManagerInstance;
 }
@@ -505,6 +507,8 @@ export function initConfigManager() {
 export function getConfigManager() {
   if (!configManagerInstance) {
     configManagerInstance = new ConfigManager();
+    // Exposer globalement pour les scripts non-module (SharedTaskModal)
+    window._configManagerInstance = configManagerInstance;
   }
   return configManagerInstance;
 }

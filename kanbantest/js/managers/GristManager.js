@@ -543,13 +543,20 @@ export class GristManager {
       throw new Error('Le statut est obligatoire');
     }
     
-    // Valider le format des listes
-    if (recordData.bureau && !Array.isArray(recordData.bureau)) {
-      throw new Error('Le format du champ bureau est invalide');
+    // Valider le format des listes (peuvent être string pour Choice ou array pour ChoiceList)
+    // Ne pas valider si c'est une string simple (Choice) ou un array (ChoiceList)
+    if (recordData.bureau !== undefined && recordData.bureau !== null && recordData.bureau !== '') {
+      // Accepter string (Choice) ou array (ChoiceList)
+      if (typeof recordData.bureau !== 'string' && !Array.isArray(recordData.bureau)) {
+        throw new Error('Le format du champ bureau est invalide');
+      }
     }
-    
-    if (recordData.qui && !Array.isArray(recordData.qui)) {
-      throw new Error('Le format du champ qui est invalide');
+
+    if (recordData.qui !== undefined && recordData.qui !== null && recordData.qui !== '') {
+      // Accepter string ou array
+      if (typeof recordData.qui !== 'string' && !Array.isArray(recordData.qui)) {
+        throw new Error('Le format du champ qui est invalide');
+      }
     }
     
     // Valider les dates

@@ -3,6 +3,7 @@
 
 import { GristManager } from './managers/GristManager.js';
 import { initTaskLinksManager, getTaskLinksManager } from './managers/TaskLinksManager.js';
+import { initConfigManager } from './managers/ConfigManager.js';
 import {
   TASK_TYPES,
   TASK_TYPE_CATEGORIES,
@@ -35,6 +36,9 @@ class TachesApp {
    */
   async init() {
     console.log('TachesApp: Initializing...');
+
+    // Initialiser le ConfigManager (pour les personnes/bureaux)
+    initConfigManager();
 
     // Initialiser les managers
     this.gristManager = new GristManager(null);

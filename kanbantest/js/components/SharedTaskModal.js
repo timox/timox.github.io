@@ -201,35 +201,48 @@ class SharedTaskModal {
   }
 
   /**
-   * Charge les agents depuis Grist
+   * Charge les agents depuis ConfigManager (personnes définies dans config.html)
    */
   async loadAgents() {
     try {
-      const data = await grist.docApi.fetchTable('Ssir_agents');
-      this.agents = [];
-      const count = data.id?.length || 0;
-
-      for (let i = 0; i < count; i++) {
-        if (data.actif?.[i] !== false) { // Seulement les agents actifs
-          this.agents.push({
-            id: data.id[i],
-            nom: data.nom?.[i] || '',
-            prenom: data.prenom?.[i] || '',
-            bureau: data.bureau?.[i] || '',
-            fullName: `${data.prenom?.[i] || ''} ${data.nom?.[i] || ''}`.trim()
-          });
+      // Essayer de charger depuis ConfigManager (localStorage)
+      const configManager = window._configManagerInstance;
+      if (configManager && typeof configManager.getPersonnes === 'function') {
+        const personnes = configManager.getPersonnes();
+        this.agents = personnes.map(p => ({
+          id: p.id,
+          nom: p.nom,
+          bureau: p.bureau || '',
+          fullName: p.nom // Dans ConfigManager, nom est déjà le nom complet
+        }));
+        console.log('[SharedTaskModal] Loaded', this.agents.length, 'agents from ConfigManager');
+      } else {
+        // Fallback: essayer de charger depuis localStorage directement
+        const stored = localStorage.getItem('kanban_config');
+        if (stored) {
+          const config = JSON.parse(stored);
+          if (config.personnes && Array.isArray(config.personnes)) {
+            this.agents = config.personnes.map(p => ({
+              id: p.id,
+              nom: p.nom,
+              bureau: p.bureau || '',
+              fullName: p.nom
+            }));
+            console.log('[SharedTaskModal] Loaded', this.agents.length, 'agents from localStorage');
+          }
         }
       }
 
       // Trier par bureau puis par nom
       this.agents.sort((a, b) => {
-        if (a.bureau !== b.bureau) return a.bureau.localeCompare(b.bureau);
-        return a.fullName.localeCompare(b.fullName);
+        if (a.bureau !== b.bureau) return (a.bureau || '').localeCompare(b.bureau || '');
+        return (a.fullName || '').localeCompare(b.fullName || '');
       });
 
       this.populateAgentSelect();
     } catch (error) {
-      console.warn('[SharedTaskModal] No agents table:', error.message);
+      console.warn('[SharedTaskModal] Failed to load agents:', error.message);
+      this.agents = [];
     }
   }
 
@@ -509,6 +522,13 @@ class SharedTaskModal {
       const agent = this.agents.find(a => a.id === responsableId);
       if (agent) {
         quiValue = agent.fullName;
+      } else {
+        // Fallback: récupérer le texte de l'option sélectionnée
+        const selectEl = document.getElementById('stm-responsable');
+        if (selectEl && selectEl.selectedIndex >= 0) {
+          const selectedOption = selectEl.options[selectEl.selectedIndex];
+          quiValue = selectedOption.dataset.fullname || selectedOption.textContent.trim();
+        }
       }
     }
 
