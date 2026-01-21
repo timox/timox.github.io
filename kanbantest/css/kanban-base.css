@@ -1614,12 +1614,38 @@ body {
   padding: 0 5px;
 }
 
-.tl-b.tl-t {
-  background: #0ea5e9;
-  font-size: 0.6rem;
-  font-weight: 600;
-  width: auto;
-  padding: 0 5px;
+/* CSS Tooltips */
+[data-tip] {
+  position: relative;
+}
+
+[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background: #1e293b;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 500;
+  white-space: nowrap;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-radius: 4px;
+  z-index: 1000;
+  pointer-events: none;
+  margin-bottom: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.tl-title[data-tip]:hover::after {
+  white-space: normal;
+  word-wrap: break-word;
+  max-width: 250px;
+  text-align: left;
 }
 
 .vis-current-time { background-color: #dc3545 !important; }
