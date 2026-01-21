@@ -10,6 +10,10 @@
 
 const GRIST_SETUP = {
   tableName: 'Ssir_principale_task',
+  programmesTableName: 'Ssir_programmes',
+
+  // Structure hiérarchique: Stratégie → Programme(s) → Mission(s) → Tâche(s)
+  // Chaque tâche est classée sur 3 axes orthogonaux
 
   // Colonnes V3 à créer/vérifier
   columns: {
@@ -80,6 +84,35 @@ const GRIST_SETUP = {
         }
       }
     }
+  },
+
+  // Colonnes hiérarchiques à ajouter à la table des tâches
+  hierarchyColumns: {
+    programme_id: { type: 'Ref:Ssir_programmes', label: 'Programme' },
+    mission_code: { type: 'Text', label: 'Code mission' },
+    mission_nom: { type: 'Text', label: 'Nom mission' }
+  },
+
+  // Table Programmes
+  programmesTable: {
+    columns: [
+      { id: 'code', type: 'Text', label: 'Code' },
+      { id: 'nom', type: 'Text', label: 'Nom du programme' },
+      { id: 'description', type: 'Text', label: 'Description' },
+      { id: 'strategie_id', type: 'Ref:Ssir_strategie2', label: 'Stratégie' },
+      { id: 'responsable', type: 'Text', label: 'Responsable' },
+      { id: 'date_debut', type: 'Date', label: 'Date début' },
+      { id: 'date_fin', type: 'Date', label: 'Date fin' },
+      { id: 'statut', type: 'Choice', label: 'Statut', widgetOptions: {
+        choices: ['Planifié', 'En cours', 'Terminé', 'Suspendu'],
+        choiceOptions: {
+          'Planifié': { fillColor: '#94a3b8', textColor: '#ffffff' },
+          'En cours': { fillColor: '#3b82f6', textColor: '#ffffff' },
+          'Terminé': { fillColor: '#22c55e', textColor: '#ffffff' },
+          'Suspendu': { fillColor: '#f59e0b', textColor: '#ffffff' }
+        }
+      }}
+    ]
   },
 
   // Vues à créer (pour documentation, non automatisable via API)
