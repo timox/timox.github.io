@@ -402,7 +402,19 @@ export class TimelineManager {
     const data = item.customData || {};
     const badges = [];
 
-    // Icones simples par nature
+    // Helper: tronquer texte pour tooltip (max 80 chars)
+    const truncate = (str, max = 80) => {
+      if (!str || str.length <= max) return str || '';
+      return str.substring(0, max - 3) + '...';
+    };
+
+    // Helper: echapper HTML pour attributs
+    const escapeAttr = (str) => {
+      if (!str) return '';
+      return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    };
+
+    // Icones par nature
     const NATURE_INFO = {
       'Projet': { icon: 'bi-folder', bg: '#6366f1', label: 'Projet' },
       'PRJ': { icon: 'bi-folder', bg: '#6366f1', label: 'Projet' },
@@ -410,41 +422,45 @@ export class TimelineManager {
       'SUP': { icon: 'bi-wrench', bg: '#f97316', label: 'Support' },
       'Incident': { icon: 'bi-lightning', bg: '#ef4444', label: 'Incident' },
       'INC': { icon: 'bi-lightning', bg: '#ef4444', label: 'Incident' },
-      'MCO': { icon: 'bi-gear', bg: '#10b981', label: 'Maintenance' },
-      'Overhead': { icon: 'bi-clock', bg: '#78716c', label: 'Overhead' },
-      'OVH': { icon: 'bi-clock', bg: '#78716c', label: 'Overhead' }
+      'MCO': { icon: 'bi-gear', bg: '#10b981', label: 'MCO' },
+      'Overhead': { icon: 'bi-clock', bg: '#78716c', label: 'Admin' },
+      'OVH': { icon: 'bi-clock', bg: '#78716c', label: 'Admin' }
     };
 
-    // Icones simples par statut
+    // Icones par statut
     const STATUT_INFO = {
-      'En cours': { icon: 'bi-caret-right-fill', bg: '#3b82f6' },
-      'À faire': { icon: 'bi-circle', bg: '#f59e0b' },
-      'Terminé': { icon: 'bi-check', bg: '#10b981' },
-      'Bloqué': { icon: 'bi-dash', bg: '#ef4444' },
-      'En attente': { icon: 'bi-hourglass', bg: '#8b5cf6' },
-      'Backlog': { icon: 'bi-inbox', bg: '#9ca3af' },
-      'Validation': { icon: 'bi-check-circle', bg: '#06b6d4' }
+      'En cours': { icon: 'bi-caret-right-fill', bg: '#3b82f6', label: 'En cours' },
+      'À faire': { icon: 'bi-circle', bg: '#f59e0b', label: 'À faire' },
+      'Terminé': { icon: 'bi-check', bg: '#10b981', label: 'Terminé' },
+      'Bloqué': { icon: 'bi-dash', bg: '#ef4444', label: 'Bloqué' },
+      'En attente': { icon: 'bi-hourglass', bg: '#8b5cf6', label: 'Attente' },
+      'Backlog': { icon: 'bi-inbox', bg: '#9ca3af', label: 'Backlog' },
+      'Validation': { icon: 'bi-check-circle', bg: '#06b6d4', label: 'Valid.' }
     };
 
     // Badge Nature
     if (data.nature) {
       const info = NATURE_INFO[data.nature] || { icon: 'bi-question', bg: '#6b7280', label: data.nature };
-      badges.push(`<span class="tl-b" style="background:${info.bg}" title="${info.label}"><i class="${info.icon}"></i></span>`);
+      badges.push(`<span class="tl-b" style="background:${info.bg}" data-tip="${info.label}"><i class="${info.icon}"></i></span>`);
     }
 
     // Badge Statut
     if (data.statut) {
-      const info = STATUT_INFO[data.statut] || { icon: 'bi-circle', bg: '#6b7280' };
-      badges.push(`<span class="tl-b" style="background:${info.bg}" title="${data.statut}"><i class="${info.icon}"></i></span>`);
+      const info = STATUT_INFO[data.statut] || { icon: 'bi-circle', bg: '#6b7280', label: data.statut };
+      badges.push(`<span class="tl-b" style="background:${info.bg}" data-tip="${info.label}"><i class="${info.icon}"></i></span>`);
     }
 
     // Assignee (initiales)
     if (data.assignee && data.assignee !== 'Non défini') {
       const initials = data.assignee.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-      badges.push(`<span class="tl-b tl-u" title="${data.assignee}">${initials}</span>`);
+      const shortName = data.assignee.split(' ')[0]; // prenom seulement
+      badges.push(`<span class="tl-b tl-u" data-tip="${escapeAttr(shortName)}">${initials}</span>`);
     }
 
-    return `<div class="tl-item"><span class="tl-title" title="${item.content}">${item.content}</span><span class="tl-badges">${badges.join('')}</span></div>`;
+    // Titre tronque pour tooltip
+    const titleTip = truncate(item.content, 60);
+
+    return `<div class="tl-item"><span class="tl-title" data-tip="${escapeAttr(titleTip)}">${item.content}</span><span class="tl-badges">${badges.join('')}</span></div>`;
   }
 
   async handleTimelineMove(item, callback) {
