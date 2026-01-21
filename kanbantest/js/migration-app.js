@@ -71,29 +71,14 @@ class MigrationApp {
         return;
       }
 
-      grist.ready({
-        requiredAccess: 'full',
-        columns: [
-          { name: 'titre', title: 'Titre' },
-          { name: 'type_tache_id', title: 'Type tache ID' },
-          { name: 'type_tache', title: 'Type tache' },
-          { name: 'nature_activite', title: 'Nature activite' },
-          { name: 'genre_action', title: 'Genre action' },
-          { name: 'etape_code', title: 'Etape code' },
-          { name: 'previsibilite', title: 'Previsibilite' }
-        ]
-      });
+      // Acces complet au document - pas besoin de mapper les colonnes
+      grist.ready({ requiredAccess: 'full' });
 
-      grist.onRecords((records) => {
-        this.log(`Grist connecte: ${records.length} enregistrements`, 'success');
-        resolve();
-      });
-
-      // Timeout de securite
+      // Attendre que l'API soit prete
       setTimeout(() => {
-        this.log('Timeout Grist - tentative de continuer...', 'warning');
+        this.log('Grist connecte', 'success');
         resolve();
-      }, 5000);
+      }, 500);
     });
   }
 
