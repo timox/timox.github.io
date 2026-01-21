@@ -64,6 +64,7 @@ class MigrationApp {
     this.duplicates = []; // Doublons [MISSION] et [SA]
     this.obsoletePrefixes = []; // Tâches avec préfixes obsolètes à nettoyer
     this.existingColumns = []; // Cache des colonnes existantes
+    this.agents = []; // Liste des agents pour synchronisation
     this.isAnalyzed = false;
   }
 
@@ -76,12 +77,16 @@ class MigrationApp {
     // Attendre que Grist soit pret
     await this.waitForGrist();
 
-    // Event listeners
+    // Event listeners - Migration V3
     $('#btn-analyze').on('click', () => this.analyze());
     $('#btn-delete-temp').on('click', () => this.deleteTemp());
     $('#btn-delete-duplicates').on('click', () => this.deleteDuplicates());
     $('#btn-clean-prefixes').on('click', () => this.cleanObsoletePrefixes());
     $('#btn-migrate').on('click', () => this.migrate());
+
+    // Event listeners - Synchronisation Agents
+    $('#btn-load-agents').on('click', () => this.loadAgents());
+    $('#btn-sync-agents').on('click', () => this.syncAgents());
 
     this.log('Application prete. Cliquez sur "Analyser".', 'success');
   }
@@ -780,6 +785,210 @@ class MigrationApp {
     }
 
     this.log('Colonnes V3 prêtes', 'success');
+  }
+
+  // ========== SYNCHRONISATION AGENTS ==========
+
+  /**
+   * Charge les agents depuis la configuration (localStorage) ou les données existantes
+   */
+  async loadAgents() {
+    this.log('=== CHARGEMENT DES AGENTS ===', 'info');
+    this.agents = [];
+
+    try {
+      // 1. Essayer de charger depuis localStorage (config.html)
+      const stored = localStorage.getItem('kanban_config');
+      if (stored) {
+        const config = JSON.parse(stored);
+        if (config.personnes && Array.isArray(config.personnes)) {
+          this.agents = config.personnes.map(p => p.nom).filter(Boolean);
+          this.log(`${this.agents.length} agents chargés depuis la configuration`, 'success');
+        }
+      }
+
+      // 2. Si pas de config, extraire des données existantes (champ "qui")
+      if (this.agents.length === 0) {
+        this.log('Pas de config locale, extraction depuis les données Grist...', 'info');
+        const data = await grist.docApi.fetchTable(TABLE_ID);
+        const quiColumn = data.qui || [];
+
+        const uniqueAgents = new Set();
+        for (const val of quiColumn) {
+          if (Array.isArray(val) && val[0] === 'L') {
+            // Format ChoiceList ['L', 'agent1', 'agent2']
+            val.slice(1).forEach(a => {
+              if (a && typeof a === 'string') uniqueAgents.add(a);
+            });
+          } else if (typeof val === 'string' && val) {
+            uniqueAgents.add(val);
+          }
+        }
+
+        this.agents = [...uniqueAgents].sort();
+        this.log(`${this.agents.length} agents extraits des données existantes`, 'success');
+      }
+
+      // 3. Ajouter les agents par défaut s'ils ne sont pas déjà présents
+      const defaultAgents = ['Alex', 'Timothée', 'Isabelle', 'Chloé', 'Paul', 'Théo',
+        'Gaël', 'Thomas', 'Elie', 'Landry', 'Presta', 'Yvon', 'Clarisse', 'Hervé', 'Didier'];
+
+      for (const agent of defaultAgents) {
+        if (!this.agents.includes(agent)) {
+          this.agents.push(agent);
+        }
+      }
+      this.agents.sort();
+
+      // Mettre à jour l'UI
+      this.renderAgentsList();
+      $('#count-agents').text(this.agents.length);
+      $('#btn-sync-agents').prop('disabled', this.agents.length === 0);
+
+      this.log(`Total: ${this.agents.length} agents disponibles`, 'success');
+
+    } catch (error) {
+      this.log(`Erreur chargement agents: ${error.message}`, 'error');
+      console.error(error);
+    }
+  }
+
+  /**
+   * Affiche la liste des agents
+   */
+  renderAgentsList() {
+    const $container = $('#agents-list');
+
+    if (this.agents.length === 0) {
+      $container.html('<span class="text-muted">Aucun agent trouvé.</span>');
+      return;
+    }
+
+    const badges = this.agents.map(agent =>
+      `<span class="badge bg-secondary me-1 mb-1">${this.escapeHtml(agent)}</span>`
+    ).join('');
+
+    $container.html(badges);
+  }
+
+  /**
+   * Synchronise les agents avec les colonnes de choix
+   */
+  async syncAgents() {
+    if (this.agents.length === 0) {
+      this.log('Aucun agent à synchroniser. Chargez d\'abord les agents.', 'warning');
+      return;
+    }
+
+    // Récupérer les champs à synchroniser
+    const syncQui = $('#sync-qui').is(':checked');
+    const syncResponsable = $('#sync-responsable').is(':checked');
+    const syncResponsableMission = $('#sync-responsable-mission').is(':checked');
+
+    if (!syncQui && !syncResponsable && !syncResponsableMission) {
+      this.log('Aucun champ sélectionné pour la synchronisation.', 'warning');
+      return;
+    }
+
+    this.log('=== SYNCHRONISATION DES AGENTS ===', 'info');
+    this.log(`Agents: ${this.agents.join(', ')}`, 'info');
+
+    const widgetOptions = JSON.stringify({
+      choices: this.agents,
+      choiceOptions: {} // Pas de couleurs personnalisées pour les agents
+    });
+
+    let updated = 0;
+    let errors = 0;
+
+    // Synchroniser le champ "qui" (ChoiceList)
+    if (syncQui) {
+      try {
+        this.log('Mise à jour du champ "qui" (ChoiceList)...', 'info');
+        await grist.docApi.applyUserActions([
+          ['ModifyColumn', TABLE_ID, 'qui', {
+            type: 'ChoiceList',
+            widgetOptions: widgetOptions
+          }]
+        ]);
+        updated++;
+        this.log('  ✓ Champ "qui" synchronisé', 'success');
+      } catch (e) {
+        errors++;
+        this.log(`  ✗ Erreur "qui": ${e.message}`, 'error');
+      }
+    }
+
+    // Synchroniser le champ "responsable" (Choice)
+    if (syncResponsable) {
+      try {
+        this.log('Mise à jour du champ "responsable" (Choice)...', 'info');
+        await grist.docApi.applyUserActions([
+          ['ModifyColumn', TABLE_ID, 'responsable', {
+            type: 'Choice',
+            widgetOptions: widgetOptions
+          }]
+        ]);
+        updated++;
+        this.log('  ✓ Champ "responsable" synchronisé', 'success');
+      } catch (e) {
+        // Si le champ n'existe pas, le créer
+        if (e.message && e.message.includes('does not exist')) {
+          try {
+            await grist.docApi.applyUserActions([
+              ['AddColumn', TABLE_ID, 'responsable', {
+                type: 'Choice',
+                label: 'Responsable',
+                widgetOptions: widgetOptions
+              }]
+            ]);
+            updated++;
+            this.log('  ✓ Champ "responsable" créé et synchronisé', 'success');
+          } catch (e2) {
+            errors++;
+            this.log(`  ✗ Erreur création "responsable": ${e2.message}`, 'error');
+          }
+        } else {
+          errors++;
+          this.log(`  ✗ Erreur "responsable": ${e.message}`, 'error');
+        }
+      }
+    }
+
+    // Synchroniser le champ "responsable_mission" (Choice) - sur la table stratégie
+    if (syncResponsableMission) {
+      try {
+        this.log('Mise à jour du champ "responsable_mission" (Choice)...', 'info');
+        // Le champ responsable_mission peut être sur Ssir_principale_task ou sur Ssir_strategie2
+        // Essayer d'abord sur la table principale
+        await grist.docApi.applyUserActions([
+          ['ModifyColumn', TABLE_ID, 'responsable_mission', {
+            type: 'Choice',
+            widgetOptions: widgetOptions
+          }]
+        ]);
+        updated++;
+        this.log('  ✓ Champ "responsable_mission" synchronisé', 'success');
+      } catch (e) {
+        // Essayer sur Ssir_strategie2
+        try {
+          await grist.docApi.applyUserActions([
+            ['ModifyColumn', 'Ssir_strategie2', 'responsable', {
+              type: 'Choice',
+              widgetOptions: widgetOptions
+            }]
+          ]);
+          updated++;
+          this.log('  ✓ Champ "responsable" sur Ssir_strategie2 synchronisé', 'success');
+        } catch (e2) {
+          errors++;
+          this.log(`  ✗ Erreur "responsable_mission": ${e.message}`, 'error');
+        }
+      }
+    }
+
+    this.log(`=== SYNCHRONISATION TERMINÉE ===`, updated > 0 ? 'success' : 'warning');
+    this.log(`${updated} champ(s) mis à jour, ${errors} erreur(s)`, updated > 0 ? 'success' : 'warning');
   }
 
   /**
