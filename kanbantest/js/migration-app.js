@@ -227,26 +227,26 @@ class MigrationApp {
         // Colonnes réelles: Nature_activite, Genre_action, Etape_cycle, Previsibilite
         const updates = {};
 
-        // Nature activite (ChoiceList - format ['L', 'valeur'])
+        // Nature activite (Choice - valeur simple string)
         if (!record.nature_activite) {
           const nature = this.deduceNature(record);
           if (nature) {
-            updates.Nature_activite = ['L', nature];
+            updates.Nature_activite = nature;
           }
         }
 
-        // Genre action (ChoiceList - format ['L', 'valeur'])
+        // Genre action (Choice - valeur simple string)
         if (!record.genre_action && record.type_tache_id) {
           const genre = TYPE_ID_TO_GENRE[record.type_tache_id];
           if (genre) {
-            updates.Genre_action = ['L', genre];
+            updates.Genre_action = genre;
           }
         }
 
-        // Previsibilite (ChoiceList - format ['L', 'valeur'])
-        const finalNature = updates.Nature_activite ? updates.Nature_activite[1] : record.nature_activite;
+        // Previsibilite (Choice - valeur simple string)
+        const finalNature = updates.Nature_activite || record.nature_activite;
         if (!record.previsibilite && finalNature && NATURE_PREVISIBILITE[finalNature]) {
-          updates.Previsibilite = ['L', NATURE_PREVISIBILITE[finalNature]];
+          updates.Previsibilite = NATURE_PREVISIBILITE[finalNature];
         }
 
         if (Object.keys(updates).length > 0) {
@@ -384,11 +384,10 @@ class MigrationApp {
       html += '<ul class="list-group">';
       this.toMigrate.slice(0, 10).forEach(({ record, updates }) => {
         const badges = [];
-        // Extraire la valeur des ChoiceList ['L', 'valeur']
-        const extractVal = (v) => Array.isArray(v) && v[0] === 'L' ? v[1] : v;
-        if (updates.Nature_activite) badges.push(`<span class="badge badge-nature">${extractVal(updates.Nature_activite)}</span>`);
-        if (updates.Genre_action) badges.push(`<span class="badge badge-genre">${extractVal(updates.Genre_action)}</span>`);
-        if (updates.Previsibilite) badges.push(`<span class="badge badge-etape">${extractVal(updates.Previsibilite).substring(0, 6)}</span>`);
+        // Les valeurs sont maintenant des strings simples (type Choice)
+        if (updates.Nature_activite) badges.push(`<span class="badge badge-nature">${updates.Nature_activite}</span>`);
+        if (updates.Genre_action) badges.push(`<span class="badge badge-genre">${updates.Genre_action}</span>`);
+        if (updates.Previsibilite) badges.push(`<span class="badge badge-etape">${updates.Previsibilite.substring(0, 6)}</span>`);
 
         html += `
           <li class="list-group-item small">
@@ -580,16 +579,24 @@ class MigrationApp {
     this.log(`Migration de ${this.toMigrate.length} taches...`, 'info');
     $('#btn-migrate').prop('disabled', true).html('<i class="bi bi-hourglass-split me-1"></i>Migration...');
 
-    // Vérifier que les colonnes V3 existent
+    // Forcer le rechargement du cache et vérifier les colonnes V3
+    this.existingColumns = [];
     const existingCols = await this.getExistingColumns();
-    this.log(`Colonnes disponibles: ${existingCols.join(', ')}`, 'info');
+    this.log(`Colonnes disponibles (${existingCols.length}): ${existingCols.join(', ')}`, 'info');
 
-    // Vérifier quelles colonnes V3 existent (noms avec majuscule)
+    // Vérifier quelles colonnes V3 existent (vérification insensible à la casse)
     const v3Cols = ['Nature_activite', 'Genre_action', 'Etape_cycle', 'Previsibilite'];
-    const missingCols = v3Cols.filter(c => !existingCols.includes(c));
+    const colsLower = existingCols.map(c => c.toLowerCase());
+    const missingCols = v3Cols.filter(c => !colsLower.includes(c.toLowerCase()));
+
     if (missingCols.length > 0) {
       this.log(`Colonnes manquantes: ${missingCols.join(', ')} - création...`, 'warning');
       await this.ensureV3Columns();
+      // Rafraîchir le cache après création
+      this.existingColumns = [];
+      await this.getExistingColumns();
+    } else {
+      this.log('Toutes les colonnes V3 sont présentes', 'success');
     }
 
     let migrated = 0;
@@ -676,7 +683,10 @@ class MigrationApp {
    * Ajoute ou met à jour une colonne de manière sécurisée
    */
   async ensureColumn(colId, config) {
-    const existingCols = await this.getExistingColumns();
+    // Toujours rafraîchir le cache pour avoir les colonnes à jour
+    const existingCols = this.existingColumns;
+
+    this.log(`  Vérification colonne ${colId} parmi: ${existingCols.join(', ')}`, 'info');
 
     // Vérifier si la colonne existe (sensible à la casse)
     // Variantes possibles avec accents ou casse différente
@@ -693,10 +703,11 @@ class MigrationApp {
     if (existingVariant) {
       // La colonne existe déjà (peut-être avec un nom différent)
       // Ne pas essayer de modifier, juste confirmer qu'elle existe
-      this.log(`  Colonne trouvée: ${existingVariant}`, 'info');
+      this.log(`  ✓ Colonne trouvée: ${existingVariant}`, 'success');
       return { success: true, action: 'exists', message: `${existingVariant} existe déjà` };
     } else {
       // La colonne n'existe pas - la créer
+      this.log(`  ⚠ Colonne ${colId} non trouvée, création...`, 'warning');
       try {
         await grist.docApi.applyUserActions([
           ['AddColumn', TABLE_ID, colId, {
@@ -709,6 +720,11 @@ class MigrationApp {
         this.existingColumns.push(colId);
         return { success: true, action: 'created', message: `${colId} créée` };
       } catch (e) {
+        // Si l'erreur indique que la colonne existe déjà, c'est OK
+        if (e.message && e.message.includes('already exists')) {
+          this.log(`  ✓ Colonne ${colId} existe déjà (confirmé par erreur)`, 'info');
+          return { success: true, action: 'exists', message: `${colId} existe déjà` };
+        }
         return { success: false, action: 'error', message: `${colId}: ${e.message}` };
       }
     }
@@ -722,12 +738,14 @@ class MigrationApp {
 
     // Forcer le rechargement du cache des colonnes
     this.existingColumns = [];
-    await this.getExistingColumns();
+    const cols = await this.getExistingColumns();
+    this.log(`Colonnes actuelles (${cols.length}): ${cols.join(', ')}`, 'info');
 
     // NOTE: Noms de colonnes avec majuscule initiale comme dans Grist
+    // Type Choice (valeur unique) et non ChoiceList (valeurs multiples)
     const columns = {
       Nature_activite: {
-        type: 'ChoiceList',
+        type: 'Choice',
         label: 'Nature activité',
         widgetOptions: JSON.stringify({
           choices: ['INC', 'SUP', 'MCO', 'PRJ', 'OVH'],
@@ -741,7 +759,7 @@ class MigrationApp {
         })
       },
       Genre_action: {
-        type: 'ChoiceList',
+        type: 'Choice',
         label: 'Genre action',
         widgetOptions: JSON.stringify({
           choices: ['DOC', 'ANA', 'CON', 'RCH', 'DEV', 'TST', 'VAL', 'VER', 'COR', 'INS', 'CFG', 'INV', 'SEC', 'REU', 'FOR', 'SUI'],
@@ -766,7 +784,7 @@ class MigrationApp {
         })
       },
       Etape_cycle: {
-        type: 'ChoiceList',
+        type: 'Choice',
         label: 'Étape cycle',
         widgetOptions: JSON.stringify({
           choices: ['ETP.VIS', 'ETP.ANA', 'ETP.CON', 'ETP.PLN', 'ETP.REA', 'ETP.DEP', 'ETP.EXP', 'ETP.AME'],
@@ -783,7 +801,7 @@ class MigrationApp {
         })
       },
       Previsibilite: {
-        type: 'ChoiceList',
+        type: 'Choice',
         label: 'Prévisibilité',
         widgetOptions: JSON.stringify({
           choices: ['Prévisible', 'Imprévisible'],
