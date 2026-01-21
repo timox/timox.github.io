@@ -585,9 +585,9 @@ export class GristManager {
       // Champs missions
       'mission_code', 'mission_nom', 'mission_responsable', 'mission_bureau',
       'mission_priorite', 'mission_date_debut', 'mission_date_fin',
-      // Champs sous-actions
-      'sous_action_code', 'sous_action_nom', 'categorie',
-      'sous_action_charge_estimee', 'sous_action_charge_reelle',
+      // Champs mises en œuvre
+      'mise_en_oeuvre_code', 'mise_en_oeuvre_nom', 'categorie',
+      'mise_en_oeuvre_charge_estimee', 'mise_en_oeuvre_charge_reelle',
       // Champs stratégie (pour missions)
       'strategie_objectif', 'strategie_sous_objectif', 'strategie_action',
       // Champs hiérarchiques

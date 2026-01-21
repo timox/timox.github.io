@@ -1,5 +1,6 @@
 // === missions-app.js ===
-// Application pour la gestion des missions - Rattachement des tâches aux missions stratégiques (Ssir_strategie2)
+// Application pour la gestion des missions et mises en œuvre
+// Layout: Missions (Ssir_strategie2) → Mises en œuvre → Tâches
 
 import { GristManager } from './managers/GristManager.js';
 import { createModuleLogger } from './utils/LoggerManager.js';
@@ -8,11 +9,13 @@ const logger = createModuleLogger('MissionsApp');
 
 // Variables globales
 let gristManager = null;
-let strategies = []; // Liste des missions depuis Ssir_strategie2
-let tasks = []; // Liste des tâches
-let selectedMission = null; // Mission actuellement sélectionnée
-let selectedTaskIds = new Set(); // Tâches sélectionnées
-let currentTaskView = 'orphelines'; // 'orphelines' ou 'mission'
+let missions = []; // Missions depuis Ssir_strategie2
+let tasks = []; // Tâches depuis Ssir_principale_task
+let selectedMission = null;
+let selectedMeo = null;
+let selectedTaskIds = new Set();
+let taskViewMode = 'meo'; // 'meo' ou 'orphan'
+let editingMeoCode = null; // Pour le mode édition
 
 /**
  * Initialise l'application
@@ -27,6 +30,8 @@ async function initApp() {
         requiredAccess: 'full',
         columns: [
           { name: 'strategie_id', title: 'Lien Mission', optional: true },
+          { name: 'mise_en_oeuvre_code', title: 'Code MEO', optional: true },
+          { name: 'mise_en_oeuvre_nom', title: 'Nom MEO', optional: true },
           { name: 'titre', title: 'Titre', optional: true },
           { name: 'statut', title: 'Statut', optional: true }
         ]
@@ -38,16 +43,7 @@ async function initApp() {
     gristManager = new GristManager(null);
 
     // Attendre que Grist soit prêt
-    await new Promise((resolve) => {
-      const checkReady = () => {
-        if (gristManager.isConnected && gristManager.currentRecords.length >= 0) {
-          resolve();
-        } else {
-          setTimeout(checkReady, 100);
-        }
-      };
-      checkReady();
-    });
+    await waitForGrist();
 
     // Configurer les écouteurs
     setupEventListeners();
@@ -63,66 +59,84 @@ async function initApp() {
 }
 
 /**
+ * Attend que Grist soit prêt
+ */
+async function waitForGrist() {
+  return new Promise((resolve) => {
+    const checkReady = () => {
+      if (gristManager.isConnected && gristManager.currentRecords.length >= 0) {
+        resolve();
+      } else {
+        setTimeout(checkReady, 100);
+      }
+    };
+    checkReady();
+  });
+}
+
+/**
  * Configure les écouteurs d'événements
  */
 function setupEventListeners() {
   // Recherche missions
-  $('#search-missions').on('input', debounce(renderMissionsTree, 300));
+  $('#search-missions').on('input', debounce(renderMissionsList, 300));
 
-  // Expand/Collapse
-  $('#btn-expand-all').on('click', () => {
-    $('.programme-content, .strategie-content').addClass('show');
-  });
-  $('#btn-collapse-all').on('click', () => {
-    $('.programme-content, .strategie-content').removeClass('show');
-  });
-
-  // Toggle task view (orphelines / mission)
-  $('input[name="task-view"]').on('change', function () {
-    currentTaskView = $(this).val();
-    renderTasksList();
-    updateActionButtons();
-  });
-
-  // Select all tasks
-  $('#btn-select-all').on('click', () => {
-    const $visible = $('#tasks-list .task-item:visible');
-    const allSelected = $visible.length > 0 && $visible.length === $visible.filter('.selected').length;
-
-    if (allSelected) {
-      // Deselect all
-      selectedTaskIds.clear();
-      $visible.removeClass('selected');
-    } else {
-      // Select all
-      $visible.each(function () {
-        const id = $(this).data('task-id');
-        selectedTaskIds.add(id);
-        $(this).addClass('selected');
-      });
-    }
-    updateActionButtons();
-  });
-
-  // Attach tasks button
-  $('#btn-attach-tasks').on('click', openAttachModal);
-  $('#btn-confirm-attach').on('click', confirmAttach);
-
-  // Detach tasks button
-  $('#btn-detach-tasks').on('click', detachTasks);
-
-  // Délégation: click sur mission dans l'arbre
-  $('#missions-tree').on('click', '.mission-item', function (e) {
-    e.stopPropagation();
+  // Click sur mission
+  $('#missions-list').on('click', '.mission-item', function() {
     const missionId = $(this).data('mission-id');
     selectMission(missionId);
   });
 
-  // Délégation: click sur tâche
-  $('#tasks-list').on('click', '.task-item', function () {
+  // Click sur MEO
+  $('#meo-list').on('click', '.meo-item', function() {
+    const meoCode = $(this).data('meo-code');
+    selectMeo(meoCode);
+  });
+
+  // Click sur tâche
+  $('#tasks-list').on('click', '.task-item', function() {
     const taskId = $(this).data('task-id');
     toggleTaskSelection(taskId, $(this));
   });
+
+  // Bouton ajouter MEO
+  $('#btn-add-meo').on('click', openMeoModal);
+
+  // Bouton sauvegarder MEO
+  $('#btn-save-meo').on('click', saveMeo);
+
+  // Bouton éditer MEO
+  $('#btn-edit-meo').on('click', editSelectedMeo);
+
+  // Bouton supprimer MEO
+  $('#btn-delete-meo').on('click', deleteSelectedMeo);
+
+  // Toggle vue tâches (MEO / orphelines)
+  $('#btn-view-meo-tasks').on('click', function() {
+    taskViewMode = 'meo';
+    $(this).addClass('active');
+    $('#btn-view-orphan-tasks').removeClass('active');
+    renderTasksList();
+    updateTasksActionButtons();
+  });
+
+  $('#btn-view-orphan-tasks').on('click', function() {
+    taskViewMode = 'orphan';
+    $(this).addClass('active');
+    $('#btn-view-meo-tasks').removeClass('active');
+    renderTasksList();
+    updateTasksActionButtons();
+  });
+
+  // Sélectionner toutes les tâches
+  $('#btn-select-all-tasks').on('click', selectAllTasks);
+
+  // Affecter tâches
+  $('#btn-attach-tasks').on('click', openAttachModal);
+  $('#btn-confirm-attach').on('click', confirmAttach);
+
+  // Détacher tâches
+  $('#btn-detach-tasks').on('click', detachTasks);
 
   logger.debug('Event listeners configured');
 }
@@ -132,18 +146,13 @@ function setupEventListeners() {
  */
 async function loadData() {
   try {
-    // Charger les missions depuis Ssir_strategie2
-    await loadStrategies();
-
-    // Récupérer les tâches depuis GristManager
+    await loadMissions();
     tasks = gristManager.currentRecords || [];
 
-    // Mettre à jour les stats et l'affichage
-    updateStats();
-    renderMissionsTree();
-    renderTasksList();
+    renderMissionsList();
+    updateCounts();
 
-    logger.debug(`Loaded ${strategies.length} missions, ${tasks.length} tasks`);
+    logger.debug(`Loaded ${missions.length} missions, ${tasks.length} tasks`);
   } catch (error) {
     logger.error('Failed to load data:', error);
     showToast('Erreur de chargement', 'danger');
@@ -151,19 +160,18 @@ async function loadData() {
 }
 
 /**
- * Charge les stratégies/missions depuis Ssir_strategie2
+ * Charge les missions depuis Ssir_strategie2
  */
-async function loadStrategies() {
+async function loadMissions() {
   try {
     const data = await window.grist.docApi.fetchTable('Ssir_strategie2');
-    strategies = [];
+    missions = [];
 
-    // Utiliser id2 car c'est le seul champ id disponible dans cette table
     if (!data?.id2) return;
 
     const count = data.id2.length;
     for (let i = 0; i < count; i++) {
-      strategies.push({
+      missions.push({
         id: data.id2[i],
         objectif: data.objectif?.[i] || '',
         sous_objectif: data.sous_objectif?.[i] || '',
@@ -174,201 +182,293 @@ async function loadStrategies() {
       });
     }
 
-    // Trier
-    strategies.sort((a, b) => {
+    // Trier par programme, stratégie, mission
+    missions.sort((a, b) => {
       if (a.objectif !== b.objectif) return a.objectif.localeCompare(b.objectif);
       if (a.sous_objectif !== b.sous_objectif) return a.sous_objectif.localeCompare(b.sous_objectif);
       return a.axe_strategique.localeCompare(b.axe_strategique);
     });
 
-    logger.debug(`Loaded ${strategies.length} strategies from Ssir_strategie2`);
+    logger.debug(`Loaded ${missions.length} missions from Ssir_strategie2`);
   } catch (error) {
-    logger.error('Failed to load strategies:', error);
-    strategies = [];
+    logger.error('Failed to load missions:', error);
+    missions = [];
   }
 }
 
 /**
- * Met à jour les statistiques
+ * Met à jour les compteurs
  */
-function updateStats() {
-  const totalTasks = tasks.length;
-  const attachedTasks = tasks.filter(t => t.strategie_id).length;
-  const orphanTasks = totalTasks - attachedTasks;
+function updateCounts() {
+  $('#count-missions').text(missions.length);
 
-  $('#stat-missions-total').text(strategies.length);
-  $('#stat-taches-total').text(totalTasks);
-  $('#stat-taches-rattachees').text(attachedTasks);
-  $('#stat-taches-orphelines').text(orphanTasks);
-  $('#badge-orphelines').text(orphanTasks);
+  // Compter les MEO de la mission sélectionnée
+  if (selectedMission) {
+    const meos = getMeosForMission(selectedMission.id);
+    $('#count-meo').text(meos.length);
+  } else {
+    $('#count-meo').text(0);
+  }
+
+  // Compter les tâches visibles
+  if (taskViewMode === 'orphan') {
+    const orphans = getOrphanTasks();
+    $('#count-tasks').text(orphans.length);
+  } else if (selectedMeo) {
+    const meoTasks = getTasksForMeo(selectedMeo.code);
+    $('#count-tasks').text(meoTasks.length);
+  } else {
+    $('#count-tasks').text(0);
+  }
 }
 
 /**
- * Rend l'arbre des missions groupé par Programme → Stratégie → Mission
+ * Récupère les MEO pour une mission donnée (agrégées depuis les tâches)
  */
-function renderMissionsTree() {
-  const $tree = $('#missions-tree');
-  const searchQuery = ($('#search-missions').val() || '').toLowerCase();
+function getMeosForMission(missionId) {
+  const meoMap = new Map();
 
-  // Filtrer si recherche
-  let filteredStrategies = strategies;
-  if (searchQuery) {
-    filteredStrategies = strategies.filter(s =>
-      s.objectif.toLowerCase().includes(searchQuery) ||
-      s.sous_objectif.toLowerCase().includes(searchQuery) ||
-      s.axe_strategique.toLowerCase().includes(searchQuery) ||
-      s.responsable.toLowerCase().includes(searchQuery)
+  tasks.forEach(task => {
+    if (task.strategie_id === missionId && task.mise_en_oeuvre_code) {
+      const code = task.mise_en_oeuvre_code;
+      if (!meoMap.has(code)) {
+        meoMap.set(code, {
+          code: code,
+          nom: task.mise_en_oeuvre_nom || 'Sans nom',
+          categorie: task.categorie || 'Projet',
+          charge_estimee: task.mise_en_oeuvre_charge_estimee || 0,
+          charge_reelle: task.mise_en_oeuvre_charge_reelle || 0,
+          taskCount: 0,
+          completedCount: 0
+        });
+      }
+      const meo = meoMap.get(code);
+      meo.taskCount++;
+      if (task.statut === 'Terminé') {
+        meo.completedCount++;
+      }
+    }
+  });
+
+  return Array.from(meoMap.values()).sort((a, b) => a.code.localeCompare(b.code));
+}
+
+/**
+ * Récupère les tâches pour une MEO donnée
+ */
+function getTasksForMeo(meoCode) {
+  return tasks.filter(t =>
+    t.strategie_id === selectedMission?.id &&
+    t.mise_en_oeuvre_code === meoCode
+  );
+}
+
+/**
+ * Récupère les tâches orphelines (sans strategie_id ni mise_en_oeuvre_code)
+ */
+function getOrphanTasks() {
+  return tasks.filter(t => !t.strategie_id || !t.mise_en_oeuvre_code);
+}
+
+/**
+ * Rend la liste des missions
+ */
+function renderMissionsList() {
+  const $list = $('#missions-list');
+  const query = ($('#search-missions').val() || '').toLowerCase();
+
+  let filtered = missions;
+  if (query) {
+    filtered = missions.filter(m =>
+      m.axe_strategique.toLowerCase().includes(query) ||
+      m.objectif.toLowerCase().includes(query) ||
+      m.sous_objectif.toLowerCase().includes(query) ||
+      m.responsable.toLowerCase().includes(query)
     );
   }
 
-  if (filteredStrategies.length === 0) {
-    $tree.html(`
-      <div class="text-center py-5 text-muted">
-        <i class="bi bi-inbox" style="font-size: 3rem;"></i>
-        <p class="mt-2">Aucune mission trouvée</p>
-        <a href="config.html#strategies" class="btn btn-sm btn-primary">
-          <i class="bi bi-plus me-1"></i>Créer des missions
-        </a>
+  if (filtered.length === 0) {
+    $list.html(`
+      <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        ${query ? 'Aucun résultat' : 'Aucune mission'}
       </div>
     `);
     return;
   }
 
-  // Compter les tâches par mission
-  const taskCounts = {};
+  // Compter les tâches et MEO par mission
+  const missionStats = {};
+  missions.forEach(m => {
+    missionStats[m.id] = { tasks: 0, meos: new Set() };
+  });
+
   tasks.forEach(t => {
-    if (t.strategie_id) {
-      taskCounts[t.strategie_id] = (taskCounts[t.strategie_id] || 0) + 1;
+    if (t.strategie_id && missionStats[t.strategie_id]) {
+      missionStats[t.strategie_id].tasks++;
+      if (t.mise_en_oeuvre_code) {
+        missionStats[t.strategie_id].meos.add(t.mise_en_oeuvre_code);
+      }
     }
   });
 
-  // Grouper par Programme → Stratégie
-  const grouped = {};
-  filteredStrategies.forEach(s => {
-    const prog = s.objectif || '(Sans programme)';
-    const strat = s.sous_objectif || '(Sans stratégie)';
-
-    if (!grouped[prog]) grouped[prog] = {};
-    if (!grouped[prog][strat]) grouped[prog][strat] = [];
-    grouped[prog][strat].push(s);
-  });
-
   let html = '';
-  const programmes = Object.keys(grouped).sort();
-
-  programmes.forEach((prog, progIdx) => {
-    const progId = `prog-${progIdx}`;
-    const strategies = grouped[prog];
-    const stratKeys = Object.keys(strategies).sort();
-
-    // Compter les tâches du programme
-    let progTaskCount = 0;
-    stratKeys.forEach(strat => {
-      strategies[strat].forEach(m => {
-        progTaskCount += taskCounts[m.id] || 0;
-      });
-    });
+  filtered.forEach(m => {
+    const isSelected = selectedMission && selectedMission.id === m.id;
+    const stats = missionStats[m.id] || { tasks: 0, meos: new Set() };
 
     html += `
-      <div class="programme-group mb-2">
-        <div class="programme-header d-flex justify-content-between align-items-center"
-             data-bs-toggle="collapse" data-bs-target="#${progId}">
-          <span>
-            <i class="bi bi-folder me-2"></i>${escapeHtml(prog)}
+      <div class="mission-item ${isSelected ? 'selected' : ''}" data-mission-id="${m.id}">
+        <div class="mission-name">${escapeHtml(m.axe_strategique || 'Sans nom')}</div>
+        <div class="mission-meta">
+          <i class="bi bi-folder me-1"></i>${escapeHtml(m.objectif || '-')}
+          ${m.responsable ? `<span class="ms-2"><i class="bi bi-person me-1"></i>${escapeHtml(m.responsable)}</span>` : ''}
+        </div>
+        <div class="d-flex gap-2 mt-1">
+          <span class="badge bg-secondary" title="Mises en œuvre">
+            <i class="bi bi-collection me-1"></i>${stats.meos.size}
           </span>
-          <span class="badge bg-white text-primary badge-task-count">${progTaskCount}</span>
-        </div>
-        <div class="collapse show" id="${progId}">
-          <div class="programme-content">
-    `;
-
-    stratKeys.forEach((strat, stratIdx) => {
-      const stratId = `strat-${progIdx}-${stratIdx}`;
-      const missions = strategies[strat];
-
-      // Compter les tâches de la stratégie
-      let stratTaskCount = 0;
-      missions.forEach(m => {
-        stratTaskCount += taskCounts[m.id] || 0;
-      });
-
-      html += `
-        <div class="strategie-group">
-          <div class="strategie-header d-flex justify-content-between align-items-center"
-               data-bs-toggle="collapse" data-bs-target="#${stratId}">
-            <span>
-              <i class="bi bi-diagram-2 me-2"></i>${escapeHtml(strat)}
-            </span>
-            <span class="badge bg-secondary badge-task-count">${stratTaskCount}</span>
-          </div>
-          <div class="collapse show" id="${stratId}">
-            <div class="strategie-content">
-      `;
-
-      missions.forEach(m => {
-        const count = taskCounts[m.id] || 0;
-        const isSelected = selectedMission && selectedMission.id === m.id;
-        const selectedClass = isSelected ? 'selected' : '';
-        const badgeClass = count > 0 ? 'bg-success' : 'bg-secondary';
-
-        html += `
-          <div class="mission-item ${selectedClass}" data-mission-id="${m.id}">
-            <div>
-              <i class="bi bi-bullseye me-2 text-primary"></i>
-              <strong>${escapeHtml(m.axe_strategique)}</strong>
-              ${m.responsable ? `<br><small class="text-muted"><i class="bi bi-person me-1"></i>${escapeHtml(m.responsable)}</small>` : ''}
-            </div>
-            <span class="badge ${badgeClass} badge-task-count" title="Tâches rattachées">${count}</span>
-          </div>
-        `;
-      });
-
-      html += `
-            </div>
-          </div>
-        </div>
-      `;
-    });
-
-    html += `
-          </div>
+          <span class="badge bg-primary" title="Tâches">
+            <i class="bi bi-list-task me-1"></i>${stats.tasks}
+          </span>
         </div>
       </div>
     `;
   });
 
-  $tree.html(html);
+  $list.html(html);
 }
 
 /**
  * Sélectionne une mission
  */
 function selectMission(missionId) {
-  // Désélectionner l'ancienne
-  $('.mission-item.selected').removeClass('selected');
+  selectedMission = missions.find(m => m.id === missionId);
+  selectedMeo = null;
+  selectedTaskIds.clear();
 
-  // Trouver la nouvelle
-  selectedMission = strategies.find(s => s.id === missionId);
+  // Mettre à jour l'UI
+  $('.mission-item').removeClass('selected');
+  $(`.mission-item[data-mission-id="${missionId}"]`).addClass('selected');
 
+  // Activer le bouton ajouter MEO
+  $('#btn-add-meo').prop('disabled', !selectedMission);
+
+  // Mettre à jour le chemin
   if (selectedMission) {
-    $(`.mission-item[data-mission-id="${missionId}"]`).addClass('selected');
-
-    // Mettre à jour le badge des tâches de la mission
-    const missionTasks = tasks.filter(t => t.strategie_id === missionId);
-    $('#badge-mission-tasks').text(missionTasks.length);
-
-    // Si on est en vue "mission", rafraîchir la liste
-    if (currentTaskView === 'mission') {
-      renderTasksList();
-    }
+    $('#meo-path').html(`
+      <i class="bi bi-flag text-warning me-1"></i>
+      <span class="current">${escapeHtml(selectedMission.axe_strategique)}</span>
+    `);
+    $('#meo-actions').show();
+  } else {
+    $('#meo-path').html('<span class="text-muted">Sélectionnez une mission</span>');
+    $('#meo-actions').hide();
   }
 
-  updateActionButtons();
+  // Rendre les MEO
+  renderMeoList();
+  renderTasksList();
+  updateCounts();
+  updateMeoActionButtons();
+  updateTasksActionButtons();
+
   logger.debug('Selected mission:', selectedMission?.axe_strategique);
 }
 
 /**
- * Rend la liste des tâches (orphelines ou de la mission sélectionnée)
+ * Rend la liste des MEO
+ */
+function renderMeoList() {
+  const $list = $('#meo-list');
+
+  if (!selectedMission) {
+    $list.html(`
+      <div class="empty-state">
+        <i class="bi bi-hand-index"></i>
+        Sélectionnez une mission<br>pour voir ses mises en œuvre
+      </div>
+    `);
+    return;
+  }
+
+  const meos = getMeosForMission(selectedMission.id);
+
+  if (meos.length === 0) {
+    $list.html(`
+      <div class="empty-state">
+        <i class="bi bi-collection"></i>
+        Aucune mise en œuvre<br>
+        <button class="btn btn-sm btn-primary mt-2" id="btn-add-meo-empty">
+          <i class="bi bi-plus me-1"></i>Créer
+        </button>
+      </div>
+    `);
+    // Event listener pour le bouton dans l'empty state
+    $('#btn-add-meo-empty').on('click', openMeoModal);
+    return;
+  }
+
+  let html = '';
+  meos.forEach(meo => {
+    const isSelected = selectedMeo && selectedMeo.code === meo.code;
+    const progress = meo.taskCount > 0 ? Math.round((meo.completedCount / meo.taskCount) * 100) : 0;
+    const catClass = getCategoryClass(meo.categorie);
+
+    html += `
+      <div class="meo-item ${isSelected ? 'selected' : ''}" data-meo-code="${escapeHtml(meo.code)}">
+        <div class="d-flex justify-content-between align-items-start">
+          <span class="meo-code">${escapeHtml(meo.code)}</span>
+          <span class="badge badge-categorie ${catClass}">${escapeHtml(meo.categorie)}</span>
+        </div>
+        <div class="meo-name">${escapeHtml(meo.nom)}</div>
+        <div class="meo-stats">
+          <i class="bi bi-list-task me-1"></i>${meo.taskCount} tâches
+          ${meo.charge_estimee ? `<span class="ms-2"><i class="bi bi-clock me-1"></i>${meo.charge_estimee}j</span>` : ''}
+        </div>
+        <div class="progress progress-mini">
+          <div class="progress-bar bg-success" style="width: ${progress}%"></div>
+        </div>
+      </div>
+    `;
+  });
+
+  $list.html(html);
+}
+
+/**
+ * Sélectionne une MEO
+ */
+function selectMeo(meoCode) {
+  const meos = getMeosForMission(selectedMission.id);
+  selectedMeo = meos.find(m => m.code === meoCode);
+  selectedTaskIds.clear();
+
+  // Mettre à jour l'UI
+  $('.meo-item').removeClass('selected');
+  $(`.meo-item[data-meo-code="${meoCode}"]`).addClass('selected');
+
+  // Mettre à jour le chemin des tâches
+  if (selectedMeo) {
+    $('#tasks-path').html(`
+      <i class="bi bi-flag text-warning me-1"></i>${escapeHtml(selectedMission.axe_strategique)}
+      <span class="sep">›</span>
+      <span class="current" style="color: var(--color-meo);">${escapeHtml(selectedMeo.nom)}</span>
+    `);
+  } else {
+    $('#tasks-path').html('<span class="text-muted">Sélectionnez une mise en œuvre</span>');
+  }
+
+  renderTasksList();
+  updateCounts();
+  updateMeoActionButtons();
+  updateTasksActionButtons();
+
+  logger.debug('Selected MEO:', selectedMeo?.code);
+}
+
+/**
+ * Rend la liste des tâches
  */
 function renderTasksList() {
   const $list = $('#tasks-list');
@@ -377,38 +477,40 @@ function renderTasksList() {
   let filteredTasks = [];
   let emptyMessage = '';
 
-  if (currentTaskView === 'orphelines') {
-    // Tâches sans strategie_id
-    filteredTasks = tasks.filter(t => !t.strategie_id);
+  if (taskViewMode === 'orphan') {
+    filteredTasks = getOrphanTasks();
     emptyMessage = `
-      <div class="text-center py-4 text-success">
-        <i class="bi bi-check-circle" style="font-size: 2rem;"></i>
-        <p class="mt-2 mb-0">Toutes les tâches sont rattachées !</p>
+      <div class="empty-state">
+        <i class="bi bi-check-circle text-success"></i>
+        Aucune tâche orpheline !
       </div>
     `;
-    $('#panel-title').html('<i class="bi bi-list-task me-2"></i>Tâches orphelines');
+    $('#tasks-path').html(`
+      <i class="bi bi-exclamation-triangle text-warning me-1"></i>
+      <span class="current">Tâches orphelines</span>
+      <span class="badge bg-warning text-dark ms-2">${filteredTasks.length}</span>
+    `);
+    // En mode orphan, on peut affecter mais pas détacher
     $('#btn-attach-tasks').show();
     $('#btn-detach-tasks').hide();
   } else {
-    // Tâches de la mission sélectionnée
-    if (selectedMission) {
-      filteredTasks = tasks.filter(t => t.strategie_id === selectedMission.id);
-      emptyMessage = `
-        <div class="text-center py-4 text-muted">
-          <i class="bi bi-inbox" style="font-size: 2rem;"></i>
-          <p class="mt-2 mb-0">Aucune tâche rattachée à cette mission</p>
+    if (!selectedMeo) {
+      $list.html(`
+        <div class="empty-state">
+          <i class="bi bi-hand-index"></i>
+          Sélectionnez une mise en œuvre<br>pour voir ses tâches
         </div>
-      `;
-      $('#panel-title').html(`<i class="bi bi-link me-2"></i>Tâches de: ${escapeHtml(selectedMission.axe_strategique)}`);
-    } else {
-      emptyMessage = `
-        <div class="text-center py-4 text-muted">
-          <i class="bi bi-hand-index" style="font-size: 2rem;"></i>
-          <p class="mt-2 mb-0">Sélectionnez une mission pour voir ses tâches</p>
-        </div>
-      `;
-      $('#panel-title').html('<i class="bi bi-link me-2"></i>Tâches de la mission');
+      `);
+      return;
     }
+    filteredTasks = getTasksForMeo(selectedMeo.code);
+    emptyMessage = `
+      <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        Aucune tâche dans cette mise en œuvre
+      </div>
+    `;
+    // En mode MEO, on peut détacher mais pas affecter
     $('#btn-attach-tasks').hide();
     $('#btn-detach-tasks').show();
   }
@@ -420,7 +522,7 @@ function renderTasksList() {
 
   // Trier par statut puis titre
   filteredTasks.sort((a, b) => {
-    const statusOrder = { 'A faire': 0, 'En cours': 1, 'Bloqué': 2, 'Terminé': 3, 'Annulé': 4 };
+    const statusOrder = { 'À faire': 0, 'En cours': 1, 'Bloqué': 2, 'Terminé': 3, 'Annulé': 4 };
     const statusA = statusOrder[a.statut] ?? 99;
     const statusB = statusOrder[b.statut] ?? 99;
     if (statusA !== statusB) return statusA - statusB;
@@ -428,7 +530,7 @@ function renderTasksList() {
   });
 
   const statusColors = {
-    'A faire': 'secondary',
+    'À faire': 'secondary',
     'En cours': 'primary',
     'Bloqué': 'danger',
     'Terminé': 'success',
@@ -442,15 +544,13 @@ function renderTasksList() {
       <div class="task-item" data-task-id="${t.id}">
         <div class="d-flex justify-content-between align-items-start">
           <div class="flex-grow-1">
-            <div class="form-check">
-              <input class="form-check-input task-checkbox" type="checkbox" id="task-${t.id}">
-              <label class="form-check-label" for="task-${t.id}">
-                <strong>${escapeHtml(t.titre || 'Sans titre')}</strong>
-              </label>
+            <div class="d-flex align-items-center gap-2">
+              <input type="checkbox" class="form-check-input task-checkbox">
+              <span class="task-title">${escapeHtml(t.titre || 'Sans titre')}</span>
             </div>
-            <div class="small text-muted mt-1">
-              ${t.qui ? `<span class="me-2"><i class="bi bi-person"></i> ${escapeHtml(t.qui)}</span>` : ''}
-              ${t.projet ? `<span><i class="bi bi-folder"></i> ${escapeHtml(t.projet)}</span>` : ''}
+            <div class="task-meta">
+              ${t.qui ? `<i class="bi bi-person"></i> ${escapeHtml(formatQui(t.qui))}` : ''}
+              ${t.projet ? `<span class="ms-2"><i class="bi bi-folder"></i> ${escapeHtml(t.projet)}</span>` : ''}
             </div>
           </div>
           <span class="badge bg-${badgeColor}">${escapeHtml(t.statut || 'N/A')}</span>
@@ -463,7 +563,22 @@ function renderTasksList() {
 }
 
 /**
- * Toggle la sélection d'une tâche
+ * Format le champ qui (peut être un array)
+ */
+function formatQui(qui) {
+  if (!qui) return '';
+  if (Array.isArray(qui)) {
+    // Format Grist ChoiceList: ['L', 'val1', 'val2']
+    if (qui[0] === 'L') {
+      return qui.slice(1).join(', ');
+    }
+    return qui.join(', ');
+  }
+  return String(qui);
+}
+
+/**
+ * Toggle sélection d'une tâche
  */
 function toggleTaskSelection(taskId, $element) {
   if (selectedTaskIds.has(taskId)) {
@@ -475,20 +590,44 @@ function toggleTaskSelection(taskId, $element) {
     $element.addClass('selected');
     $element.find('.task-checkbox').prop('checked', true);
   }
-  updateActionButtons();
+  updateTasksActionButtons();
 }
 
 /**
- * Met à jour les boutons d'action
+ * Sélectionne toutes les tâches visibles
  */
-function updateActionButtons() {
+function selectAllTasks() {
+  const $visible = $('#tasks-list .task-item');
+  const allSelected = $visible.length > 0 && selectedTaskIds.size === $visible.length;
+
+  if (allSelected) {
+    selectedTaskIds.clear();
+    $visible.removeClass('selected').find('.task-checkbox').prop('checked', false);
+  } else {
+    $visible.each(function() {
+      const id = $(this).data('task-id');
+      selectedTaskIds.add(id);
+      $(this).addClass('selected').find('.task-checkbox').prop('checked', true);
+    });
+  }
+  updateTasksActionButtons();
+}
+
+/**
+ * Met à jour les boutons d'action des tâches
+ */
+function updateTasksActionButtons() {
   const count = selectedTaskIds.size;
   $('#count-selected').text(count);
   $('#count-detach').text(count);
 
-  if (currentTaskView === 'orphelines') {
-    // Pour rattacher, il faut des tâches sélectionnées ET une mission sélectionnée
-    $('#btn-attach-tasks').prop('disabled', count === 0 || !selectedMission);
+  // Bouton sélectionner tout
+  const hasVisibleTasks = $('#tasks-list .task-item').length > 0;
+  $('#btn-select-all-tasks').prop('disabled', !hasVisibleTasks);
+
+  if (taskViewMode === 'orphan') {
+    // Pour affecter, il faut des tâches sélectionnées ET une MEO sélectionnée
+    $('#btn-attach-tasks').prop('disabled', count === 0 || !selectedMeo);
   } else {
     // Pour détacher, il suffit d'avoir des tâches sélectionnées
     $('#btn-detach-tasks').prop('disabled', count === 0);
@@ -496,45 +635,263 @@ function updateActionButtons() {
 }
 
 /**
- * Ouvre le modal de rattachement
+ * Met à jour les boutons d'action des MEO
+ */
+function updateMeoActionButtons() {
+  const hasMeo = selectedMeo !== null;
+  $('#btn-edit-meo').prop('disabled', !hasMeo);
+  $('#btn-delete-meo').prop('disabled', !hasMeo);
+}
+
+/**
+ * Ouvre le modal de création/édition de MEO
+ */
+function openMeoModal(editMode = false) {
+  if (!selectedMission) {
+    showToast('Sélectionnez d\'abord une mission', 'warning');
+    return;
+  }
+
+  // Réinitialiser le formulaire
+  $('#meo-code').val('');
+  $('#meo-nom').val('');
+  $('#meo-categorie').val('Projet');
+  $('#meo-charge').val(0);
+  editingMeoCode = null;
+
+  // Afficher la mission parente
+  $('#meo-parent-mission').text(selectedMission.axe_strategique);
+
+  if (editMode && selectedMeo) {
+    $('#modal-meo-title').text('Modifier la mise en œuvre');
+    $('#meo-code').val(selectedMeo.code).prop('readonly', true);
+    $('#meo-nom').val(selectedMeo.nom);
+    $('#meo-categorie').val(selectedMeo.categorie);
+    $('#meo-charge').val(selectedMeo.charge_estimee || 0);
+    editingMeoCode = selectedMeo.code;
+  } else {
+    $('#modal-meo-title').text('Nouvelle mise en œuvre');
+    $('#meo-code').prop('readonly', false);
+    // Générer un code par défaut
+    const meos = getMeosForMission(selectedMission.id);
+    const nextNum = meos.length + 1;
+    $('#meo-code').val(`MEO-${String(nextNum).padStart(3, '0')}`);
+  }
+
+  $('#modal-meo').modal('show');
+}
+
+/**
+ * Édite la MEO sélectionnée
+ */
+function editSelectedMeo() {
+  if (selectedMeo) {
+    openMeoModal(true);
+  }
+}
+
+/**
+ * Sauvegarde une MEO (création ou mise à jour)
+ */
+async function saveMeo() {
+  const code = $('#meo-code').val().trim();
+  const nom = $('#meo-nom').val().trim();
+  const categorie = $('#meo-categorie').val();
+  const charge = parseFloat($('#meo-charge').val()) || 0;
+
+  if (!code || !nom) {
+    showToast('Code et nom requis', 'warning');
+    return;
+  }
+
+  try {
+    if (editingMeoCode) {
+      // Mode édition : mettre à jour toutes les tâches avec ce code MEO
+      const meoTasks = tasks.filter(t =>
+        t.strategie_id === selectedMission.id &&
+        t.mise_en_oeuvre_code === editingMeoCode
+      );
+
+      const updates = meoTasks.map(t => [
+        'UpdateRecord', 'Ssir_principale_task', t.id, {
+          mise_en_oeuvre_nom: nom,
+          categorie: categorie,
+          mise_en_oeuvre_charge_estimee: charge
+        }
+      ]);
+
+      if (updates.length > 0) {
+        await window.grist.docApi.applyUserActions(updates);
+
+        // Mettre à jour localement
+        meoTasks.forEach(t => {
+          t.mise_en_oeuvre_nom = nom;
+          t.categorie = categorie;
+          t.mise_en_oeuvre_charge_estimee = charge;
+        });
+      }
+
+      showToast('Mise en œuvre modifiée', 'success');
+    } else {
+      // Mode création : créer une tâche support [MEO]
+      const newTask = {
+        titre: `[MEO] ${nom}`,
+        description: `Mise en œuvre: ${nom}\nCode: ${code}\nCatégorie: ${categorie}`,
+        statut: 'À faire',
+        strategie_id: selectedMission.id,
+        mise_en_oeuvre_code: code,
+        mise_en_oeuvre_nom: nom,
+        categorie: categorie,
+        mise_en_oeuvre_charge_estimee: charge,
+        est_classifiee: true
+      };
+
+      await window.grist.docApi.applyUserActions([
+        ['AddRecord', 'Ssir_principale_task', null, newTask]
+      ]);
+
+      showToast('Mise en œuvre créée', 'success');
+    }
+
+    $('#modal-meo').modal('hide');
+
+    // Recharger les données
+    tasks = gristManager.currentRecords || [];
+    // Forcer le rechargement via Grist
+    const data = await window.grist.docApi.fetchTable('Ssir_principale_task');
+    if (data?.id) {
+      tasks = [];
+      for (let i = 0; i < data.id.length; i++) {
+        const task = { id: data.id[i] };
+        Object.keys(data).forEach(key => {
+          if (key !== 'id') {
+            task[key] = data[key][i];
+          }
+        });
+        tasks.push(task);
+      }
+    }
+
+    renderMeoList();
+    renderTasksList();
+    updateCounts();
+
+    // Resélectionner la MEO si en mode édition
+    if (editingMeoCode) {
+      selectMeo(editingMeoCode);
+    } else {
+      selectMeo(code);
+    }
+
+  } catch (error) {
+    logger.error('Failed to save MEO:', error);
+    showToast('Erreur lors de la sauvegarde', 'danger');
+  }
+}
+
+/**
+ * Supprime la MEO sélectionnée
+ */
+async function deleteSelectedMeo() {
+  if (!selectedMeo) return;
+
+  const meoTasks = getTasksForMeo(selectedMeo.code);
+
+  if (meoTasks.length > 0) {
+    if (!confirm(`Cette mise en œuvre contient ${meoTasks.length} tâche(s).\n\nLes tâches seront détachées (mais pas supprimées).\n\nContinuer ?`)) {
+      return;
+    }
+  } else {
+    if (!confirm(`Supprimer la mise en œuvre "${selectedMeo.nom}" ?`)) {
+      return;
+    }
+  }
+
+  try {
+    const updates = meoTasks.map(t => [
+      'UpdateRecord', 'Ssir_principale_task', t.id, {
+        mise_en_oeuvre_code: '',
+        mise_en_oeuvre_nom: '',
+        categorie: '',
+        mise_en_oeuvre_charge_estimee: 0
+      }
+    ]);
+
+    // Supprimer aussi les tâches support [MEO] si elles existent
+    const supportTasks = meoTasks.filter(t => t.titre?.startsWith('[MEO]'));
+    supportTasks.forEach(t => {
+      updates.push(['RemoveRecord', 'Ssir_principale_task', t.id]);
+    });
+
+    if (updates.length > 0) {
+      await window.grist.docApi.applyUserActions(updates);
+    }
+
+    // Mettre à jour localement
+    meoTasks.forEach(t => {
+      if (!t.titre?.startsWith('[MEO]')) {
+        t.mise_en_oeuvre_code = '';
+        t.mise_en_oeuvre_nom = '';
+        t.categorie = '';
+        t.mise_en_oeuvre_charge_estimee = 0;
+      }
+    });
+
+    // Supprimer les tâches support du cache local
+    tasks = tasks.filter(t => !supportTasks.includes(t));
+
+    selectedMeo = null;
+    renderMeoList();
+    renderTasksList();
+    updateCounts();
+    updateMeoActionButtons();
+    updateTasksActionButtons();
+
+    showToast('Mise en œuvre supprimée', 'success');
+  } catch (error) {
+    logger.error('Failed to delete MEO:', error);
+    showToast('Erreur lors de la suppression', 'danger');
+  }
+}
+
+/**
+ * Ouvre le modal d'affectation
  */
 function openAttachModal() {
-  if (!selectedMission || selectedTaskIds.size === 0) return;
+  if (selectedTaskIds.size === 0) {
+    showToast('Sélectionnez des tâches', 'warning');
+    return;
+  }
+
+  if (!selectedMeo) {
+    showToast('Sélectionnez une mise en œuvre cible', 'warning');
+    return;
+  }
 
   $('#attach-count').text(selectedTaskIds.size);
-  $('#attach-target-info').html(`
-    <div class="mb-2">
-      <i class="bi bi-folder me-1"></i><strong>Programme:</strong> ${escapeHtml(selectedMission.objectif)}
-    </div>
-    ${selectedMission.sous_objectif ? `
-      <div class="mb-2">
-        <i class="bi bi-diagram-2 me-1"></i><strong>Stratégie:</strong> ${escapeHtml(selectedMission.sous_objectif)}
-      </div>
-    ` : ''}
-    <div class="mb-2">
-      <i class="bi bi-bullseye me-1"></i><strong>Mission:</strong> ${escapeHtml(selectedMission.axe_strategique)}
-    </div>
-    ${selectedMission.responsable ? `
-      <div class="small text-muted">
-        <i class="bi bi-person me-1"></i>Responsable: ${escapeHtml(selectedMission.responsable)}
-      </div>
-    ` : ''}
+  $('#attach-target').html(`
+    <i class="bi bi-flag text-warning me-1"></i>${escapeHtml(selectedMission.axe_strategique)}<br>
+    <i class="bi bi-collection me-1" style="color: var(--color-meo);"></i>${escapeHtml(selectedMeo.nom)}
   `);
 
   $('#modal-attach').modal('show');
 }
 
 /**
- * Confirme le rattachement des tâches
+ * Confirme l'affectation des tâches
  */
 async function confirmAttach() {
-  if (!selectedMission || selectedTaskIds.size === 0) return;
+  if (!selectedMission || !selectedMeo || selectedTaskIds.size === 0) return;
 
   try {
     const updates = [];
     selectedTaskIds.forEach(taskId => {
       updates.push(['UpdateRecord', 'Ssir_principale_task', taskId, {
-        strategie_id: selectedMission.id
+        strategie_id: selectedMission.id,
+        mise_en_oeuvre_code: selectedMeo.code,
+        mise_en_oeuvre_nom: selectedMeo.nom,
+        categorie: selectedMeo.categorie,
+        est_classifiee: true
       }]);
     });
 
@@ -543,38 +900,45 @@ async function confirmAttach() {
     // Mettre à jour localement
     selectedTaskIds.forEach(taskId => {
       const task = tasks.find(t => t.id === taskId);
-      if (task) task.strategie_id = selectedMission.id;
+      if (task) {
+        task.strategie_id = selectedMission.id;
+        task.mise_en_oeuvre_code = selectedMeo.code;
+        task.mise_en_oeuvre_nom = selectedMeo.nom;
+        task.categorie = selectedMeo.categorie;
+        task.est_classifiee = true;
+      }
     });
 
     $('#modal-attach').modal('hide');
     selectedTaskIds.clear();
 
-    // Rafraîchir
-    updateStats();
-    renderMissionsTree();
+    renderMeoList();
     renderTasksList();
+    updateCounts();
+    updateTasksActionButtons();
 
-    showToast(`${updates.length} tâche(s) rattachée(s)`, 'success');
-    logger.debug(`Attached ${updates.length} tasks to mission ${selectedMission.id}`);
+    showToast(`${updates.length} tâche(s) affectée(s)`, 'success');
   } catch (error) {
     logger.error('Failed to attach tasks:', error);
-    showToast('Erreur lors du rattachement', 'danger');
+    showToast('Erreur lors de l\'affectation', 'danger');
   }
 }
 
 /**
- * Détache les tâches sélectionnées
+ * Détache les tâches sélectionnées de la MEO
  */
 async function detachTasks() {
   if (selectedTaskIds.size === 0) return;
 
-  if (!confirm(`Détacher ${selectedTaskIds.size} tâche(s) de la mission ?`)) return;
+  if (!confirm(`Détacher ${selectedTaskIds.size} tâche(s) de la mise en œuvre ?`)) return;
 
   try {
     const updates = [];
     selectedTaskIds.forEach(taskId => {
       updates.push(['UpdateRecord', 'Ssir_principale_task', taskId, {
-        strategie_id: null
+        mise_en_oeuvre_code: '',
+        mise_en_oeuvre_nom: '',
+        categorie: ''
       }]);
     });
 
@@ -583,21 +947,36 @@ async function detachTasks() {
     // Mettre à jour localement
     selectedTaskIds.forEach(taskId => {
       const task = tasks.find(t => t.id === taskId);
-      if (task) task.strategie_id = null;
+      if (task) {
+        task.mise_en_oeuvre_code = '';
+        task.mise_en_oeuvre_nom = '';
+        task.categorie = '';
+      }
     });
 
     selectedTaskIds.clear();
 
-    // Rafraîchir
-    updateStats();
-    renderMissionsTree();
+    renderMeoList();
     renderTasksList();
+    updateCounts();
+    updateTasksActionButtons();
 
     showToast(`${updates.length} tâche(s) détachée(s)`, 'success');
-    logger.debug(`Detached ${updates.length} tasks`);
   } catch (error) {
     logger.error('Failed to detach tasks:', error);
     showToast('Erreur lors du détachement', 'danger');
+  }
+}
+
+/**
+ * Retourne la classe CSS pour une catégorie
+ */
+function getCategoryClass(categorie) {
+  switch (categorie) {
+    case 'MCO': return 'badge-mco';
+    case 'Projet': return 'badge-projet';
+    case 'Imprévisible': return 'badge-imprevisible';
+    default: return 'bg-secondary';
   }
 }
 

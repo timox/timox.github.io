@@ -61,7 +61,7 @@ class MigrationApp {
     this.records = [];
     this.toMigrate = [];
     this.toDelete = [];
-    this.duplicates = []; // Doublons [MISSION] et [SA]
+    this.duplicates = []; // Doublons [MISSION] et [SA]/[MEO]
     this.obsoletePrefixes = []; // Tâches avec préfixes obsolètes à nettoyer
     this.existingColumns = []; // Cache des colonnes existantes
     this.agents = []; // Liste des agents pour synchronisation
@@ -161,10 +161,10 @@ class MigrationApp {
       this.obsoletePrefixes = [];
       let alreadyMigrated = 0;
 
-      // Détection des doublons par titre pour [MISSION] et [SA]
+      // Détection des doublons par titre pour [MISSION], [SA] et [MEO]
       const titleCounts = {};
       for (const record of this.records) {
-        if (record.titre && (record.titre.startsWith('[MISSION]') || record.titre.startsWith('[SA]'))) {
+        if (record.titre && (record.titre.startsWith('[MISSION]') || record.titre.startsWith('[SA]') || record.titre.startsWith('[MEO]'))) {
           titleCounts[record.titre] = titleCounts[record.titre] || [];
           titleCounts[record.titre].push(record);
         }
@@ -183,6 +183,7 @@ class MigrationApp {
       }
 
       // Identifier les tâches avec préfixes obsolètes [MISSION] ou [SA] (non doublons)
+      // Note: [MEO] est le nouveau préfixe valide pour les mises en œuvre
       for (const record of this.records) {
         // Ne pas inclure les doublons
         if (this.duplicates.some(d => d.id === record.id)) continue;
@@ -286,7 +287,8 @@ class MigrationApp {
 
     // Prefixes dans le titre
     if (titre.includes('[MISSION]')) return 'PRJ';
-    if (titre.includes('[SA]')) return 'PRJ';
+    if (titre.includes('[SA]')) return 'PRJ';  // Ancien préfixe sous-action
+    if (titre.includes('[MEO]')) return 'PRJ'; // Nouveau préfixe mise en œuvre
     if (titre.includes('[INC]')) return 'INC';
     if (titre.includes('[MCO]')) return 'MCO';
 
@@ -321,9 +323,9 @@ class MigrationApp {
 
     let html = '';
 
-    // Doublons [MISSION] et [SA]
+    // Doublons [MISSION], [SA] et [MEO]
     if (this.duplicates.length > 0) {
-      html += '<h6 class="text-danger"><i class="bi bi-files me-2"></i>Doublons [MISSION]/[SA]</h6>';
+      html += '<h6 class="text-danger"><i class="bi bi-files me-2"></i>Doublons [MISSION]/[SA]/[MEO]</h6>';
       html += '<ul class="list-group mb-3">';
       this.duplicates.slice(0, 5).forEach(r => {
         html += `<li class="list-group-item list-group-item-warning small">[${r.id}] ${this.escapeHtml(r.titre.substring(0, 50))}...</li>`;
@@ -439,7 +441,7 @@ class MigrationApp {
   }
 
   /**
-   * Supprime les doublons [MISSION] et [SA]
+   * Supprime les doublons [MISSION], [SA] et [MEO]
    */
   async deleteDuplicates() {
     if (this.duplicates.length === 0) {
@@ -447,7 +449,7 @@ class MigrationApp {
       return;
     }
 
-    if (!confirm(`Supprimer ${this.duplicates.length} enregistrements en double ([MISSION] et [SA]) ?\n\nLe premier enregistrement de chaque doublon sera conserve.\n\nCette action est irreversible!`)) {
+    if (!confirm(`Supprimer ${this.duplicates.length} enregistrements en double ([MISSION], [SA] et [MEO]) ?\n\nLe premier enregistrement de chaque doublon sera conserve.\n\nCette action est irreversible!`)) {
       this.log('Suppression annulee', 'warning');
       return;
     }

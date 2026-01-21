@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Gestion des Missions</title>
+  <title>Missions & Mises en œuvre</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Bootstrap CSS -->
@@ -11,297 +11,468 @@
 
   <!-- CSS -->
   <link rel="stylesheet" href="css/kanban-base.css">
-  <link rel="stylesheet" href="css/kanban-modal.css">
 
   <style>
-    .mission-card {
-      border-left: 4px solid #6366f1;
-      transition: all 0.3s;
+    :root {
+      --color-mission: #f59e0b;
+      --color-meo: #8b5cf6;
+      --color-task: #6366f1;
     }
 
-    .mission-card:hover {
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      transform: translateY(-2px);
+    body {
+      background: #f5f5f5;
+      overflow: hidden;
     }
 
-    .mission-card.expanded {
-      border-left-color: #10b981;
-    }
-
-    .programme-header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    .page-header {
+      background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
       color: white;
+      padding: 12px 20px;
+    }
+
+    .page-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    /* 3-column layout */
+    .main-container {
+      display: flex;
+      height: calc(100vh - 60px);
+      overflow: hidden;
+    }
+
+    .column {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #e5e7eb;
+      background: white;
+    }
+
+    .column:last-child {
+      border-right: none;
+    }
+
+    .col-missions { width: 30%; min-width: 280px; }
+    .col-meo { width: 35%; min-width: 300px; }
+    .col-tasks { flex: 1; min-width: 300px; }
+
+    .column-header {
       padding: 12px 16px;
-      border-radius: 8px 8px 0 0;
-      cursor: pointer;
-    }
-
-    .strategie-header {
-      background: #f1f5f9;
-      padding: 8px 16px;
-      border-bottom: 1px solid #e2e8f0;
-      cursor: pointer;
-    }
-
-    .strategie-header:hover {
-      background: #e2e8f0;
-    }
-
-    .mission-item {
-      padding: 12px 16px;
-      border-bottom: 1px solid #f1f5f9;
+      border-bottom: 1px solid #e5e7eb;
+      background: #f8fafc;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-shrink: 0;
+    }
+
+    .column-header h6 {
+      margin: 0;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .column-header .badge {
+      font-size: 0.75rem;
+    }
+
+    .column-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    /* Mission items */
+    .mission-item {
+      padding: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border-left: 4px solid var(--color-mission);
     }
 
     .mission-item:hover {
-      background: #fafafa;
+      background: #fffbeb;
+      border-color: var(--color-mission);
     }
 
     .mission-item.selected {
-      background: #eff6ff;
-      border-left: 3px solid #3b82f6;
+      background: #fef3c7;
+      border-color: var(--color-mission);
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
     }
 
-    .task-list {
-      max-height: 400px;
-      overflow-y: auto;
+    .mission-name {
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 4px;
     }
 
+    .mission-meta {
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+
+    /* MEO items */
+    .meo-item {
+      padding: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border-left: 4px solid var(--color-meo);
+    }
+
+    .meo-item:hover {
+      background: #f5f3ff;
+      border-color: var(--color-meo);
+    }
+
+    .meo-item.selected {
+      background: #ede9fe;
+      border-color: var(--color-meo);
+      box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+    }
+
+    .meo-code {
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: var(--color-meo);
+      background: #f5f3ff;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .meo-name {
+      font-weight: 600;
+      color: #1e293b;
+      margin-top: 4px;
+    }
+
+    .meo-stats {
+      font-size: 0.8rem;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    /* Task items */
     .task-item {
-      padding: 8px 12px;
+      padding: 10px 12px;
       border: 1px solid #e5e7eb;
       border-radius: 6px;
       margin-bottom: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
       font-size: 0.9rem;
     }
 
     .task-item:hover {
-      background: #f9fafb;
+      background: #f8fafc;
     }
 
     .task-item.selected {
-      border-color: #3b82f6;
       background: #eff6ff;
+      border-color: #3b82f6;
     }
 
-    .stats-box {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border-radius: 10px;
-      padding: 20px;
-      margin-bottom: 20px;
+    .task-item .task-title {
+      font-weight: 500;
+      color: #1e293b;
     }
 
-    .stats-item {
-      text-align: center;
+    .task-item .task-meta {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 2px;
     }
 
-    .stats-number {
-      font-size: 2rem;
-      font-weight: bold;
-    }
-
-    .badge-task-count {
-      font-size: 0.85rem;
-      min-width: 24px;
-    }
-
+    /* Empty states */
     .empty-state {
       text-align: center;
-      padding: 60px 20px;
-      color: #95a5a6;
+      padding: 40px 20px;
+      color: #94a3b8;
     }
 
     .empty-state i {
-      font-size: 4rem;
-      margin-bottom: 20px;
+      font-size: 3rem;
+      margin-bottom: 12px;
+      display: block;
     }
 
-    .panel-tasks {
-      height: calc(100vh - 300px);
-      min-height: 400px;
+    /* Action buttons */
+    .action-bar {
+      padding: 8px 16px;
+      border-top: 1px solid #e5e7eb;
+      background: #f8fafc;
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
     }
 
-    .hierarchy-tree {
-      max-height: calc(100vh - 350px);
-      overflow-y: auto;
+    /* Search */
+    .search-box {
+      padding: 8px 16px;
+      border-bottom: 1px solid #e5e7eb;
+      flex-shrink: 0;
+    }
+
+    .search-box input {
+      font-size: 0.875rem;
+    }
+
+    /* Hierarchy path */
+    .hierarchy-path {
+      padding: 8px 16px;
+      background: #f1f5f9;
+      font-size: 0.8rem;
+      color: #64748b;
+      border-bottom: 1px solid #e5e7eb;
+      flex-shrink: 0;
+    }
+
+    .hierarchy-path .sep {
+      margin: 0 6px;
+      color: #cbd5e1;
+    }
+
+    .hierarchy-path .current {
+      color: #1e293b;
+      font-weight: 600;
+    }
+
+    /* Category badges */
+    .badge-categorie {
+      font-size: 0.7rem;
+      padding: 2px 6px;
+    }
+
+    .badge-mco { background: #6366f1; }
+    .badge-projet { background: #22c55e; }
+    .badge-imprevisible { background: #ef4444; }
+
+    /* Progress bar */
+    .progress-mini {
+      height: 4px;
+      border-radius: 2px;
+      margin-top: 6px;
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .col-missions { width: 28%; }
+      .col-meo { width: 35%; }
+    }
+
+    @media (max-width: 992px) {
+      .main-container {
+        flex-direction: column;
+        height: auto;
+      }
+      .column {
+        width: 100% !important;
+        max-height: 40vh;
+        border-right: none;
+        border-bottom: 1px solid #e5e7eb;
+      }
     }
   </style>
 </head>
-<body class="bg-light">
-  <div class="view_data_pane_container flexvbox viewsection_type_custom">
-    <div class="container-fluid kanban-page px-3 px-lg-4">
-
-      <!-- Header -->
-      <div class="kanban-header">
-        <div class="container-fluid">
-          <div class="d-flex align-items-center gap-2 flex-wrap">
-            <div class="flex-grow-1">
-              <h1 class="h3 mb-0 d-flex align-items-center">
-                <i class="bi bi-diagram-3 me-2"></i>
-                Gestion des Missions
-              </h1>
-              <small class="text-muted">Rattachement des tâches aux missions stratégiques</small>
-            </div>
-            <div class="d-flex gap-2">
-              <a href="index.html" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-kanban me-1"></i>Kanban
-              </a>
-              <a href="config.html#strategies" class="btn btn-outline-primary btn-sm">
-                <i class="bi bi-gear me-1"></i>Config Stratégies
-              </a>
-              <a href="stats.html" class="btn btn-outline-info btn-sm">
-                <i class="bi bi-graph-up me-1"></i>Stats
-              </a>
-            </div>
-          </div>
-        </div>
+<body>
+  <!-- Header -->
+  <div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+      <h1 class="page-title">
+        <i class="bi bi-diagram-3 me-2"></i>Missions & Mises en œuvre
+      </h1>
+      <div class="d-flex gap-2">
+        <a href="index.html" class="btn btn-sm btn-outline-light">
+          <i class="bi bi-kanban me-1"></i>Kanban
+        </a>
+        <a href="taches.html" class="btn btn-sm btn-outline-light">
+          <i class="bi bi-list-task me-1"></i>Tâches
+        </a>
+        <a href="timeline.html" class="btn btn-sm btn-outline-light">
+          <i class="bi bi-bar-chart-steps me-1"></i>Timeline
+        </a>
       </div>
-
-      <!-- Stats rapides -->
-      <div class="container-fluid mt-3">
-        <div class="stats-box">
-          <div class="row">
-            <div class="col-md-3 stats-item">
-              <div class="stats-number" id="stat-missions-total">0</div>
-              <div class="stats-label">Missions (Ssir_strategie2)</div>
-            </div>
-            <div class="col-md-3 stats-item">
-              <div class="stats-number" id="stat-taches-total">0</div>
-              <div class="stats-label">Tâches total</div>
-            </div>
-            <div class="col-md-3 stats-item">
-              <div class="stats-number" id="stat-taches-rattachees">0</div>
-              <div class="stats-label text-success">Rattachées</div>
-            </div>
-            <div class="col-md-3 stats-item">
-              <div class="stats-number" id="stat-taches-orphelines">0</div>
-              <div class="stats-label text-warning">Orphelines</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Info -->
-      <div class="container-fluid">
-        <div class="alert alert-info py-2">
-          <i class="bi bi-info-circle me-2"></i>
-          <strong>Hiérarchie :</strong> Programme (objectif) → Stratégie (sous_objectif) → Mission (axe_strategique) → Tâches
-          <br><small>Les missions sont définies dans la table <code>Ssir_strategie2</code>. Les tâches y sont rattachées via le champ <code>strategie_id</code>.</small>
-        </div>
-      </div>
-
-      <!-- Contenu principal: 2 colonnes -->
-      <div class="container-fluid">
-        <div class="row">
-
-          <!-- Colonne gauche: Arbre des missions -->
-          <div class="col-lg-6">
-            <div class="card shadow-sm">
-              <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                  <i class="bi bi-diagram-3 me-2"></i>Missions stratégiques
-                </h5>
-                <div class="d-flex gap-2">
-                  <input type="text" class="form-control form-control-sm" id="search-missions"
-                         placeholder="Rechercher..." style="width: 150px;">
-                  <button class="btn btn-sm btn-outline-secondary" id="btn-expand-all" title="Tout déplier">
-                    <i class="bi bi-arrows-expand"></i>
-                  </button>
-                  <button class="btn btn-sm btn-outline-secondary" id="btn-collapse-all" title="Tout replier">
-                    <i class="bi bi-arrows-collapse"></i>
-                  </button>
-                </div>
-              </div>
-              <div class="card-body p-0">
-                <div class="hierarchy-tree" id="missions-tree">
-                  <!-- Arbre généré par JS -->
-                  <div class="text-center py-5 text-muted">
-                    <div class="spinner-border spinner-border-sm me-2"></div>
-                    Chargement des missions...
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Colonne droite: Panneau de tâches -->
-          <div class="col-lg-6">
-            <div class="card shadow-sm panel-tasks">
-              <div class="card-header bg-white">
-                <div class="d-flex justify-content-between align-items-center">
-                  <h5 class="mb-0" id="panel-title">
-                    <i class="bi bi-list-task me-2"></i>Tâches orphelines
-                  </h5>
-                  <div class="d-flex gap-2">
-                    <button class="btn btn-sm btn-outline-primary" id="btn-select-all" title="Tout sélectionner">
-                      <i class="bi bi-check-all"></i>
-                    </button>
-                    <button class="btn btn-sm btn-primary" id="btn-attach-tasks" disabled>
-                      <i class="bi bi-link-45deg me-1"></i>Rattacher (<span id="count-selected">0</span>)
-                    </button>
-                    <button class="btn btn-sm btn-danger" id="btn-detach-tasks" disabled style="display: none;">
-                      <i class="bi bi-x-circle me-1"></i>Détacher (<span id="count-detach">0</span>)
-                    </button>
-                  </div>
-                </div>
-                <div class="mt-2">
-                  <div class="btn-group btn-group-sm w-100" role="group">
-                    <input type="radio" class="btn-check" name="task-view" id="view-orphelines" value="orphelines" checked>
-                    <label class="btn btn-outline-warning" for="view-orphelines">
-                      <i class="bi bi-exclamation-triangle me-1"></i>Orphelines (<span id="badge-orphelines">0</span>)
-                    </label>
-
-                    <input type="radio" class="btn-check" name="task-view" id="view-mission" value="mission">
-                    <label class="btn btn-outline-success" for="view-mission">
-                      <i class="bi bi-link me-1"></i>De la mission (<span id="badge-mission-tasks">0</span>)
-                    </label>
-                  </div>
-                </div>
-              </div>
-              <div class="card-body p-2">
-                <div class="task-list" id="tasks-list">
-                  <!-- Tâches générées par JS -->
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
     </div>
   </div>
 
-  <!-- Modal: Confirmation de rattachement -->
-  <div class="modal fade" id="modal-attach" tabindex="-1">
+  <!-- Main 3-column layout -->
+  <div class="main-container">
+    <!-- Column 1: Missions -->
+    <div class="column col-missions">
+      <div class="column-header">
+        <h6>
+          <i class="bi bi-flag text-warning"></i>
+          Missions
+          <span class="badge bg-warning text-dark" id="count-missions">0</span>
+        </h6>
+      </div>
+      <div class="search-box">
+        <input type="text" class="form-control form-control-sm" id="search-missions"
+               placeholder="Rechercher une mission...">
+      </div>
+      <div class="column-body" id="missions-list">
+        <div class="empty-state">
+          <i class="bi bi-hourglass-split"></i>
+          Chargement...
+        </div>
+      </div>
+    </div>
+
+    <!-- Column 2: Mises en œuvre -->
+    <div class="column col-meo">
+      <div class="column-header">
+        <h6>
+          <i class="bi bi-collection text-purple" style="color: var(--color-meo);"></i>
+          Mises en œuvre
+          <span class="badge" style="background: var(--color-meo);" id="count-meo">0</span>
+        </h6>
+        <button class="btn btn-sm btn-outline-primary" id="btn-add-meo" disabled title="Nouvelle mise en œuvre">
+          <i class="bi bi-plus-lg"></i>
+        </button>
+      </div>
+      <div class="hierarchy-path" id="meo-path">
+        <span class="text-muted">Sélectionnez une mission</span>
+      </div>
+      <div class="column-body" id="meo-list">
+        <div class="empty-state">
+          <i class="bi bi-hand-index"></i>
+          Sélectionnez une mission<br>pour voir ses mises en œuvre
+        </div>
+      </div>
+      <div class="action-bar" id="meo-actions" style="display: none;">
+        <button class="btn btn-sm btn-outline-danger" id="btn-delete-meo" disabled>
+          <i class="bi bi-trash me-1"></i>Supprimer
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" id="btn-edit-meo" disabled>
+          <i class="bi bi-pencil me-1"></i>Modifier
+        </button>
+      </div>
+    </div>
+
+    <!-- Column 3: Tâches -->
+    <div class="column col-tasks">
+      <div class="column-header">
+        <h6>
+          <i class="bi bi-list-task text-primary"></i>
+          Tâches
+          <span class="badge bg-primary" id="count-tasks">0</span>
+        </h6>
+        <div class="btn-group btn-group-sm">
+          <button class="btn btn-outline-secondary active" id="btn-view-meo-tasks" title="Tâches de la MEO">
+            <i class="bi bi-link"></i>
+          </button>
+          <button class="btn btn-outline-secondary" id="btn-view-orphan-tasks" title="Tâches orphelines">
+            <i class="bi bi-exclamation-triangle"></i>
+          </button>
+        </div>
+      </div>
+      <div class="hierarchy-path" id="tasks-path">
+        <span class="text-muted">Sélectionnez une mise en œuvre</span>
+      </div>
+      <div class="column-body" id="tasks-list">
+        <div class="empty-state">
+          <i class="bi bi-hand-index"></i>
+          Sélectionnez une mise en œuvre<br>pour voir ses tâches
+        </div>
+      </div>
+      <div class="action-bar">
+        <button class="btn btn-sm btn-outline-primary" id="btn-select-all-tasks" disabled>
+          <i class="bi bi-check-all me-1"></i>Tout sélectionner
+        </button>
+        <button class="btn btn-sm btn-primary" id="btn-attach-tasks" disabled>
+          <i class="bi bi-link-45deg me-1"></i>Affecter (<span id="count-selected">0</span>)
+        </button>
+        <button class="btn btn-sm btn-outline-danger" id="btn-detach-tasks" disabled style="display: none;">
+          <i class="bi bi-x-circle me-1"></i>Détacher (<span id="count-detach">0</span>)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Nouvelle Mise en œuvre -->
+  <div class="modal fade" id="modal-meo" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">
-            <i class="bi bi-link-45deg me-2"></i>Rattacher à une mission
+            <i class="bi bi-collection me-2" style="color: var(--color-meo);"></i>
+            <span id="modal-meo-title">Nouvelle mise en œuvre</span>
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <div class="alert alert-info py-2 mb-3" id="attach-info">
-            <span id="attach-count">0</span> tâche(s) sélectionnée(s)
-          </div>
-
           <div class="mb-3">
-            <label class="form-label fw-semibold">Mission cible :</label>
-            <div id="attach-target-info" class="p-3 bg-light rounded">
-              <!-- Info mission remplie par JS -->
+            <label class="form-label">Mission parente</label>
+            <div class="form-control bg-light" id="meo-parent-mission">-</div>
+          </div>
+          <div class="row">
+            <div class="col-md-4">
+              <div class="mb-3">
+                <label class="form-label">Code <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="meo-code" placeholder="MEO-001">
+              </div>
+            </div>
+            <div class="col-md-8">
+              <div class="mb-3">
+                <label class="form-label">Nom <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="meo-nom" placeholder="Phase de déploiement">
+              </div>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Catégorie</label>
+            <select class="form-select" id="meo-categorie">
+              <option value="Projet">Projet</option>
+              <option value="MCO">MCO (Maintien en condition)</option>
+              <option value="Imprévisible">Imprévisible</option>
+            </select>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label">Charge estimée (jours)</label>
+                <input type="number" class="form-control" id="meo-charge" min="0" step="0.5" value="0">
+              </div>
             </div>
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="button" class="btn btn-primary" id="btn-confirm-attach">
-            <i class="bi bi-check-lg me-1"></i>Confirmer le rattachement
+          <button type="button" class="btn btn-primary" id="btn-save-meo">
+            <i class="bi bi-check-lg me-1"></i>Enregistrer
           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Confirmation affectation -->
+  <div class="modal fade" id="modal-attach" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Affecter les tâches</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p><span id="attach-count">0</span> tâche(s) sélectionnée(s)</p>
+          <div class="alert alert-info py-2 small" id="attach-target">
+            <!-- Info cible -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-confirm-attach">Confirmer</button>
         </div>
       </div>
     </div>

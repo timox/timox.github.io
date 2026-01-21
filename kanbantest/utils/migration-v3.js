@@ -5,7 +5,7 @@
  * Analyse des donnees actuelles:
  * - type_tache_id contient le GENRE d'action (DOC, ANA, etc.)
  * - type_tache='Support' pour tous (pas discriminant)
- * - [MISSION] et [SA] dans les titres indiquent PRJ
+ * - [MISSION], [SA] et [MEO] dans les titres indiquent PRJ
  * - 4 enregistrements ___TEMP_USER_RECORD___ a nettoyer
  *
  * Usage: Executer dans la console du navigateur sur la page Kanban
@@ -44,7 +44,8 @@
 
     // Priorite 2: Prefixes dans le titre
     if (titre.includes('[MISSION]')) return 'PRJ';
-    if (titre.includes('[SA]')) return 'PRJ';  // Sous-Action = partie d'un projet
+    if (titre.includes('[SA]')) return 'PRJ';  // Ancien préfixe sous-action
+    if (titre.includes('[MEO]')) return 'PRJ'; // Nouveau préfixe mise en œuvre
     if (titre.includes('[INC]')) return 'INC';
     if (titre.includes('[MCO]')) return 'MCO';
 

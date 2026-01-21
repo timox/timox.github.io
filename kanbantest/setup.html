@@ -1153,7 +1153,7 @@
           });
         }
 
-        // Détecter les doublons par titre (pour [MISSION] et [SA])
+        // Détecter les doublons par titre (pour [MISSION], [SA] et [MEO])
         const titleCounts = {};
         const missionCodeCounts = {};
 
@@ -1170,7 +1170,7 @@
         let totalDuplicates = 0;
 
         for (const [titre, taskList] of Object.entries(titleCounts)) {
-          if (taskList.length > 1 && (titre.startsWith('[MISSION]') || titre.startsWith('[SA]'))) {
+          if (taskList.length > 1 && (titre.startsWith('[MISSION]') || titre.startsWith('[SA]') || titre.startsWith('[MEO]'))) {
             // Garder le premier, marquer les autres comme doublons
             const toKeep = taskList[0];
             const toDelete = taskList.slice(1);
@@ -1213,7 +1213,7 @@
         } else {
           duplicatesInfo.textContent = 'Aucun doublon détecté';
           setStatus('status-duplicates', 'done');
-          duplicatesPreview.innerHTML = '<div class="alert alert-success small">Aucun doublon trouvé dans les tâches [MISSION] et [SA]</div>';
+          duplicatesPreview.innerHTML = '<div class="alert alert-success small">Aucun doublon trouvé dans les tâches [MISSION], [SA] et [MEO]</div>';
           duplicatesPreview.style.display = 'block';
           log('Aucun doublon détecté', 'success');
         }
