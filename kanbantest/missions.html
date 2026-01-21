@@ -501,6 +501,56 @@
     </div>
   </template>
 
+  <!-- Modal: Classification de tâche -->
+  <div class="modal fade" id="modal-classify" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-tag me-2"></i>
+            Classifier la tâche
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label text-muted">Tâche à classifier :</label>
+            <div class="alert alert-light py-2">
+              <strong id="classify-task-title">-</strong>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="classify-mission-select" class="form-label">
+              <i class="bi bi-diagram-3 me-1"></i>
+              Mission <span class="text-danger">*</span>
+            </label>
+            <select class="form-select" id="classify-mission-select">
+              <option value="">-- Sélectionner une mission --</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label for="classify-sous-action-select" class="form-label">
+              <i class="bi bi-list-task me-1"></i>
+              Sous-action (optionnel)
+            </label>
+            <select class="form-select" id="classify-sous-action-select">
+              <option value="">-- Optionnel: Sous-action --</option>
+            </select>
+            <small class="text-muted">Sélectionnez une sous-action pour plus de précision</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="btn-save-classification">
+            <i class="bi bi-check-lg me-1"></i>Classifier
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Grist API -->
   <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
 

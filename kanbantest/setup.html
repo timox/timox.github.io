@@ -132,6 +132,34 @@
       </div>
     </div>
 
+    <!-- Nettoyage des données -->
+    <div class="card mb-4">
+      <div class="card-header bg-warning text-dark">
+        <i class="bi bi-broom me-2"></i>4. Nettoyage des données
+      </div>
+      <div class="card-body">
+        <div class="alert alert-warning small mb-3">
+          <strong>Attention :</strong> Ces actions suppriment des données. Utilisez avec précaution.
+        </div>
+        <div class="checklist-item d-flex justify-content-between align-items-center">
+          <div>
+            <strong>Doublons détectés</strong>
+            <div class="text-muted small" id="duplicates-info">Cliquez sur "Analyser" pour détecter les doublons</div>
+          </div>
+          <span class="status-badge status-pending" id="status-duplicates">Non analysé</span>
+        </div>
+        <div class="d-flex gap-2 flex-wrap mt-3">
+          <button class="btn btn-outline-warning" id="btn-analyze-duplicates" disabled>
+            <i class="bi bi-search me-1"></i>Analyser doublons
+          </button>
+          <button class="btn btn-danger" id="btn-clean-duplicates" disabled>
+            <i class="bi bi-trash me-1"></i>Nettoyer doublons
+          </button>
+        </div>
+        <div id="duplicates-preview" class="mt-3" style="display: none;"></div>
+      </div>
+    </div>
+
     <!-- Actions -->
     <div class="card mb-4">
       <div class="card-header">
@@ -425,7 +453,12 @@
     const btnCreateProgrammes = document.getElementById('btn-create-programmes');
     const btnAddHierarchyCols = document.getElementById('btn-add-hierarchy-cols');
     const btnCreateAgents = document.getElementById('btn-create-agents');
+    const btnAnalyzeDuplicates = document.getElementById('btn-analyze-duplicates');
+    const btnCleanDuplicates = document.getElementById('btn-clean-duplicates');
     const gristStatus = document.getElementById('grist-status');
+
+    // Stockage des doublons détectés
+    let detectedDuplicates = [];
 
     // Logging
     function log(message, type = 'info') {
@@ -455,6 +488,7 @@
         btnCreateProgrammes.disabled = false;
         btnAddHierarchyCols.disabled = false;
         btnCreateAgents.disabled = false;
+        btnAnalyzeDuplicates.disabled = false;
         log('Connexion Grist établie', 'success');
       }
     });
@@ -920,6 +954,157 @@
       }
 
       btnCreateAgents.disabled = false;
+    });
+
+    // ========================================
+    // ANALYSER LES DOUBLONS
+    // ========================================
+    btnAnalyzeDuplicates.addEventListener('click', async () => {
+      if (!gristReady) {
+        log('Grist non connecté', 'error');
+        return;
+      }
+
+      btnAnalyzeDuplicates.disabled = true;
+      log('Analyse des doublons en cours...', 'info');
+
+      try {
+        // Récupérer toutes les tâches
+        const tableData = await grist.docApi.fetchTable(TABLE_NAME);
+        const count = tableData.id?.length || 0;
+
+        // Construire un tableau de tâches
+        const tasks = [];
+        for (let i = 0; i < count; i++) {
+          tasks.push({
+            id: tableData.id[i],
+            titre: tableData.titre?.[i] || '',
+            mission_code: tableData.mission_code?.[i] || ''
+          });
+        }
+
+        // Détecter les doublons par titre (pour [MISSION] et [SA])
+        const titleCounts = {};
+        const missionCodeCounts = {};
+
+        tasks.forEach(task => {
+          // Doublons par titre exact
+          if (task.titre) {
+            titleCounts[task.titre] = titleCounts[task.titre] || [];
+            titleCounts[task.titre].push(task);
+          }
+        });
+
+        // Trouver les doublons (titres avec plus d'une occurrence)
+        detectedDuplicates = [];
+        let totalDuplicates = 0;
+
+        for (const [titre, taskList] of Object.entries(titleCounts)) {
+          if (taskList.length > 1 && (titre.startsWith('[MISSION]') || titre.startsWith('[SA]'))) {
+            // Garder le premier, marquer les autres comme doublons
+            const toKeep = taskList[0];
+            const toDelete = taskList.slice(1);
+
+            toDelete.forEach(task => {
+              detectedDuplicates.push({
+                id: task.id,
+                titre: task.titre,
+                keepId: toKeep.id
+              });
+            });
+
+            totalDuplicates += toDelete.length;
+            log(`Doublon: "${titre.substring(0, 50)}..." (${taskList.length} occurrences, ${toDelete.length} à supprimer)`, 'info');
+          }
+        }
+
+        // Mettre à jour l'interface
+        const duplicatesInfo = document.getElementById('duplicates-info');
+        const duplicatesPreview = document.getElementById('duplicates-preview');
+
+        if (totalDuplicates > 0) {
+          duplicatesInfo.textContent = `${totalDuplicates} enregistrements en double détectés`;
+          setStatus('status-duplicates', 'error');
+          btnCleanDuplicates.disabled = false;
+
+          // Afficher l'aperçu
+          let previewHtml = '<div class="alert alert-danger small"><strong>Doublons à supprimer :</strong><ul class="mb-0 mt-2">';
+          detectedDuplicates.slice(0, 10).forEach(dup => {
+            previewHtml += `<li>ID ${dup.id}: ${dup.titre.substring(0, 60)}...</li>`;
+          });
+          if (detectedDuplicates.length > 10) {
+            previewHtml += `<li>... et ${detectedDuplicates.length - 10} autres</li>`;
+          }
+          previewHtml += '</ul></div>';
+          duplicatesPreview.innerHTML = previewHtml;
+          duplicatesPreview.style.display = 'block';
+
+          log(`Total: ${totalDuplicates} doublons détectés`, 'error');
+        } else {
+          duplicatesInfo.textContent = 'Aucun doublon détecté';
+          setStatus('status-duplicates', 'done');
+          duplicatesPreview.innerHTML = '<div class="alert alert-success small">Aucun doublon trouvé dans les tâches [MISSION] et [SA]</div>';
+          duplicatesPreview.style.display = 'block';
+          log('Aucun doublon détecté', 'success');
+        }
+
+      } catch (error) {
+        log(`Erreur analyse: ${error.message}`, 'error');
+        setStatus('status-duplicates', 'error');
+      }
+
+      btnAnalyzeDuplicates.disabled = false;
+    });
+
+    // ========================================
+    // NETTOYER LES DOUBLONS
+    // ========================================
+    btnCleanDuplicates.addEventListener('click', async () => {
+      if (!gristReady) {
+        log('Grist non connecté', 'error');
+        return;
+      }
+
+      if (detectedDuplicates.length === 0) {
+        log('Aucun doublon à supprimer', 'info');
+        return;
+      }
+
+      if (!confirm(`Êtes-vous sûr de vouloir supprimer ${detectedDuplicates.length} enregistrements en double ? Cette action est irréversible.`)) {
+        log('Suppression annulée', 'info');
+        return;
+      }
+
+      btnCleanDuplicates.disabled = true;
+      log(`Suppression de ${detectedDuplicates.length} doublons...`, 'info');
+
+      try {
+        // Supprimer par lots de 50
+        const batchSize = 50;
+        const idsToDelete = detectedDuplicates.map(d => d.id);
+
+        for (let i = 0; i < idsToDelete.length; i += batchSize) {
+          const batch = idsToDelete.slice(i, i + batchSize);
+          await grist.docApi.applyUserActions([
+            ['BulkRemoveRecord', TABLE_NAME, batch]
+          ]);
+          log(`Supprimé ${Math.min(i + batchSize, idsToDelete.length)}/${idsToDelete.length}...`, 'info');
+        }
+
+        log(`✓ ${idsToDelete.length} doublons supprimés`, 'success');
+        setStatus('status-duplicates', 'done');
+
+        // Réinitialiser
+        detectedDuplicates = [];
+        document.getElementById('duplicates-info').textContent = 'Nettoyage terminé';
+        document.getElementById('duplicates-preview').innerHTML = '<div class="alert alert-success small">Doublons supprimés avec succès</div>';
+
+      } catch (error) {
+        log(`Erreur suppression: ${error.message}`, 'error');
+        setStatus('status-duplicates', 'error');
+      }
+
+      btnCleanDuplicates.disabled = false;
     });
   </script>
 </body>
