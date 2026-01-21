@@ -74,11 +74,21 @@
             <div class="timeline-controls-row">
               <span class="timeline-controls-label">Groupé par</span>
               <select id="timeline-groupby" class="form-select form-select-sm" aria-label="Groupement timeline">
-                <option value="personne">Personne</option>
-                <option value="type">Type</option>
-                <option value="previsibilite">Prévisibilité</option>
-                <option value="bureau">Bureau</option>
-                <option value="projet">Projet</option>
+                <optgroup label="Organisation">
+                  <option value="personne">Personne</option>
+                  <option value="bureau">Bureau</option>
+                  <option value="projet">Projet</option>
+                </optgroup>
+                <optgroup label="Classification V3">
+                  <option value="nature">Nature (Pourquoi)</option>
+                  <option value="genre">Genre (Comment)</option>
+                  <option value="etape">Etape (Cycle)</option>
+                  <option value="famille">Famille</option>
+                </optgroup>
+                <optgroup label="Autres">
+                  <option value="previsibilite">Previsibilite</option>
+                  <option value="type">Type (legacy)</option>
+                </optgroup>
               </select>
               <div class="btn-group btn-group-sm timeline-zoom" role="group" aria-label="Zoom timeline">
                 <button class="btn btn-outline-secondary timeline-zoom-btn" type="button" data-timeline-range="1">Jour</button>
