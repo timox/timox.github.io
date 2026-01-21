@@ -1563,6 +1563,63 @@ body {
 .timeline-imprevisible { border-left: 4px solid #dc3545 !important; }
 .timeline-previsible { border-left: 4px solid #198754 !important; }
 
+/* === TIMELINE BADGES COMPACTS === */
+.tl-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.tl-title {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.tl-badges {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.tl-b {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #fff;
+  background: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  cursor: default;
+}
+
+.tl-b.tl-s {
+  padding: 2px 5px;
+  font-size: 0.7rem;
+  min-width: 18px;
+}
+
+.tl-b.tl-u {
+  background: #64748b;
+  font-size: 0.6rem;
+  padding: 2px 4px;
+}
+
+.tl-b.tl-t {
+  background: #0ea5e9;
+  font-size: 0.6rem;
+}
+
 .vis-current-time { background-color: #dc3545 !important; }
 .vis-item {
   border-radius: 12px;

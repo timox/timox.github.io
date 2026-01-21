@@ -402,43 +402,54 @@ export class TimelineManager {
     const data = item.customData || {};
     const badges = [];
 
-    // Codes courts pour les axes V3
-    const NATURE_SHORT = { 'Projet': 'PRJ', 'Support': 'SUP', 'Incident': 'INC', 'MCO': 'MCO', 'Overhead': 'OVH' };
-    const PREV_SHORT = { 'Prévisible': 'Prev', 'Imprévisible': 'Impr', 'Variable': 'Var' };
-    const STATUT_SHORT = { 'En cours': 'EC', 'À faire': 'AF', 'Terminé': 'OK', 'Bloqué': 'BLQ', 'En attente': 'ATT', 'Backlog': 'BKL', 'Validation': 'VAL' };
+    // Couleurs statut
+    const STATUT_INFO = {
+      'En cours': { icon: '▶', bg: '#3b82f6' },
+      'À faire': { icon: '○', bg: '#f59e0b' },
+      'Terminé': { icon: '✓', bg: '#10b981' },
+      'Bloqué': { icon: '✕', bg: '#ef4444' },
+      'En attente': { icon: '◷', bg: '#8b5cf6' },
+      'Backlog': { icon: '☰', bg: '#9ca3af' },
+      'Validation': { icon: '◉', bg: '#06b6d4' }
+    };
 
-    // Nature (code court)
+    // Couleurs nature
+    const NATURE_INFO = {
+      'Projet': { code: 'PRJ', bg: '#6366f1' },
+      'PRJ': { code: 'PRJ', bg: '#6366f1' },
+      'Support': { code: 'SUP', bg: '#f97316' },
+      'SUP': { code: 'SUP', bg: '#f97316' },
+      'Incident': { code: 'INC', bg: '#ef4444' },
+      'INC': { code: 'INC', bg: '#ef4444' },
+      'MCO': { code: 'MCO', bg: '#10b981' },
+      'Overhead': { code: 'OVH', bg: '#78716c' },
+      'OVH': { code: 'OVH', bg: '#78716c' }
+    };
+
+    // Badge Nature (PRJ, SUP, INC...)
     if (data.nature) {
-      const shortCode = NATURE_SHORT[data.nature] || data.nature.substring(0, 3).toUpperCase();
-      const natureData = getNatureActiviteByLegacyId(data.nature) || {};
-      const color = natureData.couleur || '#6366f1';
-      badges.push(`<span class="timeline-meta-pill" style="--pill-color: ${color};">${shortCode}</span>`);
+      const info = NATURE_INFO[data.nature] || { code: data.nature.substring(0, 3).toUpperCase(), bg: '#6366f1' };
+      badges.push(`<span class="tl-b" style="background:${info.bg}" title="${data.nature}">${info.code}</span>`);
     }
 
-    // Statut (code court)
+    // Badge Statut (icone)
     if (data.statut) {
-      const shortStatut = STATUT_SHORT[data.statut] || data.statut.substring(0, 2);
-      const statusColor = data.statut_color || '#64748b';
-      badges.push(`<span class="timeline-meta-pill" style="--pill-color: ${statusColor};">${shortStatut}</span>`);
+      const info = STATUT_INFO[data.statut] || { icon: '●', bg: '#6b7280' };
+      badges.push(`<span class="tl-b tl-s" style="background:${info.bg}" title="${data.statut}">${info.icon}</span>`);
     }
 
-    // Assignee (prenom seulement)
+    // Badge Assignee (initiales)
     if (data.assignee && data.assignee !== 'Non défini') {
-      const prenom = data.assignee.split(' ')[0];
-      badges.push(`<span class="timeline-meta-pill timeline-meta-assignee">${prenom}</span>`);
+      const initials = data.assignee.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+      badges.push(`<span class="tl-b tl-u" title="${data.assignee}">${initials}</span>`);
     }
 
-    // Temps estime
+    // Badge Temps
     if (Number.isFinite(data.temps_estime) && data.temps_estime > 0) {
-      badges.push(`<span class="timeline-meta-pill timeline-meta-charge">${data.temps_estime}h</span>`);
+      badges.push(`<span class="tl-b tl-t" title="Estimé: ${data.temps_estime}h">${data.temps_estime}h</span>`);
     }
 
-    return `
-      <div class="timeline-item-content">
-        <div class="timeline-item-title">${item.content}</div>
-        <div class="timeline-item-meta">${badges.join('')}</div>
-      </div>
-    `;
+    return `<div class="tl-item"><span class="tl-title" title="${item.content}">${item.content}</span><span class="tl-badges">${badges.join('')}</span></div>`;
   }
 
   async handleTimelineMove(item, callback) {
