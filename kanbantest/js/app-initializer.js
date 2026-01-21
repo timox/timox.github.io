@@ -263,7 +263,7 @@ export class KanbanAppInitializer {
   initializeTooltips() {
     // D'abord, disposer de tous les tooltips existants et nettoyer
     this.disposeExistingTooltips();
-    this.forceTooltipCleanup();
+    this.forceCleanTooltips();
 
     // Ne créer les tooltips QUE sur les éléments avec data-bs-toggle="tooltip"
     // Éviter de créer des tooltips automatiques sur tous les title pour éviter les orphelins

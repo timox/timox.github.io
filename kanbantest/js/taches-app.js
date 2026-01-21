@@ -31,6 +31,7 @@ class TachesApp {
     this.physicsEnabled = true;
     this.tooltipsEnabled = true;
     this.originalNodeColors = null;
+    this.contextMenuTaskId = null;
   }
 
   /**
@@ -241,6 +242,75 @@ class TachesApp {
     $(document).on('dblclick', '.task-card', (e) => {
       const taskId = parseInt($(e.currentTarget).data('task-id'));
       this.openTaskDetail(taskId);
+    });
+
+    // === Menu contextuel (clic droit) ===
+    this.setupContextMenu();
+  }
+
+  /**
+   * Configure le menu contextuel pour les tâches
+   */
+  setupContextMenu() {
+    const $contextMenu = $('#task-context-menu');
+
+    // Clic droit sur tâche
+    $(document).on('contextmenu', '.task-card', (e) => {
+      e.preventDefault();
+      const taskId = parseInt($(e.currentTarget).data('task-id'));
+      this.contextMenuTaskId = taskId;
+      this.selectTask(taskId);
+
+      // Positionner et afficher le menu
+      $contextMenu.css({
+        display: 'block',
+        left: e.pageX,
+        top: e.pageY
+      });
+    });
+
+    // Fermer le menu au clic ailleurs
+    $(document).on('click', () => {
+      $contextMenu.hide();
+    });
+
+    // Fermer au scroll
+    $(document).on('scroll', () => {
+      $contextMenu.hide();
+    });
+
+    // Actions du menu contextuel
+    $('#ctx-edit-task').on('click', (e) => {
+      e.preventDefault();
+      $contextMenu.hide();
+      if (this.contextMenuTaskId) {
+        this.openTaskDetail(this.contextMenuTaskId);
+      }
+    });
+
+    $('#ctx-view-detail').on('click', (e) => {
+      e.preventDefault();
+      $contextMenu.hide();
+      if (this.contextMenuTaskId) {
+        this.openTaskDetail(this.contextMenuTaskId);
+      }
+    });
+
+    $('#ctx-add-link').on('click', (e) => {
+      e.preventDefault();
+      $contextMenu.hide();
+      if (this.contextMenuTaskId) {
+        this.openAddLinkModal('RELATED_TO', this.contextMenuTaskId);
+      }
+    });
+
+    $('#ctx-focus-graph').on('click', (e) => {
+      e.preventDefault();
+      $contextMenu.hide();
+      if (this.contextMenuTaskId && this.network) {
+        this.network.focus(this.contextMenuTaskId, { scale: 1.5, animation: true });
+        this.network.selectNodes([this.contextMenuTaskId]);
+      }
     });
   }
 
