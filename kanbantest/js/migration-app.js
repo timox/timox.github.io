@@ -64,6 +64,7 @@ class MigrationApp {
     this.duplicates = []; // Doublons [MISSION] et [SA]
     this.obsoletePrefixes = []; // Tâches avec préfixes obsolètes à nettoyer
     this.existingColumns = []; // Cache des colonnes existantes
+    this.agents = []; // Liste des agents pour synchronisation
     this.isAnalyzed = false;
   }
 
@@ -76,12 +77,16 @@ class MigrationApp {
     // Attendre que Grist soit pret
     await this.waitForGrist();
 
-    // Event listeners
+    // Event listeners - Migration V3
     $('#btn-analyze').on('click', () => this.analyze());
     $('#btn-delete-temp').on('click', () => this.deleteTemp());
     $('#btn-delete-duplicates').on('click', () => this.deleteDuplicates());
     $('#btn-clean-prefixes').on('click', () => this.cleanObsoletePrefixes());
     $('#btn-migrate').on('click', () => this.migrate());
+
+    // Event listeners - Synchronisation Agents
+    $('#btn-load-agents').on('click', () => this.loadAgents());
+    $('#btn-sync-agents').on('click', () => this.syncAgents());
 
     this.log('Application prete. Cliquez sur "Analyser".', 'success');
   }
@@ -127,28 +132,11 @@ class MigrationApp {
       const availableCols = Object.keys(data);
       this.log(`Colonnes disponibles: ${availableCols.join(', ')}`, 'info');
 
-      // Convertir en tableau d'objets (avec conversion string securisee)
-      // Utiliser les noms de colonnes réels (sensible à la casse)
-      const getNatureActivite = (idx) => {
-        if (data.Nature_activite) return toStr(data.Nature_activite[idx]);
-        if (data.nature_activite) return toStr(data.nature_activite[idx]);
-        return '';
-      };
-      const getGenreAction = (idx) => {
-        if (data.Genre_action) return toStr(data.Genre_action[idx]);
-        if (data.genre_action) return toStr(data.genre_action[idx]);
-        return '';
-      };
-      const getEtapeCycle = (idx) => {
-        if (data.Etape_cycle) return toStr(data.Etape_cycle[idx]);
-        if (data.etape_code) return toStr(data.etape_code[idx]);
-        return '';
-      };
-      const getPrevisibilite = (idx) => {
-        if (data.Previsibilite) return toStr(data.Previsibilite[idx]);
-        if (data.previsibilite) return toStr(data.previsibilite[idx]);
-        return '';
-      };
+      // Convertir en tableau d'objets (noms de colonnes en minuscules)
+      const getNatureActivite = (idx) => toStr(data.nature_activite?.[idx]);
+      const getGenreAction = (idx) => toStr(data.genre_action?.[idx]);
+      const getEtapeCycle = (idx) => toStr(data.etape_cycle?.[idx]);
+      const getPrevisibilite = (idx) => toStr(data.previsibilite?.[idx]);
 
       this.records = [];
       for (let i = 0; i < data.id.length; i++) {
@@ -223,30 +211,29 @@ class MigrationApp {
         }
 
         // Preparer migration
-        // NOTE: Les noms de colonnes Grist sont sensibles à la casse
-        // Colonnes réelles: Nature_activite, Genre_action, Etape_cycle, Previsibilite
+        // NOTE: Les noms de colonnes sont en minuscules dans Grist
         const updates = {};
 
-        // Nature activite (ChoiceList - format ['L', 'valeur'])
+        // Nature activite (Choice - valeur simple string)
         if (!record.nature_activite) {
           const nature = this.deduceNature(record);
           if (nature) {
-            updates.Nature_activite = ['L', nature];
+            updates.nature_activite = nature;
           }
         }
 
-        // Genre action (ChoiceList - format ['L', 'valeur'])
+        // Genre action (Choice - valeur simple string)
         if (!record.genre_action && record.type_tache_id) {
           const genre = TYPE_ID_TO_GENRE[record.type_tache_id];
           if (genre) {
-            updates.Genre_action = ['L', genre];
+            updates.genre_action = genre;
           }
         }
 
-        // Previsibilite (ChoiceList - format ['L', 'valeur'])
-        const finalNature = updates.Nature_activite ? updates.Nature_activite[1] : record.nature_activite;
+        // Previsibilite (Choice - valeur simple string)
+        const finalNature = updates.nature_activite || record.nature_activite;
         if (!record.previsibilite && finalNature && NATURE_PREVISIBILITE[finalNature]) {
-          updates.Previsibilite = ['L', NATURE_PREVISIBILITE[finalNature]];
+          updates.previsibilite = NATURE_PREVISIBILITE[finalNature];
         }
 
         if (Object.keys(updates).length > 0) {
@@ -384,11 +371,10 @@ class MigrationApp {
       html += '<ul class="list-group">';
       this.toMigrate.slice(0, 10).forEach(({ record, updates }) => {
         const badges = [];
-        // Extraire la valeur des ChoiceList ['L', 'valeur']
-        const extractVal = (v) => Array.isArray(v) && v[0] === 'L' ? v[1] : v;
-        if (updates.Nature_activite) badges.push(`<span class="badge badge-nature">${extractVal(updates.Nature_activite)}</span>`);
-        if (updates.Genre_action) badges.push(`<span class="badge badge-genre">${extractVal(updates.Genre_action)}</span>`);
-        if (updates.Previsibilite) badges.push(`<span class="badge badge-etape">${extractVal(updates.Previsibilite).substring(0, 6)}</span>`);
+        // Les valeurs sont des strings simples (type Choice)
+        if (updates.nature_activite) badges.push(`<span class="badge badge-nature">${updates.nature_activite}</span>`);
+        if (updates.genre_action) badges.push(`<span class="badge badge-genre">${updates.genre_action}</span>`);
+        if (updates.previsibilite) badges.push(`<span class="badge badge-etape">${updates.previsibilite.substring(0, 6)}</span>`);
 
         html += `
           <li class="list-group-item small">
@@ -580,16 +566,23 @@ class MigrationApp {
     this.log(`Migration de ${this.toMigrate.length} taches...`, 'info');
     $('#btn-migrate').prop('disabled', true).html('<i class="bi bi-hourglass-split me-1"></i>Migration...');
 
-    // Vérifier que les colonnes V3 existent
+    // Forcer le rechargement du cache et vérifier les colonnes V3
+    this.existingColumns = [];
     const existingCols = await this.getExistingColumns();
-    this.log(`Colonnes disponibles: ${existingCols.join(', ')}`, 'info');
+    this.log(`Colonnes disponibles (${existingCols.length}): ${existingCols.join(', ')}`, 'info');
 
-    // Vérifier quelles colonnes V3 existent (noms avec majuscule)
-    const v3Cols = ['Nature_activite', 'Genre_action', 'Etape_cycle', 'Previsibilite'];
+    // Vérifier quelles colonnes V3 existent (noms en minuscules)
+    const v3Cols = ['nature_activite', 'genre_action', 'etape_cycle', 'previsibilite'];
     const missingCols = v3Cols.filter(c => !existingCols.includes(c));
+
     if (missingCols.length > 0) {
       this.log(`Colonnes manquantes: ${missingCols.join(', ')} - création...`, 'warning');
       await this.ensureV3Columns();
+      // Rafraîchir le cache après création
+      this.existingColumns = [];
+      await this.getExistingColumns();
+    } else {
+      this.log('Toutes les colonnes V3 sont présentes', 'success');
     }
 
     let migrated = 0;
@@ -597,21 +590,12 @@ class MigrationApp {
 
     for (const { record, updates } of this.toMigrate) {
       try {
-        // Mapper les noms de colonnes aux noms réels existants
-        // Gère les variantes de noms (ex: etape_code -> Etape_cycle)
-        const columnMapping = {
-          'Nature_activite': existingCols.find(c => c.toLowerCase() === 'nature_activite') || 'Nature_activite',
-          'Genre_action': existingCols.find(c => c.toLowerCase() === 'genre_action') || 'Genre_action',
-          'Etape_cycle': existingCols.find(c => c.toLowerCase() === 'etape_cycle' || c.toLowerCase() === 'etape_code') || 'Etape_cycle',
-          'Previsibilite': existingCols.find(c => c.toLowerCase() === 'previsibilite') || 'Previsibilite'
-        };
-
         // Filtrer les updates pour ne garder que les colonnes qui existent
+        // Les noms de colonnes sont en minuscules
         const safeUpdates = {};
         for (const [key, value] of Object.entries(updates)) {
-          const actualCol = columnMapping[key];
-          if (actualCol && existingCols.includes(actualCol)) {
-            safeUpdates[actualCol] = value;
+          if (existingCols.includes(key)) {
+            safeUpdates[key] = value;
           } else {
             this.log(`  ⚠ Colonne "${key}" ignorée (n'existe pas)`, 'warning');
           }
@@ -673,44 +657,39 @@ class MigrationApp {
   }
 
   /**
-   * Ajoute ou met à jour une colonne de manière sécurisée
+   * Ajoute une colonne si elle n'existe pas
    */
   async ensureColumn(colId, config) {
-    const existingCols = await this.getExistingColumns();
+    const existingCols = this.existingColumns;
 
-    // Vérifier si la colonne existe (sensible à la casse)
-    // Variantes possibles avec accents ou casse différente
-    const variants = {
-      'Nature_activite': ['Nature_activite', 'nature_activite', 'nature_activité'],
-      'Genre_action': ['Genre_action', 'genre_action'],
-      'Etape_cycle': ['Etape_cycle', 'etape_cycle', 'etape_code'],
-      'Previsibilite': ['Previsibilite', 'previsibilite', 'previsibilité', 'prévisibilité']
-    };
+    this.log(`  Vérification colonne ${colId}...`, 'info');
 
-    const colVariants = variants[colId] || [colId];
-    const existingVariant = colVariants.find(v => existingCols.includes(v));
+    // Vérifier si la colonne existe (nom exact)
+    if (existingCols.includes(colId)) {
+      this.log(`  ✓ Colonne ${colId} existe`, 'success');
+      return { success: true, action: 'exists', message: `${colId} existe déjà` };
+    }
 
-    if (existingVariant) {
-      // La colonne existe déjà (peut-être avec un nom différent)
-      // Ne pas essayer de modifier, juste confirmer qu'elle existe
-      this.log(`  Colonne trouvée: ${existingVariant}`, 'info');
-      return { success: true, action: 'exists', message: `${existingVariant} existe déjà` };
-    } else {
-      // La colonne n'existe pas - la créer
-      try {
-        await grist.docApi.applyUserActions([
-          ['AddColumn', TABLE_ID, colId, {
-            type: config.type,
-            label: config.label,
-            widgetOptions: config.widgetOptions
-          }]
-        ]);
-        // Mettre à jour le cache
-        this.existingColumns.push(colId);
-        return { success: true, action: 'created', message: `${colId} créée` };
-      } catch (e) {
-        return { success: false, action: 'error', message: `${colId}: ${e.message}` };
+    // La colonne n'existe pas - la créer
+    this.log(`  ⚠ Colonne ${colId} non trouvée, création...`, 'warning');
+    try {
+      await grist.docApi.applyUserActions([
+        ['AddColumn', TABLE_ID, colId, {
+          type: config.type,
+          label: config.label,
+          widgetOptions: config.widgetOptions
+        }]
+      ]);
+      // Mettre à jour le cache
+      this.existingColumns.push(colId);
+      return { success: true, action: 'created', message: `${colId} créée` };
+    } catch (e) {
+      // Si l'erreur indique que la colonne existe déjà, c'est OK
+      if (e.message && e.message.includes('already exists')) {
+        this.log(`  ✓ Colonne ${colId} existe déjà (confirmé par erreur)`, 'info');
+        return { success: true, action: 'exists', message: `${colId} existe déjà` };
       }
+      return { success: false, action: 'error', message: `${colId}: ${e.message}` };
     }
   }
 
@@ -722,12 +701,13 @@ class MigrationApp {
 
     // Forcer le rechargement du cache des colonnes
     this.existingColumns = [];
-    await this.getExistingColumns();
+    const cols = await this.getExistingColumns();
+    this.log(`Colonnes actuelles (${cols.length}): ${cols.join(', ')}`, 'info');
 
-    // NOTE: Noms de colonnes avec majuscule initiale comme dans Grist
+    // Colonnes V3 en minuscules - Type Choice (valeur unique)
     const columns = {
-      Nature_activite: {
-        type: 'ChoiceList',
+      nature_activite: {
+        type: 'Choice',
         label: 'Nature activité',
         widgetOptions: JSON.stringify({
           choices: ['INC', 'SUP', 'MCO', 'PRJ', 'OVH'],
@@ -740,8 +720,8 @@ class MigrationApp {
           }
         })
       },
-      Genre_action: {
-        type: 'ChoiceList',
+      genre_action: {
+        type: 'Choice',
         label: 'Genre action',
         widgetOptions: JSON.stringify({
           choices: ['DOC', 'ANA', 'CON', 'RCH', 'DEV', 'TST', 'VAL', 'VER', 'COR', 'INS', 'CFG', 'INV', 'SEC', 'REU', 'FOR', 'SUI'],
@@ -765,8 +745,8 @@ class MigrationApp {
           }
         })
       },
-      Etape_cycle: {
-        type: 'ChoiceList',
+      etape_cycle: {
+        type: 'Choice',
         label: 'Étape cycle',
         widgetOptions: JSON.stringify({
           choices: ['ETP.VIS', 'ETP.ANA', 'ETP.CON', 'ETP.PLN', 'ETP.REA', 'ETP.DEP', 'ETP.EXP', 'ETP.AME'],
@@ -782,8 +762,8 @@ class MigrationApp {
           }
         })
       },
-      Previsibilite: {
-        type: 'ChoiceList',
+      previsibilite: {
+        type: 'Choice',
         label: 'Prévisibilité',
         widgetOptions: JSON.stringify({
           choices: ['Prévisible', 'Imprévisible'],
@@ -805,6 +785,210 @@ class MigrationApp {
     }
 
     this.log('Colonnes V3 prêtes', 'success');
+  }
+
+  // ========== SYNCHRONISATION AGENTS ==========
+
+  /**
+   * Charge les agents depuis la configuration (localStorage) ou les données existantes
+   */
+  async loadAgents() {
+    this.log('=== CHARGEMENT DES AGENTS ===', 'info');
+    this.agents = [];
+
+    try {
+      // 1. Essayer de charger depuis localStorage (config.html)
+      const stored = localStorage.getItem('kanban_config');
+      if (stored) {
+        const config = JSON.parse(stored);
+        if (config.personnes && Array.isArray(config.personnes)) {
+          this.agents = config.personnes.map(p => p.nom).filter(Boolean);
+          this.log(`${this.agents.length} agents chargés depuis la configuration`, 'success');
+        }
+      }
+
+      // 2. Si pas de config, extraire des données existantes (champ "qui")
+      if (this.agents.length === 0) {
+        this.log('Pas de config locale, extraction depuis les données Grist...', 'info');
+        const data = await grist.docApi.fetchTable(TABLE_ID);
+        const quiColumn = data.qui || [];
+
+        const uniqueAgents = new Set();
+        for (const val of quiColumn) {
+          if (Array.isArray(val) && val[0] === 'L') {
+            // Format ChoiceList ['L', 'agent1', 'agent2']
+            val.slice(1).forEach(a => {
+              if (a && typeof a === 'string') uniqueAgents.add(a);
+            });
+          } else if (typeof val === 'string' && val) {
+            uniqueAgents.add(val);
+          }
+        }
+
+        this.agents = [...uniqueAgents].sort();
+        this.log(`${this.agents.length} agents extraits des données existantes`, 'success');
+      }
+
+      // 3. Ajouter les agents par défaut s'ils ne sont pas déjà présents
+      const defaultAgents = ['Alex', 'Timothée', 'Isabelle', 'Chloé', 'Paul', 'Théo',
+        'Gaël', 'Thomas', 'Elie', 'Landry', 'Presta', 'Yvon', 'Clarisse', 'Hervé', 'Didier'];
+
+      for (const agent of defaultAgents) {
+        if (!this.agents.includes(agent)) {
+          this.agents.push(agent);
+        }
+      }
+      this.agents.sort();
+
+      // Mettre à jour l'UI
+      this.renderAgentsList();
+      $('#count-agents').text(this.agents.length);
+      $('#btn-sync-agents').prop('disabled', this.agents.length === 0);
+
+      this.log(`Total: ${this.agents.length} agents disponibles`, 'success');
+
+    } catch (error) {
+      this.log(`Erreur chargement agents: ${error.message}`, 'error');
+      console.error(error);
+    }
+  }
+
+  /**
+   * Affiche la liste des agents
+   */
+  renderAgentsList() {
+    const $container = $('#agents-list');
+
+    if (this.agents.length === 0) {
+      $container.html('<span class="text-muted">Aucun agent trouvé.</span>');
+      return;
+    }
+
+    const badges = this.agents.map(agent =>
+      `<span class="badge bg-secondary me-1 mb-1">${this.escapeHtml(agent)}</span>`
+    ).join('');
+
+    $container.html(badges);
+  }
+
+  /**
+   * Synchronise les agents avec les colonnes de choix
+   */
+  async syncAgents() {
+    if (this.agents.length === 0) {
+      this.log('Aucun agent à synchroniser. Chargez d\'abord les agents.', 'warning');
+      return;
+    }
+
+    // Récupérer les champs à synchroniser
+    const syncQui = $('#sync-qui').is(':checked');
+    const syncResponsable = $('#sync-responsable').is(':checked');
+    const syncResponsableMission = $('#sync-responsable-mission').is(':checked');
+
+    if (!syncQui && !syncResponsable && !syncResponsableMission) {
+      this.log('Aucun champ sélectionné pour la synchronisation.', 'warning');
+      return;
+    }
+
+    this.log('=== SYNCHRONISATION DES AGENTS ===', 'info');
+    this.log(`Agents: ${this.agents.join(', ')}`, 'info');
+
+    const widgetOptions = JSON.stringify({
+      choices: this.agents,
+      choiceOptions: {} // Pas de couleurs personnalisées pour les agents
+    });
+
+    let updated = 0;
+    let errors = 0;
+
+    // Synchroniser le champ "qui" (ChoiceList)
+    if (syncQui) {
+      try {
+        this.log('Mise à jour du champ "qui" (ChoiceList)...', 'info');
+        await grist.docApi.applyUserActions([
+          ['ModifyColumn', TABLE_ID, 'qui', {
+            type: 'ChoiceList',
+            widgetOptions: widgetOptions
+          }]
+        ]);
+        updated++;
+        this.log('  ✓ Champ "qui" synchronisé', 'success');
+      } catch (e) {
+        errors++;
+        this.log(`  ✗ Erreur "qui": ${e.message}`, 'error');
+      }
+    }
+
+    // Synchroniser le champ "responsable" (Choice)
+    if (syncResponsable) {
+      try {
+        this.log('Mise à jour du champ "responsable" (Choice)...', 'info');
+        await grist.docApi.applyUserActions([
+          ['ModifyColumn', TABLE_ID, 'responsable', {
+            type: 'Choice',
+            widgetOptions: widgetOptions
+          }]
+        ]);
+        updated++;
+        this.log('  ✓ Champ "responsable" synchronisé', 'success');
+      } catch (e) {
+        // Si le champ n'existe pas, le créer
+        if (e.message && e.message.includes('does not exist')) {
+          try {
+            await grist.docApi.applyUserActions([
+              ['AddColumn', TABLE_ID, 'responsable', {
+                type: 'Choice',
+                label: 'Responsable',
+                widgetOptions: widgetOptions
+              }]
+            ]);
+            updated++;
+            this.log('  ✓ Champ "responsable" créé et synchronisé', 'success');
+          } catch (e2) {
+            errors++;
+            this.log(`  ✗ Erreur création "responsable": ${e2.message}`, 'error');
+          }
+        } else {
+          errors++;
+          this.log(`  ✗ Erreur "responsable": ${e.message}`, 'error');
+        }
+      }
+    }
+
+    // Synchroniser le champ "responsable_mission" (Choice) - sur la table stratégie
+    if (syncResponsableMission) {
+      try {
+        this.log('Mise à jour du champ "responsable_mission" (Choice)...', 'info');
+        // Le champ responsable_mission peut être sur Ssir_principale_task ou sur Ssir_strategie2
+        // Essayer d'abord sur la table principale
+        await grist.docApi.applyUserActions([
+          ['ModifyColumn', TABLE_ID, 'responsable_mission', {
+            type: 'Choice',
+            widgetOptions: widgetOptions
+          }]
+        ]);
+        updated++;
+        this.log('  ✓ Champ "responsable_mission" synchronisé', 'success');
+      } catch (e) {
+        // Essayer sur Ssir_strategie2
+        try {
+          await grist.docApi.applyUserActions([
+            ['ModifyColumn', 'Ssir_strategie2', 'responsable', {
+              type: 'Choice',
+              widgetOptions: widgetOptions
+            }]
+          ]);
+          updated++;
+          this.log('  ✓ Champ "responsable" sur Ssir_strategie2 synchronisé', 'success');
+        } catch (e2) {
+          errors++;
+          this.log(`  ✗ Erreur "responsable_mission": ${e.message}`, 'error');
+        }
+      }
+    }
+
+    this.log(`=== SYNCHRONISATION TERMINÉE ===`, updated > 0 ? 'success' : 'warning');
+    this.log(`${updated} champ(s) mis à jour, ${errors} erreur(s)`, updated > 0 ? 'success' : 'warning');
   }
 
   /**
