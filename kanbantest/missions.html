@@ -40,10 +40,12 @@
       border-left-color: #95a5a6;
     }
 
-    .sous-action-item {
-      border-left: 3px solid #ecf0f1;
+    .strategy-info {
+      border-left: 3px solid #6366f1;
       padding-left: 12px;
       margin-left: 8px;
+      background: #f8f9fa;
+      border-radius: 0 4px 4px 0;
     }
 
     .badge-categorie {
@@ -283,21 +285,21 @@
           <form id="form-mission">
             <div class="row g-3">
 
-              <!-- Sélecteur de stratégie -->
+              <!-- Sélecteur de stratégie (Programme → Stratégie → Mission) -->
               <div class="col-12">
                 <label for="mission-strategie" class="form-label">
                   <i class="bi bi-diagram-3 me-1"></i>
-                  Lier à une stratégie existante
+                  Lier à une mission existante (Ssir_strategie2)
                 </label>
                 <select class="form-select" id="mission-strategie">
                   <option value="">-- Créer sans lien stratégique --</option>
                   <!-- Options chargées dynamiquement depuis Ssir_strategie2 -->
                 </select>
                 <small class="text-muted">
-                  Sélectionnez une stratégie (objectif + sous-objectif + action) pour créer une mission liée
+                  Sélectionnez une mission stratégique (Programme → Stratégie → Mission) pour lier les tâches
                 </small>
                 <div id="strategy-preview" class="mt-2" style="display: none;">
-                  <!-- Aperçu de la stratégie sélectionnée -->
+                  <!-- Aperçu de la hiérarchie sélectionnée -->
                 </div>
               </div>
 
@@ -372,18 +374,13 @@
 
             </div>
 
-            <!-- Section Sous-actions -->
+            <!-- Note sur le modèle simplifié -->
             <hr class="my-4">
-            <h6 class="mb-3">
-              <i class="bi bi-list-task me-2"></i>
-              Sous-actions initiales (optionnel)
-            </h6>
-            <div id="sous-actions-container">
-              <!-- Sous-actions seront ajoutées ici -->
+            <div class="alert alert-info small mb-0">
+              <i class="bi bi-info-circle me-2"></i>
+              <strong>Modèle simplifié :</strong> Les tâches sont directement liées aux missions via strategie_id.
+              La notion de sous-action a été supprimée.
             </div>
-            <button type="button" class="btn btn-sm btn-outline-primary" id="btn-add-sous-action">
-              <i class="bi bi-plus-circle me-1"></i>Ajouter une sous-action
-            </button>
 
           </form>
         </div>
@@ -426,10 +423,10 @@
               <i class="bi bi-calendar me-1"></i>
               <span class="mission-dates">Dates</span>
             </span>
-          </div>
-
-          <div class="sous-actions-list mb-3">
-            <!-- Sous-actions -->
+            <span class="me-3 strategy-link" style="display: none;">
+              <i class="bi bi-diagram-3 me-1"></i>
+              <span class="mission-strategy">Stratégie</span>
+            </span>
           </div>
 
           <div class="d-flex justify-content-between align-items-center">
@@ -457,64 +454,22 @@
     </div>
   </template>
 
-  <!-- Template: Sous-action dans carte -->
-  <template id="template-sous-action-badge">
-    <div class="sous-action-item mb-2">
-      <span class="badge badge-categorie me-2">CAT</span>
-      <span class="sous-action-nom">Nom sous-action</span>
-      <span class="badge bg-light text-dark ms-2 sous-action-code">CODE</span>
-    </div>
-  </template>
+  <!-- Note: Sous-actions templates removed - model simplified to Mission → Tâches -->
 
-  <!-- Template: Form Sous-action -->
-  <template id="template-sous-action-form">
-    <div class="card mb-2 sous-action-form">
-      <div class="card-body p-3">
-        <div class="row g-2">
-          <div class="col-md-4">
-            <input type="text" class="form-control form-control-sm sa-code"
-                   placeholder="Code (SA-001)">
-          </div>
-          <div class="col-md-8">
-            <input type="text" class="form-control form-control-sm sa-nom"
-                   placeholder="Nom de la sous-action">
-          </div>
-          <div class="col-md-4">
-            <select class="form-select form-select-sm sa-categorie">
-              <option value="MCO">🔧 MCO</option>
-              <option value="Projet" selected>🎯 Projet</option>
-              <option value="Imprévisible">⚡ Imprévisible</option>
-            </select>
-          </div>
-          <div class="col-md-3">
-            <input type="number" class="form-control form-control-sm sa-charge"
-                   placeholder="Charge (j)" step="0.5">
-          </div>
-          <div class="col-md-4"></div>
-          <div class="col-md-1 text-end">
-            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-sa">
-              <i class="bi bi-x"></i>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </template>
-
-  <!-- Modal: Classification de tâche -->
+  <!-- Modal: Classification de tâche (liens vers mission/stratégie) -->
   <div class="modal fade" id="modal-classify" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">
             <i class="bi bi-tag me-2"></i>
-            Classifier la tâche
+            Affecter à une mission
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label text-muted">Tâche à classifier :</label>
+            <label class="form-label text-muted">Tâche à affecter :</label>
             <div class="alert alert-light py-2">
               <strong id="classify-task-title">-</strong>
             </div>
@@ -523,28 +478,25 @@
           <div class="mb-3">
             <label for="classify-mission-select" class="form-label">
               <i class="bi bi-diagram-3 me-1"></i>
-              Mission <span class="text-danger">*</span>
+              Mission (Ssir_strategie2) <span class="text-danger">*</span>
             </label>
             <select class="form-select" id="classify-mission-select">
               <option value="">-- Sélectionner une mission --</option>
+              <!-- Options chargées depuis Ssir_strategie2 où action != null -->
             </select>
+            <small class="text-muted">
+              Hiérarchie : Programme → Stratégie → Mission
+            </small>
           </div>
 
-          <div class="mb-3">
-            <label for="classify-sous-action-select" class="form-label">
-              <i class="bi bi-list-task me-1"></i>
-              Sous-action (optionnel)
-            </label>
-            <select class="form-select" id="classify-sous-action-select">
-              <option value="">-- Optionnel: Sous-action --</option>
-            </select>
-            <small class="text-muted">Sélectionnez une sous-action pour plus de précision</small>
+          <div id="classify-strategy-preview" class="strategy-info p-2 mb-3" style="display: none;">
+            <!-- Aperçu de la hiérarchie sélectionnée -->
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
           <button type="button" class="btn btn-primary" id="btn-save-classification">
-            <i class="bi bi-check-lg me-1"></i>Classifier
+            <i class="bi bi-check-lg me-1"></i>Affecter
           </button>
         </div>
       </div>
