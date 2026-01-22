@@ -13,7 +13,9 @@ import {
   getNatureActiviteByLegacyId,
   getGenreAction,
   getEtapeCycle,
-  calculerPrevisibilite
+  calculerPrevisibilite,
+  getBureauFromAgent,
+  ORGANISATION_HIERARCHY
 } from '../config/constants.js';
 import { normalizeDate } from '../utils/dates.js';
 import { createModuleLogger } from '../utils/LoggerManager.js';
@@ -354,7 +356,8 @@ export class TimelineManager {
       case 'previsibilite':
         return this.getPrevisibiliteValue(record) || 'Non défini';
       case 'bureau':
-        return this.getFirstListValue(record.bureau);
+        // Déduire le bureau depuis le prénom de l'agent assigné
+        return this.getBureauFromRecord(record);
       case 'projet':
         return record.projet || 'Non défini';
       // === NOUVEAUX AXES V3 ===
@@ -369,6 +372,17 @@ export class TimelineManager {
       default:
         return 'Non défini';
     }
+  }
+
+  // Déduit le bureau à partir du prénom de l'agent assigné
+  getBureauFromRecord(record) {
+    const agentName = this.getFirstListValue(record.qui);
+    if (!agentName || agentName === 'Non défini') {
+      return 'Non défini';
+    }
+    // Utiliser le mapping prénom → bureau
+    const bureau = getBureauFromAgent(agentName);
+    return bureau || 'Non défini';
   }
 
   createTimelineGroups(items) {
@@ -505,7 +519,8 @@ export class TimelineManager {
       case 'previsibilite':
         return this.hasColumn('previsibilite') ? 'previsibilite' : (this.hasColumn('previsibilité') ? 'previsibilité' : null);
       case 'bureau':
-        return 'bureau';
+        // Bureau est déduit du prénom, pas éditable directement
+        return null;
       case 'projet':
         return 'projet';
       // === NOUVEAUX AXES V3 ===

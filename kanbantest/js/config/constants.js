@@ -32,10 +32,109 @@ export const DEFAULT_BUREAUX = [
 ];
 
 export const DEFAULT_RESPONSABLES = [
-  'Alex', 'Timothée', 'Isabelle', 'Chloé', 'Paul', 'Théo', 
+  'Alex', 'Timothée', 'Isabelle', 'Chloé', 'Paul', 'Théo',
   'Gaël', 'Thomas', 'Elie', 'Landry', 'Presta', 'Yvon',
   'Clarisse', 'Hervé', 'Didier'
 ];
+
+// === MAPPING AGENT → BUREAU (déduit depuis la table SSIR_AGENTS) ===
+// Permet de déterminer automatiquement le bureau à partir du prénom
+export const AGENT_BUREAU_MAP = {
+  // Nexsis-RRF (sous Yvon, chef de groupement)
+  'Didier': 'Nexsis-RRF',
+  'Hervé': 'Nexsis-RRF',
+
+  // Bureau Réseaux (responsable: Alex)
+  'Alex': 'Réseaux',
+  'Thomas': 'Réseaux',
+
+  // Bureau BDD (responsable: Isabelle)
+  'Isabelle': 'BDD',
+  'Chloe': 'BDD',
+  'Chloé': 'BDD',
+
+  // Bureau Exploit (responsable: Théo)
+  'Théo': 'Exploit',
+  'Theo': 'Exploit',
+  'Gaël': 'Exploit',
+  'Gael': 'Exploit',
+  'Paul': 'Exploit',
+  'Landry': 'Exploit',
+
+  // SIG (chef de service: Clarisse)
+  'Clarisse': 'SIG',
+
+  // Autres
+  'Virginie': 'Secrétariat',
+  'Timothée': 'Chef SSIR',
+  'Timothee': 'Chef SSIR',
+  'Yvon': 'Direction'
+};
+
+// Hiérarchie organisationnelle GSSI
+export const ORGANISATION_HIERARCHY = {
+  'Direction': {
+    responsable: 'Yvon',
+    niveau: 0,
+    parent: null
+  },
+  'Nexsis-RRF': {
+    responsable: null,
+    niveau: 1,
+    parent: 'Direction',
+    agents: ['Didier', 'Hervé']
+  },
+  'Chef SSIR': {
+    responsable: 'Timothée',
+    niveau: 1,
+    parent: 'Direction'
+  },
+  'Réseaux': {
+    responsable: 'Alex',
+    niveau: 2,
+    parent: 'Chef SSIR',
+    agents: ['Thomas']
+  },
+  'BDD': {
+    responsable: 'Isabelle',
+    niveau: 2,
+    parent: 'Chef SSIR',
+    agents: ['Chloe', 'Chloé']
+  },
+  'Exploit': {
+    responsable: 'Théo',
+    niveau: 2,
+    parent: 'Chef SSIR',
+    agents: ['Gaël', 'Paul', 'Landry']
+  },
+  'SIG': {
+    responsable: 'Clarisse',
+    niveau: 1,
+    parent: 'Direction'
+  },
+  'Secrétariat': {
+    responsable: 'Virginie',
+    niveau: 1,
+    parent: 'Direction'
+  }
+};
+
+// Utilitaire pour obtenir le bureau d'un agent
+export const getBureauFromAgent = (prenom) => {
+  if (!prenom) return null;
+  // Normaliser le prénom (première lettre majuscule)
+  const normalized = prenom.trim();
+  return AGENT_BUREAU_MAP[normalized] || null;
+};
+
+// Utilitaire pour obtenir tous les agents d'un bureau
+export const getAgentsFromBureau = (bureau) => {
+  const agents = [];
+  for (const [agent, bur] of Object.entries(AGENT_BUREAU_MAP)) {
+    if (bur === bureau) agents.push(agent);
+  }
+  return agents;
+};
 
 export const DEFAULT_URGENCES = ['Immédiate', 'Courte', 'Moyenne', 'Longue'];
 export const DEFAULT_IMPACTS = ['Critique', 'Important', 'Modéré', 'Mineur'];
