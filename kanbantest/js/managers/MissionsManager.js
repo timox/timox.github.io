@@ -11,8 +11,8 @@ export class MissionsManager {
     this.grist = gristManager;
     this.logger = createModuleLogger('MissionsManager');
     this.requiredMissionColumns = [
-      'mission_code',
-      'mission_nom',
+      'code_mission',
+      'nom_mission',
       'mission_responsable',
       'mission_bureau',
       'mission_priorite',
@@ -44,7 +44,7 @@ export class MissionsManager {
       this.missionsCache.clear();
 
       for (const task of tasks) {
-        const missionCode = task.mission_code;
+        const missionCode = task.code_mission;
 
         if (!missionCode) {
           // Tâche non classifiée
@@ -55,7 +55,7 @@ export class MissionsManager {
         if (!this.missionsCache.has(missionCode)) {
           this.missionsCache.set(missionCode, {
             code: missionCode,
-            nom: task.mission_nom || 'Sans nom',
+            nom: task.nom_mission || 'Sans nom',
             responsable: task.mission_responsable || '',
             bureau: task.mission_bureau || '',
             priorite: task.mission_priorite || 'Moyenne',
@@ -147,7 +147,7 @@ export class MissionsManager {
   async getUnclassifiedTasks() {
     try {
       const tasks = this.grist.currentRecords || [];
-      return tasks.filter(task => !task.mission_code || task.mission_code === '');
+      return tasks.filter(task => !task.code_mission || task.code_mission === '');
     } catch (error) {
       this.logger.error('Failed to get unclassified tasks:', error);
       return [];
@@ -172,7 +172,7 @@ export class MissionsManager {
 
       // Vérifier si la mission existe déjà
       const existingTasks = this.grist.currentRecords || [];
-      const missionExists = existingTasks.some(t => t.mission_code === missionData.code);
+      const missionExists = existingTasks.some(t => t.code_mission === missionData.code);
 
       if (!missionExists) {
         // Créer une tâche "support" pour la mission
@@ -191,8 +191,8 @@ export class MissionsManager {
           bureau: bureauArray,
           urgence: 'Moyenne',
           impact: 'Modéré',
-          mission_code: missionData.code,
-          mission_nom: missionData.nom,
+          code_mission: missionData.code,
+          nom_mission: missionData.nom,
           mission_responsable: missionData.responsable || '',
           mission_bureau: missionData.bureau || '',
           mission_priorite: missionData.priorite || 'Moyenne',
@@ -224,8 +224,8 @@ export class MissionsManager {
                 bureau: saBureauArray,
                 urgence: 'Moyenne',
                 impact: 'Modéré',
-                mission_code: missionData.code,
-                mission_nom: missionData.nom,
+                code_mission: missionData.code,
+                nom_mission: missionData.nom,
                 mission_responsable: missionData.responsable || '',
                 mission_bureau: missionData.bureau || '',
                 mission_priorite: missionData.priorite || 'Moyenne',
@@ -272,7 +272,7 @@ export class MissionsManager {
     try {
       this.ensureMissionColumns();
       const tasks = this.grist.currentRecords || [];
-      const missionTasks = tasks.filter(task => task.mission_code === missionData.code);
+      const missionTasks = tasks.filter(task => task.code_mission === missionData.code);
       const sousActionsMap = new Map(
         sousActions
           .filter(sa => sa.code && sa.nom)
@@ -280,7 +280,7 @@ export class MissionsManager {
       );
 
       const baseUpdates = {
-        mission_nom: missionData.nom,
+        nom_mission: missionData.nom,
         mission_responsable: missionData.responsable || '',
         mission_bureau: missionData.bureau || '',
         mission_priorite: missionData.priorite || 'Moyenne',
@@ -337,8 +337,8 @@ export class MissionsManager {
             bureau: saBureauArray,
             urgence: 'Moyenne',
             impact: 'Modéré',
-            mission_code: missionData.code,
-            mission_nom: missionData.nom,
+            code_mission: missionData.code,
+            nom_mission: missionData.nom,
             mission_responsable: missionData.responsable || '',
             mission_bureau: missionData.bureau || '',
             mission_priorite: missionData.priorite || 'Moyenne',
@@ -379,8 +379,8 @@ export class MissionsManager {
       this.ensureMissionColumns();
 
       const updates = {
-        mission_code: missionCode,
-        mission_nom: missionData.nom,
+        code_mission: missionCode,
+        nom_mission: missionData.nom,
         mission_responsable: missionData.responsable || '',
         mission_bureau: missionData.bureau || '',
         mission_priorite: missionData.priorite || 'Moyenne',
@@ -423,8 +423,8 @@ export class MissionsManager {
       this.ensureMissionColumns();
 
       const updates = {
-        mission_code: '',
-        mission_nom: '',
+        code_mission: '',
+        nom_mission: '',
         mission_responsable: '',
         mission_bureau: '',
         mission_priorite: '',

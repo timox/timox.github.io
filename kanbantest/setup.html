@@ -98,7 +98,7 @@
         </div>
         <div class="checklist-item d-flex justify-content-between align-items-center">
           <div>
-            <strong>Colonne mission_code</strong>
+            <strong>Colonne code_mission</strong>
             <div class="text-muted small">Identifiant de la mission (groupe de tâches)</div>
           </div>
           <span class="status-badge status-pending" id="status-mission-col">En attente</span>
@@ -237,7 +237,7 @@
         </div>
         <p class="text-muted small mb-0">
           <i class="bi bi-info-circle me-1"></i>
-          Les missions regroupent des tâches partageant le même <code>mission_code</code>.
+          Les missions regroupent des tâches partageant le même <code>code_mission</code>.
           Chaque mission appartient à un programme via <code>programme_id</code>.
         </p>
       </div>
@@ -439,8 +439,8 @@
     // Colonnes hiérarchiques pour la table des tâches
     const HIERARCHY_COLUMNS = {
       programme_id: { type: 'Ref:Ssir_programmes', label: 'Programme' },
-      mission_code: { type: 'Text', label: 'Code mission' },
-      mission_nom: { type: 'Text', label: 'Nom mission' },
+      code_mission: { type: 'Text', label: 'Code mission' },
+      nom_mission: { type: 'Text', label: 'Nom mission' },
       responsable_id: { type: 'Ref:Ssir_agents', label: 'Responsable' }
     };
 
@@ -1149,7 +1149,7 @@
           tasks.push({
             id: tableData.id[i],
             titre: tableData.titre?.[i] || '',
-            mission_code: tableData.mission_code?.[i] || ''
+            code_mission: tableData.code_mission?.[i] || ''
           });
         }
 

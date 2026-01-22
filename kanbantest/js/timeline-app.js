@@ -99,7 +99,7 @@ class GanttTimeline {
           date_echeance: this.parseDate(data.date_echeance?.[i] || data.echeance?.[i]),
           date_creation: this.parseDate(data.date_creation?.[i]),
           strategie_id: data.strategie_id?.[i] || null,
-          mission_code: data.mission_code?.[i] || '',
+          code_mission: data.code_mission?.[i] || '',
           avancement: this.parseProgress(data.avancement?.[i])
         };
 

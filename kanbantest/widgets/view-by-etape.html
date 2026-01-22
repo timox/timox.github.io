@@ -220,7 +220,7 @@
         { name: 'etape_cycle', title: 'Etape' },
         { name: 'genre_action', title: 'Genre' },
         { name: 'qui', title: 'Responsable' },
-        { name: 'mission_code', title: 'Mission' }
+        { name: 'code_mission', title: 'Mission' }
       ]
     });
 
@@ -318,7 +318,7 @@
               <td><span class="badge-nature nature-${task.nature_activite || ''}">${task.nature_activite || '-'}</span></td>
               <td><span class="badge-genre">${escapeHtml(task.genre_action || '-')}</span></td>
               <td>${escapeHtml(task.qui || '-')}</td>
-              <td><code>${escapeHtml(task.mission_code || '-')}</code></td>
+              <td><code>${escapeHtml(task.code_mission || '-')}</code></td>
             </tr>
           `;
         }
