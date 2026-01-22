@@ -43,6 +43,8 @@ class SharedTaskModal {
     this.bureaux = ['Exploit', 'Réseau', 'BDD', 'Chef SSIR', 'SIG', 'NEXSIS-RRF', 'COMSIC', 'RSSI', 'DPO'];
     this.jalons = [];
     this.selectedStrategies = [];
+    this.taskLinks = [];
+    this.allTasks = []; // Pour le sélecteur de liens
   }
 
   /**
@@ -192,6 +194,9 @@ class SharedTaskModal {
 
       // Initialiser le date picker
       this.initDatePicker();
+
+      // Charger les tâches pour les liens
+      await this.loadAllTasks();
 
       console.log('[SharedTaskModal] Reference data loaded');
     } catch (error) {
@@ -623,6 +628,18 @@ class SharedTaskModal {
     // Initialiser les jalons
     this.initJalons();
 
+    // Initialiser l'avancement
+    this.initAvancement();
+
+    // Initialiser les durées
+    this.initDuree();
+
+    // Initialiser les liens entre tâches
+    this.initTaskLinks();
+
+    // Exposer l'instance pour les callbacks
+    window._sharedTaskModalInstance = this;
+
     // Fermeture de la modale
     if (this.modal) {
       this.modal.addEventListener('hidden.bs.modal', () => {
@@ -773,6 +790,40 @@ class SharedTaskModal {
     this.jalons = task.jalons ? JSON.parse(JSON.stringify(task.jalons)) : [];
     this.renderJalons();
 
+    // Avancement
+    const avancement = task.avancement || 0;
+    const sliderAvancement = document.getElementById('stm-avancement');
+    if (sliderAvancement) {
+      sliderAvancement.value = avancement;
+      this.updateAvancementDisplay(avancement);
+    }
+
+    // Date de début
+    if (task.date_debut) {
+      const dateDebut = typeof task.date_debut === 'number'
+        ? new Date(task.date_debut * 1000)
+        : new Date(task.date_debut);
+      if (!isNaN(dateDebut.getTime())) {
+        this.setFieldValue('stm-date-debut', dateDebut.toISOString().split('T')[0]);
+      }
+    }
+
+    // Durées
+    this.setFieldValue('stm-duree-estimee', task.duree_estimee || '');
+    this.setFieldValue('stm-duree-reelle', task.duree_reelle || '');
+    if (task.duree_estimee_unite) {
+      this.setFieldValue('stm-duree-estimee-unite', task.duree_estimee_unite);
+    }
+    if (task.duree_reelle_unite) {
+      this.setFieldValue('stm-duree-reelle-unite', task.duree_reelle_unite);
+    }
+    this.updateDureeEcart();
+
+    // Liens entre tâches
+    this.taskLinks = task.liens ? JSON.parse(JSON.stringify(task.liens)) : [];
+    this.populateLinkTaskSelect();
+    this.renderTaskLinks();
+
     // Stratégies multiples
     if (task.strategie_ids) {
       const ids = Array.isArray(task.strategie_ids) ? task.strategie_ids : task.strategie_ids.split(',').map(Number);
@@ -824,6 +875,24 @@ class SharedTaskModal {
     // Cacher les infos hiérarchie
     const infoDiv = document.getElementById('stm-hierarchy-info');
     if (infoDiv) infoDiv.style.display = 'none';
+
+    // Réinitialiser l'avancement
+    const sliderAvancement = document.getElementById('stm-avancement');
+    if (sliderAvancement) {
+      sliderAvancement.value = 0;
+      this.updateAvancementDisplay(0);
+    }
+
+    // Vider les durées et dates
+    this.setFieldValue('stm-date-debut', '');
+    this.setFieldValue('stm-duree-estimee', '');
+    this.setFieldValue('stm-duree-reelle', '');
+    const ecartDiv = document.getElementById('stm-duree-ecart');
+    if (ecartDiv) ecartDiv.textContent = '';
+
+    // Vider les liens
+    this.taskLinks = [];
+    this.renderTaskLinks();
   }
 
   /**
@@ -906,6 +975,33 @@ class SharedTaskModal {
       const tempsReel = parseFloat(this.getFieldValue('stm-temps-reel'));
       if (!isNaN(tempsEstime)) data.temps_estime = tempsEstime;
       if (!isNaN(tempsReel)) data.temps_reel = tempsReel;
+    }
+
+    // Avancement
+    const avancement = parseInt(this.getFieldValue('stm-avancement')) || 0;
+    data.avancement = avancement;
+
+    // Date de début
+    const dateDebut = this.getFieldValue('stm-date-debut');
+    if (dateDebut) {
+      data.date_debut = Math.floor(new Date(dateDebut).getTime() / 1000);
+    }
+
+    // Durées
+    const dureeEstimee = parseFloat(this.getFieldValue('stm-duree-estimee'));
+    const dureeReelle = parseFloat(this.getFieldValue('stm-duree-reelle'));
+    if (!isNaN(dureeEstimee)) {
+      data.duree_estimee = dureeEstimee;
+      data.duree_estimee_unite = this.getFieldValue('stm-duree-estimee-unite') || 'j';
+    }
+    if (!isNaN(dureeReelle)) {
+      data.duree_reelle = dureeReelle;
+      data.duree_reelle_unite = this.getFieldValue('stm-duree-reelle-unite') || 'j';
+    }
+
+    // Liens entre tâches
+    if (this.taskLinks.length > 0) {
+      data.liens = this.taskLinks;
     }
 
     return data;
@@ -1298,6 +1394,290 @@ class SharedTaskModal {
    */
   truncate(str, len) {
     return str.length > len ? str.substring(0, len) + '...' : str;
+  }
+
+  // === Avancement ===
+
+  /**
+   * Initialise le slider d'avancement
+   */
+  initAvancement() {
+    const slider = document.getElementById('stm-avancement');
+    const badge = document.getElementById('stm-avancement-badge');
+    const bar = document.getElementById('stm-avancement-bar');
+    const statutSelect = document.getElementById('stm-statut');
+
+    if (!slider) return;
+
+    slider.addEventListener('input', () => {
+      const value = parseInt(slider.value);
+      this.updateAvancementDisplay(value);
+    });
+
+    // Synchroniser statut et avancement
+    if (statutSelect) {
+      statutSelect.addEventListener('change', () => {
+        const statut = statutSelect.value;
+        if (statut === 'Terminé') {
+          slider.value = 100;
+          this.updateAvancementDisplay(100);
+        } else if (statut === 'Backlog' || statut === 'À faire') {
+          if (parseInt(slider.value) === 100) {
+            slider.value = 0;
+            this.updateAvancementDisplay(0);
+          }
+        }
+      });
+    }
+  }
+
+  /**
+   * Met à jour l'affichage de l'avancement
+   */
+  updateAvancementDisplay(value) {
+    const badge = document.getElementById('stm-avancement-badge');
+    const bar = document.getElementById('stm-avancement-bar');
+
+    if (badge) badge.textContent = `${value}%`;
+    if (bar) {
+      bar.style.width = `${value}%`;
+      bar.className = 'progress-bar';
+      if (value === 100) {
+        bar.classList.add('bg-success');
+      } else if (value >= 75) {
+        bar.classList.add('bg-info');
+      } else if (value >= 50) {
+        bar.classList.add('bg-primary');
+      } else if (value >= 25) {
+        bar.classList.add('bg-warning');
+      }
+    }
+  }
+
+  // === Durées ===
+
+  /**
+   * Initialise les champs de durée
+   */
+  initDuree() {
+    const dureeEstimee = document.getElementById('stm-duree-estimee');
+    const dureeReelle = document.getElementById('stm-duree-reelle');
+
+    if (dureeEstimee && dureeReelle) {
+      const updateEcart = () => this.updateDureeEcart();
+      dureeEstimee.addEventListener('input', updateEcart);
+      dureeReelle.addEventListener('input', updateEcart);
+    }
+  }
+
+  /**
+   * Met à jour l'écart de durée
+   */
+  updateDureeEcart() {
+    const estimee = parseFloat(document.getElementById('stm-duree-estimee')?.value) || 0;
+    const reelle = parseFloat(document.getElementById('stm-duree-reelle')?.value) || 0;
+    const ecartDiv = document.getElementById('stm-duree-ecart');
+
+    if (!ecartDiv || estimee === 0) {
+      if (ecartDiv) ecartDiv.textContent = '';
+      return;
+    }
+
+    const ecart = reelle - estimee;
+    const pct = Math.round((ecart / estimee) * 100);
+
+    if (ecart > 0) {
+      ecartDiv.className = 'form-text small text-danger';
+      ecartDiv.innerHTML = `<i class="bi bi-exclamation-triangle"></i> +${ecart.toFixed(1)} (+${pct}%)`;
+    } else if (ecart < 0) {
+      ecartDiv.className = 'form-text small text-success';
+      ecartDiv.innerHTML = `<i class="bi bi-check-circle"></i> ${ecart.toFixed(1)} (${pct}%)`;
+    } else {
+      ecartDiv.className = 'form-text small text-muted';
+      ecartDiv.textContent = 'Dans les temps';
+    }
+  }
+
+  // === Liens entre tâches ===
+
+  /**
+   * Charge toutes les tâches pour le sélecteur de liens
+   */
+  async loadAllTasks() {
+    try {
+      if (typeof grist === 'undefined') return;
+
+      const data = await grist.docApi.fetchTable('Ssir_principale_task');
+      this.allTasks = [];
+      const count = data.id?.length || 0;
+
+      for (let i = 0; i < count; i++) {
+        this.allTasks.push({
+          id: data.id[i],
+          titre: data.titre?.[i] || `Tâche #${data.id[i]}`,
+          statut: data.statut?.[i] || ''
+        });
+      }
+
+      this.populateLinkTaskSelect();
+    } catch (error) {
+      console.warn('[SharedTaskModal] Failed to load tasks for links:', error.message);
+    }
+  }
+
+  /**
+   * Peuple le sélecteur de tâches pour les liens
+   */
+  populateLinkTaskSelect() {
+    const select = document.getElementById('stm-link-task');
+    if (!select) return;
+
+    select.innerHTML = '<option value="">-- Sélectionner une tâche --</option>';
+
+    // Exclure la tâche courante
+    const currentId = this.currentTask?.id;
+
+    this.allTasks
+      .filter(t => t.id !== currentId)
+      .forEach(task => {
+        const option = document.createElement('option');
+        option.value = task.id;
+        option.textContent = `#${task.id} - ${this.truncate(task.titre, 50)}`;
+        option.dataset.titre = task.titre;
+        option.dataset.statut = task.statut;
+        select.appendChild(option);
+      });
+  }
+
+  /**
+   * Initialise la section des liens
+   */
+  initTaskLinks() {
+    const btnAdd = document.getElementById('stm-btn-add-link');
+    if (btnAdd) {
+      btnAdd.addEventListener('click', () => this.addTaskLink());
+    }
+  }
+
+  /**
+   * Ajoute un lien vers une autre tâche
+   */
+  addTaskLink() {
+    const typeSelect = document.getElementById('stm-link-type');
+    const taskSelect = document.getElementById('stm-link-task');
+
+    if (!typeSelect || !taskSelect || !taskSelect.value) {
+      return;
+    }
+
+    const taskId = parseInt(taskSelect.value);
+    const type = typeSelect.value;
+    const selectedOption = taskSelect.options[taskSelect.selectedIndex];
+
+    // Vérifier si le lien existe déjà
+    if (this.taskLinks.some(l => l.taskId === taskId && l.type === type)) {
+      alert('Ce lien existe déjà');
+      return;
+    }
+
+    this.taskLinks.push({
+      taskId: taskId,
+      type: type,
+      titre: selectedOption.dataset.titre,
+      statut: selectedOption.dataset.statut
+    });
+
+    this.renderTaskLinks();
+    taskSelect.value = '';
+  }
+
+  /**
+   * Supprime un lien
+   */
+  removeTaskLink(taskId, type) {
+    this.taskLinks = this.taskLinks.filter(l => !(l.taskId === taskId && l.type === type));
+    this.renderTaskLinks();
+  }
+
+  /**
+   * Affiche les liens
+   */
+  renderTaskLinks() {
+    const container = document.getElementById('stm-liens-list');
+    const countBadge = document.getElementById('stm-liens-count');
+    const noLinks = document.getElementById('stm-no-links');
+
+    if (!container) return;
+
+    // Grouper par type
+    const types = {
+      bloque: { group: 'stm-links-bloque', items: [] },
+      bloque_par: { group: 'stm-links-bloque-par', items: [] },
+      lie: { group: 'stm-links-lie', items: [] },
+      parent: { group: 'stm-links-parent', items: [] },
+      enfant: { group: 'stm-links-enfant', items: [] }
+    };
+
+    this.taskLinks.forEach(link => {
+      if (types[link.type]) {
+        types[link.type].items.push(link);
+      }
+    });
+
+    // Afficher/cacher les groupes
+    for (const [type, data] of Object.entries(types)) {
+      const groupEl = document.getElementById(data.group);
+      const itemsEl = container.querySelector(`.task-link-items[data-type="${type}"]`);
+
+      if (!groupEl || !itemsEl) continue;
+
+      if (data.items.length === 0) {
+        groupEl.style.display = 'none';
+        itemsEl.innerHTML = '';
+      } else {
+        groupEl.style.display = 'block';
+        itemsEl.innerHTML = data.items.map(link => `
+          <div class="task-link-item d-flex align-items-center gap-2 py-1">
+            <span class="badge bg-light text-dark">#${link.taskId}</span>
+            <span class="flex-grow-1 small">${this.truncate(link.titre, 40)}</span>
+            <span class="badge ${this.getStatusBadgeClass(link.statut)} small">${link.statut || '-'}</span>
+            <button type="button" class="btn btn-sm btn-link text-danger p-0"
+              onclick="window._sharedTaskModalInstance?.removeTaskLink(${link.taskId}, '${type}')">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+        `).join('');
+      }
+    }
+
+    // Mettre à jour le compteur
+    if (countBadge) countBadge.textContent = this.taskLinks.length;
+
+    // Afficher/cacher le message "aucun lien"
+    if (noLinks) {
+      noLinks.style.display = this.taskLinks.length === 0 ? 'block' : 'none';
+    }
+
+    // Stocker dans le champ caché
+    const hiddenField = document.getElementById('stm-liens-data');
+    if (hiddenField) {
+      hiddenField.value = JSON.stringify(this.taskLinks);
+    }
+  }
+
+  /**
+   * Retourne la classe CSS pour un badge de statut
+   */
+  getStatusBadgeClass(statut) {
+    const classes = {
+      'Backlog': 'bg-secondary',
+      'À faire': 'bg-info',
+      'En cours': 'bg-primary',
+      'En attente': 'bg-warning text-dark',
+      'Validation': 'bg-purple',
+      'Terminé': 'bg-success'
+    };
+    return classes[statut] || 'bg-secondary';
   }
 
   // === Utilitaires ===

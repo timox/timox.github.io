@@ -71,6 +71,23 @@
                     </select>
                   </div>
                   <div class="task-meta-item">
+                    <label for="stm-avancement" class="form-label">
+                      Avancement <span class="badge bg-primary ms-1" id="stm-avancement-badge">0%</span>
+                    </label>
+                    <input type="range" class="form-range" id="stm-avancement" min="0" max="100" step="5" value="0">
+                    <div class="progress" style="height: 6px;">
+                      <div class="progress-bar" id="stm-avancement-bar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Dates et Durée -->
+                <div class="task-meta-grid mt-3">
+                  <div class="task-meta-item">
+                    <label for="stm-date-debut" class="form-label">Date début</label>
+                    <input type="date" class="form-control" id="stm-date-debut">
+                  </div>
+                  <div class="task-meta-item">
                     <label for="stm-echeance" class="form-label">Date butoir</label>
                     <div class="input-group">
                       <input type="text" class="form-control" id="stm-echeance" placeholder="Cliquer pour choisir..." readonly>
@@ -84,6 +101,29 @@
                     <div class="form-text">
                       <span id="stm-date-status" class="text-muted small">Aucune date définie</span>
                     </div>
+                  </div>
+                  <div class="task-meta-item">
+                    <label for="stm-duree-estimee" class="form-label">Durée estimée</label>
+                    <div class="input-group input-group-sm">
+                      <input type="number" class="form-control" id="stm-duree-estimee" min="0" step="0.5" placeholder="0">
+                      <select class="form-select" id="stm-duree-estimee-unite" style="max-width: 80px;">
+                        <option value="h">h</option>
+                        <option value="j" selected>j</option>
+                        <option value="sem">sem</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="task-meta-item">
+                    <label for="stm-duree-reelle" class="form-label">Durée réelle</label>
+                    <div class="input-group input-group-sm">
+                      <input type="number" class="form-control" id="stm-duree-reelle" min="0" step="0.5" placeholder="0">
+                      <select class="form-select" id="stm-duree-reelle-unite" style="max-width: 80px;">
+                        <option value="h">h</option>
+                        <option value="j" selected>j</option>
+                        <option value="sem">sem</option>
+                      </select>
+                    </div>
+                    <div class="form-text small" id="stm-duree-ecart"></div>
                   </div>
                 </div>
 
@@ -343,22 +383,86 @@
                 </div>
               </div>
 
-              <!-- Liens (optionnel) -->
-              <div class="task-section" id="stm-liens-section" style="display: none;">
+              <!-- Liens entre tâches -->
+              <div class="task-section task-section-links" id="stm-liens-section">
                 <label class="form-label">
-                  <i class="bi bi-link-45deg me-2"></i>Liaisons
+                  <i class="bi bi-diagram-2 me-2"></i>Liens entre tâches
                   <span class="badge bg-secondary ms-1" id="stm-liens-count">0</span>
                 </label>
                 <div class="card border-0 bg-light">
                   <div class="card-body p-3">
-                    <div id="stm-liens-list" class="mb-2">
-                      <p class="text-muted small mb-0">Aucune liaison</p>
+                    <!-- Liens existants groupés par type -->
+                    <div id="stm-liens-list" class="task-links-container mb-3">
+                      <!-- Bloque -->
+                      <div class="task-link-group" id="stm-links-bloque" style="display: none;">
+                        <div class="task-link-header text-danger">
+                          <i class="bi bi-exclamation-octagon me-1"></i>Bloque
+                        </div>
+                        <div class="task-link-items" data-type="bloque"></div>
+                      </div>
+                      <!-- Bloqué par -->
+                      <div class="task-link-group" id="stm-links-bloque-par" style="display: none;">
+                        <div class="task-link-header text-warning">
+                          <i class="bi bi-hourglass-split me-1"></i>Bloqué par
+                        </div>
+                        <div class="task-link-items" data-type="bloque_par"></div>
+                      </div>
+                      <!-- Lié à -->
+                      <div class="task-link-group" id="stm-links-lie" style="display: none;">
+                        <div class="task-link-header text-info">
+                          <i class="bi bi-link me-1"></i>Lié à
+                        </div>
+                        <div class="task-link-items" data-type="lie"></div>
+                      </div>
+                      <!-- Parent de -->
+                      <div class="task-link-group" id="stm-links-parent" style="display: none;">
+                        <div class="task-link-header text-success">
+                          <i class="bi bi-diagram-3 me-1"></i>Parent de (sous-tâches)
+                        </div>
+                        <div class="task-link-items" data-type="parent"></div>
+                      </div>
+                      <!-- Enfant de -->
+                      <div class="task-link-group" id="stm-links-enfant" style="display: none;">
+                        <div class="task-link-header text-primary">
+                          <i class="bi bi-arrow-return-right me-1"></i>Sous-tâche de
+                        </div>
+                        <div class="task-link-items" data-type="enfant"></div>
+                      </div>
+                      <!-- Message si aucun lien -->
+                      <div id="stm-no-links" class="text-center text-muted py-2">
+                        <i class="bi bi-link-45deg"></i>
+                        <p class="small mb-0">Aucune liaison avec d'autres tâches</p>
+                      </div>
                     </div>
-                    <button type="button" class="btn btn-sm btn-outline-primary" id="stm-btn-add-link">
-                      <i class="bi bi-plus-lg me-1"></i>Ajouter une liaison
-                    </button>
+                    <!-- Ajouter un lien -->
+                    <div class="task-link-add">
+                      <div class="row g-2 align-items-end">
+                        <div class="col-auto">
+                          <label class="form-label small">Type</label>
+                          <select class="form-select form-select-sm" id="stm-link-type">
+                            <option value="bloque">Bloque</option>
+                            <option value="bloque_par">Bloqué par</option>
+                            <option value="lie" selected>Lié à</option>
+                            <option value="parent">Parent de</option>
+                            <option value="enfant">Sous-tâche de</option>
+                          </select>
+                        </div>
+                        <div class="col">
+                          <label class="form-label small">Tâche</label>
+                          <select class="form-select form-select-sm" id="stm-link-task">
+                            <option value="">-- Rechercher une tâche --</option>
+                          </select>
+                        </div>
+                        <div class="col-auto">
+                          <button type="button" class="btn btn-sm btn-primary" id="stm-btn-add-link">
+                            <i class="bi bi-plus-lg"></i>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
+                <input type="hidden" id="stm-liens-data" value="[]">
               </div>
             </section>
 
