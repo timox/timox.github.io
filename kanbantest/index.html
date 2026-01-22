@@ -179,37 +179,37 @@
   </div>
 
 <!-- Modal Tâche repensée -->
-<div class="modal fade" id="popup-tache" tabindex="-1" aria-labelledby="popup-tache-label" aria-hidden="true">
+<div class="modal fade" id="shared-task-modal" tabindex="-1" aria-labelledby="shared-task-modal-label" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable task-modal-dialog">
     <div class="modal-content">
       <div class="modal-header task-modal-header">
-        <h5 class="modal-title" id="popup-tache-label">
+        <h5 class="modal-title" id="shared-task-modal-label">
           <i class="bi bi-card-checklist me-2"></i>Détails Tâche
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
       </div>
       <div class="modal-body task-modal-body">
-        <form id="task-form" novalidate>
+        <form id="shared-task-form" novalidate>
           <div class="task-modal-layout">
             <section class="task-modal-main">
               <div class="task-section task-section-primary">
                 <div class="row g-3 align-items-start">
                   <div class="col-12 col-xl-8">
-                    <label for="popup-titre" class="form-label">
+                    <label for="stm-titre" class="form-label">
                       <i class="bi bi-card-text section-icon"></i>Titre *
                     </label>
-                    <input type="text" class="form-control form-control-lg" id="popup-titre" required>
+                    <input type="text" class="form-control form-control-lg" id="stm-titre" required>
                   </div>
                   <div class="col-sm-6 col-xl-4">
-                    <label for="popup-statut-text" class="form-label">Statut *</label>
-                    <input type="text" class="form-control" id="popup-statut-text" readonly required>
+                    <label for="stm-statut" class="form-label">Statut *</label>
+                    <input type="text" class="form-control" id="stm-statut" readonly required>
                   </div>
                 </div>
                 <div class="task-meta-grid mt-3">
                   <div class="task-meta-item">
-                    <label for="popup-projet" class="form-label">Projet</label>
+                    <label for="stm-projet" class="form-label">Projet</label>
                     <div class="input-group input-group-sm flex-nowrap">
-                      <select class="form-select" id="popup-projet"></select>
+                      <select class="form-select" id="stm-projet"></select>
                       <input type="text" class="form-control d-none" id="projet-ajout" placeholder="Ajouter projet">
                       <button class="btn btn-outline-secondary d-none" type="button" id="btn-ajout-projet" disabled>
                         <i class="bi bi-plus"></i>
@@ -217,21 +217,21 @@
                     </div>
                   </div>
                   <div class="task-meta-item">
-                    <label for="popup-urgence" class="form-label">Urgence</label>
-                    <select class="form-select" id="popup-urgence">
+                    <label for="stm-urgence" class="form-label">Urgence</label>
+                    <select class="form-select" id="stm-urgence">
                       <option value="">-- Urgence --</option>
                     </select>
                   </div>
                   <div class="task-meta-item">
-                    <label for="popup-impact" class="form-label">Impact</label>
-                    <select class="form-select" id="popup-impact">
+                    <label for="stm-impact" class="form-label">Impact</label>
+                    <select class="form-select" id="stm-impact">
                       <option value="">-- Impact --</option>
                     </select>
                   </div>
                   <div class="task-meta-item">
-                    <label for="popup-delai" class="form-label">Date butoir</label>
+                    <label for="stm-echeance" class="form-label">Date butoir</label>
                     <div class="input-group">
-                      <input type="text" class="form-control" id="popup-delai" placeholder="Cliquer pour choisir une date..." aria-label="Date butoir" readonly>
+                      <input type="text" class="form-control" id="stm-echeance" placeholder="Cliquer pour choisir une date..." aria-label="Date butoir" readonly>
                       <button class="btn btn-outline-secondary" type="button" id="btn-clear-date" title="Supprimer la date" style="display: none;">
                         <i class="bi bi-x-lg"></i>
                       </button>
@@ -248,26 +248,26 @@
                 <!-- Classification V3 -->
                 <div class="task-meta-grid mt-3">
                   <div class="task-meta-item">
-                    <label for="popup-nature" class="form-label">Nature (Pourquoi)</label>
-                    <select class="form-select" id="popup-nature">
+                    <label for="stm-nature" class="form-label">Nature (Pourquoi)</label>
+                    <select class="form-select" id="stm-nature">
                       <option value="">-- Nature --</option>
                     </select>
                   </div>
                   <div class="task-meta-item">
-                    <label for="popup-genre" class="form-label">Genre (Comment)</label>
-                    <select class="form-select" id="popup-genre">
+                    <label for="stm-genre" class="form-label">Genre (Comment)</label>
+                    <select class="form-select" id="stm-genre">
                       <option value="">-- Genre --</option>
                     </select>
                   </div>
                   <div class="task-meta-item">
-                    <label for="popup-etape" class="form-label">Etape (Cycle)</label>
-                    <select class="form-select" id="popup-etape">
+                    <label for="stm-etape" class="form-label">Etape (Cycle)</label>
+                    <select class="form-select" id="stm-etape">
                       <option value="">-- Etape --</option>
                     </select>
                   </div>
                   <div class="task-meta-item">
-                    <label for="popup-previsibilite" class="form-label">Previsibilite</label>
-                    <select class="form-select" id="popup-previsibilite">
+                    <label for="stm-previsibilite" class="form-label">Previsibilite</label>
+                    <select class="form-select" id="stm-previsibilite">
                       <option value="">-- Auto --</option>
                     </select>
                   </div>
@@ -275,11 +275,11 @@
               </div>
 
               <div class="task-section task-section-description">
-                <label for="popup-description" class="form-label">
+                <label for="stm-description" class="form-label">
                   <i class="bi bi-chat-left-text section-icon"></i>Description / Commentaires
                   <small class="text-muted ms-1 d-block">Les commentaires sont historisés automatiquement</small>
                 </label>
-                <textarea class="form-control" id="popup-description" rows="4" placeholder="Décrivez la tâche, les blocages, les actions réalisées..."></textarea>
+                <textarea class="form-control" id="stm-description" rows="4" placeholder="Décrivez la tâche, les blocages, les actions réalisées..."></textarea>
 
                 <div class="card border-0 bg-light references-card mt-3">
                   <div class="card-body p-3">
@@ -287,8 +287,8 @@
                       <i class="bi bi-info-circle me-1"></i>
                       Une référence par ligne. Formats supportés : URLs, chemins réseau, emails, références
                     </div>
-                    <textarea class="form-control" id="popup-references" rows="4" placeholder="https://docs.example.com/procedure&#10;\\serveur\projets\migration-AD\&#10;GLPI-12345&#10;contact: expert@gouv.fr"></textarea>
-                    <div class="references-preview mt-2" id="references-preview"></div>
+                    <textarea class="form-control" id="stm-references" rows="4" placeholder="https://docs.example.com/procedure&#10;\\serveur\projets\migration-AD\&#10;GLPI-12345&#10;contact: expert@gouv.fr"></textarea>
+                    <div class="references-preview mt-2" id="stm-references-preview"></div>
                   </div>
                 </div>
               </div>
@@ -309,7 +309,7 @@
                     </h2>
                     <div id="strategie-collapse" class="accordion-collapse collapse" aria-labelledby="strategie-header" data-bs-parent="#strategie-accordion">
                       <div class="accordion-body">
-                        <div id="strategy-browser" class="strategy-browser">
+                        <div id="stm-strategy-browser" class="strategy-browser">
                           <div class="text-center text-muted py-3">
                             <i class="bi bi-hourglass-split"></i>
                             <p class="mt-2">Chargement des stratégies...</p>
@@ -319,9 +319,9 @@
                     </div>
                   </div>
                 </div>
-                <select class="form-select d-none" id="popup-strategie-objectif"></select>
-                <select class="form-select d-none" id="popup-strategie-sous-objectif"></select>
-                <select class="form-select d-none" id="popup-strategie-action"></select>
+                <select class="form-select d-none" id="stm-strategie-objectif"></select>
+                <select class="form-select d-none" id="stm-strategie-sous-objectif"></select>
+                <select class="form-select d-none" id="stm-strategie-action"></select>
                 <div class="selected-strategies mt-3" id="selected-strategies" style="display: none;">
                   <div class="d-flex justify-content-between align-items-center mb-2">
                     <h6 class="small text-muted mb-0">
@@ -350,7 +350,7 @@
                     </div>
                   </div>
                 </div>
-                <input type="hidden" id="popup-strategie-ids" />
+                <input type="hidden" id="stm-strategie-ids" />
                 <div class="form-text mt-2">
                   <i class="bi bi-info-circle me-1"></i>
                   Cliquez sur les axes stratégiques pour les ajouter/retirer. Une tâche peut contribuer à plusieurs stratégies.
@@ -381,20 +381,20 @@
                     </div>
                   </div>
                 </div>
-                <input type="hidden" id="popup-jalons" />
+                <input type="hidden" id="stm-jalons" />
               </div>
 
               <div class="task-section task-section-assignments">
                 <div class="row g-4">
                   <div class="col-md-6">
                     <label class="form-label">Bureaux</label>
-                    <div id="popup-bureau-checkboxes" class="checkbox-group"></div>
-                    <select class="form-select d-none" id="popup-bureau" multiple></select>
+                    <div id="stm-bureau-checkboxes" class="checkbox-group"></div>
+                    <select class="form-select d-none" id="stm-bureau" multiple></select>
                   </div>
                   <div class="col-md-6">
                     <label class="form-label">Responsables</label>
-                    <div id="popup-qui-checkboxes" class="checkbox-group"></div>
-                    <select class="form-select d-none" id="popup-qui" multiple></select>
+                    <div id="stm-qui-checkboxes" class="checkbox-group"></div>
+                    <select class="form-select d-none" id="stm-qui" multiple></select>
                   </div>
                 </div>
               </div>
@@ -454,16 +454,16 @@
         </form>
       </div>
       <div class="modal-footer task-modal-footer">
-        <button type="button" class="btn btn-danger me-auto" id="btn-delete-task" style="display: none;">
+        <button type="button" class="btn btn-danger me-auto" id="stm-btn-delete" style="display: none;">
           <i class="bi bi-trash me-2"></i>Supprimer
         </button>
-        <button type="button" class="btn btn-outline-secondary" id="btn-toggle-history-panel">
+        <button type="button" class="btn btn-outline-secondary" id="stm-btn-history">
           <i class="bi bi-clock-history me-1"></i>Panneau historique
         </button>
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
           <i class="bi bi-x-circle me-2"></i>Annuler
         </button>
-        <button type="button" class="btn btn-primary" id="btn-save-task">
+        <button type="button" class="btn btn-primary" id="stm-btn-save">
           <i class="bi bi-check2-circle me-2"></i>Sauvegarder
         </button>
       </div>

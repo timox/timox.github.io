@@ -81,7 +81,7 @@ export class KanbanAppInitializer {
     // Vérifier la présence des éléments DOM requis
     const requiredElements = [
       'kanban-container',
-      'popup-tache',
+      'shared-task-modal',
       'task-history-modal',
       'error-container'
     ];
