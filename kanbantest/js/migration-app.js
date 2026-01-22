@@ -942,9 +942,12 @@ class MigrationApp {
         // Si le champ n'existe pas, le créer
         if (e.message && e.message.includes('does not exist')) {
           try {
+            // Créer en 2 étapes pour forcer l'id en minuscules
             await grist.docApi.applyUserActions([
-              ['AddColumn', TABLE_ID, 'responsable', {
-                type: 'Choice',
+              ['AddColumn', TABLE_ID, 'responsable', { type: 'Choice' }]
+            ]);
+            await grist.docApi.applyUserActions([
+              ['ModifyColumn', TABLE_ID, 'responsable', {
                 label: 'Responsable',
                 widgetOptions: widgetOptions
               }]
