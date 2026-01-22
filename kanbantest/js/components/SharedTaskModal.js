@@ -23,6 +23,8 @@ class SharedTaskModal {
       onDelete: options.onDelete || null,
       showLinks: options.showLinks ?? false,
       showTimes: options.showTimes ?? true,
+      showJalons: options.showJalons ?? true,
+      showHistory: options.showHistory ?? true,
       gristManager: options.gristManager || null,
       containerId: options.containerId || 'shared-modal-container'
     };
@@ -31,12 +33,16 @@ class SharedTaskModal {
     this.bsModal = null;
     this.currentTask = null;
     this.isLoaded = false;
+    this.datePicker = null;
 
     // Données de référence
     this.programmes = [];
     this.agents = [];
     this.strategies = [];
-    this.meos = []; // Mises en œuvre agrégées depuis les tâches
+    this.meos = [];
+    this.bureaux = ['Exploit', 'Réseau', 'BDD', 'Chef SSIR', 'SIG', 'NEXSIS-RRF', 'COMSIC', 'RSSI', 'DPO'];
+    this.jalons = [];
+    this.selectedStrategies = [];
   }
 
   /**
@@ -157,6 +163,9 @@ class SharedTaskModal {
    * Charge les données de référence (programmes, agents, stratégies)
    */
   async loadReferenceData() {
+    // Peupler les checkboxes de bureaux (statique)
+    this.populateBureauCheckboxes();
+
     if (typeof grist === 'undefined') {
       console.warn('[SharedTaskModal] Grist not available, skipping reference data');
       return;
@@ -169,11 +178,20 @@ class SharedTaskModal {
       // Charger les agents
       await this.loadAgents();
 
+      // Peupler les checkboxes responsables après chargement agents
+      this.populateQuiCheckboxes();
+
       // Charger les stratégies
       await this.loadStrategies();
 
       // Charger les MEO (après les stratégies)
       await this.loadMeos();
+
+      // Initialiser le strategy browser
+      this.initStrategyBrowser();
+
+      // Initialiser le date picker
+      this.initDatePicker();
 
       console.log('[SharedTaskModal] Reference data loaded');
     } catch (error) {
@@ -446,6 +464,93 @@ class SharedTaskModal {
   }
 
   /**
+   * Peuple les checkboxes de bureaux
+   */
+  populateBureauCheckboxes() {
+    const container = document.getElementById('stm-bureau-checkboxes');
+    if (!container) return;
+
+    container.innerHTML = '';
+    this.bureaux.forEach(bureau => {
+      const div = document.createElement('div');
+      div.className = 'form-check form-check-inline';
+      div.innerHTML = `
+        <input class="form-check-input" type="checkbox" id="stm-bureau-${bureau}" value="${bureau}">
+        <label class="form-check-label small" for="stm-bureau-${bureau}">${bureau}</label>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  /**
+   * Peuple les checkboxes de responsables (qui)
+   */
+  populateQuiCheckboxes() {
+    const container = document.getElementById('stm-qui-checkboxes');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    // Grouper par bureau
+    const bureaux = [...new Set(this.agents.map(a => a.bureau || 'Autre'))];
+
+    bureaux.forEach(bureau => {
+      const agentsBureau = this.agents.filter(a => (a.bureau || 'Autre') === bureau);
+      if (agentsBureau.length === 0) return;
+
+      const groupDiv = document.createElement('div');
+      groupDiv.className = 'mb-2';
+      groupDiv.innerHTML = `<small class="text-muted fw-bold">${bureau}</small>`;
+
+      agentsBureau.forEach(agent => {
+        const div = document.createElement('div');
+        div.className = 'form-check';
+        div.innerHTML = `
+          <input class="form-check-input" type="checkbox" id="stm-qui-${agent.id}" value="${agent.nom}">
+          <label class="form-check-label small" for="stm-qui-${agent.id}">${agent.nom}</label>
+        `;
+        groupDiv.appendChild(div);
+      });
+
+      container.appendChild(groupDiv);
+    });
+  }
+
+  /**
+   * Récupère les valeurs des checkboxes bureaux
+   */
+  getSelectedBureaux() {
+    const checkboxes = document.querySelectorAll('#stm-bureau-checkboxes input:checked');
+    return Array.from(checkboxes).map(cb => cb.value);
+  }
+
+  /**
+   * Récupère les valeurs des checkboxes responsables
+   */
+  getSelectedQui() {
+    const checkboxes = document.querySelectorAll('#stm-qui-checkboxes input:checked');
+    return Array.from(checkboxes).map(cb => cb.value);
+  }
+
+  /**
+   * Définit les bureaux sélectionnés
+   */
+  setSelectedBureaux(bureaux) {
+    document.querySelectorAll('#stm-bureau-checkboxes input').forEach(cb => {
+      cb.checked = bureaux.includes(cb.value);
+    });
+  }
+
+  /**
+   * Définit les responsables sélectionnés
+   */
+  setSelectedQui(noms) {
+    document.querySelectorAll('#stm-qui-checkboxes input').forEach(cb => {
+      cb.checked = noms.includes(cb.value);
+    });
+  }
+
+  /**
    * Peuple le sélecteur de stratégies
    */
   populateStrategySelect() {
@@ -498,10 +603,32 @@ class SharedTaskModal {
       btnAddLink.addEventListener('click', () => this.handleAddLink());
     }
 
+    // Références - prévisualisation en temps réel
+    const referencesTextarea = document.getElementById('stm-references');
+    if (referencesTextarea) {
+      referencesTextarea.addEventListener('input', () => this.updateReferencesPreview());
+    }
+
+    // Bouton clear strategies
+    const btnClearStrategies = document.getElementById('stm-btn-clear-strategies');
+    if (btnClearStrategies) {
+      btnClearStrategies.addEventListener('click', () => {
+        document.querySelectorAll('#stm-strategy-browser .strategy-checkbox').forEach(cb => {
+          cb.checked = false;
+        });
+        this.updateStrategyTags();
+      });
+    }
+
+    // Initialiser les jalons
+    this.initJalons();
+
     // Fermeture de la modale
     if (this.modal) {
       this.modal.addEventListener('hidden.bs.modal', () => {
         this.currentTask = null;
+        this.jalons = [];
+        this.selectedStrategies = [];
       });
     }
   }
@@ -602,24 +729,24 @@ class SharedTaskModal {
     const meoSelect = document.getElementById('stm-meo');
     if (meoSelect && task.mise_en_oeuvre_code) {
       meoSelect.value = task.mise_en_oeuvre_code;
-      this.handleMeoChange(); // Mettre à jour l'affichage
+      this.handleMeoChange();
     } else if (meoSelect) {
       meoSelect.value = '';
       const infoDiv = document.getElementById('stm-hierarchy-info');
       if (infoDiv) infoDiv.style.display = 'none';
     }
 
-    // Responsable (soit ID de Ssir_agents, soit texte legacy)
-    if (task.responsable_id) {
-      this.setFieldValue('stm-responsable', task.responsable_id);
-    } else if (task.qui) {
-      // Chercher l'agent par nom
-      const agent = this.agents.find(a => a.fullName === task.qui);
-      this.setFieldValue('stm-responsable', agent ? agent.id : '');
-    }
+    // Bureaux (checkboxes) - peut être une string séparée par virgules ou un tableau
+    const bureaux = task.bureau
+      ? (Array.isArray(task.bureau) ? task.bureau : task.bureau.split(',').map(b => b.trim()))
+      : [];
+    this.setSelectedBureaux(bureaux);
 
-    // Bureau
-    this.setFieldValue('stm-bureau', task.bureau || '');
+    // Responsables/Qui (checkboxes) - peut être une string séparée par virgules ou un tableau
+    const qui = task.qui
+      ? (Array.isArray(task.qui) ? task.qui : task.qui.split(',').map(q => q.trim()))
+      : [];
+    this.setSelectedQui(qui);
 
     // Échéance (conversion timestamp si nécessaire)
     if (task.date_echeance) {
@@ -627,8 +754,33 @@ class SharedTaskModal {
         ? new Date(task.date_echeance * 1000)
         : new Date(task.date_echeance);
       if (!isNaN(date.getTime())) {
-        this.setFieldValue('stm-echeance', date.toISOString().split('T')[0]);
+        if (this.datePicker) {
+          this.datePicker.setDate(date);
+        } else {
+          this.setFieldValue('stm-echeance', date.toISOString().split('T')[0]);
+        }
+        this.updateDateStatus(date);
       }
+    } else {
+      this.updateDateStatus(null);
+    }
+
+    // Références
+    this.setFieldValue('stm-references', task.references || '');
+    this.updateReferencesPreview();
+
+    // Jalons
+    this.jalons = task.jalons ? JSON.parse(JSON.stringify(task.jalons)) : [];
+    this.renderJalons();
+
+    // Stratégies multiples
+    if (task.strategie_ids) {
+      const ids = Array.isArray(task.strategie_ids) ? task.strategie_ids : task.strategie_ids.split(',').map(Number);
+      this.setSelectedStrategies(ids);
+    } else if (task.strategie_id) {
+      this.setSelectedStrategies([task.strategie_id]);
+    } else {
+      this.setSelectedStrategies([]);
     }
 
     // Temps
@@ -647,45 +799,55 @@ class SharedTaskModal {
       form.reset();
     }
     this.setFieldValue('stm-task-id', '');
+
+    // Vider les checkboxes
+    this.setSelectedBureaux([]);
+    this.setSelectedQui([]);
+
+    // Vider les stratégies
+    this.setSelectedStrategies([]);
+
+    // Vider les jalons
+    this.jalons = [];
+    this.renderJalons();
+
+    // Vider la date
+    if (this.datePicker) {
+      this.datePicker.clear();
+    }
+    this.updateDateStatus(null);
+
+    // Vider les références
+    this.setFieldValue('stm-references', '');
+    this.updateReferencesPreview();
+
+    // Cacher les infos hiérarchie
+    const infoDiv = document.getElementById('stm-hierarchy-info');
+    if (infoDiv) infoDiv.style.display = 'none';
   }
 
   /**
    * Récupère les données du formulaire
    */
   getFormData() {
-    // Récupérer l'ID du responsable sélectionné
-    const responsableIdStr = this.getFieldValue('stm-responsable');
-    const responsableId = responsableIdStr ? parseInt(responsableIdStr, 10) : null;
-
-    // Retrouver le nom de l'agent pour le champ legacy 'qui'
-    let quiValue = '';
-    if (responsableId) {
-      const agent = this.agents.find(a => a.id === responsableId);
-      if (agent) {
-        quiValue = agent.fullName;
-      } else {
-        // Fallback: récupérer le texte de l'option sélectionnée
-        const selectEl = document.getElementById('stm-responsable');
-        if (selectEl && selectEl.selectedIndex >= 0) {
-          const selectedOption = selectEl.options[selectEl.selectedIndex];
-          quiValue = selectedOption.dataset.fullname || selectedOption.textContent.trim();
-        }
-      }
-    }
+    // Récupérer les bureaux et responsables depuis les checkboxes
+    const selectedBureaux = this.getSelectedBureaux();
+    const selectedQui = this.getSelectedQui();
 
     const data = {
       titre: this.getFieldValue('stm-titre'),
       description: this.getFieldValue('stm-description'),
       statut: this.getFieldValue('stm-statut'),
-      qui: quiValue,
-      bureau: this.getFieldValue('stm-bureau'),
+      qui: selectedQui.join(', '),
+      bureau: selectedBureaux.join(', '),
       projet: this.getFieldValue('stm-projet'),
       urgence: this.getFieldValue('stm-urgence'),
       impact: this.getFieldValue('stm-impact'),
       nature_activite: this.getFieldValue('stm-nature'),
       genre_action: this.getFieldValue('stm-genre'),
       etape_code: this.getFieldValue('stm-etape'),
-      previsibilite: this.getFieldValue('stm-previsibilite')
+      previsibilite: this.getFieldValue('stm-previsibilite'),
+      references: this.getFieldValue('stm-references')
     };
 
     // ID de la tâche
@@ -701,7 +863,14 @@ class SharedTaskModal {
     const strategieIdStr = this.getFieldValue('stm-strategie');
     if (strategieIdStr) {
       data.strategie_id = parseInt(strategieIdStr, 10);
-      data.est_classifiee = true; // Marquer comme classifiée si liée à une stratégie
+      data.est_classifiee = true;
+    }
+
+    // Stratégies multiples
+    if (this.selectedStrategies.length > 0) {
+      data.strategie_ids = this.selectedStrategies.map(s => s.id);
+      data.strategie_id = this.selectedStrategies[0].id; // Première pour compatibilité
+      data.est_classifiee = true;
     }
 
     const programmeIdStr = this.getFieldValue('stm-programme');
@@ -709,15 +878,26 @@ class SharedTaskModal {
       data.programme_id = parseInt(programmeIdStr, 10);
     }
 
-    // Responsable (référence vers Ssir_agents)
-    if (responsableId) {
-      data.responsable_id = responsableId;
+    // Échéance
+    let echeanceDate = null;
+    if (this.datePicker) {
+      const dates = this.datePicker.selectedDates;
+      if (dates.length > 0) {
+        echeanceDate = dates[0];
+      }
+    } else {
+      const echeance = this.getFieldValue('stm-echeance');
+      if (echeance) {
+        echeanceDate = new Date(echeance);
+      }
+    }
+    if (echeanceDate && !isNaN(echeanceDate.getTime())) {
+      data.date_echeance = Math.floor(echeanceDate.getTime() / 1000);
     }
 
-    // Échéance
-    const echeance = this.getFieldValue('stm-echeance');
-    if (echeance) {
-      data.date_echeance = Math.floor(new Date(echeance).getTime() / 1000);
+    // Jalons
+    if (this.jalons.length > 0) {
+      data.jalons = this.jalons;
     }
 
     // Temps
@@ -787,6 +967,337 @@ class SharedTaskModal {
     if (this.options.onAddLink) {
       this.options.onAddLink(this.currentTask);
     }
+  }
+
+  // === Strategy Browser ===
+
+  /**
+   * Initialise le navigateur de stratégies (accordion)
+   */
+  initStrategyBrowser() {
+    const container = document.getElementById('stm-strategy-browser');
+    if (!container) return;
+
+    // Grouper par objectif > sous_objectif > axe
+    const hierarchy = {};
+    this.strategies.forEach(s => {
+      const obj = s.objectif || '(Sans objectif)';
+      const sousObj = s.sous_objectif || '(Sans sous-objectif)';
+      if (!hierarchy[obj]) hierarchy[obj] = {};
+      if (!hierarchy[obj][sousObj]) hierarchy[obj][sousObj] = [];
+      hierarchy[obj][sousObj].push(s);
+    });
+
+    let html = '<div class="strategy-tree">';
+    for (const [objectif, sousObjectifs] of Object.entries(hierarchy)) {
+      html += `<div class="strategy-objectif mb-2">
+        <div class="fw-bold text-primary small mb-1"><i class="bi bi-bullseye me-1"></i>${objectif}</div>`;
+
+      for (const [sousObjectif, axes] of Object.entries(sousObjectifs)) {
+        html += `<div class="strategy-sous-objectif ms-3 mb-1">
+          <div class="text-muted small">${sousObjectif}</div>
+          <div class="strategy-axes ms-3">`;
+
+        for (const axe of axes) {
+          html += `<div class="strategy-axe form-check">
+            <input class="form-check-input strategy-checkbox" type="checkbox"
+              id="stm-strat-${axe.id}" value="${axe.id}"
+              data-objectif="${objectif}" data-sous-objectif="${sousObjectif}" data-axe="${axe.axe_strategique}">
+            <label class="form-check-label small" for="stm-strat-${axe.id}">${axe.axe_strategique}</label>
+          </div>`;
+        }
+
+        html += '</div></div>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+
+    container.innerHTML = html;
+
+    // Listeners pour mise à jour des tags
+    container.querySelectorAll('.strategy-checkbox').forEach(cb => {
+      cb.addEventListener('change', () => this.updateStrategyTags());
+    });
+  }
+
+  /**
+   * Met à jour les tags de stratégies sélectionnées
+   */
+  updateStrategyTags() {
+    const tagsContainer = document.getElementById('stm-strategy-tags');
+    const countBadge = document.getElementById('stm-strategy-count');
+    const selectedSection = document.getElementById('stm-selected-strategies');
+
+    if (!tagsContainer) return;
+
+    const checked = document.querySelectorAll('#stm-strategy-browser .strategy-checkbox:checked');
+    this.selectedStrategies = Array.from(checked).map(cb => ({
+      id: parseInt(cb.value),
+      objectif: cb.dataset.objectif,
+      sousObjectif: cb.dataset.sousObjectif,
+      axe: cb.dataset.axe
+    }));
+
+    if (this.selectedStrategies.length === 0) {
+      if (selectedSection) selectedSection.style.display = 'none';
+      return;
+    }
+
+    if (selectedSection) selectedSection.style.display = 'block';
+    if (countBadge) countBadge.textContent = this.selectedStrategies.length;
+
+    tagsContainer.innerHTML = this.selectedStrategies.map(s => `
+      <span class="badge bg-primary me-1 mb-1">
+        ${s.axe}
+        <button type="button" class="btn-close btn-close-white ms-1"
+          style="font-size: 0.6em;" data-strat-id="${s.id}"></button>
+      </span>
+    `).join('');
+
+    // Listeners pour supprimer les tags
+    tagsContainer.querySelectorAll('.btn-close').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const stratId = e.target.dataset.stratId;
+        const checkbox = document.getElementById(`stm-strat-${stratId}`);
+        if (checkbox) {
+          checkbox.checked = false;
+          this.updateStrategyTags();
+        }
+      });
+    });
+
+    // Mettre à jour le champ caché
+    const idsField = document.getElementById('stm-strategie-ids');
+    if (idsField) {
+      idsField.value = this.selectedStrategies.map(s => s.id).join(',');
+    }
+  }
+
+  /**
+   * Définit les stratégies sélectionnées
+   */
+  setSelectedStrategies(ids) {
+    document.querySelectorAll('#stm-strategy-browser .strategy-checkbox').forEach(cb => {
+      cb.checked = ids.includes(parseInt(cb.value));
+    });
+    this.updateStrategyTags();
+  }
+
+  // === Date Picker ===
+
+  /**
+   * Initialise le date picker avec bouton clear
+   */
+  initDatePicker() {
+    const input = document.getElementById('stm-echeance');
+    const btnPick = document.getElementById('stm-btn-pick-date');
+    const btnClear = document.getElementById('stm-btn-clear-date');
+    const statusSpan = document.getElementById('stm-date-status');
+
+    if (!input) return;
+
+    // Utiliser flatpickr si disponible, sinon fallback sur input date natif
+    if (typeof flatpickr !== 'undefined') {
+      this.datePicker = flatpickr(input, {
+        dateFormat: 'd/m/Y',
+        locale: 'fr',
+        allowInput: true,
+        onChange: (dates) => this.updateDateStatus(dates[0])
+      });
+    } else {
+      // Fallback: transformer en input date
+      input.type = 'date';
+      input.removeAttribute('readonly');
+      input.addEventListener('change', () => {
+        this.updateDateStatus(input.value ? new Date(input.value) : null);
+      });
+    }
+
+    // Bouton pour ouvrir le picker
+    if (btnPick) {
+      btnPick.addEventListener('click', () => {
+        if (this.datePicker) {
+          this.datePicker.open();
+        } else {
+          input.showPicker?.();
+        }
+      });
+    }
+
+    // Bouton pour effacer la date
+    if (btnClear) {
+      btnClear.addEventListener('click', () => {
+        if (this.datePicker) {
+          this.datePicker.clear();
+        } else {
+          input.value = '';
+        }
+        this.updateDateStatus(null);
+      });
+    }
+  }
+
+  /**
+   * Met à jour le statut de la date
+   */
+  updateDateStatus(date) {
+    const btnClear = document.getElementById('stm-btn-clear-date');
+    const statusSpan = document.getElementById('stm-date-status');
+
+    if (date) {
+      if (btnClear) btnClear.style.display = 'block';
+      if (statusSpan) {
+        const now = new Date();
+        const diff = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
+        if (diff < 0) {
+          statusSpan.className = 'text-danger small';
+          statusSpan.textContent = `En retard de ${Math.abs(diff)} jour(s)`;
+        } else if (diff === 0) {
+          statusSpan.className = 'text-warning small';
+          statusSpan.textContent = "Échéance aujourd'hui";
+        } else if (diff <= 7) {
+          statusSpan.className = 'text-warning small';
+          statusSpan.textContent = `Dans ${diff} jour(s)`;
+        } else {
+          statusSpan.className = 'text-muted small';
+          statusSpan.textContent = `Dans ${diff} jours`;
+        }
+      }
+    } else {
+      if (btnClear) btnClear.style.display = 'none';
+      if (statusSpan) {
+        statusSpan.className = 'text-muted small';
+        statusSpan.textContent = 'Aucune date définie';
+      }
+    }
+  }
+
+  // === Jalons ===
+
+  /**
+   * Initialise la section jalons
+   */
+  initJalons() {
+    const btnAdd = document.getElementById('stm-btn-add-jalon');
+    if (btnAdd) {
+      btnAdd.addEventListener('click', () => this.addJalon());
+    }
+    this.renderJalons();
+  }
+
+  /**
+   * Ajoute un nouveau jalon
+   */
+  addJalon() {
+    const titre = prompt('Titre du jalon:');
+    if (!titre) return;
+
+    const date = prompt('Date (JJ/MM/AAAA):');
+
+    this.jalons.push({
+      id: Date.now(),
+      titre: titre,
+      date: date || '',
+      statut: 'pending'
+    });
+
+    this.renderJalons();
+  }
+
+  /**
+   * Affiche les jalons
+   */
+  renderJalons() {
+    const container = document.getElementById('stm-jalons-timeline');
+    const emptyDiv = document.getElementById('stm-jalons-empty');
+    const countBadge = document.getElementById('stm-jalons-count');
+
+    if (!container) return;
+
+    if (this.jalons.length === 0) {
+      if (emptyDiv) emptyDiv.style.display = 'block';
+      if (countBadge) countBadge.textContent = '0';
+      container.querySelectorAll('.jalon-item').forEach(el => el.remove());
+      return;
+    }
+
+    if (emptyDiv) emptyDiv.style.display = 'none';
+    if (countBadge) countBadge.textContent = this.jalons.length;
+
+    // Supprimer les anciens jalons
+    container.querySelectorAll('.jalon-item').forEach(el => el.remove());
+
+    // Ajouter les jalons
+    this.jalons.forEach((jalon, idx) => {
+      const div = document.createElement('div');
+      div.className = 'jalon-item d-flex align-items-center gap-2 py-2 border-bottom';
+      div.innerHTML = `
+        <input type="checkbox" class="form-check-input" ${jalon.statut === 'done' ? 'checked' : ''} data-idx="${idx}">
+        <span class="flex-grow-1 ${jalon.statut === 'done' ? 'text-decoration-line-through text-muted' : ''}">${jalon.titre}</span>
+        <small class="text-muted">${jalon.date || '-'}</small>
+        <button type="button" class="btn btn-sm btn-outline-danger" data-idx="${idx}">
+          <i class="bi bi-trash"></i>
+        </button>
+      `;
+      container.appendChild(div);
+
+      // Listeners
+      div.querySelector('input[type="checkbox"]').addEventListener('change', (e) => {
+        this.jalons[idx].statut = e.target.checked ? 'done' : 'pending';
+        this.renderJalons();
+      });
+      div.querySelector('button').addEventListener('click', () => {
+        this.jalons.splice(idx, 1);
+        this.renderJalons();
+      });
+    });
+  }
+
+  // === References ===
+
+  /**
+   * Parse et prévisualise les références
+   */
+  updateReferencesPreview() {
+    const textarea = document.getElementById('stm-references');
+    const preview = document.getElementById('stm-references-preview');
+    if (!textarea || !preview) return;
+
+    const lines = textarea.value.split('\n').filter(l => l.trim());
+    if (lines.length === 0) {
+      preview.innerHTML = '';
+      return;
+    }
+
+    preview.innerHTML = lines.map(line => {
+      line = line.trim();
+      // URL
+      if (line.match(/^https?:\/\//)) {
+        return `<a href="${line}" target="_blank" class="badge bg-info text-decoration-none me-1 mb-1"><i class="bi bi-link-45deg"></i> ${this.truncate(line, 40)}</a>`;
+      }
+      // Chemin réseau
+      if (line.startsWith('\\\\')) {
+        return `<span class="badge bg-secondary me-1 mb-1"><i class="bi bi-folder"></i> ${this.truncate(line, 40)}</span>`;
+      }
+      // Email
+      if (line.includes('@')) {
+        return `<a href="mailto:${line}" class="badge bg-success text-decoration-none me-1 mb-1"><i class="bi bi-envelope"></i> ${line}</a>`;
+      }
+      // Référence GLPI ou autre
+      if (line.match(/^[A-Z]+-\d+/)) {
+        return `<span class="badge bg-warning text-dark me-1 mb-1"><i class="bi bi-tag"></i> ${line}</span>`;
+      }
+      // Autre
+      return `<span class="badge bg-light text-dark me-1 mb-1">${this.truncate(line, 50)}</span>`;
+    }).join('');
+  }
+
+  /**
+   * Tronque une chaîne
+   */
+  truncate(str, len) {
+    return str.length > len ? str.substring(0, len) + '...' : str;
   }
 
   // === Utilitaires ===

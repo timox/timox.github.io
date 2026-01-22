@@ -1123,3 +1123,76 @@
 .jalon-conditional-fields.visible {
   display: block;
 }
+
+/* === STYLES RÉFÉRENCES === */
+
+.references-card {
+  border: 1px solid #e9ecef;
+}
+
+.references-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  min-height: 24px;
+}
+
+.references-preview:empty {
+  display: none;
+}
+
+.references-preview .badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.references-preview .badge i {
+  margin-right: 0.25rem;
+}
+
+/* === STYLES STRATEGY TREE === */
+
+.strategy-tree {
+  font-size: 0.9rem;
+}
+
+.strategy-objectif {
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.strategy-objectif:last-child {
+  border-bottom: none;
+}
+
+.strategy-sous-objectif {
+  margin-bottom: 0.5rem;
+}
+
+.strategy-axes {
+  margin-left: 0.5rem;
+}
+
+.strategy-axe {
+  padding: 0.25rem 0;
+}
+
+.strategy-axe .form-check-label {
+  cursor: pointer;
+}
+
+.strategy-axe .form-check-input:checked + .form-check-label {
+  color: #007bff;
+  font-weight: 500;
+}
+
+/* === MODAL XXL SIZE === */
+
+.modal-xxl {
+  max-width: 1600px;
+}
