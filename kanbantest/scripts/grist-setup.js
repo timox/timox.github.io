@@ -56,7 +56,7 @@ const GRIST_SETUP = {
         }
       }
     },
-    etape_code: {
+    etape_cycle: {
       type: 'Choice',
       label: 'Étape cycle',
       widgetOptions: {
@@ -144,7 +144,7 @@ const GRIST_SETUP = {
     {
       name: 'Par Étape',
       type: 'table',
-      groupBy: 'etape_code',
+      groupBy: 'etape_cycle',
       description: 'Groupement par étape du cycle (TOGAF ADM)'
     },
     {
@@ -156,7 +156,7 @@ const GRIST_SETUP = {
     {
       name: 'Matrice Nature×Étape',
       type: 'summary',
-      groupBy: ['nature_activite', 'etape_code'],
+      groupBy: ['nature_activite', 'etape_cycle'],
       description: 'Tableau croisé dynamique'
     }
   ]

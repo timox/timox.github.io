@@ -129,18 +129,40 @@ export function setSelectedOptions(selectId, valuesWithL) {
 
 /**
  * Récupère les valeurs sélectionnées d'un select multiple au format Grist
- * @param {string} selectId - ID de l'élément select
+ * @param {string} selectId - ID de l'élément select ou input hidden
  * @returns {Array} Valeurs au format Grist (['L', ...values])
  */
 export function getSelectedOptionsAsGristFormat(selectId) {
-  const $select = $(`#${selectId}`);
-  if (!$select.length) return ['L'];
-  
-  const selectedValues = $select.val() || [];
-  const validValues = Array.isArray(selectedValues) ? 
-    selectedValues.filter(value => value && value.trim() !== '') : 
-    [selectedValues].filter(value => value && value.trim() !== '');
-  
+  const $element = $(`#${selectId}`);
+  if (!$element.length) return ['L'];
+
+  let selectedValues = [];
+  const rawValue = $element.val();
+
+  // Gérer les inputs hidden qui stockent les valeurs comme JSON
+  if ($element.is('input[type="hidden"]') && typeof rawValue === 'string' && rawValue) {
+    try {
+      const parsed = JSON.parse(rawValue);
+      if (Array.isArray(parsed)) {
+        // Filtrer le marqueur 'L' de Grist si présent
+        selectedValues = parsed.filter(v => v !== 'L');
+      }
+    } catch (e) {
+      // Si ce n'est pas du JSON valide, traiter comme une valeur simple
+      selectedValues = rawValue ? [rawValue] : [];
+    }
+  } else if (Array.isArray(rawValue)) {
+    // Select multiple retourne un tableau
+    selectedValues = rawValue;
+  } else if (rawValue) {
+    // Select simple retourne une chaîne
+    selectedValues = [rawValue];
+  }
+
+  const validValues = selectedValues.filter(value =>
+    value && typeof value === 'string' && value.trim() !== ''
+  );
+
   return validValues.length > 0 ? ['L', ...validValues] : ['L'];
 }
 

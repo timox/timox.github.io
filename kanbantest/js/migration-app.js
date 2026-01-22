@@ -147,7 +147,7 @@ class MigrationApp {
           type_tache: toStr(data.type_tache?.[i]),
           nature_activite: getNatureActivite(i),
           genre_action: getGenreAction(i),
-          etape_code: getEtapeCycle(i),
+          etape_cycle: getEtapeCycle(i),
           previsibilite: getPrevisibilite(i)
         });
       }

@@ -533,7 +533,7 @@ class TachesApp {
       // Extraire les trigrammes V3
       const nature = this.extractChoiceValue(task.nature_activite);
       const genre = this.extractChoiceValue(task.genre_action);
-      const etape = this.extractChoiceValue(task.etape_code);
+      const etape = this.extractChoiceValue(task.etape_cycle);
       const missionName = this.getMissionName(task.strategie_id);
       const meoCode = task.mise_en_oeuvre_code;
 

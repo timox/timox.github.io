@@ -292,7 +292,7 @@ export class GristManager {
       
       // Mapper les colonnes optionnelles
       // Colonnes V3 qui doivent etre converties en string
-      const V3_STRING_COLUMNS = ['nature_activite', 'genre_action', 'etape_code', 'previsibilite', 'previsibilité', 'type_tache'];
+      const V3_STRING_COLUMNS = ['nature_activite', 'genre_action', 'etape_cycle', 'previsibilite', 'previsibilité', 'type_tache'];
 
       for (const columnName of OPTIONAL_COLUMNS) {
         if (gristData.hasOwnProperty(columnName) &&
@@ -581,7 +581,7 @@ export class GristManager {
     const simpleFields = [
       'titre', 'description', 'statut', 'projet', 'urgence', 'impact', 'notes',
       // Champs V3 taxonomy
-      'nature_activite', 'genre_action', 'etape_code', 'previsibilite',
+      'nature_activite', 'genre_action', 'etape_cycle', 'previsibilite',
       // Champs missions
       'mission_code', 'mission_nom', 'mission_responsable', 'mission_bureau',
       'mission_priorite', 'mission_date_debut', 'mission_date_fin',
@@ -658,7 +658,7 @@ export class GristManager {
 
     // Si availableColumns est vide, envoyer tous les champs SAUF les champs V3
     // qui peuvent ne pas exister - ils seront créés par setup.html ou migration.html
-    const v3Fields = ['nature_activite', 'genre_action', 'etape_code', 'previsibilite'];
+    const v3Fields = ['nature_activite', 'genre_action', 'etape_cycle', 'previsibilite'];
     const safeData = {};
     for (const [key, value] of Object.entries(gristData)) {
       // Exclure les champs V3 quand on ne peut pas vérifier leur existence

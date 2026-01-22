@@ -62,7 +62,7 @@ export const OPTIONAL_COLUMNS = [
   // Colonnes V3 (Kanban) - legacy
   'previsibilite', 'previsibilité', 'type_tache', 'est_dette_technique',
   // Colonnes V3 (Taxonomie)
-  'nature_activite', 'genre_action', 'etape_code'
+  'nature_activite', 'genre_action', 'etape_cycle'
 ];
 
 // === CONSTANTES DE L'INTERFACE ===

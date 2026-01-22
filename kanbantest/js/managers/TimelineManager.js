@@ -514,7 +514,7 @@ export class TimelineManager {
       case 'genre':
         return this.hasColumn('genre_action') ? 'genre_action' : null;
       case 'etape':
-        return this.hasColumn('etape_code') ? 'etape_code' : null;
+        return this.hasColumn('etape_cycle') ? 'etape_cycle' : null;
       case 'famille':
         return null; // Calculé depuis genre_action, pas éditable directement
       default:
@@ -687,9 +687,9 @@ export class TimelineManager {
   }
 
   getEtapeCycleValue(record) {
-    if (record.etape_code) {
-      const etape = getEtapeCycle(record.etape_code);
-      return etape ? etape.nom : record.etape_code;
+    if (record.etape_cycle) {
+      const etape = getEtapeCycle(record.etape_cycle);
+      return etape ? etape.nom : record.etape_cycle;
     }
     return '';
   }

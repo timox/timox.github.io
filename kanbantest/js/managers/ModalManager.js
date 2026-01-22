@@ -1093,7 +1093,7 @@ export class ModalManager {
     // Champs V3
     setFieldValue('stm-nature', task.nature_activite || '');
     setFieldValue('stm-genre', task.genre_action || '');
-    setFieldValue('stm-etape', task.etape_code || '');
+    setFieldValue('stm-etape', task.etape_cycle || '');
     setFieldValue('stm-previsibilite', task.previsibilite || task['previsibilité'] || '');
 
     // Priorité calculée automatiquement
@@ -1425,16 +1425,22 @@ export class ModalManager {
   }
 
   collectFormData() {
+    // Helper pour convertir une valeur simple en format liste Grist ['L', value] ou null
+    const toGristList = (value) => {
+      const val = value ? value.trim() : '';
+      return val ? ['L', val] : null;
+    };
+
     const data = {
       titre: getFieldValue('stm-titre').trim(),
       statut: getFieldValue('stm-statut'),
       projet: getFieldValue('stm-projet').trim() || null,
       urgence: getFieldValue('stm-urgence') || null,
       impact: getFieldValue('stm-impact') || null,
-      // Champs V3
-      nature_activite: getFieldValue('stm-nature') || null,
-      genre_action: getFieldValue('stm-genre') || null,
-      etape_code: getFieldValue('stm-etape') || null,
+      // Champs V3 - ce sont des listes dans Grist (ChoiceList)
+      nature_activite: toGristList(getFieldValue('stm-nature')),
+      genre_action: toGristList(getFieldValue('stm-genre')),
+      etape_cycle: toGristList(getFieldValue('stm-etape')),
       previsibilite: getFieldValue('stm-previsibilite') || null,
       bureau: getSelectedOptionsAsGristFormat('stm-bureau'),
       qui: getSelectedOptionsAsGristFormat('stm-qui'),
