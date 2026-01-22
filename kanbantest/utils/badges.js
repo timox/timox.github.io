@@ -1,7 +1,7 @@
 // === utils/badges.js ===
 // Utilitaires pour la génération des badges bureaux
 
-import { BUREAU_ICONS } from '../config/constants.js';
+import { BUREAU_ICONS } from '../js/config/constants.js';
 
 /**
  * Normalise le nom d'un bureau pour les classes CSS

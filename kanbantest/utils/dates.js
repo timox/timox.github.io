@@ -1,7 +1,7 @@
 // === utils/dates.js ===
 // Utilitaires pour la gestion des dates dans l'application Kanban
 
-import { TIME_THRESHOLDS, CSS_CLASSES } from '../config/constants.js';
+import { TIME_THRESHOLDS, CSS_CLASSES } from '../js/config/constants.js';
 
 /**
  * Normalise une valeur de date en format YYYY-MM-DD
