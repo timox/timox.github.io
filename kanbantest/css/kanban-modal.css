@@ -28,9 +28,9 @@
 
 /* Modale d'édition de tâche */
 .task-modal-dialog {
-  max-width: 900px;
-  width: calc(100% - 4rem);
-  margin: 2rem auto;
+  max-width: 800px !important;
+  width: calc(100% - 6rem) !important;
+  margin: 3rem auto !important;
 }
 
 .task-modal-body {
