@@ -517,18 +517,20 @@
           return { success: true, action: 'exists', message: `${colId} existe déjà` };
         }
       } else {
-        // La colonne n'existe pas - la créer
+        // La colonne n'existe pas - la créer en 2 étapes pour forcer l'id en minuscules
         try {
-          const createData = {
-            type: config.type,
-            label: config.label
-          };
-          if (config.widgetOptions) {
-            createData.widgetOptions = JSON.stringify(config.widgetOptions);
-          }
-
+          // Étape 1: Créer la colonne avec UNIQUEMENT le type (pas de label pour éviter la majuscule)
           await grist.docApi.applyUserActions([
-            ['AddColumn', tableName, colId, createData]
+            ['AddColumn', tableName, colId, { type: config.type }]
+          ]);
+
+          // Étape 2: Ajouter le label et les widgetOptions via ModifyColumn
+          const updateData = { label: config.label };
+          if (config.widgetOptions) {
+            updateData.widgetOptions = JSON.stringify(config.widgetOptions);
+          }
+          await grist.docApi.applyUserActions([
+            ['ModifyColumn', tableName, colId, updateData]
           ]);
 
           // Mettre à jour le cache

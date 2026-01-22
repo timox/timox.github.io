@@ -183,10 +183,15 @@ async function setupV3Columns() {
       const hasColumn = colId in tables;
 
       if (!hasColumn) {
-        // Créer la colonne
+        // Créer la colonne en 2 étapes pour forcer l'id en minuscules
         console.log(`Création de la colonne ${colId}...`);
+        // Étape 1: Créer avec UNIQUEMENT le type (pas de label pour éviter la majuscule)
         await docApi.applyUserActions([
-          ['AddColumn', table, colId, { type: config.type, label: config.label }]
+          ['AddColumn', table, colId, { type: config.type }]
+        ]);
+        // Étape 2: Ajouter le label via ModifyColumn
+        await docApi.applyUserActions([
+          ['ModifyColumn', table, colId, { label: config.label }]
         ]);
       }
 
