@@ -278,6 +278,34 @@
       height: 300px;
     }
     
+    /* Style des filtres de statut */
+    .status-checkbox:checked + .badge-filter {
+      box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.5);
+      transform: scale(1.05);
+    }
+
+    .status-checkbox:not(:checked) + .badge-filter {
+      opacity: 0.5;
+      filter: grayscale(50%);
+    }
+
+    .badge-filter {
+      transition: all 0.2s ease;
+    }
+
+    .badge-filter:hover {
+      transform: scale(1.1);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .form-check-inline {
+      margin-right: 0;
+    }
+
+    .status-checkbox {
+      display: none;
+    }
+
     /* Responsive */
     @media screen and (max-width: 768px) {
       .timeline::after {
@@ -344,6 +372,59 @@
     <!-- Container d'erreur -->
     <div id="error-container"></div>
     
+    <!-- Filtres par statut -->
+    <div class="row mb-3">
+      <div class="col-12">
+        <div class="card timeline-card">
+          <div class="card-body py-3">
+            <div class="d-flex align-items-center flex-wrap gap-3">
+              <span class="fw-bold me-2">
+                <i class="bi bi-funnel me-1"></i>Filtrer par statut:
+              </span>
+              <div class="d-flex flex-wrap gap-2" id="status-filters">
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input status-checkbox" type="checkbox" id="filter-backlog" value="Backlog">
+                  <label class="form-check-label badge-filter" for="filter-backlog" style="background-color: #6c757d; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Backlog</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input status-checkbox" type="checkbox" id="filter-afaire" value="À faire">
+                  <label class="form-check-label badge-filter" for="filter-afaire" style="background-color: #0d6efd; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer;">À faire</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input status-checkbox" type="checkbox" id="filter-encours" value="En cours" checked>
+                  <label class="form-check-label badge-filter" for="filter-encours" style="background-color: #fd7e14; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer;">En cours</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input status-checkbox" type="checkbox" id="filter-enattente" value="En attente">
+                  <label class="form-check-label badge-filter" for="filter-enattente" style="background-color: #20c997; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer;">En attente</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input status-checkbox" type="checkbox" id="filter-bloque" value="Bloqué" checked>
+                  <label class="form-check-label badge-filter" for="filter-bloque" style="background-color: #dc3545; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Bloqué</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input status-checkbox" type="checkbox" id="filter-validation" value="Validation" checked>
+                  <label class="form-check-label badge-filter" for="filter-validation" style="background-color: #ffc107; color: #000; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Validation</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input status-checkbox" type="checkbox" id="filter-termine" value="Terminé">
+                  <label class="form-check-label badge-filter" for="filter-termine" style="background-color: #198754; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Terminé</label>
+                </div>
+              </div>
+              <div class="ms-auto d-flex gap-2">
+                <button class="btn btn-outline-secondary btn-sm" id="btn-select-all" title="Tout sélectionner">
+                  <i class="bi bi-check-all"></i> Tous
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" id="btn-select-none" title="Tout désélectionner">
+                  <i class="bi bi-x-lg"></i> Aucun
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Sélecteur de tâche -->
     <div class="row mb-4">
       <div class="col-12">
@@ -351,21 +432,36 @@
           <div class="card-body">
             <h5 class="card-title mb-3">
               <i class="bi bi-search me-2"></i>
-              Sélectionner une tâche
+              Sélectionner une tâche ou afficher par groupe
             </h5>
             <div class="row g-3">
-              <div class="col-md-8">
-                <select class="form-select form-select-lg" id="task-selector">
+              <div class="col-md-6">
+                <label class="form-label text-muted small">Tâche individuelle</label>
+                <select class="form-select" id="task-selector">
                   <option value="">Choisir une tâche...</option>
                   <!-- Sera rempli par JS -->
                 </select>
               </div>
-              <div class="col-md-4">
-                <button class="btn btn-primary btn-lg w-100" id="load-timeline-btn" disabled>
-                  <i class="bi bi-diagram-3 me-2"></i>
-                  Charger Timeline
+              <div class="col-md-3">
+                <label class="form-label text-muted small">Ou afficher le groupe</label>
+                <button class="btn btn-success w-100" id="load-group-btn">
+                  <i class="bi bi-collection me-2"></i>
+                  Afficher groupe filtré
                 </button>
               </div>
+              <div class="col-md-3">
+                <label class="form-label text-muted small">&nbsp;</label>
+                <button class="btn btn-primary w-100" id="load-timeline-btn" disabled>
+                  <i class="bi bi-diagram-3 me-2"></i>
+                  Charger tâche
+                </button>
+              </div>
+            </div>
+            <div class="mt-2">
+              <small class="text-muted" id="filter-info">
+                <i class="bi bi-info-circle me-1"></i>
+                <span id="task-count-info">0 tâches</span> correspondent aux statuts sélectionnés
+              </small>
             </div>
           </div>
         </div>

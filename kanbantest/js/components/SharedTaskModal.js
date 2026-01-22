@@ -1298,7 +1298,13 @@ class SharedTaskModal {
         if (this.datePicker) {
           this.datePicker.open();
         } else {
-          input.showPicker?.();
+          // showPicker() peut échouer dans un contexte cross-origin (iframe)
+          try {
+            input.showPicker?.();
+          } catch (e) {
+            // Fallback: focus sur l'input pour permettre l'édition manuelle
+            input.focus();
+          }
         }
       });
     }

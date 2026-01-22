@@ -13,7 +13,8 @@ class TimelineAppManager {
     this.tasks = [];
     this.selectedTask = null;
     this.timeline = null;
-    
+    this.selectedStatuses = ['En cours', 'Bloqué', 'Validation']; // Statuts par défaut
+
     this.init();
   }
 
@@ -21,13 +22,52 @@ class TimelineAppManager {
     try {
       await this.waitForGristReady();
       await this.loadTasks();
+      this.initStatusFilters();
       this.populateTaskSelector();
       this.setupEventListeners();
-      
+      this.updateTaskCount();
+
     } catch (error) {
       console.error('❌ Erreur initialisation timeline:', error);
       this.showError('Erreur lors du chargement des données');
     }
+  }
+
+  /**
+   * Initialise les filtres de statut depuis les checkboxes
+   */
+  initStatusFilters() {
+    const checkboxes = document.querySelectorAll('.status-checkbox');
+    this.selectedStatuses = [];
+
+    checkboxes.forEach(checkbox => {
+      if (checkbox.checked) {
+        this.selectedStatuses.push(checkbox.value);
+      }
+    });
+
+    console.log('📊 Statuts sélectionnés initiaux:', this.selectedStatuses);
+  }
+
+  /**
+   * Met à jour le compteur de tâches filtrées
+   */
+  updateTaskCount() {
+    const filteredTasks = this.getFilteredTasks();
+    const countElement = document.getElementById('task-count-info');
+    if (countElement) {
+      countElement.textContent = `${filteredTasks.length} tâche${filteredTasks.length > 1 ? 's' : ''} correspondent aux statuts sélectionnés`;
+    }
+  }
+
+  /**
+   * Retourne les tâches filtrées par les statuts sélectionnés
+   */
+  getFilteredTasks() {
+    if (this.selectedStatuses.length === 0) {
+      return this.tasks;
+    }
+    return this.tasks.filter(task => this.selectedStatuses.includes(task.statut));
   }
 
   async waitForGristReady() {
@@ -87,61 +127,174 @@ class TimelineAppManager {
 
   populateTaskSelector() {
     const selector = document.getElementById('task-selector');
-    
-    // Ajouter les options de filtrage par statut
-    const optionsGroups = [
-      { value: 'single', label: '--- Tâches individuelles ---', disabled: true },
-      { value: 'group-terminé', label: '🎯 Toutes les tâches terminées', group: true },
-      { value: 'group-encours', label: '⚡ Toutes les tâches en cours', group: true },
-      { value: 'group-bloque', label: '🚫 Toutes les tâches bloquées', group: true },
-      { value: 'group-validation', label: '✅ Toutes les tâches en validation', group: true },
-      { value: 'separator', label: '--- Tâches individuelles ---', disabled: true }
-    ];
-    
-    optionsGroups.forEach(optGroup => {
-      const option = document.createElement('option');
-      option.value = optGroup.value;
-      option.textContent = optGroup.label;
-      if (optGroup.disabled) option.disabled = true;
-      if (optGroup.group) option.style.fontWeight = 'bold';
-      selector.appendChild(option);
-    });
-    
-    // Trier les tâches par titre
-    const sortedTasks = this.tasks
+    if (!selector) return;
+
+    // Conserver la valeur actuelle si possible
+    const currentValue = selector.value;
+
+    // Vider le sélecteur
+    selector.innerHTML = '<option value="">Choisir une tâche...</option>';
+
+    // Trier et filtrer les tâches par statuts sélectionnés
+    const filteredTasks = this.getFilteredTasks()
       .filter(task => task.titre && task.titre.trim())
       .sort((a, b) => (a.titre || '').localeCompare(b.titre || ''));
-    
-    sortedTasks.forEach(task => {
+
+    filteredTasks.forEach(task => {
       const option = document.createElement('option');
       option.value = task.id;
-      option.textContent = `#${task.id} - ${task.titre}`;
+      const statusEmoji = this.getStatusEmoji(task.statut);
+      option.textContent = `${statusEmoji} #${task.id} - ${task.titre}`;
       selector.appendChild(option);
     });
-    
-    console.log(`📋 ${sortedTasks.length} tâches ajoutées au sélecteur`);
+
+    // Restaurer la valeur si elle existe toujours
+    if (currentValue && selector.querySelector(`option[value="${currentValue}"]`)) {
+      selector.value = currentValue;
+    }
+
+    console.log(`📋 ${filteredTasks.length} tâches affichées dans le sélecteur (sur ${this.tasks.length} total)`);
+  }
+
+  /**
+   * Retourne un emoji représentant le statut
+   */
+  getStatusEmoji(status) {
+    const emojiMap = {
+      'Backlog': '📦',
+      'À faire': '📋',
+      'En cours': '⚡',
+      'En attente': '⏳',
+      'Bloqué': '🚫',
+      'Validation': '✅',
+      'Terminé': '🎯'
+    };
+    return emojiMap[status] || '📌';
   }
 
   setupEventListeners() {
     const selector = document.getElementById('task-selector');
     const loadBtn = document.getElementById('load-timeline-btn');
-    
-    selector.addEventListener('change', () => {
-      loadBtn.disabled = !selector.value;
-    });
-    
-    loadBtn.addEventListener('click', () => {
-      const value = selector.value;
-      if (value.startsWith('group-')) {
-        const status = value.replace('group-', '');
-        this.loadGroupTimeline(status);
-      } else {
-        const taskId = parseInt(value);
+    const loadGroupBtn = document.getElementById('load-group-btn');
+    const selectAllBtn = document.getElementById('btn-select-all');
+    const selectNoneBtn = document.getElementById('btn-select-none');
+
+    // Changement de sélection de tâche
+    if (selector) {
+      selector.addEventListener('change', () => {
+        if (loadBtn) loadBtn.disabled = !selector.value;
+      });
+    }
+
+    // Bouton charger tâche individuelle
+    if (loadBtn) {
+      loadBtn.addEventListener('click', () => {
+        const taskId = parseInt(selector.value);
         if (taskId) {
           this.loadTaskTimeline(taskId);
         }
+      });
+    }
+
+    // Bouton afficher groupe filtré
+    if (loadGroupBtn) {
+      loadGroupBtn.addEventListener('click', () => {
+        this.loadFilteredGroupTimeline();
+      });
+    }
+
+    // Checkboxes de filtrage par statut
+    const checkboxes = document.querySelectorAll('.status-checkbox');
+    checkboxes.forEach(checkbox => {
+      checkbox.addEventListener('change', () => {
+        this.handleStatusFilterChange();
+      });
+    });
+
+    // Bouton "Tous"
+    if (selectAllBtn) {
+      selectAllBtn.addEventListener('click', () => {
+        checkboxes.forEach(cb => cb.checked = true);
+        this.handleStatusFilterChange();
+      });
+    }
+
+    // Bouton "Aucun"
+    if (selectNoneBtn) {
+      selectNoneBtn.addEventListener('click', () => {
+        checkboxes.forEach(cb => cb.checked = false);
+        this.handleStatusFilterChange();
+      });
+    }
+  }
+
+  /**
+   * Gère le changement des filtres de statut
+   */
+  handleStatusFilterChange() {
+    const checkboxes = document.querySelectorAll('.status-checkbox');
+    this.selectedStatuses = [];
+
+    checkboxes.forEach(checkbox => {
+      if (checkbox.checked) {
+        this.selectedStatuses.push(checkbox.value);
       }
     });
+
+    console.log('📊 Statuts mis à jour:', this.selectedStatuses);
+
+    // Mettre à jour le sélecteur de tâches et le compteur
+    this.populateTaskSelector();
+    this.updateTaskCount();
+  }
+
+  /**
+   * Charge la timeline pour le groupe filtré (tous les statuts sélectionnés)
+   */
+  loadFilteredGroupTimeline() {
+    const filteredTasks = this.getFilteredTasks();
+
+    if (filteredTasks.length === 0) {
+      this.showError('Aucune tâche ne correspond aux statuts sélectionnés');
+      return;
+    }
+
+    console.log(`📊 Chargement timeline groupe filtré: ${filteredTasks.length} tâches`);
+
+    // Créer un label pour les statuts sélectionnés
+    const statusLabel = this.selectedStatuses.length > 0
+      ? this.selectedStatuses.join(', ')
+      : 'Tous les statuts';
+
+    // Afficher les informations du groupe
+    this.displayFilteredGroupInfo(filteredTasks, statusLabel);
+
+    // Extraire et afficher la timeline de groupe
+    const groupTimelineData = this.extractGroupTimelineData(filteredTasks);
+    this.renderGroupTimeline(groupTimelineData, statusLabel);
+
+    // Afficher les sections
+    document.getElementById('task-info').style.display = 'block';
+    document.getElementById('legend').style.display = 'block';
+    document.getElementById('timeline-container').style.display = 'block';
+  }
+
+  /**
+   * Affiche les infos pour un groupe filtré
+   */
+  displayFilteredGroupInfo(tasks, statusLabel) {
+    document.getElementById('task-id').textContent = `Groupe: ${tasks.length} tâches`;
+    document.getElementById('task-title').textContent = `Tâches filtrées par statut`;
+    document.getElementById('task-description').textContent = `Timeline des tâches avec les statuts: ${statusLabel}`;
+
+    // Badges pour le groupe
+    const badgesContainer = document.getElementById('task-badges');
+    let badges = this.selectedStatuses.map(status => {
+      const statusClass = this.getStatusClass(status);
+      return `<span class="badge ${statusClass}">${status}</span>`;
+    });
+    badges.push(`<span class="badge bg-info">${tasks.length} tâches</span>`);
+    badgesContainer.innerHTML = badges.join(' ');
   }
 
   async loadGroupTimeline(status) {
