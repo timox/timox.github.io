@@ -1,7 +1,7 @@
 // === utils/dom.js ===
 // Utilitaires pour la manipulation du DOM et l'interface utilisateur
 
-import { MESSAGES } from '../config/constants.js';
+import { MESSAGES } from '../js/config/constants.js';
 
 /**
  * Affiche un message d'erreur dans le container d'erreurs

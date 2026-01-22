@@ -1738,55 +1738,32 @@ class SharedTaskModal {
     return classes[statut] || 'bg-secondary';
   }
 
-  // === Priority Buttons ===
+  // === Priority (now using selects - no special logic needed) ===
 
   /**
-   * Initialise les boutons de priorité (urgence et impact)
+   * Initialise les selects de priorité (plus de boutons)
    */
   initPriorityButtons() {
-    // Urgence buttons
-    const urgenceContainer = document.getElementById('stm-urgence-buttons');
-    if (urgenceContainer) {
-      urgenceContainer.querySelectorAll('.priority-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          urgenceContainer.querySelectorAll('.priority-btn').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          const hiddenInput = document.getElementById('stm-urgence');
-          if (hiddenInput) hiddenInput.value = btn.dataset.value;
-          this.updateCompletionRing();
-        });
-      });
-    }
-
-    // Impact buttons
-    const impactContainer = document.getElementById('stm-impact-buttons');
-    if (impactContainer) {
-      impactContainer.querySelectorAll('.priority-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          impactContainer.querySelectorAll('.priority-btn').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          const hiddenInput = document.getElementById('stm-impact');
-          if (hiddenInput) hiddenInput.value = btn.dataset.value;
-          this.updateCompletionRing();
-        });
-      });
-    }
+    // Les selects fonctionnent automatiquement - juste ajouter listener pour completion ring
+    ['stm-urgence', 'stm-impact'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('change', () => this.updateCompletionRing());
+      }
+    });
   }
 
   /**
-   * Définit la valeur des boutons de priorité
+   * Définit la valeur des selects de priorité (pour compatibilité)
    */
   setPriorityButtonValue(containerId, value) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-
-    container.querySelectorAll('.priority-btn').forEach(btn => {
-      if (btn.dataset.value === (value || '')) {
-        btn.classList.add('active');
-      } else {
-        btn.classList.remove('active');
-      }
-    });
+    // Mapping des anciens IDs vers les nouveaux
+    const mapping = {
+      'stm-urgence-buttons': 'stm-urgence',
+      'stm-impact-buttons': 'stm-impact'
+    };
+    const selectId = mapping[containerId] || containerId;
+    this.setFieldValue(selectId, value);
   }
 
   // === Completion Ring ===

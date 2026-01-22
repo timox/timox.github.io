@@ -124,35 +124,31 @@
                   </div>
                 </div>
 
-                <!-- Priorité visuelle: Urgence + Impact -->
-                <div class="priority-grid mb-4">
-                  <div class="priority-card">
-                    <label class="priority-label">
-                      <i class="bi bi-lightning-charge text-danger"></i>
-                      Urgence
+                <!-- Priorité: Urgence + Impact (selects simples) -->
+                <div class="row g-3 mb-4">
+                  <div class="col-md-6">
+                    <label for="stm-urgence" class="form-label fw-semibold">
+                      <i class="bi bi-lightning-charge me-1 text-danger"></i>Urgence
                     </label>
-                    <div class="priority-options" id="stm-urgence-buttons">
-                      <button type="button" class="priority-btn" data-value="">-</button>
-                      <button type="button" class="priority-btn priority-critical" data-value="Immédiate">Immédiate</button>
-                      <button type="button" class="priority-btn priority-high" data-value="Courte">Courte</button>
-                      <button type="button" class="priority-btn priority-medium" data-value="Moyenne">Moyenne</button>
-                      <button type="button" class="priority-btn priority-low" data-value="Longue">Longue</button>
-                    </div>
-                    <input type="hidden" id="stm-urgence" value="">
+                    <select class="form-select" id="stm-urgence">
+                      <option value="">-- Non définie --</option>
+                      <option value="Immédiate">🔴 Immédiate</option>
+                      <option value="Courte">🟠 Courte</option>
+                      <option value="Moyenne">🟡 Moyenne</option>
+                      <option value="Longue">🟢 Longue</option>
+                    </select>
                   </div>
-                  <div class="priority-card">
-                    <label class="priority-label">
-                      <i class="bi bi-bullseye text-warning"></i>
-                      Impact
+                  <div class="col-md-6">
+                    <label for="stm-impact" class="form-label fw-semibold">
+                      <i class="bi bi-bullseye me-1 text-warning"></i>Impact
                     </label>
-                    <div class="priority-options" id="stm-impact-buttons">
-                      <button type="button" class="priority-btn" data-value="">-</button>
-                      <button type="button" class="priority-btn priority-critical" data-value="Critique">Critique</button>
-                      <button type="button" class="priority-btn priority-high" data-value="Important">Important</button>
-                      <button type="button" class="priority-btn priority-medium" data-value="Modéré">Modéré</button>
-                      <button type="button" class="priority-btn priority-low" data-value="Mineur">Mineur</button>
-                    </div>
-                    <input type="hidden" id="stm-impact" value="">
+                    <select class="form-select" id="stm-impact">
+                      <option value="">-- Non défini --</option>
+                      <option value="Critique">🔴 Critique</option>
+                      <option value="Important">🟠 Important</option>
+                      <option value="Modéré">🟡 Modéré</option>
+                      <option value="Mineur">🟢 Mineur</option>
+                    </select>
                   </div>
                 </div>
 
