@@ -130,10 +130,10 @@ export class DashboardManager {
             <p>${stats.total} tâche(s) actives</p>
           </div>
           <div class="dashboard-meta">
-            <span class="dashboard-pill">En pause: ${stats.enPause}</span>
-            <span class="dashboard-pill">Dettes: ${stats.dettesTechniques}</span>
-            <button type="button" class="btn btn-outline-secondary btn-sm dashboard-toggle" data-dashboard-toggle>
-              <i class="bi bi-arrows-collapse"></i>
+            <span class="dashboard-pill dashboard-pill-pause">${stats.enPause}</span>
+            <span class="dashboard-pill dashboard-pill-dette">${stats.dettesTechniques}</span>
+            <button type="button" class="dashboard-toggle" data-dashboard-toggle>
+              <i class="bi ${this.isCollapsed ? 'bi-chevron-down' : 'bi-chevron-up'}"></i>
               ${this.isCollapsed ? 'Déplier' : 'Replier'}
             </button>
           </div>
@@ -192,7 +192,7 @@ export class DashboardManager {
       localStorage.setItem('kanban_dashboard_collapsed', String(this.isCollapsed));
       const container = this.container.querySelector('.dashboard-container');
       container?.classList.toggle('dashboard-collapsed', this.isCollapsed);
-      toggle.innerHTML = `${this.isCollapsed ? '<i class="bi bi-arrows-expand"></i> Déplier' : '<i class="bi bi-arrows-collapse"></i> Replier'}`;
+      toggle.innerHTML = `<i class="bi ${this.isCollapsed ? 'bi-chevron-down' : 'bi-chevron-up'}"></i> ${this.isCollapsed ? 'Déplier' : 'Replier'}`;
     });
   }
 

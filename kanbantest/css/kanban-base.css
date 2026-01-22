@@ -1158,13 +1158,36 @@ body {
   flex-direction: column;
 }
 
+/* === Controls Compact === */
+.kanban-controls-compact {
+  padding: 8px 12px;
+  font-size: 0.8rem;
+}
+
+.kanban-controls-compact .form-select-sm,
+.kanban-controls-compact .form-control-sm {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  height: auto;
+}
+
+.kanban-controls-compact .btn-sm {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.kanban-controls-compact .form-check-label {
+  font-size: 0.75rem;
+}
+
 /* === Dashboard Kanban V3 === */
 .dashboard-container {
   background: #ffffff;
-  border-radius: 12px;
-  padding: 10px;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
-  margin-bottom: 10px;
+  border-radius: 10px;
+  padding: 8px 12px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  margin-bottom: 8px;
+  font-size: 0.8rem;
 }
 
 .dashboard-container.dashboard-collapsed .dashboard-body {
@@ -1174,23 +1197,35 @@ body {
 .dashboard-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.75rem;
+  gap: 4px;
+  font-size: 0.7rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  transition: all 0.2s;
+}
+
+.dashboard-toggle:hover {
+  transform: scale(1.02);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+  color: white;
 }
 
 .dashboard-alertes {
   display: grid;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 6px;
+  margin-bottom: 6px;
 }
 
 .dashboard-alerte {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 6px 10px;
-  border-radius: 10px;
-  font-size: 0.82rem;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
 }
 
 .dashboard-alerte-critical {
@@ -1207,32 +1242,62 @@ body {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 6px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
 }
 
 .dashboard-header h3 {
   margin: 0;
-  font-weight: 700;
+  font-weight: 600;
+  font-size: 0.95rem;
 }
 
 .dashboard-header p {
-  margin: 4px 0 0;
+  margin: 0;
   color: #64748b;
+  font-size: 0.75rem;
 }
 
 .dashboard-meta {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
 .dashboard-pill {
-  background: #f1f5f9;
-  color: #475569;
-  padding: 3px 8px;
-  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
   font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.dashboard-pill-pause {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
+.dashboard-pill-pause::before {
+  content: "\F4C5";
+  font-family: "bootstrap-icons";
+  font-size: 0.65rem;
+}
+
+.dashboard-pill-dette {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+.dashboard-pill-dette::before {
+  content: "\F5D2";
+  font-family: "bootstrap-icons";
+  font-size: 0.65rem;
 }
 
 .dashboard-grid {

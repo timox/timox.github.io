@@ -16,13 +16,13 @@ export class FilterManager {
     this.filters = {
       bureau: '',
       qui: '',
-      projet: '',
       statut: '',
       search: ''
     };
-    
+
     // Options d'affichage
     this.showTermine = true;
+    this.showProjetsOnly = false;
     
     // Debounced search
     this.debouncedSearch = debounce(this.performSearch.bind(this), 300);
@@ -71,9 +71,9 @@ export class FilterManager {
       searchInput: $('#search-input')[0],
       filterBureau: $('#filter-bureau')[0],
       filterQui: $('#filter-qui')[0],
-      filterProjet: $('#filter-projet')[0],
       filterStatut: $('#filter-statut')[0],
       showTermine: $('#show-termine')[0],
+      showProjetsOnly: $('#filter-projets-only')[0],
       clearFiltersBtn: $('#btn-clear-filters')[0]
     };
     
@@ -96,9 +96,9 @@ export class FilterManager {
     // - #search-input (input - recherche textuelle)
     // - #filter-bureau (change)
     // - #filter-qui (change)
-    // - #filter-projet (change)
     // - #filter-statut (change + sync ViewManager)
     // - #show-termine (change)
+    // - #filter-projets-only (change - filtre nature_activite=PRJ)
     // - #clear-filters (click)
 
     this.logger.debug('FilterManager initialisé - événements gérés par EventCentralizer');
@@ -112,34 +112,28 @@ export class FilterManager {
       this.logger.warn('No gristOptions available for filter population');
       return;
     }
-    
+
     const {
       bureau = [],
       responsables = [],
-      projet = [],
       statut = []
     } = this.kanban.gristOptions;
 
     // Peupler bureau
     if (this.elements.filterBureau) {
-      this.populateSelect(this.elements.filterBureau, bureau, 'Tous les bureaux');
+      this.populateSelect(this.elements.filterBureau, bureau, 'Tous');
     }
 
     // Peupler responsables
     if (this.elements.filterQui) {
-      this.populateSelect(this.elements.filterQui, responsables, 'Tous les responsables');
-    }
-
-    // Peupler projets
-    if (this.elements.filterProjet) {
-      this.populateSelect(this.elements.filterProjet, projet, 'Tous les projets');
+      this.populateSelect(this.elements.filterQui, responsables, 'Tous');
     }
 
     // Peupler statuts
     if (this.elements.filterStatut) {
-      this.populateSelect(this.elements.filterStatut, statut, 'Tous les statuts');
+      this.populateSelect(this.elements.filterStatut, statut, 'Tous');
     }
-    
+
     this.logger.debug('Filter options populated');
   }
   
@@ -235,12 +229,15 @@ export class FilterManager {
         const responsables = record.qui.slice(1); // Enlever le 'L' de Grist
         if (!responsables.includes(this.filters.qui)) return false;
       }
-      
-      // Filtre projet - Vérifier explicitement que la valeur n'est pas vide
-      if (this.filters.projet && this.filters.projet.trim() !== '' && record.projet !== this.filters.projet) {
-        return false;
+
+      // Filtre projets uniquement (nature_activite = PRJ)
+      if (this.showProjetsOnly) {
+        const natureActivite = record.nature_activite || record.nature_activite_id || '';
+        if (natureActivite !== 'PRJ' && natureActivite !== 'Projet') {
+          return false;
+        }
       }
-      
+
       // Filtre statut - Vérifier explicitement que la valeur n'est pas vide
       if (this.filters.statut && this.filters.statut.trim() !== '' && record.statut !== this.filters.statut) {
         return false;
@@ -391,9 +388,10 @@ export class FilterManager {
       const filterState = {
         filters: this.filters,
         showTermine: this.showTermine,
+        showProjetsOnly: this.showProjetsOnly,
         timestamp: Date.now()
       };
-      
+
       localStorage.setItem('kanban-filters', JSON.stringify(filterState));
     } catch (error) {
       this.logger.warn('Cannot save filters:', error.message);
@@ -421,11 +419,15 @@ export class FilterManager {
       if (filterState.filters) {
         this.filters = { ...this.filters, ...filterState.filters };
       }
-      
+
       if (typeof filterState.showTermine === 'boolean') {
         this.showTermine = filterState.showTermine;
       }
-      
+
+      if (typeof filterState.showProjetsOnly === 'boolean') {
+        this.showProjetsOnly = filterState.showProjetsOnly;
+      }
+
       // Mettre à jour l'interface
       this.updateInterfaceFromState();
       
@@ -445,25 +447,25 @@ export class FilterManager {
     if (this.elements.searchInput) {
       this.elements.searchInput.value = this.filters.search || '';
     }
-    
+
     if (this.elements.filterBureau) {
       this.elements.filterBureau.value = this.filters.bureau || '';
     }
-    
+
     if (this.elements.filterQui) {
       this.elements.filterQui.value = this.filters.qui || '';
     }
-    
-    if (this.elements.filterProjet) {
-      this.elements.filterProjet.value = this.filters.projet || '';
-    }
-    
+
     if (this.elements.filterStatut) {
       this.elements.filterStatut.value = this.filters.statut || '';
     }
-    
+
     if (this.elements.showTermine) {
       this.elements.showTermine.checked = this.showTermine;
+    }
+
+    if (this.elements.showProjetsOnly) {
+      this.elements.showProjetsOnly.checked = this.showProjetsOnly;
     }
   }
   
@@ -553,10 +555,10 @@ export class FilterManager {
     return (
       this.filters.bureau !== '' ||
       this.filters.qui !== '' ||
-      this.filters.projet !== '' ||
       this.filters.statut !== '' ||
       this.filters.search !== '' ||
-      !this.showTermine
+      !this.showTermine ||
+      this.showProjetsOnly
     );
   }
   
