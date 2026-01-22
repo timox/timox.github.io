@@ -1123,3 +1123,152 @@
 .jalon-conditional-fields.visible {
   display: block;
 }
+
+/* === STYLES RÉFÉRENCES === */
+
+.references-card {
+  border: 1px solid #e9ecef;
+}
+
+.references-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  min-height: 24px;
+}
+
+.references-preview:empty {
+  display: none;
+}
+
+.references-preview .badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.references-preview .badge i {
+  margin-right: 0.25rem;
+}
+
+/* === STYLES STRATEGY TREE === */
+
+.strategy-tree {
+  font-size: 0.9rem;
+}
+
+.strategy-objectif {
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.strategy-objectif:last-child {
+  border-bottom: none;
+}
+
+.strategy-sous-objectif {
+  margin-bottom: 0.5rem;
+}
+
+.strategy-axes {
+  margin-left: 0.5rem;
+}
+
+.strategy-axe {
+  padding: 0.25rem 0;
+}
+
+.strategy-axe .form-check-label {
+  cursor: pointer;
+}
+
+.strategy-axe .form-check-input:checked + .form-check-label {
+  color: #007bff;
+  font-weight: 500;
+}
+
+/* === MODAL XXL SIZE === */
+
+.modal-xxl {
+  max-width: 1600px;
+}
+
+/* === TASK LINKS === */
+
+.task-links-container {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.task-link-group {
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.task-link-group:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.task-link-header {
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.task-link-items {
+  margin-left: 1rem;
+}
+
+.task-link-item {
+  padding: 0.25rem 0.5rem;
+  background: white;
+  border-radius: 4px;
+  margin-bottom: 0.25rem;
+  border: 1px solid #e9ecef;
+  transition: all 0.2s ease;
+}
+
+.task-link-item:hover {
+  border-color: #007bff;
+  background: #f8f9fa;
+}
+
+.task-link-add {
+  padding-top: 0.75rem;
+  border-top: 1px solid #dee2e6;
+}
+
+/* === AVANCEMENT === */
+
+.form-range {
+  height: 1.5rem;
+}
+
+.form-range::-webkit-slider-thumb {
+  background: #007bff;
+}
+
+.form-range::-moz-range-thumb {
+  background: #007bff;
+}
+
+/* === DUREE ECART === */
+
+#stm-duree-ecart i {
+  margin-right: 0.25rem;
+}
+
+/* === BG PURPLE for validation status === */
+.bg-purple {
+  background-color: #6f42c1 !important;
+  color: white;
+}
