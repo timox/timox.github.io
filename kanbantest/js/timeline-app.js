@@ -584,11 +584,83 @@ class GanttTimeline {
 
     // Utiliser SharedTaskModal si disponible
     if (typeof SharedTaskModal !== 'undefined') {
-      const modal = new SharedTaskModal();
+      const modal = new SharedTaskModal({
+        onSave: async (data) => {
+          await this.saveTask(data);
+          await this.loadData();
+          this.render();
+        },
+        onDelete: async (id) => {
+          await this.deleteTask(id);
+          await this.loadData();
+          this.render();
+        }
+      });
       modal.init().then(() => modal.open(task));
     } else {
       console.log('[GanttTimeline] Tâche sélectionnée:', task);
       alert(`Tâche: ${task.titre}\nStatut: ${task.statut}\nAvancement: ${task.avancement}%`);
+    }
+  }
+
+  /**
+   * Sauvegarde une tâche dans Grist
+   */
+  async saveTask(data) {
+    if (typeof grist === 'undefined') {
+      console.error('[GanttTimeline] Grist non disponible pour la sauvegarde');
+      return;
+    }
+
+    try {
+      const record = { ...data };
+      const taskId = record.id;
+      delete record.id;
+
+      // Convertir les jalons et liens en JSON string si nécessaire
+      if (record.jalons) {
+        record.jalons = JSON.stringify(record.jalons);
+      }
+      if (record.liens) {
+        record.liens = JSON.stringify(record.liens);
+      }
+
+      if (taskId) {
+        // Mise à jour
+        await grist.docApi.applyUserActions([
+          ['UpdateRecord', TABLE_ID, taskId, record]
+        ]);
+        console.log('[GanttTimeline] Tâche mise à jour:', taskId);
+      } else {
+        // Création
+        await grist.docApi.applyUserActions([
+          ['AddRecord', TABLE_ID, null, record]
+        ]);
+        console.log('[GanttTimeline] Nouvelle tâche créée');
+      }
+    } catch (error) {
+      console.error('[GanttTimeline] Erreur sauvegarde:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Supprime une tâche
+   */
+  async deleteTask(taskId) {
+    if (typeof grist === 'undefined') {
+      console.error('[GanttTimeline] Grist non disponible pour la suppression');
+      return;
+    }
+
+    try {
+      await grist.docApi.applyUserActions([
+        ['RemoveRecord', TABLE_ID, taskId]
+      ]);
+      console.log('[GanttTimeline] Tâche supprimée:', taskId);
+    } catch (error) {
+      console.error('[GanttTimeline] Erreur suppression:', error);
+      throw error;
     }
   }
 
