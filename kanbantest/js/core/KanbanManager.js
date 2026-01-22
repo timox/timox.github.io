@@ -500,7 +500,19 @@ export class KanbanManager {
       displayError('Gestionnaire de modals non disponible');
     }
   }
-  
+
+  /**
+   * Ouvre la modal pour une tâche (compatibilité avec TimelineManager)
+   * @param {object} task - Données de la tâche
+   */
+  openPopup(task = null) {
+    if (this.modalManager) {
+      this.modalManager.openTaskModal(task);
+    } else {
+      displayError('Gestionnaire de modals non disponible');
+    }
+  }
+
   /**
    * Focus sur le champ de recherche
    */

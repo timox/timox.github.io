@@ -2728,7 +2728,8 @@ export class ModalManager {
    */
   resetTaskForm() {
     // Reset formulaire complet avec jQuery
-    $('#task-form')[0].reset();
+    const form = $('#shared-task-form')[0] || $('#task-form')[0];
+    if (form) form.reset();
     
     // Reset selects multiples
     $('#stm-bureau').val(['L']);
@@ -2803,7 +2804,7 @@ export class ModalManager {
    * @param {boolean} readOnly - Mode lecture seule
    */
   setReadOnlyMode(readOnly) {
-    const formElements = document.querySelectorAll('#task-form input, #task-form select, #task-form textarea');
+    const formElements = document.querySelectorAll('#shared-task-form input, #shared-task-form select, #shared-task-form textarea, #task-form input, #task-form select, #task-form textarea');
     
     formElements.forEach(element => {
       element.disabled = readOnly;
