@@ -26,21 +26,22 @@
   background: white;
 }
 
-/* === MODALE TÂCHE UNIFIÉE === */
+/* === MODALE TÂCHE UNIFIÉE - PLEIN ÉCRAN === */
 /* Styles pour #shared-task-modal - la modale à onglets */
 #shared-task-modal .modal-dialog,
 #shared-task-modal .task-modal-dialog,
 .task-modal-dialog {
-  max-width: 900px !important;
-  width: 90% !important;
-  margin: 1.75rem auto !important;
+  max-width: calc(100vw - 2rem) !important;
+  width: calc(100vw - 2rem) !important;
+  height: calc(100vh - 2rem) !important;
+  margin: 1rem auto !important;
 }
 
 /* Forcer le centrage même avec modal-dialog-centered */
 #shared-task-modal.modal .modal-dialog {
   display: flex !important;
-  align-items: center !important;
-  min-height: calc(100% - 3.5rem) !important;
+  align-items: stretch !important;
+  min-height: calc(100vh - 2rem) !important;
 }
 
 #shared-task-modal .modal-content,
@@ -49,7 +50,8 @@
   border: none;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
   overflow: hidden;
-  max-height: 90vh;
+  height: 100%;
+  max-height: calc(100vh - 2rem);
   display: flex;
   flex-direction: column;
 }
@@ -59,7 +61,7 @@
 .task-modal-dialog.modal-xxl,
 .modal-xl.task-modal-dialog,
 .modal-xxl.task-modal-dialog {
-  max-width: 960px !important;
+  max-width: calc(100vw - 2rem) !important;
 }
 
 @media (max-width: 768px) {
@@ -1517,8 +1519,8 @@
 }
 
 .task-panel-content {
-  padding: 1.25rem 1.5rem;
-  max-height: calc(70vh - 150px);
+  padding: 1.5rem 2rem;
+  max-height: calc(100vh - 280px);
   overflow-x: hidden;
   overflow-y: auto;
 }
@@ -2100,8 +2102,28 @@
 .task-modal-body {
   padding: 0;
   background: #f8fafc;
-  max-height: calc(80vh - 160px);
+  flex: 1;
+  max-height: none;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Le contenu des onglets prend tout l'espace disponible */
+.task-tab-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.task-tab-content > .tab-pane {
+  flex: 1;
+  display: none;
+}
+
+.task-tab-content > .tab-pane.show.active {
+  display: flex;
+  flex-direction: column;
 }
 
 /* === RESPONSIVE === */
