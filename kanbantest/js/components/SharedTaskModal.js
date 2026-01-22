@@ -2011,6 +2011,7 @@ class SharedTaskModal {
       this.updateTabIndicator('essential', this.checkEssentialFields());
       this.updateTabIndicator('planning', this.checkPlanningFields());
       this.updateTabIndicator('organization', this.checkOrganizationFields());
+      this.updateTabIndicator('affectation', this.checkAffectationFields());
       this.updateTabIndicator('advanced', this.checkAdvancedFields());
     };
 
@@ -2044,9 +2045,16 @@ class SharedTaskModal {
     return !!this.getFieldValue('stm-titre') ||
            !!this.getFieldValue('stm-description') ||
            !!this.getFieldValue('stm-urgence') ||
-           !!this.getFieldValue('stm-impact') ||
-           this.getSelectedQui().length > 0 ||
-           this.getSelectedBureaux().length > 0;
+           !!this.getFieldValue('stm-impact');
+  }
+
+  /**
+   * Vérifie si les champs d'affectation sont remplis
+   */
+  checkAffectationFields() {
+    return this.getSelectedQui().length > 0 ||
+           this.getSelectedBureaux().length > 0 ||
+           !!this.getFieldValue('stm-equipe');
   }
 
   /**
