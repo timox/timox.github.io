@@ -1525,7 +1525,7 @@
 
 /* Espacement entre les sections */
 .task-panel-content .mb-4 {
-  margin-bottom: 20px !important;
+  margin: 20px !important;
 }
 
 .task-panel-content > *:not(:last-child) {
