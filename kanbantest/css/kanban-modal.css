@@ -26,11 +26,32 @@
   background: white;
 }
 
-/* Modale d'édition de tâche */
+/* === MODALE TÂCHE UNIFIÉE === */
+/* Styles pour #shared-task-modal - la modale à onglets */
+#shared-task-modal .modal-dialog,
+#shared-task-modal .task-modal-dialog,
 .task-modal-dialog {
-  max-width: 960px !important;
-  width: calc(100% - 4rem) !important;
-  margin: 2rem auto !important;
+  max-width: 900px !important;
+  width: 90% !important;
+  margin: 1.75rem auto !important;
+}
+
+/* Forcer le centrage même avec modal-dialog-centered */
+#shared-task-modal.modal .modal-dialog {
+  display: flex !important;
+  align-items: center !important;
+  min-height: calc(100% - 3.5rem) !important;
+}
+
+#shared-task-modal .modal-content,
+.task-modal-content {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Override Bootstrap modal-xl and modal-xxl */

@@ -127,7 +127,7 @@ export class HistoryManager {
     this.currentTaskHistory = task;
     
     // Vérifier si la modale d'édition est ouverte
-    const taskModal = document.getElementById('popup-tache');
+    const taskModal = document.getElementById('shared-task-modal');
     const isTaskModalOpen = taskModal && taskModal.classList.contains('show');
     const currentTaskIdInModal = this.kanban.modalManager?.currentTaskId;
     
@@ -1320,7 +1320,7 @@ export class HistoryManager {
       </div>
     `;
 
-    const container = document.getElementById('popup-tache') || document.body;
+    const container = document.getElementById('shared-task-modal') || document.body;
     container.insertAdjacentHTML('beforeend', widgetHTML);
 
     this.addCommentEditStyles();
@@ -1741,10 +1741,10 @@ export class HistoryManager {
     
     // PRIORITÉ 4: Dernier recours - DOM (moins fiable)
     if (!taskId) {
-      const modalElement = document.getElementById('popup-tache');
+      const modalElement = document.getElementById('shared-task-modal');
       if (modalElement?.dataset.taskId) {
         taskId = modalElement.dataset.taskId;
-        source = 'DOM.popup-tache.dataset.taskId';
+        source = 'DOM.shared-task-modal.dataset.taskId';
         this.logger.warn('⚠️ Dernier recours - récupération depuis DOM');
       }
     }
@@ -1765,7 +1765,7 @@ export class HistoryManager {
         hasCurrentTaskHistory: !!this.currentTaskHistory,
         currentTaskHistoryId: this.currentTaskHistory?.id,
         modalManagerTaskId: this.kanban?.modalManager?.currentTaskId,
-        modalElementExists: !!document.getElementById('popup-tache')
+        modalElementExists: !!document.getElementById('shared-task-modal')
       });
     }
     

@@ -902,7 +902,7 @@ class KanbanManager {
     }
     
     // Rechercher les éléments de modal
-    this.modalElement = document.getElementById('popup-tache');
+    this.modalElement = document.getElementById('shared-task-modal');
     this.historyModalElement = document.getElementById('task-history-modal');
     
     // Debug: Vérifier si les éléments existent
@@ -964,11 +964,11 @@ class KanbanManager {
     const { urgence, impact, bureau, responsables, projet } = this.gristOptions;
     
     // Peupler les selects de base
-    populateSelect('popup-urgence', urgence || [], true);
-    populateSelect('popup-impact', impact || [], true);
-    populateSelect('popup-bureau', bureau || [], false);
-    populateSelect('popup-qui', responsables || [], false);
-    populateSelect('popup-projet', projet || [], true);
+    populateSelect('stm-urgence', urgence || [], true);
+    populateSelect('stm-impact', impact || [], true);
+    populateSelect('stm-bureau', bureau || [], false);
+    populateSelect('stm-qui', responsables || [], false);
+    populateSelect('stm-projet', projet || [], true);
     
     // CORRIGÉ: Laisser le FilterManager gérer les filtres
     if (this.filterManager && this.filterManager.updateFilterOptions) {
@@ -981,7 +981,7 @@ class KanbanManager {
 
   // Peuplement du select stratégies
   populateStrategySelect() {
-    const strategySelect = document.getElementById('popup-strategie');
+    const strategySelect = document.getElementById('stm-strategie');
     if (!strategySelect) return;
     
     strategySelect.innerHTML = '<option value="">-- Choisir une stratégie --</option>';
@@ -1003,18 +1003,18 @@ class KanbanManager {
   updateStrategyDetails(strategyId) {
     const strategy = strategyId ? this.getStrategyInfo(strategyId) : null;
     
-    const objectifEl = document.getElementById('popup-strategie-objectif');
-    const sousObjectifEl = document.getElementById('popup-strategie-sous-objectif');
-    const actionEl = document.getElementById('popup-strategie-action');
+    const objectifEl = document.getElementById('stm-strategie-objectif');
+    const sousObjectifEl = document.getElementById('stm-strategie-sous-objectif');
+    const actionEl = document.getElementById('stm-strategie-action');
     
     if (objectifEl) objectifEl.textContent = strategy?.objectif || '';
     if (sousObjectifEl) sousObjectifEl.textContent = strategy?.sous_objectif || '';
     if (actionEl) actionEl.textContent = strategy?.axe_strategique || '';
     
     // Mettre à jour les champs cachés
-    setFieldValue('popup-strategie-objectif-hidden', strategy?.objectif || '');
-    setFieldValue('popup-strategie-sous-objectif-hidden', strategy?.sous_objectif || '');
-    setFieldValue('popup-strategie-action-hidden', strategy?.axe_strategique || '');
+    setFieldValue('stm-strategie-objectif-hidden', strategy?.objectif || '');
+    setFieldValue('stm-strategie-sous-objectif-hidden', strategy?.sous_objectif || '');
+    setFieldValue('stm-strategie-action-hidden', strategy?.axe_strategique || '');
   }
 
   // === RENDU DU KANBAN CORRIGÉ ===
@@ -1483,7 +1483,7 @@ class KanbanManager {
     });
 
     // Force task modal close buttons to work
-    const taskCloseButtons = document.querySelectorAll('#popup-tache [data-bs-dismiss="modal"]');
+    const taskCloseButtons = document.querySelectorAll('#shared-task-modal [data-bs-dismiss="modal"]');
     taskCloseButtons.forEach(button => {
       button.addEventListener('click', (e) => {
         e.preventDefault();
@@ -1547,7 +1547,7 @@ class KanbanManager {
         
         // Focus sur le premier champ après ouverture
         setTimeout(() => {
-          const firstField = document.getElementById('popup-titre');
+          const firstField = document.getElementById('stm-titre');
           if (firstField) {
             firstField.focus();
           }

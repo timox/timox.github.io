@@ -31,7 +31,7 @@ export class DatePickerManager {
    * Configure le sélecteur de dates Flatpickr
    */
   setupDatePicker() {
-    const dateInput = document.getElementById('popup-delai');
+    const dateInput = document.getElementById('stm-echeance');
     if (!dateInput) {
       this.logger.warn('Date field not found');
       return;
@@ -60,7 +60,7 @@ export class DatePickerManager {
     // NOTE: Tous les événements sont gérés dans EventCentralizer.js :
     // - #btn-pick-date (click) - ouvrir le sélecteur
     // - #btn-clear-date (click) - effacer la date
-    // - #popup-delai (keydown Delete/Backspace/Enter/Space) - raccourcis clavier
+    // - #stm-echeance (keydown Delete/Backspace/Enter/Space) - raccourcis clavier
     // - [data-preset] (click) - presets de date (via délégation)
   }
   
@@ -93,10 +93,10 @@ export class DatePickerManager {
     if (this.flatpickrInstance) {
       if (normalizedDate) {
         this.flatpickrInstance.setDate(normalizedDate, false);
-        setFieldValue('popup-delai', normalizedDate);
+        setFieldValue('stm-echeance', normalizedDate);
       } else {
         this.flatpickrInstance.clear();
-        setFieldValue('popup-delai', '');
+        setFieldValue('stm-echeance', '');
       }
     }
     
@@ -227,7 +227,7 @@ export class DatePickerManager {
    * Ajoute des boutons de dates rapides à l'interface
    */
   createQuickDateButtons() {
-    const dateContainer = document.querySelector('#popup-delai').closest('.col-md-6');
+    const dateContainer = document.querySelector('#stm-echeance').closest('.col-md-6');
     if (!dateContainer) return;
     
     // Vérifier si les boutons existent déjà
@@ -301,7 +301,7 @@ export class DatePickerManager {
    * @param {boolean} enabled - Activer ou désactiver
    */
   setEnabled(enabled) {
-    const dateInput = document.getElementById('popup-delai');
+    const dateInput = document.getElementById('stm-echeance');
     const btnPickDate = document.getElementById('btn-pick-date');
     const btnClearDate = document.getElementById('btn-clear-date');
     

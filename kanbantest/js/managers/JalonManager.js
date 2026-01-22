@@ -787,7 +787,7 @@ export class JalonManager {
         lastModified: new Date().toISOString()
       };
       const emptyJsonString = JSON.stringify(emptyData);
-      setFieldValue('popup-jalons', emptyJsonString);
+      setFieldValue('stm-jalons', emptyJsonString);
       this.logger.debug(`🗑️ Aucun jalon - sauvegarde structure vide:`, emptyJsonString);
       return;
     }
@@ -800,7 +800,7 @@ export class JalonManager {
     
     this.logger.debug(`💾 Sauvegarde de ${this.jalons.length} jalons:`, jsonString.substring(0, 100) + '...');
     
-    setFieldValue('popup-jalons', jsonString);
+    setFieldValue('stm-jalons', jsonString);
     
   }
 

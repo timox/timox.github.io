@@ -51,10 +51,44 @@ export class KanbanAppInitializer {
   }
   
   /**
+   * Charge la modale tâche depuis le fichier externe
+   */
+  async loadSharedModal() {
+    const container = document.getElementById('shared-modal-container');
+    if (!container) {
+      console.warn('[KanbanAppInitializer] shared-modal-container non trouvé');
+      return false;
+    }
+
+    // Si la modale est déjà chargée, ne rien faire
+    if (document.getElementById('shared-task-modal')) {
+      console.log('[KanbanAppInitializer] Modale déjà présente dans le DOM');
+      return true;
+    }
+
+    try {
+      const response = await fetch('components/task-modal.html');
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const html = await response.text();
+      container.innerHTML = html;
+      console.log('[KanbanAppInitializer] Modale chargée depuis components/task-modal.html');
+      return true;
+    } catch (error) {
+      console.error('[KanbanAppInitializer] Erreur chargement modale:', error);
+      return false;
+    }
+  }
+
+  /**
    * Effectue l'initialisation complète
    */
   async _performInitialization() {
     try {
+      // Charger la modale partagée AVANT de vérifier les prérequis
+      await this.loadSharedModal();
+
       await this.checkPrerequisites();
       await this.initializeBaseComponents();
       await this.setupUserInterface();
@@ -81,7 +115,7 @@ export class KanbanAppInitializer {
     // Vérifier la présence des éléments DOM requis
     const requiredElements = [
       'kanban-container',
-      'popup-tache',
+      'shared-task-modal',
       'task-history-modal',
       'error-container'
     ];

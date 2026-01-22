@@ -275,20 +275,20 @@ export class EventCentralizer {
       modalManager.addNewProject();
     }, 'modal');
 
-    safeOn('#popup-urgence, #popup-impact', 'change', (e) => {
+    safeOn('#stm-urgence, #stm-impact', 'change', (e) => {
       const modalManager = this.managers.get('modal');
       if (!modalManager) return;
 
-      const urgenceSelect = document.getElementById('popup-urgence');
-      const impactSelect = document.getElementById('popup-impact');
-      const prioriteField = document.getElementById('popup-priorite-calculee');
+      const urgenceSelect = document.getElementById('stm-urgence');
+      const impactSelect = document.getElementById('stm-impact');
+      const prioriteField = document.getElementById('stm-priorite-calculee');
 
       if (urgenceSelect && impactSelect && prioriteField) {
         prioriteField.value = modalManager.calculatePriorite(urgenceSelect.value, impactSelect.value);
       }
     }, 'modal');
 
-    safeOn('#popup-description', 'input', (e) => {
+    safeOn('#stm-description', 'input', (e) => {
       const modalManager = this.managers.get('modal');
       if (!modalManager || typeof modalManager.autoResizeTextarea !== 'function') {
         return;
@@ -369,7 +369,7 @@ export class EventCentralizer {
     }, 'modal');
 
     // Délégation pour auto-focus des champs de formulaire (click pour focus immédiat)
-    safeOn('#popup-tache input, #popup-tache textarea, #popup-tache select', 'click', function(e) {
+    safeOn('#shared-task-modal input, #shared-task-modal textarea, #shared-task-modal select', 'click', function(e) {
       const field = e.currentTarget;
       setTimeout(() => {
         field.focus();
@@ -394,8 +394,8 @@ export class EventCentralizer {
     }, 'modal');
 
     // Délégation pour détection de modifications du formulaire (change)
-    // Exclure popup-description car les commentaires sont historisés séparément
-    safeOn('#task-form input:not(#popup-description), #task-form select, #task-form textarea:not(#popup-description)', 'change', (e) => {
+    // Exclure stm-description car les commentaires sont historisés séparément
+    safeOn('#shared-task-form input:not(#stm-description), #shared-task-form select, #shared-task-form textarea:not(#stm-description)', 'change', (e) => {
       const modalManager = this.managers.get('modal');
       if (modalManager && typeof modalManager.updateSaveButtonState === 'function') {
         modalManager.updateSaveButtonState();
@@ -403,8 +403,8 @@ export class EventCentralizer {
     }, 'modal');
 
     // Délégation pour détection de modifications du formulaire (input)
-    // Exclure popup-description car les commentaires sont historisés séparément
-    safeOn('#task-form input:not(#popup-description), #task-form select, #task-form textarea:not(#popup-description)', 'input', (e) => {
+    // Exclure stm-description car les commentaires sont historisés séparément
+    safeOn('#shared-task-form input:not(#stm-description), #shared-task-form select, #shared-task-form textarea:not(#stm-description)', 'input', (e) => {
       const modalManager = this.managers.get('modal');
       if (modalManager && typeof modalManager.updateSaveButtonState === 'function') {
         modalManager.updateSaveButtonState();
@@ -548,7 +548,7 @@ export class EventCentralizer {
       datePickerManager.clearDate();
     }, 'datePicker');
 
-    safeOn('#popup-delai', 'keydown', (e) => {
+    safeOn('#stm-echeance', 'keydown', (e) => {
       const datePickerManager = this.managers.get('datePicker');
       if (!datePickerManager) return;
 

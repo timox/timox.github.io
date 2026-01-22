@@ -66,7 +66,7 @@ export class ModalManager {
    * Initialise les instances de modales Bootstrap
    */
   initializeModals() {
-    const taskModalElement = document.getElementById('popup-tache');
+    const taskModalElement = document.getElementById('shared-task-modal');
     if (taskModalElement) {
       this.taskModal = new bootstrap.Modal(taskModalElement, {
         backdrop: 'static',
@@ -101,21 +101,21 @@ export class ModalManager {
     }, 'modal');
     
     // Boutons de la modal
-    safeOn('#btn-save-task', 'click', (e) => {
+    safeOn('#stm-btn-save', 'click', (e) => {
       e.preventDefault();
       e.stopPropagation();
       this.logger.debug('Save button clicked');
       this.saveTask();
     }, 'modal');
     
-    safeOn('#btn-delete-task', 'click', (e) => {
+    safeOn('#stm-btn-delete', 'click', (e) => {
       e.preventDefault();
       e.stopPropagation();
       this.logger.debug('Delete button clicked');
       this.deleteTask();
     }, 'modal');
 
-    safeOn('#btn-toggle-history-panel', 'click', (e) => {
+    safeOn('#stm-btn-history', 'click', (e) => {
       e.preventDefault();
       e.stopPropagation();
       this.logger.debug('Toggle history panel button clicked');
@@ -126,7 +126,7 @@ export class ModalManager {
     // === ÉVÉNEMENTS BOOTSTRAP LIFECYCLE (exception autorisée) ===
 
     // Écouteur pour quand la modale de tâche est complètement affichée
-    const taskModalElement = document.getElementById('popup-tache');
+    const taskModalElement = document.getElementById('shared-task-modal');
     if (taskModalElement) {
       taskModalElement.addEventListener('shown.bs.modal', () => {
         this.logger.debug('Task modal fully shown - refreshing jalons display');
@@ -164,8 +164,8 @@ export class ModalManager {
 
     // NOTE: Les événements suivants sont gérés dans EventCentralizer.js :
     // - #btn-ajout-projet (click) - ajout de projet
-    // - #popup-urgence, #popup-impact (change) - calcul priorité
-    // - #popup-description (input) - auto-resize textarea
+    // - #stm-urgence, #stm-impact (change) - calcul priorité
+    // - #stm-description (input) - auto-resize textarea
     // - .strategy-tag-remove (click) - suppression tags stratégie (délégation)
     //
     // Les addEventListener sur éléments créés dynamiquement restent dans les méthodes
@@ -185,14 +185,14 @@ export class ModalManager {
    * Configure le champ des références
    */
   setupReferenceField() {
-    referenceManager.initializeField('popup-references', 'references-preview');
+    referenceManager.initializeField('stm-references', 'stm-references-preview');
   }
   
   /**
    * Configure l'interface accordéon des stratégies
    */
   setupStrategyAccordion() {
-    const strategyBrowser = document.getElementById('strategy-browser');
+    const strategyBrowser = document.getElementById('stm-strategy-browser');
     
     if (!strategyBrowser) {
       this.logger.warn('Strategy browser element not found');
@@ -228,7 +228,7 @@ export class ModalManager {
    * @param {Array} strategies - Données de stratégies depuis Grist
    */
   handleStrategyDataLoaded(strategies = []) {
-    const strategyBrowser = document.getElementById('strategy-browser');
+    const strategyBrowser = document.getElementById('stm-strategy-browser');
     if (!strategyBrowser) {
       return;
     }
@@ -525,7 +525,7 @@ export class ModalManager {
       gristFormat = strategyIds.map(id => ["L", id]);
     }
     
-    setFieldValue('popup-strategie-id', gristFormat);
+    setFieldValue('stm-strategie-ids', gristFormat);
     
     this.logger.debug(`Strategies updated: ${strategyIds.length} selected, format:`, gristFormat);
   }
@@ -856,7 +856,7 @@ export class ModalManager {
     this.selectedStrategies = [];
     
     // Reset champs stratégie avec jQuery
-    $('#popup-strategie-objectif, #popup-strategie-sous-objectif, #popup-strategie-action, #popup-strategie-id').val('');
+    $('#stm-strategie-objectif, #stm-strategie-sous-objectif, #stm-strategie-action, #stm-strategie-ids').val('');
     
     // Reset interface accordéon avec jQuery
     $('.strategy-action.selected').removeClass('selected');
@@ -955,7 +955,7 @@ export class ModalManager {
     this.logger.debug(`Opening task modal: ${this.isNewTask ? 'new task' : 'edit task ' + this.currentTaskId}`);
 
     // Mettre à jour le titre de la modal
-    const modalTitle = document.getElementById('popup-tache-label');
+    const modalTitle = document.getElementById('shared-task-modal-label');
     if (modalTitle) {
       modalTitle.innerHTML = this.isNewTask
         ? '<i class="bi bi-plus-circle me-2"></i>Nouvelle Tâche'
@@ -978,7 +978,7 @@ export class ModalManager {
     this.isPopulating = false;
     
     // Afficher/masquer le bouton supprimer
-    toggleVisibility('btn-delete-task', !this.isNewTask, 'inline-block');
+    toggleVisibility('stm-btn-delete', !this.isNewTask, 'inline-block');
 
     // Ouvrir la modal
     this.taskModal.show();
@@ -988,7 +988,7 @@ export class ModalManager {
 
     // Focus sur le premier champ
     setTimeout(() => {
-      const firstField = document.getElementById('popup-titre');
+      const firstField = document.getElementById('stm-titre');
       if (firstField) firstField.focus();
     }, 300);
     
@@ -1002,13 +1002,13 @@ export class ModalManager {
   ensureAllFieldsFocus() {
     // Liste des champs à vérifier
     const fieldIds = [
-      'popup-titre',
-      'popup-description', 
-      'popup-urgence',
-      'popup-impact',
-      'popup-date-debut',
-      'popup-date-echeance',
-      'popup-projet'
+      'stm-titre',
+      'stm-description', 
+      'stm-urgence',
+      'stm-impact',
+      'stm-date-debut',
+      'stm-echeance',
+      'stm-projet'
     ];
     
     fieldIds.forEach(fieldId => {
@@ -1029,7 +1029,7 @@ export class ModalManager {
    * Assure que le textarea description peut recevoir le focus
    */
   ensureDescriptionFocus() {
-    const descriptionField = document.getElementById('popup-description');
+    const descriptionField = document.getElementById('stm-description');
     if (!descriptionField) return;
 
     // Supprimer les attributs qui empêchent le focus
@@ -1067,38 +1067,38 @@ export class ModalManager {
     this.currentTask = this.isNewTask ? null : task;
 
     // Champs de base
-    setFieldValue('popup-titre', task.titre || '');
+    setFieldValue('stm-titre', task.titre || '');
     
     // Description - TOUJOURS VIDE pour saisie de nouveaux commentaires
     // Les anciens commentaires sont visibles dans l'historique, pas dans la zone de saisie
-    setFieldValue('popup-description', '');
+    setFieldValue('stm-description', '');
 
     // Réinitialiser l'accordéon historique
     this.resetCommentHistoryAccordion();
 
     // Statut (lecture seule)
     const statut = task.statut || (this.isNewTask ? 'Backlog' : '');
-    setFieldValue('popup-statut-text', statut);
+    setFieldValue('stm-statut', statut);
     task.statut = statut;
 
     this.prefillHistorySummaryFromTask(task);
 
     // Projet
-    setFieldValue('popup-projet', task.projet || '');
+    setFieldValue('stm-projet', task.projet || '');
     
     // Urgence et Impact
-    setFieldValue('popup-urgence', task.urgence || '');
-    setFieldValue('popup-impact', task.impact || '');
+    setFieldValue('stm-urgence', task.urgence || '');
+    setFieldValue('stm-impact', task.impact || '');
 
     // Champs V3
-    setFieldValue('popup-nature', task.nature_activite || '');
-    setFieldValue('popup-genre', task.genre_action || '');
-    setFieldValue('popup-etape', task.etape_code || '');
-    setFieldValue('popup-previsibilite', task.previsibilite || task['previsibilité'] || '');
+    setFieldValue('stm-nature', task.nature_activite || '');
+    setFieldValue('stm-genre', task.genre_action || '');
+    setFieldValue('stm-etape', task.etape_code || '');
+    setFieldValue('stm-previsibilite', task.previsibilite || task['previsibilité'] || '');
 
     // Priorité calculée automatiquement
     const prioriteCalculee = this.calculatePriorite(task.urgence || '', task.impact || '');
-    setFieldValue('popup-priorite-calculee', prioriteCalculee);
+    setFieldValue('stm-priorite-calculee', prioriteCalculee);
     
     // Stratégies depuis Grist - gérer le format références multiples
     if (task.strategie_id) {
@@ -1126,17 +1126,17 @@ export class ModalManager {
     const bureauList = ensureGristList(task.bureau);
     const responsablesList = ensureGristList(task.qui);
 
-    setSelectedOptions('popup-bureau', bureauList);
-    setSelectedOptions('popup-qui', responsablesList);
+    setSelectedOptions('stm-bureau', bureauList);
+    setSelectedOptions('stm-qui', responsablesList);
 
     // Synchroniser avec les cases à cocher
-    this.syncSelectToCheckbox('popup-bureau-checkboxes', 'popup-bureau');
-    this.syncSelectToCheckbox('popup-qui-checkboxes', 'popup-qui');
+    this.syncSelectToCheckbox('stm-bureau-checkboxes', 'stm-bureau');
+    this.syncSelectToCheckbox('stm-qui-checkboxes', 'stm-qui');
 
     // IMPORTANT: Re-synchroniser dans l'autre sens pour s'assurer que le select caché est à jour
     // (car cocher programmatiquement ne déclenche pas l'événement change)
-    this.syncCheckboxToSelect('popup-bureau-checkboxes', 'popup-bureau');
-    this.syncCheckboxToSelect('popup-qui-checkboxes', 'popup-qui');
+    this.syncCheckboxToSelect('stm-bureau-checkboxes', 'stm-bureau');
+    this.syncCheckboxToSelect('stm-qui-checkboxes', 'stm-qui');
 
     // Références et documentation (extraire depuis le champ notes)
     let referencesValue = '';
@@ -1148,10 +1148,10 @@ export class ModalManager {
         // Si les notes ne sont pas du JSON valide, ignorer
       }
     }
-    setFieldValue('popup-references', referencesValue);
+    setFieldValue('stm-references', referencesValue);
     
     // Forcer la mise à jour de l'aperçu des références
-    const preview = document.getElementById('references-preview');
+    const preview = document.getElementById('stm-references-preview');
     if (preview) {
       referenceManager.updatePreview(referencesValue, preview);
     }
@@ -1176,7 +1176,7 @@ export class ModalManager {
    * Sauvegarde la tâche
    */
   async saveTask() {
-    if (!validateForm('task-form')) {
+    if (!validateForm('shared-task-form')) {
       displayError('Veuillez corriger les erreurs dans le formulaire');
       return;
     }
@@ -1215,7 +1215,7 @@ export class ModalManager {
         const userActionManager = getUserActionManager();
         if (userActionManager && result && result.retValues && result.retValues[0]) {
           const newTaskId = result.retValues[0];
-          const descriptionContent = getFieldValue('popup-description').trim();
+          const descriptionContent = getFieldValue('stm-description').trim();
           
           // Enregistrer en parallèle pour accélérer
           const historyPromises = [
@@ -1242,7 +1242,7 @@ export class ModalManager {
         displaySuccess('Tâche créée avec succès');
         
         // Vider le champ description après création
-        setFieldValue('popup-description', '');
+        setFieldValue('stm-description', '');
       } else {
         // Mise à jour
         const action = ['UpdateRecord', TABLE_ID, this.currentTaskId, gristData];
@@ -1251,7 +1251,7 @@ export class ModalManager {
         // Enregistrer l'action utilisateur pour la mise à jour
         const userActionManager = getUserActionManager();
         if (userActionManager) {
-          const descriptionContent = getFieldValue('popup-description').trim();
+          const descriptionContent = getFieldValue('stm-description').trim();
           const oldJalons = this.currentTask?.jalons || null;
           const newJalons = gristData.jalons || null;
           const jalonsChanged = this.hasJalonsChanged(oldJalons, newJalons);
@@ -1288,7 +1288,7 @@ export class ModalManager {
           
           // ✅ VÉRIFIER CHANGEMENT DE RÉFÉRENCES
           const oldReferences = this.extractReferencesFromNotes(this.currentTask?.notes);
-          const newReferences = referenceManager.cleanReferences(getFieldValue('popup-references'));
+          const newReferences = referenceManager.cleanReferences(getFieldValue('stm-references'));
           
           if (oldReferences !== newReferences) {
             const changeDescription = this.describeReferenceChange(oldReferences, newReferences);
@@ -1354,10 +1354,10 @@ export class ModalManager {
         displaySuccess('Tâche mise à jour avec succès');
         
         // Vider le champ description après mise à jour seulement si c'était un commentaire d'historique
-        const descriptionContent = getFieldValue('popup-description').trim();
+        const descriptionContent = getFieldValue('stm-description').trim();
         if (descriptionContent && descriptionContent.length > 0) {
           // Si il y avait du contenu dans description, c'était probablement un commentaire d'historique
-          setFieldValue('popup-description', '');
+          setFieldValue('stm-description', '');
         }
       }
       
@@ -1426,18 +1426,18 @@ export class ModalManager {
 
   collectFormData() {
     const data = {
-      titre: getFieldValue('popup-titre').trim(),
-      statut: getFieldValue('popup-statut-text'),
-      projet: getFieldValue('popup-projet').trim() || null,
-      urgence: getFieldValue('popup-urgence') || null,
-      impact: getFieldValue('popup-impact') || null,
+      titre: getFieldValue('stm-titre').trim(),
+      statut: getFieldValue('stm-statut'),
+      projet: getFieldValue('stm-projet').trim() || null,
+      urgence: getFieldValue('stm-urgence') || null,
+      impact: getFieldValue('stm-impact') || null,
       // Champs V3
-      nature_activite: getFieldValue('popup-nature') || null,
-      genre_action: getFieldValue('popup-genre') || null,
-      etape_code: getFieldValue('popup-etape') || null,
-      previsibilite: getFieldValue('popup-previsibilite') || null,
-      bureau: getSelectedOptionsAsGristFormat('popup-bureau'),
-      qui: getSelectedOptionsAsGristFormat('popup-qui'),
+      nature_activite: getFieldValue('stm-nature') || null,
+      genre_action: getFieldValue('stm-genre') || null,
+      etape_code: getFieldValue('stm-etape') || null,
+      previsibilite: getFieldValue('stm-previsibilite') || null,
+      bureau: getSelectedOptionsAsGristFormat('stm-bureau'),
+      qui: getSelectedOptionsAsGristFormat('stm-qui'),
       strategie_id: this.collectStrategyData(), // Collecte spécialisée stratégies
       jalons: this.kanban.jalonManager ? this.kanban.jalonManager.getJalonsForSave() : null
     };
@@ -1445,7 +1445,7 @@ export class ModalManager {
     this.logger.debug(`Collecting form data: ${data.titre || 'untitled'} (${data.statut})`);
     
     // CHAMP DESCRIPTION SUPPRIMÉ - Tous les commentaires sont maintenant dans notes.history
-    // Le champ de saisie popup-description sert uniquement pour les nouveaux commentaires
+    // Le champ de saisie stm-description sert uniquement pour les nouveaux commentaires
     
     // Date d'échéance
     if (this.kanban.datePickerManager) {
@@ -1618,7 +1618,7 @@ export class ModalManager {
     }
     
     // Gérer les références dans le champ notes
-    const referencesText = referenceManager.cleanReferences(getFieldValue('popup-references'));
+    const referencesText = referenceManager.cleanReferences(getFieldValue('stm-references'));
     const existingReferences = this.extractReferencesFromNotes(this.currentTask?.notes);
     const shouldUpdateReferences = this.isNewTask
       ? Boolean(referencesText)
@@ -1784,8 +1784,8 @@ export class ModalManager {
     this.kanban.gristOptions.projet = updatedProjects;
     
     // Mettre à jour le select
-    populateSelect('popup-projet', updatedProjects, true);
-    setFieldValue('popup-projet', newProjectName);
+    populateSelect('stm-projet', updatedProjects, true);
+    setFieldValue('stm-projet', newProjectName);
     setFieldValue('projet-ajout', '');
     
     displaySuccess(`Projet "${newProjectName}" ajouté`);
@@ -2528,17 +2528,17 @@ export class ModalManager {
     };
 
     // Peupler les selects
-    populateSelect('popup-urgence', urgenceOptions, true);
-    populateSelect('popup-impact', impactOptions, true);
-    populateSelect('popup-projet', projetOptions, true);
+    populateSelect('stm-urgence', urgenceOptions, true);
+    populateSelect('stm-impact', impactOptions, true);
+    populateSelect('stm-projet', projetOptions, true);
 
     // Peupler les selects V3
     this.populateV3Selects();
 
     // Peupler les cases à cocher
     this.logger.debug(`Populating options: ${bureauOptions.length} bureau, ${responsableOptions.length} responsables`);
-    this.populateCheckboxOptions('popup-bureau-checkboxes', 'popup-bureau', ['L', ...bureauOptions]);
-    this.populateCheckboxOptions('popup-qui-checkboxes', 'popup-qui', ['L', ...responsableOptions]);
+    this.populateCheckboxOptions('stm-bureau-checkboxes', 'stm-bureau', ['L', ...bureauOptions]);
+    this.populateCheckboxOptions('stm-qui-checkboxes', 'stm-qui', ['L', ...responsableOptions]);
   }
 
   /**
@@ -2546,7 +2546,7 @@ export class ModalManager {
    */
   populateV3Selects() {
     // Nature d'activite (Pourquoi)
-    const natureSelect = document.getElementById('popup-nature');
+    const natureSelect = document.getElementById('stm-nature');
     if (natureSelect) {
       natureSelect.innerHTML = '<option value="">-- Nature --</option>';
       getAllNaturesActivite().forEach(nature => {
@@ -2559,7 +2559,7 @@ export class ModalManager {
     }
 
     // Genre d'action (Comment)
-    const genreSelect = document.getElementById('popup-genre');
+    const genreSelect = document.getElementById('stm-genre');
     if (genreSelect) {
       genreSelect.innerHTML = '<option value="">-- Genre --</option>';
       // Grouper par famille
@@ -2583,7 +2583,7 @@ export class ModalManager {
     }
 
     // Etape du cycle (Ou)
-    const etapeSelect = document.getElementById('popup-etape');
+    const etapeSelect = document.getElementById('stm-etape');
     if (etapeSelect) {
       etapeSelect.innerHTML = '<option value="">-- Etape --</option>';
       getAllEtapesCycle().forEach(etape => {
@@ -2596,7 +2596,7 @@ export class ModalManager {
     }
 
     // Previsibilite
-    const prevSelect = document.getElementById('popup-previsibilite');
+    const prevSelect = document.getElementById('stm-previsibilite');
     if (prevSelect) {
       prevSelect.innerHTML = '<option value="">-- Auto --</option>';
       PREVISIBILITE.forEach(prev => {
@@ -2731,14 +2731,14 @@ export class ModalManager {
     $('#task-form')[0].reset();
     
     // Reset selects multiples
-    $('#popup-bureau').val(['L']);
-    $('#popup-qui').val(['L']);
+    $('#stm-bureau').val(['L']);
+    $('#stm-qui').val(['L']);
     
     // Reset checkboxes
-    $('#popup-bureau-checkboxes input, #popup-qui-checkboxes input').prop('checked', false);
+    $('#stm-bureau-checkboxes input, #stm-qui-checkboxes input').prop('checked', false);
     
     // Reset description
-    $('#popup-description').val('');
+    $('#stm-description').val('');
     
     // Reset stratégies
     this.resetStrategySelection();
@@ -2781,7 +2781,7 @@ export class ModalManager {
       return true;
     }
 
-    const titre = getFieldValue('popup-titre').trim();
+    const titre = getFieldValue('stm-titre').trim();
 
     if (!titre) {
       displayError('Le titre est obligatoire');
@@ -2810,8 +2810,8 @@ export class ModalManager {
     });
     
     // Masquer les boutons d'action en mode lecture seule
-    toggleVisibility('btn-save-task', !readOnly);
-    toggleVisibility('btn-delete-task', !readOnly && !this.isNewTask);
+    toggleVisibility('stm-btn-save', !readOnly);
+    toggleVisibility('stm-btn-delete', !readOnly && !this.isNewTask);
     toggleVisibility('btn-ajout-projet', !readOnly);
     
     if (this.kanban.datePickerManager) {
@@ -2849,7 +2849,7 @@ export class ModalManager {
   hasUnsavedChanges() {
     if (this.isNewTask) {
       // Vérifier si des champs ont été remplis
-      const titre = getFieldValue('popup-titre').trim();
+      const titre = getFieldValue('stm-titre').trim();
       // Ne plus vérifier le champ description pour les changements
       return titre !== '';
     }
@@ -2880,7 +2880,7 @@ export class ModalManager {
    * Met à jour l'état du bouton de sauvegarde
    */
   updateSaveButtonState() {
-    const saveButton = document.getElementById('btn-save-task');
+    const saveButton = document.getElementById('stm-btn-save');
     if (!saveButton) return;
     
     const hasChanges = this.hasUnsavedChanges();
