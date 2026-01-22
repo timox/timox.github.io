@@ -28,8 +28,9 @@
 
 /* Modale d'édition de tâche */
 .task-modal-dialog {
-  max-width: 1600px;
-  width: calc(100% - 2rem);
+  max-width: 900px;
+  width: calc(100% - 4rem);
+  margin: 2rem auto;
 }
 
 .task-modal-body {
@@ -1413,18 +1414,18 @@
 }
 
 .task-panel-content {
-  padding: 2rem 2.5rem;
+  padding: 1.25rem 1.5rem;
   max-height: calc(70vh - 150px);
   overflow-y: auto;
 }
 
 /* Espacement entre les sections */
 .task-panel-content > .mb-4 {
-  margin-bottom: 2rem !important;
+  margin-bottom: 1.25rem !important;
 }
 
 .task-panel-content > *:not(:last-child) {
-  margin-bottom: 1.75rem;
+  margin-bottom: 1rem;
 }
 
 /* === CHAMP TITRE PRINCIPAL === */
@@ -1491,8 +1492,8 @@
 .priority-card {
   background: white;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 1.25rem 1.5rem;
+  border-radius: 10px;
+  padding: 0.875rem 1rem;
 }
 
 .priority-label {
@@ -1597,17 +1598,17 @@
 .assignment-section {
   background: white;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 1.5rem;
+  border-radius: 10px;
+  padding: 0.875rem 1rem;
 }
 
 .section-title {
   display: flex;
   align-items: center;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.875rem;
   color: #374151;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .section-title i {
@@ -1618,8 +1619,8 @@
 .planning-timeline {
   background: white;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 1.5rem;
+  border-radius: 10px;
+  padding: 1rem;
 }
 
 .timeline-visual {
@@ -1689,8 +1690,8 @@
 .date-card {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 1rem;
+  border-radius: 8px;
+  padding: 0.75rem;
   transition: all 0.2s ease;
 }
 
@@ -1722,8 +1723,8 @@
 .duration-section {
   background: white;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 1.5rem;
+  border-radius: 10px;
+  padding: 0.875rem 1rem;
 }
 
 .duration-comparison {
@@ -1755,8 +1756,8 @@
 .milestones-section {
   background: white;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 1.5rem;
+  border-radius: 10px;
+  padding: 0.875rem 1rem;
 }
 
 .jalons-list {
@@ -1768,8 +1769,8 @@
 .meo-section {
   background: white;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 1.5rem;
+  border-radius: 10px;
+  padding: 0.875rem 1rem;
   border-left: 4px solid #8b5cf6;
 }
 
@@ -1796,8 +1797,8 @@
 .strategy-section {
   background: white;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 1.5rem;
+  border-radius: 10px;
+  padding: 0.875rem 1rem;
 }
 
 .strategy-section .accordion-button {
@@ -1858,24 +1859,24 @@
 .links-section {
   background: white;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 1.5rem;
+  border-radius: 10px;
+  padding: 0.875rem 1rem;
 }
 
 /* === SECTION CLASSIFICATION === */
 .classification-section {
   background: white;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 1.5rem;
+  border-radius: 10px;
+  padding: 0.875rem 1rem;
 }
 
 /* === SECTION RÉFÉRENCES === */
 .references-section {
   background: white;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 1.5rem;
+  border-radius: 10px;
+  padding: 0.875rem 1rem;
 }
 
 /* === ÉTATS VIDES === */
