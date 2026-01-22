@@ -217,7 +217,7 @@
         { name: 'titre', title: 'Titre' },
         { name: 'statut', title: 'Statut' },
         { name: 'nature_activite', title: 'Nature' },
-        { name: 'etape_code', title: 'Etape' },
+        { name: 'etape_cycle', title: 'Etape' },
         { name: 'genre_action', title: 'Genre' },
         { name: 'qui', title: 'Responsable' },
         { name: 'mission_code', title: 'Mission' }
@@ -244,7 +244,7 @@
       // Grouper par etape
       const groups = {};
       for (const record of records) {
-        const etape = record.etape_code || 'unknown';
+        const etape = record.etape_cycle || 'unknown';
         if (!groups[etape]) {
           groups[etape] = [];
         }

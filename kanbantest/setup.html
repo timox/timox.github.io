@@ -52,7 +52,7 @@
         <div class="checklist-item d-flex justify-content-between align-items-center">
           <div>
             <strong>Colonnes V3</strong>
-            <div class="text-muted small">nature_activite, genre_action, etape_code, previsibilite</div>
+            <div class="text-muted small">nature_activite, genre_action, etape_cycle, previsibilite</div>
           </div>
           <span class="status-badge status-pending" id="status-columns">En attente</span>
         </div>
@@ -231,7 +231,7 @@
             &nbsp;&nbsp;&nbsp;&nbsp;└── <strong style="color:#f59e0b;">Mission</strong> (groupe de tâches) <span class="text-muted">1:n</span><br>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── <strong style="color:#6366f1;">Ssir_principale_task</strong> (Tâche) <span class="text-muted">1:n</span><br>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── nature_activite <span class="text-muted">(WHY)</span><br>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── etape_code <span class="text-muted">(WHERE)</span><br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── etape_cycle <span class="text-muted">(WHERE)</span><br>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── genre_action <span class="text-muted">(HOW)</span>
           </div>
         </div>
@@ -303,8 +303,8 @@
           <li><strong>Page "Kanban"</strong> : Widget Custom → URL = <code>index.html</code></li>
           <li><strong>Page "Graphe Tâches"</strong> : Widget Custom → URL = <code>taches.html</code></li>
           <li><strong>Page "Par Nature"</strong> : Table groupée par <code>nature_activite</code></li>
-          <li><strong>Page "Par Étape"</strong> : Table groupée par <code>etape_code</code></li>
-          <li><strong>Page "Matrice"</strong> : Summary table groupée par <code>nature_activite</code> + <code>etape_code</code></li>
+          <li><strong>Page "Par Étape"</strong> : Table groupée par <code>etape_cycle</code></li>
+          <li><strong>Page "Matrice"</strong> : Summary table groupée par <code>nature_activite</code> + <code>etape_cycle</code></li>
         </ol>
       </div>
     </div>
@@ -356,7 +356,7 @@
           }
         }
       },
-      etape_code: {
+      etape_cycle: {
         type: 'Choice',
         label: 'Étape cycle',
         widgetOptions: {

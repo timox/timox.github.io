@@ -1,4 +1,4 @@
-titre,description,statut,nature_activite,genre_action,etape_code,previsibilite,bureau,qui,urgence,impact,projet,date_debut,date_echeance
+titre,description,statut,nature_activite,genre_action,etape_cycle,previsibilite,bureau,qui,urgence,impact,projet,date_debut,date_echeance
 "[MISSION] Mise en conformité AD - Phase analyse","Audit complet de l'Active Directory pour identifier les écarts de sécurité","En cours","PRJ","ANA","ETP.ANA","Prévisible","Exploit","Alex","Moyenne","Important","Conformité AD 2025",2026-01-15,2026-02-28
 "[SA] Durcissement GPO selon benchmark CIS","Application des recommandations CIS Level 1 sur les GPO","À faire","PRJ","SEC","ETP.REA","Prévisible","Exploit","Timothée","Courte","Critique","Conformité AD 2025",2026-02-01,2026-03-15
 "[INC] Panne serveur de fichiers SRVFIC01","Le serveur ne répond plus, les utilisateurs ne peuvent plus accéder aux partages","En cours","INC","COR","ETP.EXP","Imprévisible","Exploit","Paul","Immédiate","Critique","",2026-01-21,2026-01-21
