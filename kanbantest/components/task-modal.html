@@ -59,6 +59,12 @@
                 </button>
               </li>
               <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-affectation" data-bs-toggle="tab" data-bs-target="#panel-affectation" type="button" role="tab">
+                  <i class="bi bi-people me-1"></i>Affectation
+                  <span class="tab-indicator" id="indicator-affectation"></span>
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
                 <button class="nav-link" id="tab-advanced" data-bs-toggle="tab" data-bs-target="#panel-advanced" type="button" role="tab">
                   <i class="bi bi-sliders me-1"></i>Avancé
                   <span class="tab-indicator" id="indicator-advanced"></span>
@@ -152,24 +158,6 @@
                   </div>
                 </div>
 
-                <!-- Assignation: Qui + Bureau -->
-                <div class="assignment-section">
-                  <h6 class="section-title">
-                    <i class="bi bi-people me-2"></i>Assignation
-                  </h6>
-                  <div class="row g-3">
-                    <div class="col-md-6">
-                      <label class="form-label small text-muted">Responsables</label>
-                      <div id="stm-qui-checkboxes" class="checkbox-group"></div>
-                      <input type="hidden" id="stm-qui" value="">
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label small text-muted">Bureaux concernés</label>
-                      <div id="stm-bureau-checkboxes" class="checkbox-group"></div>
-                      <input type="hidden" id="stm-bureau" value="">
-                    </div>
-                  </div>
-                </div>
 
               </div>
             </div>
@@ -436,7 +424,56 @@
             </div>
 
             <!-- ═══════════════════════════════════════════════════════════ -->
-            <!-- ONGLET 4: AVANCÉ - Classification, références, etc. -->
+            <!-- ONGLET 4: AFFECTATION - Équipes, Responsables, Bureaux -->
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <div class="tab-pane fade" id="panel-affectation" role="tabpanel" aria-labelledby="tab-affectation">
+              <div class="task-panel-content">
+
+                <!-- Responsables -->
+                <div class="assignment-section mb-4">
+                  <h6 class="section-title">
+                    <i class="bi bi-person-check me-2 text-primary"></i>Responsables
+                  </h6>
+                  <p class="form-text small text-muted mb-2">Personnes en charge de cette tâche</p>
+                  <div id="stm-qui-checkboxes" class="checkbox-group checkbox-grid"></div>
+                  <input type="hidden" id="stm-qui" value="">
+                </div>
+
+                <!-- Bureaux -->
+                <div class="bureaux-section mb-4">
+                  <h6 class="section-title">
+                    <i class="bi bi-building me-2 text-info"></i>Bureaux concernés
+                  </h6>
+                  <p class="form-text small text-muted mb-2">Entités impliquées dans la réalisation</p>
+                  <div id="stm-bureau-checkboxes" class="checkbox-group checkbox-grid"></div>
+                  <input type="hidden" id="stm-bureau" value="">
+                </div>
+
+                <!-- Équipe (futur) -->
+                <div class="equipe-section mb-4">
+                  <h6 class="section-title">
+                    <i class="bi bi-people-fill me-2 text-success"></i>Équipe projet
+                    <span class="badge bg-secondary ms-2">Optionnel</span>
+                  </h6>
+                  <select class="form-select" id="stm-equipe">
+                    <option value="">-- Aucune équipe assignée --</option>
+                  </select>
+                  <div class="form-text">Associer à une équipe de travail transverse</div>
+                </div>
+
+                <!-- Récapitulatif affectation -->
+                <div class="affectation-summary" id="stm-affectation-summary">
+                  <div class="summary-card">
+                    <i class="bi bi-info-circle text-muted me-2"></i>
+                    <span class="text-muted small">Sélectionnez des responsables et/ou bureaux pour les afficher ici</span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <!-- ONGLET 5: AVANCÉ - Classification, références, etc. -->
             <!-- ═══════════════════════════════════════════════════════════ -->
             <div class="tab-pane fade" id="panel-advanced" role="tabpanel" aria-labelledby="tab-advanced">
               <div class="task-panel-content">

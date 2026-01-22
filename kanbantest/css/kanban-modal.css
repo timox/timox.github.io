@@ -28,9 +28,25 @@
 
 /* Modale d'édition de tâche */
 .task-modal-dialog {
-  max-width: 800px !important;
-  width: calc(100% - 6rem) !important;
-  margin: 3rem auto !important;
+  max-width: 960px !important;
+  width: calc(100% - 4rem) !important;
+  margin: 2rem auto !important;
+}
+
+/* Override Bootstrap modal-xl and modal-xxl */
+.task-modal-dialog.modal-xl,
+.task-modal-dialog.modal-xxl,
+.modal-xl.task-modal-dialog,
+.modal-xxl.task-modal-dialog {
+  max-width: 960px !important;
+}
+
+@media (max-width: 768px) {
+  .task-modal-dialog {
+    width: calc(100% - 1.5rem) !important;
+    margin: 0.75rem auto !important;
+    max-width: none !important;
+  }
 }
 
 .task-modal-body {
@@ -240,6 +256,72 @@
 .checkbox-group .form-check-label {
   font-size: 0.9rem;
   cursor: pointer;
+}
+
+/* Grid layout for checkboxes in Affectation tab */
+.checkbox-group.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.5rem;
+  max-height: 200px;
+}
+
+.checkbox-group.checkbox-grid .form-check {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+  transition: all 0.15s ease;
+}
+
+.checkbox-group.checkbox-grid .form-check:hover {
+  border-color: #2563eb;
+  background: #f0f7ff;
+}
+
+.checkbox-group.checkbox-grid .form-check:has(input:checked) {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+/* Affectation summary card */
+.affectation-summary {
+  margin-top: 1rem;
+}
+
+.affectation-summary .summary-card {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.affectation-summary .summary-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.affectation-summary .summary-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.affectation-summary .summary-badge.responsable {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.affectation-summary .summary-badge.bureau {
+  background: #e0f2fe;
+  color: #0369a1;
 }
 
 /* Correction des tooltips dans les modales */
