@@ -672,15 +672,20 @@ class MigrationApp {
       return { success: true, action: 'exists', message: `${colId} existe déjà` };
     }
 
-    // La colonne n'existe pas - la créer
+    // La colonne n'existe pas - la créer en 2 étapes pour forcer l'id en minuscules
     this.log(`  ⚠ Colonne ${colId} non trouvée, création...`, 'warning');
     try {
+      // Étape 1: Créer avec UNIQUEMENT le type (pas de label pour éviter la majuscule)
       await grist.docApi.applyUserActions([
-        ['AddColumn', TABLE_ID, colId, {
-          type: config.type,
-          label: config.label,
-          widgetOptions: config.widgetOptions
-        }]
+        ['AddColumn', TABLE_ID, colId, { type: config.type }]
+      ]);
+      // Étape 2: Ajouter le label et widgetOptions via ModifyColumn
+      const updateData = { label: config.label };
+      if (config.widgetOptions) {
+        updateData.widgetOptions = config.widgetOptions;
+      }
+      await grist.docApi.applyUserActions([
+        ['ModifyColumn', TABLE_ID, colId, updateData]
       ]);
       // Mettre à jour le cache
       this.existingColumns.push(colId);
