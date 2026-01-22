@@ -223,15 +223,6 @@ export class EventCentralizer {
       filterManager.applyFilters();
     }, 'filter');
 
-    safeOn('#filter-projet', 'change', (e) => {
-      const filterManager = this.managers.get('filter');
-      if (!filterManager) return;
-
-      filterManager.filters.projet = e.currentTarget.value || '';
-      filterManager.logger?.debug?.(`Projet filter changed: ${filterManager.filters.projet}`);
-      filterManager.applyFilters();
-    }, 'filter');
-
     safeOn('#filter-statut', 'change', (e) => {
       const filterManager = this.managers.get('filter');
       if (!filterManager) return;
@@ -252,6 +243,15 @@ export class EventCentralizer {
       if (!filterManager) return;
 
       filterManager.showTermine = e.currentTarget.checked;
+      filterManager.applyFilters();
+    }, 'filter');
+
+    safeOn('#filter-projets-only', 'change', (e) => {
+      const filterManager = this.managers.get('filter');
+      if (!filterManager) return;
+
+      filterManager.showProjetsOnly = e.currentTarget.checked;
+      filterManager.logger?.debug?.(`Projets only filter changed: ${filterManager.showProjetsOnly}`);
       filterManager.applyFilters();
     }, 'filter');
 
