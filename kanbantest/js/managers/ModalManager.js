@@ -2683,28 +2683,33 @@ export class ModalManager {
    */
   syncCheckboxToSelect(containerId, selectId) {
     const container = document.getElementById(containerId);
-    const hiddenSelect = document.getElementById(selectId);
-    
-    if (!container || !hiddenSelect) {
+    const hiddenElement = document.getElementById(selectId);
+
+    if (!container || !hiddenElement) {
       this.logger.warn(`Sync failed: ${containerId} or ${selectId} not found`);
       return;
     }
-    
+
     const checkboxes = container.querySelectorAll('input[type="checkbox"]:checked');
     const selectedValues = ['L']; // Toujours inclure le marqueur 'L'
-    
+
     checkboxes.forEach(checkbox => {
       selectedValues.push(checkbox.value);
     });
-    
-    
-    // Mettre à jour le select caché
-    Array.from(hiddenSelect.options).forEach(option => {
-      option.selected = selectedValues.includes(option.value);
-    });
-    
+
+    // Mettre à jour l'élément caché selon son type
+    if (hiddenElement.tagName === 'SELECT' && hiddenElement.options) {
+      // Pour un select multiple
+      Array.from(hiddenElement.options).forEach(option => {
+        option.selected = selectedValues.includes(option.value);
+      });
+    } else if (hiddenElement.tagName === 'INPUT') {
+      // Pour un input hidden, stocker la valeur comme JSON ou liste séparée par virgules
+      hiddenElement.value = JSON.stringify(selectedValues);
+    }
+
     // Déclencher un événement change pour informer les autres composants
-    hiddenSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    hiddenElement.dispatchEvent(new Event('change', { bubbles: true }));
   }
   
   /**
@@ -2712,12 +2717,38 @@ export class ModalManager {
    */
   syncSelectToCheckbox(containerId, selectId) {
     const container = document.getElementById(containerId);
-    const hiddenSelect = document.getElementById(selectId);
-    
-    if (!container || !hiddenSelect) return;
-    
-    const selectedValues = Array.from(hiddenSelect.selectedOptions).map(option => option.value);
-    
+    const hiddenElement = document.getElementById(selectId);
+
+    if (!container || !hiddenElement) return;
+
+    // Gérer les deux cas : select multiple ou input hidden
+    let selectedValues = [];
+    if (hiddenElement.tagName === 'SELECT' && hiddenElement.selectedOptions) {
+      selectedValues = Array.from(hiddenElement.selectedOptions).map(option => option.value);
+    } else if (hiddenElement.tagName === 'INPUT') {
+      // Pour les inputs hidden, essayer de parser la valeur comme JSON
+      const value = hiddenElement.value;
+      if (value) {
+        try {
+          const parsed = JSON.parse(value);
+          if (Array.isArray(parsed)) {
+            // Filtrer le marqueur 'L' de Grist
+            selectedValues = parsed.filter(v => v !== 'L');
+          }
+        } catch (e) {
+          // Si ce n'est pas du JSON, essayer de récupérer depuis un select associé ou les checkboxes
+          const associatedSelect = hiddenElement.previousElementSibling;
+          if (associatedSelect && associatedSelect.tagName === 'SELECT' && associatedSelect.selectedOptions) {
+            selectedValues = Array.from(associatedSelect.selectedOptions).map(option => option.value);
+          } else {
+            // Fallback: récupérer les valeurs depuis les checkboxes déjà cochées dans le container
+            selectedValues = Array.from(container.querySelectorAll('input[type="checkbox"]:checked'))
+              .map(cb => cb.value);
+          }
+        }
+      }
+    }
+
     container.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
       checkbox.checked = selectedValues.includes(checkbox.value);
     });
