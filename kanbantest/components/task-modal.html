@@ -284,20 +284,13 @@
             </div>
 
             <!-- ═══════════════════════════════════════════════════════════ -->
-            <!-- ONGLET 3: ORGANISATION - MEO, Stratégie, Projet -->
+            <!-- ONGLET 3: ORGANISATION - MEO, Stratégie -->
             <!-- ═══════════════════════════════════════════════════════════ -->
             <div class="tab-pane fade" id="panel-organization" role="tabpanel" aria-labelledby="tab-organization">
               <div class="task-panel-content">
 
-                <!-- Projet -->
-                <div class="mb-4">
-                  <label for="stm-projet" class="form-label fw-semibold">
-                    <i class="bi bi-folder me-1 text-primary"></i>Projet
-                  </label>
-                  <select class="form-select" id="stm-projet">
-                    <option value="">-- Aucun projet --</option>
-                  </select>
-                </div>
+                <!-- Champ caché pour projet (conservé pour compatibilité) -->
+                <input type="hidden" id="stm-projet" value="">
 
                 <!-- Mise en œuvre (MEO) -->
                 <div class="meo-section mb-4">
