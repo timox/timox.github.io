@@ -846,7 +846,7 @@ class SharedTaskModal {
     }
 
     // Références
-    this.setFieldValue('stm-references', task.references || '');
+    this.setFieldValue('stm-references', task.reference || '');
     this.updateReferencesPreview();
 
     // Jalons
@@ -999,7 +999,7 @@ class SharedTaskModal {
       genre_action: this.getFieldValue('stm-genre'),
       etape_cycle: this.getFieldValue('stm-etape'),
       previsibilite: this.getFieldValue('stm-previsibilite'),
-      references: this.getFieldValue('stm-references')
+      reference: this.getFieldValue('stm-references')
     };
 
     // ID de la tâche
