@@ -325,12 +325,27 @@ class SharedTaskModal {
       this.meos = Array.from(meoMap.values());
 
       // Enrichir avec les infos de stratégie
+      console.log('[SharedTaskModal] Enriching MEOs with strategy info...');
+      console.log('[SharedTaskModal] Available strategies:', this.strategies.slice(0, 3));
+
       this.meos.forEach(meo => {
-        const strat = this.strategies.find(s => s.id === meo.strategie_id);
+        // Essayer de matcher par ID (peut être string ou number)
+        const strat = this.strategies.find(s =>
+          s.id === meo.strategie_id ||
+          String(s.id) === String(meo.strategie_id)
+        );
+
         if (strat) {
-          meo.mission = strat.axe_strategique;
-          meo.strategie = strat.sous_objectif;
-          meo.programme = strat.objectif;
+          meo.mission = strat.axe_strategique || '';
+          meo.strategie = strat.sous_objectif || '';
+          meo.programme = strat.objectif || '';
+          console.log('[SharedTaskModal] MEO enriched:', meo.code, '→', {
+            mission: meo.mission,
+            strategie: meo.strategie,
+            programme: meo.programme
+          });
+        } else {
+          console.warn('[SharedTaskModal] No strategy found for MEO:', meo.code, 'strategie_id:', meo.strategie_id);
         }
       });
 
@@ -403,6 +418,15 @@ class SharedTaskModal {
 
     const selectedOption = select.options[select.selectedIndex];
 
+    console.log('[SharedTaskModal] MEO changed:', {
+      value: selectedOption?.value,
+      dataset: selectedOption?.dataset,
+      meoNom: selectedOption?.dataset?.meoNom,
+      programme: selectedOption?.dataset?.programme,
+      strategie: selectedOption?.dataset?.strategie,
+      mission: selectedOption?.dataset?.mission
+    });
+
     if (selectedOption && selectedOption.value) {
       // Remplir les champs cachés
       this.setFieldValue('stm-meo-code', selectedOption.value);
@@ -410,10 +434,15 @@ class SharedTaskModal {
       this.setFieldValue('stm-strategie', selectedOption.dataset.strategieId || '');
 
       // Afficher les infos déduites
-      document.getElementById('stm-programme-display').textContent = selectedOption.dataset.programme || '-';
-      document.getElementById('stm-strategie-display').textContent = selectedOption.dataset.strategie || '-';
-      document.getElementById('stm-mission-display').textContent = selectedOption.dataset.mission || '-';
-      infoDiv.style.display = 'flex';
+      const progDisplay = document.getElementById('stm-programme-display');
+      const stratDisplay = document.getElementById('stm-strategie-display');
+      const missDisplay = document.getElementById('stm-mission-display');
+
+      if (progDisplay) progDisplay.textContent = selectedOption.dataset.programme || '-';
+      if (stratDisplay) stratDisplay.textContent = selectedOption.dataset.strategie || '-';
+      if (missDisplay) missDisplay.textContent = selectedOption.dataset.mission || '-';
+
+      infoDiv.style.display = 'block';
     } else {
       // Vider les champs
       this.setFieldValue('stm-meo-code', '');
