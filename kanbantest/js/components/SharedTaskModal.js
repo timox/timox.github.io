@@ -625,6 +625,18 @@ class SharedTaskModal {
       });
     }
 
+    // Statut change listener for badge update
+    const statutSelect = document.getElementById('stm-statut');
+    if (statutSelect) {
+      statutSelect.addEventListener('change', () => this.updateStatusBadge());
+    }
+
+    // Date change listeners for timeline
+    const dateDebut = document.getElementById('stm-date-debut');
+    if (dateDebut) {
+      dateDebut.addEventListener('change', () => this.updateTimelineVisual());
+    }
+
     // Initialiser les jalons
     this.initJalons();
 
@@ -636,6 +648,21 @@ class SharedTaskModal {
 
     // Initialiser les liens entre tâches
     this.initTaskLinks();
+
+    // Initialiser les boutons de priorité
+    this.initPriorityButtons();
+
+    // Initialiser l'indicateur de complétude
+    this.initCompletionRing();
+
+    // Initialiser le compteur de description
+    this.initDescriptionCounter();
+
+    // Initialiser le sidebar historique
+    this.initHistorySidebar();
+
+    // Initialiser les indicateurs d'onglets
+    this.initTabIndicators();
 
     // Exposer l'instance pour les callbacks
     window._sharedTaskModalInstance = this;
@@ -735,6 +762,13 @@ class SharedTaskModal {
     this.setFieldValue('stm-genre', task.genre_action);
     this.setFieldValue('stm-etape', task.etape_code);
     this.setFieldValue('stm-previsibilite', task.previsibilite);
+
+    // Priority buttons (urgence & impact)
+    this.setPriorityButtonValue('stm-urgence-buttons', task.urgence);
+    this.setPriorityButtonValue('stm-impact-buttons', task.impact);
+
+    // Update status badge
+    this.updateStatusBadge();
 
     // Rattachement hiérarchique via MEO
     this.setFieldValue('stm-meo-code', task.mise_en_oeuvre_code || '');
@@ -839,6 +873,17 @@ class SharedTaskModal {
       this.setFieldValue('stm-temps-estime', task.temps_estime || '');
       this.setFieldValue('stm-temps-reel', task.temps_reel || '');
     }
+
+    // Update all visual indicators
+    this.updateCompletionRing();
+    this.updateTimelineVisual();
+
+    // Update description counter
+    const descCounter = document.getElementById('stm-desc-counter');
+    if (descCounter) {
+      const len = (task.description || '').length;
+      descCounter.textContent = `${len} caractère${len > 1 ? 's' : ''}`;
+    }
   }
 
   /**
@@ -893,6 +938,15 @@ class SharedTaskModal {
     // Vider les liens
     this.taskLinks = [];
     this.renderTaskLinks();
+
+    // Reset priority buttons
+    this.setPriorityButtonValue('stm-urgence-buttons', '');
+    this.setPriorityButtonValue('stm-impact-buttons', '');
+
+    // Reset completion ring and other visual indicators
+    this.updateCompletionRing();
+    this.updateTimelineVisual();
+    this.updateStatusBadge();
   }
 
   /**
@@ -1199,7 +1253,11 @@ class SharedTaskModal {
         dateFormat: 'd/m/Y',
         locale: 'fr',
         allowInput: true,
-        onChange: (dates) => this.updateDateStatus(dates[0])
+        onChange: (dates) => {
+          this.updateDateStatus(dates[0]);
+          this.updateTimelineVisual();
+          this.updateCompletionRing();
+        }
       });
     } else {
       // Fallback: transformer en input date
@@ -1678,6 +1736,418 @@ class SharedTaskModal {
       'Terminé': 'bg-success'
     };
     return classes[statut] || 'bg-secondary';
+  }
+
+  // === Priority Buttons ===
+
+  /**
+   * Initialise les boutons de priorité (urgence et impact)
+   */
+  initPriorityButtons() {
+    // Urgence buttons
+    const urgenceContainer = document.getElementById('stm-urgence-buttons');
+    if (urgenceContainer) {
+      urgenceContainer.querySelectorAll('.priority-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          urgenceContainer.querySelectorAll('.priority-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const hiddenInput = document.getElementById('stm-urgence');
+          if (hiddenInput) hiddenInput.value = btn.dataset.value;
+          this.updateCompletionRing();
+        });
+      });
+    }
+
+    // Impact buttons
+    const impactContainer = document.getElementById('stm-impact-buttons');
+    if (impactContainer) {
+      impactContainer.querySelectorAll('.priority-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          impactContainer.querySelectorAll('.priority-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const hiddenInput = document.getElementById('stm-impact');
+          if (hiddenInput) hiddenInput.value = btn.dataset.value;
+          this.updateCompletionRing();
+        });
+      });
+    }
+  }
+
+  /**
+   * Définit la valeur des boutons de priorité
+   */
+  setPriorityButtonValue(containerId, value) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    container.querySelectorAll('.priority-btn').forEach(btn => {
+      if (btn.dataset.value === (value || '')) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+  }
+
+  // === Completion Ring ===
+
+  /**
+   * Initialise l'indicateur de complétude
+   */
+  initCompletionRing() {
+    // Liste des champs à surveiller pour calculer la complétude
+    const fieldsToWatch = [
+      'stm-titre', 'stm-description', 'stm-statut', 'stm-avancement',
+      'stm-echeance', 'stm-date-debut', 'stm-meo', 'stm-projet'
+    ];
+
+    fieldsToWatch.forEach(fieldId => {
+      const el = document.getElementById(fieldId);
+      if (el) {
+        el.addEventListener('change', () => this.updateCompletionRing());
+        el.addEventListener('input', () => this.updateCompletionRing());
+      }
+    });
+
+    // Surveiller les checkboxes
+    const checkboxContainers = ['stm-bureau-checkboxes', 'stm-qui-checkboxes'];
+    checkboxContainers.forEach(containerId => {
+      const container = document.getElementById(containerId);
+      if (container) {
+        container.addEventListener('change', () => this.updateCompletionRing());
+      }
+    });
+
+    this.updateCompletionRing();
+  }
+
+  /**
+   * Met à jour l'indicateur de complétude
+   */
+  updateCompletionRing() {
+    const circle = document.getElementById('stm-completion-circle');
+    const text = document.getElementById('stm-completion-text');
+
+    if (!circle || !text) return;
+
+    // Calculer la complétude (pondérée)
+    const weights = {
+      titre: { weight: 20, check: () => !!this.getFieldValue('stm-titre') },
+      description: { weight: 15, check: () => !!this.getFieldValue('stm-description') },
+      statut: { weight: 10, check: () => !!this.getFieldValue('stm-statut') },
+      urgence: { weight: 10, check: () => !!this.getFieldValue('stm-urgence') },
+      impact: { weight: 10, check: () => !!this.getFieldValue('stm-impact') },
+      echeance: { weight: 10, check: () => {
+        if (this.datePicker) {
+          return this.datePicker.selectedDates.length > 0;
+        }
+        return !!this.getFieldValue('stm-echeance');
+      }},
+      responsables: { weight: 15, check: () => this.getSelectedQui().length > 0 },
+      meo: { weight: 10, check: () => !!this.getFieldValue('stm-meo') }
+    };
+
+    let score = 0;
+    let total = 0;
+
+    for (const [key, config] of Object.entries(weights)) {
+      total += config.weight;
+      if (config.check()) {
+        score += config.weight;
+      }
+    }
+
+    const percentage = Math.round((score / total) * 100);
+
+    // Mettre à jour le SVG
+    circle.setAttribute('stroke-dasharray', `${percentage}, 100`);
+    text.textContent = `${percentage}%`;
+
+    // Changer la couleur selon le niveau
+    if (percentage >= 80) {
+      circle.style.stroke = '#22c55e'; // green
+    } else if (percentage >= 50) {
+      circle.style.stroke = '#f59e0b'; // yellow
+    } else {
+      circle.style.stroke = '#ef4444'; // red
+    }
+  }
+
+  // === Description Counter ===
+
+  /**
+   * Initialise le compteur de caractères de description
+   */
+  initDescriptionCounter() {
+    const textarea = document.getElementById('stm-description');
+    const counter = document.getElementById('stm-desc-counter');
+
+    if (!textarea || !counter) return;
+
+    const updateCounter = () => {
+      const len = textarea.value.length;
+      counter.textContent = `${len} caractère${len > 1 ? 's' : ''}`;
+    };
+
+    textarea.addEventListener('input', updateCounter);
+    updateCounter();
+  }
+
+  // === History Sidebar ===
+
+  /**
+   * Initialise le sidebar d'historique
+   */
+  initHistorySidebar() {
+    const btnHistory = document.getElementById('stm-btn-history');
+    const sidebar = document.getElementById('stm-history-sidebar');
+    const btnClose = document.getElementById('stm-close-history');
+
+    if (!btnHistory || !sidebar) return;
+
+    btnHistory.addEventListener('click', () => {
+      const isVisible = sidebar.style.display !== 'none';
+      sidebar.style.display = isVisible ? 'none' : 'flex';
+      if (!isVisible) {
+        this.loadTaskHistory();
+      }
+    });
+
+    if (btnClose) {
+      btnClose.addEventListener('click', () => {
+        sidebar.style.display = 'none';
+      });
+    }
+  }
+
+  /**
+   * Charge l'historique de la tâche
+   */
+  async loadTaskHistory() {
+    const container = document.getElementById('stm-history-content');
+    if (!container || !this.currentTask) return;
+
+    container.innerHTML = `
+      <div class="text-center text-muted py-4">
+        <div class="spinner-border spinner-border-sm"></div>
+        <p class="mt-2 mb-0">Chargement...</p>
+      </div>
+    `;
+
+    try {
+      // Essayer de charger depuis Grist
+      if (typeof grist !== 'undefined' && this.currentTask.id) {
+        const history = await grist.docApi.fetchTable('Ssir_taches_history', {
+          filters: { tache_id: [this.currentTask.id] }
+        });
+
+        if (history.id?.length > 0) {
+          let html = '<div class="history-timeline">';
+          const count = history.id.length;
+
+          for (let i = count - 1; i >= 0; i--) {
+            const timestamp = history.timestamp?.[i];
+            const action = history.action?.[i] || '';
+            const user = history.user?.[i] || 'Système';
+            const details = history.details?.[i] || '';
+
+            const dateStr = timestamp ? new Date(timestamp * 1000).toLocaleString('fr-FR') : '-';
+
+            html += `
+              <div class="history-entry py-2 border-bottom">
+                <div class="d-flex justify-content-between align-items-start mb-1">
+                  <span class="badge bg-info">${action}</span>
+                  <small class="text-muted">${dateStr}</small>
+                </div>
+                <div class="small text-muted">${user}</div>
+                ${details ? `<div class="small mt-1">${details}</div>` : ''}
+              </div>
+            `;
+          }
+
+          html += '</div>';
+          container.innerHTML = html;
+        } else {
+          container.innerHTML = `
+            <div class="text-center text-muted py-4">
+              <i class="bi bi-clock-history fs-3"></i>
+              <p class="mt-2 mb-0">Aucun historique disponible</p>
+            </div>
+          `;
+        }
+      } else {
+        container.innerHTML = `
+          <div class="text-center text-muted py-4">
+            <i class="bi bi-clock-history fs-3"></i>
+            <p class="mt-2 mb-0">Historique non disponible</p>
+          </div>
+        `;
+      }
+    } catch (error) {
+      console.warn('[SharedTaskModal] Failed to load history:', error);
+      container.innerHTML = `
+        <div class="text-center text-muted py-4">
+          <i class="bi bi-exclamation-circle fs-3"></i>
+          <p class="mt-2 mb-0">Erreur de chargement</p>
+        </div>
+      `;
+    }
+  }
+
+  // === Tab Indicators ===
+
+  /**
+   * Initialise les indicateurs d'onglets
+   */
+  initTabIndicators() {
+    // Surveiller les changements pour mettre à jour les indicateurs
+    const updateIndicators = () => {
+      this.updateTabIndicator('essential', this.checkEssentialFields());
+      this.updateTabIndicator('planning', this.checkPlanningFields());
+      this.updateTabIndicator('organization', this.checkOrganizationFields());
+      this.updateTabIndicator('advanced', this.checkAdvancedFields());
+    };
+
+    // Observer les changements sur le formulaire
+    const form = document.getElementById('shared-task-form');
+    if (form) {
+      form.addEventListener('change', updateIndicators);
+      form.addEventListener('input', updateIndicators);
+    }
+
+    updateIndicators();
+  }
+
+  /**
+   * Met à jour un indicateur d'onglet
+   */
+  updateTabIndicator(tabName, hasContent) {
+    const indicator = document.getElementById(`indicator-${tabName}`);
+    if (!indicator) return;
+
+    indicator.className = 'tab-indicator';
+    if (hasContent) {
+      indicator.classList.add('has-content');
+    }
+  }
+
+  /**
+   * Vérifie si les champs essentiels sont remplis
+   */
+  checkEssentialFields() {
+    return !!this.getFieldValue('stm-titre') ||
+           !!this.getFieldValue('stm-description') ||
+           !!this.getFieldValue('stm-urgence') ||
+           !!this.getFieldValue('stm-impact') ||
+           this.getSelectedQui().length > 0 ||
+           this.getSelectedBureaux().length > 0;
+  }
+
+  /**
+   * Vérifie si les champs de planification sont remplis
+   */
+  checkPlanningFields() {
+    const hasDate = this.datePicker ?
+      this.datePicker.selectedDates.length > 0 :
+      !!this.getFieldValue('stm-echeance');
+
+    return hasDate ||
+           !!this.getFieldValue('stm-date-debut') ||
+           !!this.getFieldValue('stm-duree-estimee') ||
+           !!this.getFieldValue('stm-duree-reelle') ||
+           this.jalons.length > 0;
+  }
+
+  /**
+   * Vérifie si les champs d'organisation sont remplis
+   */
+  checkOrganizationFields() {
+    return !!this.getFieldValue('stm-meo') ||
+           !!this.getFieldValue('stm-projet') ||
+           this.selectedStrategies.length > 0 ||
+           this.taskLinks.length > 0;
+  }
+
+  /**
+   * Vérifie si les champs avancés sont remplis
+   */
+  checkAdvancedFields() {
+    return !!this.getFieldValue('stm-nature') ||
+           !!this.getFieldValue('stm-genre') ||
+           !!this.getFieldValue('stm-etape') ||
+           !!this.getFieldValue('stm-references');
+  }
+
+  // === Timeline Visual ===
+
+  /**
+   * Met à jour la visualisation de la timeline
+   */
+  updateTimelineVisual() {
+    const startPoint = document.getElementById('stm-timeline-start');
+    const endPoint = document.getElementById('stm-timeline-end');
+    const progress = document.getElementById('stm-timeline-progress');
+
+    if (!startPoint || !endPoint || !progress) return;
+
+    const dateDebut = this.getFieldValue('stm-date-debut');
+    let dateEcheance = null;
+
+    if (this.datePicker) {
+      const dates = this.datePicker.selectedDates;
+      if (dates.length > 0) dateEcheance = dates[0];
+    } else {
+      const val = this.getFieldValue('stm-echeance');
+      if (val) dateEcheance = new Date(val);
+    }
+
+    // Mettre à jour les points
+    startPoint.classList.toggle('has-date', !!dateDebut);
+    endPoint.classList.toggle('has-date', !!dateEcheance);
+
+    // Vérifier si en retard
+    if (dateEcheance) {
+      const now = new Date();
+      endPoint.classList.toggle('overdue', dateEcheance < now);
+    } else {
+      endPoint.classList.remove('overdue');
+    }
+
+    // Calculer la progression si les deux dates sont définies
+    if (dateDebut && dateEcheance) {
+      const start = new Date(dateDebut);
+      const end = dateEcheance;
+      const now = new Date();
+
+      const totalDuration = end - start;
+      const elapsed = now - start;
+
+      if (totalDuration > 0) {
+        const pct = Math.max(0, Math.min(100, (elapsed / totalDuration) * 100));
+        progress.style.width = `${pct}%`;
+      }
+    } else {
+      progress.style.width = '0%';
+    }
+  }
+
+  // === Status Badge Update ===
+
+  /**
+   * Met à jour le badge de statut dans le header
+   */
+  updateStatusBadge() {
+    const badge = document.getElementById('stm-status-badge');
+    const select = document.getElementById('stm-statut');
+
+    if (!badge || !select) return;
+
+    const statut = select.value;
+    const option = select.options[select.selectedIndex];
+    const color = option?.dataset?.color || 'secondary';
+
+    badge.className = `badge bg-${color}`;
+    badge.textContent = statut;
   }
 
   // === Utilitaires ===
