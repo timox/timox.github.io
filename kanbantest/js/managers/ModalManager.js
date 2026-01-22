@@ -1093,7 +1093,7 @@ export class ModalManager {
     // Champs V3
     setFieldValue('stm-nature', task.nature_activite || '');
     setFieldValue('stm-genre', task.genre_action || '');
-    setFieldValue('stm-etape', task.etape_code || '');
+    setFieldValue('stm-etape', task.etape_cycle || '');
     setFieldValue('stm-previsibilite', task.previsibilite || task['previsibilité'] || '');
 
     // Priorité calculée automatiquement

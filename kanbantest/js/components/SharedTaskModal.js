@@ -789,7 +789,7 @@ class SharedTaskModal {
     // Classification V3
     this.setFieldValue('stm-nature', task.nature_activite);
     this.setFieldValue('stm-genre', task.genre_action);
-    this.setFieldValue('stm-etape', task.etape_code);
+    this.setFieldValue('stm-etape', task.etape_cycle);
     this.setFieldValue('stm-previsibilite', task.previsibilite);
 
     // Priority buttons (urgence & impact)
@@ -997,7 +997,7 @@ class SharedTaskModal {
       impact: this.getFieldValue('stm-impact'),
       nature_activite: this.getFieldValue('stm-nature'),
       genre_action: this.getFieldValue('stm-genre'),
-      etape_code: this.getFieldValue('stm-etape'),
+      etape_cycle: this.getFieldValue('stm-etape'),
       previsibilite: this.getFieldValue('stm-previsibilite'),
       references: this.getFieldValue('stm-references')
     };
