@@ -1413,9 +1413,18 @@
 }
 
 .task-panel-content {
-  padding: 1.5rem;
+  padding: 2rem 2.5rem;
   max-height: calc(70vh - 150px);
   overflow-y: auto;
+}
+
+/* Espacement entre les sections */
+.task-panel-content > .mb-4 {
+  margin-bottom: 2rem !important;
+}
+
+.task-panel-content > *:not(:last-child) {
+  margin-bottom: 1.75rem;
 }
 
 /* === CHAMP TITRE PRINCIPAL === */
@@ -1483,7 +1492,7 @@
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  padding: 1rem;
+  padding: 1.25rem 1.5rem;
 }
 
 .priority-label {
@@ -1589,7 +1598,7 @@
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  padding: 1rem;
+  padding: 1.5rem;
 }
 
 .section-title {
@@ -1714,7 +1723,7 @@
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  padding: 1rem;
+  padding: 1.5rem;
 }
 
 .duration-comparison {
@@ -1747,7 +1756,7 @@
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  padding: 1rem;
+  padding: 1.5rem;
 }
 
 .jalons-list {
@@ -1760,7 +1769,7 @@
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  padding: 1rem;
+  padding: 1.5rem;
   border-left: 4px solid #8b5cf6;
 }
 
@@ -1788,7 +1797,7 @@
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  padding: 1rem;
+  padding: 1.5rem;
 }
 
 .strategy-section .accordion-button {
@@ -1850,7 +1859,7 @@
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  padding: 1rem;
+  padding: 1.5rem;
 }
 
 /* === SECTION CLASSIFICATION === */
@@ -1858,7 +1867,7 @@
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  padding: 1rem;
+  padding: 1.5rem;
 }
 
 /* === SECTION RÉFÉRENCES === */
@@ -1866,7 +1875,7 @@
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  padding: 1rem;
+  padding: 1.5rem;
 }
 
 /* === ÉTATS VIDES === */
