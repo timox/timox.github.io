@@ -583,7 +583,7 @@ export class GristManager {
       // Champs V3 taxonomy
       'nature_activite', 'genre_action', 'etape_cycle', 'previsibilite',
       // Champs missions
-      'mission_code', 'mission_nom', 'mission_responsable', 'mission_bureau',
+      'code_mission', 'nom_mission', 'mission_responsable', 'mission_bureau',
       'mission_priorite', 'mission_date_debut', 'mission_date_fin',
       // Champs mises en œuvre
       'mise_en_oeuvre_code', 'mise_en_oeuvre_nom', 'categorie',

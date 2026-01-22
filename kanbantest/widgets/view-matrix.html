@@ -288,10 +288,10 @@
         { name: 'titre', title: 'Titre' },
         { name: 'statut', title: 'Statut' },
         { name: 'nature_activite', title: 'Nature' },
-        { name: 'etape_code', title: 'Etape' },
+        { name: 'etape_cycle', title: 'Etape' },
         { name: 'genre_action', title: 'Genre' },
         { name: 'qui', title: 'Responsable' },
-        { name: 'mission_code', title: 'Mission' }
+        { name: 'code_mission', title: 'Mission' }
       ]
     });
 
@@ -318,7 +318,7 @@
 
       for (const record of records) {
         const nature = record.nature_activite || 'unknown';
-        const etape = record.etape_code || 'unknown';
+        const etape = record.etape_cycle || 'unknown';
         const key = `${nature}|${etape}`;
 
         if (!matrixData[key]) {
@@ -334,7 +334,7 @@
       const completed = records.filter(r => r.statut === 'Termine').length;
       const inProgress = records.filter(r => r.statut === 'En cours').length;
       const uniqueNatures = new Set(records.map(r => r.nature_activite).filter(Boolean)).size;
-      const uniqueEtapes = new Set(records.map(r => r.etape_code).filter(Boolean)).size;
+      const uniqueEtapes = new Set(records.map(r => r.etape_cycle).filter(Boolean)).size;
 
       document.getElementById('stats-row').innerHTML = `
         <div class="stat-card">

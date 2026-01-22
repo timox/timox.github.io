@@ -52,7 +52,7 @@
         <div class="checklist-item d-flex justify-content-between align-items-center">
           <div>
             <strong>Colonnes V3</strong>
-            <div class="text-muted small">nature_activite, genre_action, etape_code, previsibilite</div>
+            <div class="text-muted small">nature_activite, genre_action, etape_cycle, previsibilite</div>
           </div>
           <span class="status-badge status-pending" id="status-columns">En attente</span>
         </div>
@@ -98,7 +98,7 @@
         </div>
         <div class="checklist-item d-flex justify-content-between align-items-center">
           <div>
-            <strong>Colonne mission_code</strong>
+            <strong>Colonne code_mission</strong>
             <div class="text-muted small">Identifiant de la mission (groupe de tâches)</div>
           </div>
           <span class="status-badge status-pending" id="status-mission-col">En attente</span>
@@ -231,13 +231,13 @@
             &nbsp;&nbsp;&nbsp;&nbsp;└── <strong style="color:#f59e0b;">Mission</strong> (groupe de tâches) <span class="text-muted">1:n</span><br>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── <strong style="color:#6366f1;">Ssir_principale_task</strong> (Tâche) <span class="text-muted">1:n</span><br>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── nature_activite <span class="text-muted">(WHY)</span><br>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── etape_code <span class="text-muted">(WHERE)</span><br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── etape_cycle <span class="text-muted">(WHERE)</span><br>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── genre_action <span class="text-muted">(HOW)</span>
           </div>
         </div>
         <p class="text-muted small mb-0">
           <i class="bi bi-info-circle me-1"></i>
-          Les missions regroupent des tâches partageant le même <code>mission_code</code>.
+          Les missions regroupent des tâches partageant le même <code>code_mission</code>.
           Chaque mission appartient à un programme via <code>programme_id</code>.
         </p>
       </div>
@@ -303,8 +303,8 @@
           <li><strong>Page "Kanban"</strong> : Widget Custom → URL = <code>index.html</code></li>
           <li><strong>Page "Graphe Tâches"</strong> : Widget Custom → URL = <code>taches.html</code></li>
           <li><strong>Page "Par Nature"</strong> : Table groupée par <code>nature_activite</code></li>
-          <li><strong>Page "Par Étape"</strong> : Table groupée par <code>etape_code</code></li>
-          <li><strong>Page "Matrice"</strong> : Summary table groupée par <code>nature_activite</code> + <code>etape_code</code></li>
+          <li><strong>Page "Par Étape"</strong> : Table groupée par <code>etape_cycle</code></li>
+          <li><strong>Page "Matrice"</strong> : Summary table groupée par <code>nature_activite</code> + <code>etape_cycle</code></li>
         </ol>
       </div>
     </div>
@@ -356,7 +356,7 @@
           }
         }
       },
-      etape_code: {
+      etape_cycle: {
         type: 'Choice',
         label: 'Étape cycle',
         widgetOptions: {
@@ -439,8 +439,8 @@
     // Colonnes hiérarchiques pour la table des tâches
     const HIERARCHY_COLUMNS = {
       programme_id: { type: 'Ref:Ssir_programmes', label: 'Programme' },
-      mission_code: { type: 'Text', label: 'Code mission' },
-      mission_nom: { type: 'Text', label: 'Nom mission' },
+      code_mission: { type: 'Text', label: 'Code mission' },
+      nom_mission: { type: 'Text', label: 'Nom mission' },
       responsable_id: { type: 'Ref:Ssir_agents', label: 'Responsable' }
     };
 
@@ -1149,7 +1149,7 @@
           tasks.push({
             id: tableData.id[i],
             titre: tableData.titre?.[i] || '',
-            mission_code: tableData.mission_code?.[i] || ''
+            code_mission: tableData.code_mission?.[i] || ''
           });
         }
 

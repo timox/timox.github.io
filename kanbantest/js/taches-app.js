@@ -149,8 +149,8 @@ class TachesApp {
           code: code,
           nom: task.mise_en_oeuvre_nom || code,
           strategie_id: task.strategie_id,
-          mission_code: task.mission_code,
-          mission_nom: task.mission_nom,
+          code_mission: task.code_mission,
+          nom_mission: task.nom_mission,
           taskCount: 0,
           tempsEstime: 0,
           tempsReel: 0

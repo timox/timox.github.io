@@ -89,8 +89,8 @@ const GRIST_SETUP = {
   // Colonnes hiérarchiques à ajouter à la table des tâches
   hierarchyColumns: {
     programme_id: { type: 'Ref:Ssir_programmes', label: 'Programme' },
-    mission_code: { type: 'Text', label: 'Code mission' },
-    mission_nom: { type: 'Text', label: 'Nom mission' }
+    code_mission: { type: 'Text', label: 'Code mission' },
+    nom_mission: { type: 'Text', label: 'Nom mission' }
   },
 
   // Table Programmes

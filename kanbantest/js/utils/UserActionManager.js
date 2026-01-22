@@ -58,8 +58,8 @@ export class UserActionManager {
       
       if (gristData && gristData.id && Array.isArray(gristData.id)) {
         const index = gristData.id.findIndex(id => id === tempRecordId);
-        if (index !== -1 && gristData.Cree_par && gristData.Cree_par[index]) {
-          userName = gristData.Cree_par[index];
+        if (index !== -1 && gristData.cree_par && gristData.cree_par[index]) {
+          userName = gristData.cree_par[index];
           this.logger.debug('Nom utilisateur trouvé:', userName);
         }
       }
