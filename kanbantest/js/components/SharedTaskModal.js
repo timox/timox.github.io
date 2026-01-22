@@ -871,15 +871,12 @@ class SharedTaskModal {
       }
     }
 
-    // Durées
-    this.setFieldValue('stm-duree-estimee', task.duree_estimee || '');
-    this.setFieldValue('stm-duree-reelle', task.duree_reelle || '');
-    if (task.duree_estimee_unite) {
-      this.setFieldValue('stm-duree-estimee-unite', task.duree_estimee_unite);
-    }
-    if (task.duree_reelle_unite) {
-      this.setFieldValue('stm-duree-reelle-unite', task.duree_reelle_unite);
-    }
+    // Durées (en heures)
+    this.setFieldValue('stm-duree-estimee', task.temps_estime_heures || '');
+    this.setFieldValue('stm-duree-reelle', task.temps_reel_heures || '');
+    // Les champs sont en heures dans Grist, on fixe l'unité à 'h'
+    this.setFieldValue('stm-duree-estimee-unite', 'h');
+    this.setFieldValue('stm-duree-reelle-unite', 'h');
     this.updateDureeEcart();
 
     // Liens entre tâches
@@ -1070,16 +1067,14 @@ class SharedTaskModal {
       data.date_debut = Math.floor(new Date(dateDebut).getTime() / 1000);
     }
 
-    // Durées
+    // Durées (en heures pour Grist)
     const dureeEstimee = parseFloat(this.getFieldValue('stm-duree-estimee'));
     const dureeReelle = parseFloat(this.getFieldValue('stm-duree-reelle'));
     if (!isNaN(dureeEstimee)) {
-      data.duree_estimee = dureeEstimee;
-      data.duree_estimee_unite = this.getFieldValue('stm-duree-estimee-unite') || 'j';
+      data.temps_estime_heures = dureeEstimee;
     }
     if (!isNaN(dureeReelle)) {
-      data.duree_reelle = dureeReelle;
-      data.duree_reelle_unite = this.getFieldValue('stm-duree-reelle-unite') || 'j';
+      data.temps_reel_heures = dureeReelle;
     }
 
     // Liens entre tâches
