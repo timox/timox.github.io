@@ -1670,6 +1670,30 @@
   z-index: 1;
 }
 
+/* === DATE PICKER INPUT === */
+.date-picker-group {
+  position: relative;
+}
+
+.date-picker-input {
+  cursor: pointer;
+}
+
+.date-picker-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+/* Style pour flatpickr dans la modale */
+.flatpickr-calendar {
+  z-index: 10060 !important; /* Au-dessus de la modale Bootstrap */
+}
+
+.flatpickr-input {
+  cursor: pointer !important;
+  background: white !important;
+}
+
 /* === AVANCEMENT === */
 .avancement-container {
   display: flex;

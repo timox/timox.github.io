@@ -82,6 +82,7 @@ class SharedTaskModal {
       });
 
       // Fix: Forcer le focus sur le champ titre après l'ouverture de la modale
+      // et réinitialiser le date picker si nécessaire
       this.modal.addEventListener('shown.bs.modal', () => {
         const titreInput = document.getElementById('stm-titre');
         if (titreInput) {
@@ -89,6 +90,11 @@ class SharedTaskModal {
             titreInput.focus();
             titreInput.select();
           }, 100);
+        }
+
+        // Réinitialiser le date picker si flatpickr est maintenant disponible
+        if (!this.datePicker && (window.flatpickr || typeof flatpickr !== 'undefined')) {
+          this.initDatePicker();
         }
       });
 
@@ -1347,43 +1353,77 @@ class SharedTaskModal {
     const input = document.getElementById('stm-echeance');
     const btnPick = document.getElementById('stm-btn-pick-date');
     const btnClear = document.getElementById('stm-btn-clear-date');
-    const statusSpan = document.getElementById('stm-date-status');
 
-    if (!input) return;
+    if (!input) {
+      console.warn('[SharedTaskModal] Date input not found');
+      return;
+    }
 
-    // Utiliser flatpickr si disponible, sinon fallback sur input date natif
-    if (typeof flatpickr !== 'undefined') {
-      this.datePicker = flatpickr(input, {
-        dateFormat: 'd/m/Y',
-        locale: 'fr',
-        allowInput: true,
-        onChange: (dates) => {
-          this.updateDateStatus(dates[0]);
-          this.updateTimelineVisual();
-          this.updateCompletionRing();
+    // Vérifier flatpickr globalement (window.flatpickr)
+    const fp = window.flatpickr || (typeof flatpickr !== 'undefined' ? flatpickr : null);
+
+    if (fp) {
+      try {
+        // Détruire l'instance précédente si elle existe
+        if (this.datePicker) {
+          this.datePicker.destroy();
         }
-      });
+
+        this.datePicker = fp(input, {
+          dateFormat: 'd/m/Y',
+          locale: 'fr',
+          allowInput: true,
+          clickOpens: true,
+          onChange: (dates) => {
+            this.updateDateStatus(dates[0]);
+            this.updateTimelineVisual();
+            this.updateCompletionRing();
+          }
+        });
+        console.log('[SharedTaskModal] Flatpickr initialized');
+      } catch (error) {
+        console.warn('[SharedTaskModal] Flatpickr init error:', error);
+        this.initDatePickerFallback(input);
+      }
     } else {
-      // Fallback: transformer en input date
-      input.type = 'date';
-      input.removeAttribute('readonly');
-      input.addEventListener('change', () => {
-        this.updateDateStatus(input.value ? new Date(input.value) : null);
-      });
+      console.warn('[SharedTaskModal] Flatpickr not available, using fallback');
+      this.initDatePickerFallback(input);
     }
 
     // Bouton pour ouvrir le picker
     if (btnPick) {
-      btnPick.addEventListener('click', () => {
-        if (this.datePicker) {
+      // Supprimer les anciens listeners en clonant le bouton
+      const newBtnPick = btnPick.cloneNode(true);
+      btnPick.parentNode.replaceChild(newBtnPick, btnPick);
+
+      newBtnPick.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (this.datePicker && typeof this.datePicker.open === 'function') {
           this.datePicker.open();
         } else {
-          // showPicker() peut échouer dans un contexte cross-origin (iframe)
-          try {
-            input.showPicker?.();
-          } catch (e) {
-            // Fallback: focus sur l'input pour permettre l'édition manuelle
-            input.focus();
+          // Fallback: utiliser input date natif
+          const dateInput = document.getElementById('stm-echeance');
+          if (dateInput) {
+            if (dateInput.type === 'date') {
+              try {
+                dateInput.showPicker?.();
+              } catch (err) {
+                dateInput.focus();
+                dateInput.click();
+              }
+            } else {
+              // Convertir temporairement en input date
+              const currentValue = dateInput.value;
+              dateInput.type = 'date';
+              dateInput.removeAttribute('readonly');
+              try {
+                dateInput.showPicker?.();
+              } catch (err) {
+                dateInput.focus();
+              }
+            }
           }
         }
       });
@@ -1391,15 +1431,43 @@ class SharedTaskModal {
 
     // Bouton pour effacer la date
     if (btnClear) {
-      btnClear.addEventListener('click', () => {
-        if (this.datePicker) {
+      // Supprimer les anciens listeners en clonant le bouton
+      const newBtnClear = btnClear.cloneNode(true);
+      btnClear.parentNode.replaceChild(newBtnClear, btnClear);
+
+      newBtnClear.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (this.datePicker && typeof this.datePicker.clear === 'function') {
           this.datePicker.clear();
         } else {
-          input.value = '';
+          const dateInput = document.getElementById('stm-echeance');
+          if (dateInput) dateInput.value = '';
         }
         this.updateDateStatus(null);
       });
     }
+  }
+
+  /**
+   * Fallback pour le date picker sans flatpickr
+   */
+  initDatePickerFallback(input) {
+    input.type = 'date';
+    input.removeAttribute('readonly');
+    input.style.cursor = 'pointer';
+    input.addEventListener('change', () => {
+      this.updateDateStatus(input.value ? new Date(input.value) : null);
+      this.updateTimelineVisual();
+      this.updateCompletionRing();
+    });
+    // Permettre l'ouverture au clic
+    input.addEventListener('click', () => {
+      try {
+        input.showPicker?.();
+      } catch (e) {
+        // Ignorer si showPicker n'est pas supporté
+      }
+    });
   }
 
   /**
