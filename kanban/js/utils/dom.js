@@ -135,13 +135,15 @@ export function setSelectedOptions(selectId, valuesWithL) {
 export function getSelectedOptionsAsGristFormat(selectId) {
   const $select = $(`#${selectId}`);
   if (!$select.length) return ['L'];
-  
+
   const selectedValues = $select.val() || [];
-  const validValues = Array.isArray(selectedValues) ? 
-    selectedValues.filter(value => value && value.trim() !== '') : 
-    [selectedValues].filter(value => value && value.trim() !== '');
-  
-  return validValues.length > 0 ? ['L', ...validValues] : ['L'];
+  // Filtrer les valeurs vides ET le marqueur 'L' pour éviter les doublons
+  const validValues = Array.isArray(selectedValues) ?
+    selectedValues.filter(value => value && value.trim() !== '' && value !== 'L') :
+    [selectedValues].filter(value => value && value.trim() !== '' && value !== 'L');
+
+  // Toujours retourner avec le marqueur 'L' en premier
+  return ['L', ...validValues];
 }
 
 /**
