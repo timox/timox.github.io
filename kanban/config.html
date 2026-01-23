@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Configuration & Paramètres</title>
+  <title>Configuration & Parametres</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Bootstrap CSS -->
@@ -76,6 +76,34 @@
     .nav-pills .nav-link.active {
       background-color: #0d6efd;
     }
+
+    .template-tache-item {
+      background: #f8f9fa;
+      border-radius: 4px;
+      padding: 10px;
+      margin-bottom: 8px;
+      border-left: 3px solid #0d6efd;
+    }
+
+    .template-card {
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      overflow: hidden;
+    }
+
+    .template-card-header {
+      background: #f8f9fa;
+      padding: 12px 15px;
+      border-bottom: 1px solid #dee2e6;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .template-card-body {
+      padding: 15px;
+    }
   </style>
 </head>
 <body class="bg-light">
@@ -89,7 +117,7 @@
             <div class="flex-grow-1">
               <h1 class="h3 mb-0 d-flex align-items-center">
                 <i class="bi bi-gear me-2"></i>
-                Configuration & Paramètres
+                Configuration & Parametres
               </h1>
             </div>
             <div class="d-flex gap-2">
@@ -113,7 +141,7 @@
           <div class="col-md-2">
             <div class="stats-card">
               <div class="stats-number" id="stat-personnes">0</div>
-              <div>Personnes</div>
+              <div>Agents</div>
             </div>
           </div>
           <div class="col-md-2">
@@ -137,13 +165,13 @@
           <div class="col-md-2">
             <div class="stats-card">
               <div class="stats-number" id="stat-strategies">0</div>
-              <div>Stratégies</div>
+              <div>Strategies</div>
             </div>
           </div>
           <div class="col-md-2">
             <div class="stats-card">
-              <div class="stats-number" id="stat-projets">0</div>
-              <div>Projets</div>
+              <div class="stats-number" id="stat-templates">0</div>
+              <div>Templates</div>
             </div>
           </div>
         </div>
@@ -161,7 +189,7 @@
                 <i class="bi bi-upload me-1"></i>Importer configuration
               </button>
               <button type="button" class="btn btn-outline-danger btn-sm" id="btn-reset-config">
-                <i class="bi bi-arrow-counterclockwise me-1"></i>Réinitialiser
+                <i class="bi bi-arrow-counterclockwise me-1"></i>Reinitialiser
               </button>
             </div>
           </div>
@@ -173,8 +201,8 @@
       <div class="container-fluid">
         <ul class="nav nav-pills mb-3" id="config-tabs" role="tablist">
           <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="personnes-tab" data-bs-toggle="pill" data-bs-target="#personnes" type="button">
-              <i class="bi bi-people me-1"></i>Personnes
+            <button class="nav-link active" id="agents-tab" data-bs-toggle="pill" data-bs-target="#agents" type="button">
+              <i class="bi bi-people me-1"></i>Agents
             </button>
           </li>
           <li class="nav-item" role="presentation">
@@ -184,12 +212,12 @@
           </li>
           <li class="nav-item" role="presentation">
             <button class="nav-link" id="strategies-tab" data-bs-toggle="pill" data-bs-target="#strategies" type="button">
-              <i class="bi bi-bullseye me-1"></i>Stratégies
+              <i class="bi bi-bullseye me-1"></i>Strategies
             </button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link" id="projets-tab" data-bs-toggle="pill" data-bs-target="#projets" type="button">
-              <i class="bi bi-folder me-1"></i>Projets
+            <button class="nav-link" id="templates-tab" data-bs-toggle="pill" data-bs-target="#templates" type="button">
+              <i class="bi bi-clipboard-check me-1"></i>Templates
             </button>
           </li>
           <li class="nav-item" role="presentation">
@@ -202,27 +230,34 @@
         <!-- Contenu des onglets -->
         <div class="tab-content" id="config-tabs-content">
 
-          <!-- ONGLET: Personnes -->
-          <div class="tab-pane fade show active" id="personnes" role="tabpanel">
+          <!-- ONGLET: Agents -->
+          <div class="tab-pane fade show active" id="agents" role="tabpanel">
             <div class="config-section">
               <h5 class="mb-3">
-                <i class="bi bi-person-plus me-2"></i>Gestion des Personnes
+                <i class="bi bi-person-plus me-2"></i>Gestion des Agents
                 <span class="badge bg-secondary ms-2 badge-count" id="count-personnes">0</span>
               </h5>
 
               <!-- Formulaire ajout -->
               <div class="add-item-form">
                 <div class="row g-2">
-                  <div class="col-md-4">
-                    <input type="text" class="form-control" id="input-personne-nom" placeholder="Nom complet">
-                  </div>
                   <div class="col-md-3">
+                    <input type="text" class="form-control" id="input-personne-prenom" placeholder="Prenom *">
+                  </div>
+                  <div class="col-md-2">
                     <select class="form-select" id="input-personne-bureau">
                       <option value="">Bureau...</option>
                     </select>
                   </div>
+                  <div class="col-md-2">
+                    <select class="form-select" id="input-personne-service">
+                      <option value="">Service...</option>
+                    </select>
+                  </div>
                   <div class="col-md-3">
-                    <input type="text" class="form-control" id="input-personne-service" placeholder="Service (opt.)">
+                    <select class="form-select" id="input-personne-groupement">
+                      <option value="">Groupement...</option>
+                    </select>
                   </div>
                   <div class="col-md-2">
                     <button class="btn btn-primary w-100" id="btn-add-personne">
@@ -234,7 +269,7 @@
 
               <!-- Liste -->
               <div class="item-list" id="list-personnes">
-                <!-- Items injectés par JS -->
+                <!-- Items injectes par JS -->
               </div>
             </div>
           </div>
@@ -244,7 +279,7 @@
             <div class="row">
 
               <!-- Bureaux -->
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <div class="config-section">
                   <h5 class="mb-3">
                     <i class="bi bi-building me-2"></i>Bureaux
@@ -263,7 +298,7 @@
               </div>
 
               <!-- Services -->
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <div class="config-section">
                   <h5 class="mb-3">
                     <i class="bi bi-diagram-2 me-2"></i>Services
@@ -282,7 +317,7 @@
               </div>
 
               <!-- Groupements -->
-              <div class="col-md-12 mt-3">
+              <div class="col-md-4">
                 <div class="config-section">
                   <h5 class="mb-3">
                     <i class="bi bi-collection me-2"></i>Groupements
@@ -303,11 +338,11 @@
             </div>
           </div>
 
-          <!-- ONGLET: Stratégies -->
+          <!-- ONGLET: Strategies -->
           <div class="tab-pane fade" id="strategies" role="tabpanel">
             <div class="config-section">
               <h5 class="mb-3">
-                <i class="bi bi-bullseye me-2"></i>Gestion des Stratégies
+                <i class="bi bi-bullseye me-2"></i>Gestion des Strategies
                 <span class="badge bg-secondary ms-2 badge-count" id="count-strategies">0</span>
               </h5>
 
@@ -315,10 +350,10 @@
               <div class="add-item-form">
                 <div class="row g-2">
                   <div class="col-md-2">
-                    <input type="text" class="form-control" id="input-strategie-code" placeholder="Code">
+                    <input type="text" class="form-control" id="input-strategie-code" placeholder="Code *">
                   </div>
                   <div class="col-md-4">
-                    <input type="text" class="form-control" id="input-strategie-objectif" placeholder="Objectif">
+                    <input type="text" class="form-control" id="input-strategie-objectif" placeholder="Objectif *">
                   </div>
                   <div class="col-md-4">
                     <input type="text" class="form-control" id="input-strategie-sous-objectif" placeholder="Sous-objectif">
@@ -333,32 +368,32 @@
 
               <!-- Liste -->
               <div class="item-list" id="list-strategies">
-                <!-- Items injectés par JS -->
+                <!-- Items injectes par JS -->
               </div>
             </div>
           </div>
 
-          <!-- ONGLET: Projets -->
-          <div class="tab-pane fade" id="projets" role="tabpanel">
+          <!-- ONGLET: Templates de mise en oeuvre -->
+          <div class="tab-pane fade" id="templates" role="tabpanel">
             <div class="config-section">
-              <h5 class="mb-3">
-                <i class="bi bi-folder me-2"></i>Gestion des Projets
-                <span class="badge bg-secondary ms-2 badge-count" id="count-projets">0</span>
-              </h5>
-
-              <!-- Formulaire ajout -->
-              <div class="add-item-form">
-                <div class="input-group">
-                  <input type="text" class="form-control" id="input-projet" placeholder="Nom du projet">
-                  <button class="btn btn-primary" id="btn-add-projet">
-                    <i class="bi bi-plus-circle"></i> Ajouter
-                  </button>
-                </div>
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">
+                  <i class="bi bi-clipboard-check me-2"></i>Templates de mise en oeuvre
+                  <span class="badge bg-secondary ms-2 badge-count" id="count-templates">0</span>
+                </h5>
+                <button class="btn btn-primary btn-sm" id="btn-add-template">
+                  <i class="bi bi-plus-circle me-1"></i>Nouveau template
+                </button>
               </div>
 
-              <!-- Liste -->
-              <div class="item-list" id="list-projets">
-                <!-- Items injectés par JS -->
+              <p class="text-muted mb-3">
+                <i class="bi bi-info-circle me-1"></i>
+                Les templates permettent de definir des series de taches reutilisables lors de la creation de missions.
+              </p>
+
+              <!-- Liste des templates -->
+              <div id="list-templates">
+                <!-- Templates injectes par JS -->
               </div>
             </div>
           </div>
@@ -367,28 +402,28 @@
           <div class="tab-pane fade" id="autres" role="tabpanel">
             <div class="row">
 
-              <!-- Priorités -->
+              <!-- Priorites -->
               <div class="col-md-6">
                 <div class="config-section">
                   <h5 class="mb-3">
-                    <i class="bi bi-exclamation-triangle me-2"></i>Priorités
+                    <i class="bi bi-exclamation-triangle me-2"></i>Priorites
                   </h5>
                   <div class="item-list" id="list-priorites">
                     <div class="item-card">
                       <span><span class="badge bg-danger">Critique</span></span>
-                      <small class="text-muted">Par défaut</small>
+                      <small class="text-muted">Par defaut</small>
                     </div>
                     <div class="item-card">
                       <span><span class="badge bg-warning">Haute</span></span>
-                      <small class="text-muted">Par défaut</small>
+                      <small class="text-muted">Par defaut</small>
                     </div>
                     <div class="item-card">
                       <span><span class="badge bg-primary">Moyenne</span></span>
-                      <small class="text-muted">Par défaut</small>
+                      <small class="text-muted">Par defaut</small>
                     </div>
                     <div class="item-card">
                       <span><span class="badge bg-secondary">Basse</span></span>
-                      <small class="text-muted">Par défaut</small>
+                      <small class="text-muted">Par defaut</small>
                     </div>
                   </div>
                 </div>
@@ -402,20 +437,20 @@
                   </h5>
                   <div class="item-list" id="list-urgences">
                     <div class="item-card">
-                      <span>Immédiate</span>
-                      <small class="text-muted">Par défaut</small>
+                      <span>Immediate</span>
+                      <small class="text-muted">Par defaut</small>
                     </div>
                     <div class="item-card">
                       <span>J+7</span>
-                      <small class="text-muted">Par défaut</small>
+                      <small class="text-muted">Par defaut</small>
                     </div>
                     <div class="item-card">
                       <span>J+30</span>
-                      <small class="text-muted">Par défaut</small>
+                      <small class="text-muted">Par defaut</small>
                     </div>
                     <div class="item-card">
                       <span>J+90</span>
-                      <small class="text-muted">Par défaut</small>
+                      <small class="text-muted">Par defaut</small>
                     </div>
                   </div>
                 </div>
@@ -430,45 +465,147 @@
     </div>
   </div>
 
-  <!-- Template: Item simple -->
-  <template id="template-item-simple">
-    <div class="item-card">
-      <div>
-        <span class="item-name fw-semibold">Nom</span>
-        <span class="item-details text-muted ms-2"></span>
+  <!-- Modal: Edition Agent -->
+  <div class="modal fade" id="modal-edit-personne" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-person me-2"></i>Modifier l'agent</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="edit-personne-id">
+          <div class="mb-3">
+            <label class="form-label">Prenom *</label>
+            <input type="text" class="form-control" id="edit-personne-prenom">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Bureau</label>
+            <select class="form-select" id="edit-personne-bureau">
+              <option value="">Aucun</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Service</label>
+            <select class="form-select" id="edit-personne-service">
+              <option value="">Aucun</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Groupement</label>
+            <select class="form-select" id="edit-personne-groupement">
+              <option value="">Aucun</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="btn-save-personne">Enregistrer</button>
+        </div>
       </div>
-      <button class="btn btn-sm btn-outline-danger btn-delete-item">
-        <i class="bi bi-trash"></i>
-      </button>
     </div>
-  </template>
+  </div>
 
-  <!-- Template: Item personne -->
-  <template id="template-item-personne">
-    <div class="item-card">
-      <div>
-        <span class="personne-nom fw-semibold">Nom</span>
-        <span class="badge bg-info ms-2 personne-bureau">Bureau</span>
-        <span class="text-muted ms-2 personne-service"></span>
+  <!-- Modal: Edition Strategie -->
+  <div class="modal fade" id="modal-edit-strategie" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-bullseye me-2"></i>Modifier la strategie</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="edit-strategie-id">
+          <div class="mb-3">
+            <label class="form-label">Code *</label>
+            <input type="text" class="form-control" id="edit-strategie-code">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Objectif *</label>
+            <input type="text" class="form-control" id="edit-strategie-objectif">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Sous-objectif</label>
+            <input type="text" class="form-control" id="edit-strategie-sous-objectif">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="btn-save-strategie">Enregistrer</button>
+        </div>
       </div>
-      <button class="btn btn-sm btn-outline-danger btn-delete-personne">
-        <i class="bi bi-trash"></i>
-      </button>
     </div>
-  </template>
+  </div>
 
-  <!-- Template: Item stratégie -->
-  <template id="template-item-strategie">
-    <div class="item-card">
-      <div>
-        <span class="badge bg-secondary me-2 strategie-code">CODE</span>
-        <span class="fw-semibold strategie-objectif">Objectif</span>
-        <i class="bi bi-arrow-right mx-2"></i>
-        <span class="text-muted strategie-sous-objectif">Sous-objectif</span>
+  <!-- Modal: Edition Template -->
+  <div class="modal fade" id="modal-edit-template" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-clipboard-check me-2"></i><span id="modal-template-title">Nouveau template</span></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="edit-template-id">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Nom du template *</label>
+              <input type="text" class="form-control" id="edit-template-nom" placeholder="Ex: Deploiement serveur Linux">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Description</label>
+              <textarea class="form-control" id="edit-template-description" rows="2" placeholder="Description du template..."></textarea>
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0"><i class="bi bi-list-task me-2"></i>Taches du template</h6>
+            <button type="button" class="btn btn-outline-primary btn-sm" id="btn-add-template-tache">
+              <i class="bi bi-plus-circle me-1"></i>Ajouter une tache
+            </button>
+          </div>
+
+          <div id="template-taches-container">
+            <!-- Taches injectees par JS -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-primary" id="btn-save-template">Enregistrer le template</button>
+        </div>
       </div>
-      <button class="btn btn-sm btn-outline-danger btn-delete-strategie">
-        <i class="bi bi-trash"></i>
-      </button>
+    </div>
+  </div>
+
+  <!-- Template: Tache dans modal template -->
+  <template id="template-tache-form">
+    <div class="template-tache-item" data-index="">
+      <div class="row g-2">
+        <div class="col-md-6">
+          <input type="text" class="form-control form-control-sm tache-titre" placeholder="Titre de la tache *">
+        </div>
+        <div class="col-md-3">
+          <select class="form-select form-select-sm tache-priorite">
+            <option value="Moyenne">Moyenne</option>
+            <option value="Haute">Haute</option>
+            <option value="Critique">Critique</option>
+            <option value="Basse">Basse</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <input type="number" class="form-control form-control-sm tache-charge" placeholder="Charge (j)" step="0.5" min="0">
+        </div>
+        <div class="col-md-1 text-end">
+          <button type="button" class="btn btn-sm btn-outline-danger btn-remove-tache">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+        <div class="col-12">
+          <input type="text" class="form-control form-control-sm tache-description" placeholder="Description (optionnel)">
+        </div>
+      </div>
     </div>
   </template>
 
