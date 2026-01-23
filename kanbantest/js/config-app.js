@@ -131,6 +131,7 @@ class ConfigApp {
 
     // === TEMPLATES ===
     $('#btn-add-template').on('click', () => this.openEditTemplateModal(null));
+    $('#btn-load-example-templates').on('click', () => this.handleLoadExampleTemplates());
 
     $(document).on('click', '.btn-edit-template', (e) => {
       const id = parseInt($(e.currentTarget).data('id'));
@@ -639,6 +640,33 @@ class ConfigApp {
       this.renderTemplates();
       this.updateStats();
       this.showSuccess('Template supprime');
+    }
+  }
+
+  async handleLoadExampleTemplates() {
+    const existingCount = this.configManager.getTemplates().length;
+    let confirmMsg = 'Charger les templates exemples SI (exploitation) ?';
+    if (existingCount > 0) {
+      confirmMsg += `\n\nVous avez deja ${existingCount} template(s). Les exemples seront ajoutes a la suite.`;
+    }
+
+    if (!confirm(confirmMsg)) return;
+
+    try {
+      const response = await fetch('data/default-templates.json');
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const count = this.configManager.importTemplates(data, false);
+
+      this.renderTemplates();
+      this.updateStats();
+      this.showSuccess(`${count} templates charges avec succes`);
+    } catch (error) {
+      console.error('Erreur chargement templates:', error);
+      this.showError('Erreur lors du chargement des templates exemples');
     }
   }
 
