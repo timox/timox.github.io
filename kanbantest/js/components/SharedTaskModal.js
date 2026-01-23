@@ -35,12 +35,20 @@ class SharedTaskModal {
     this.isLoaded = false;
     this.datePicker = null;
 
-    // Données de référence
+    // Données de référence - SYNCHRONISÉ AVEC constants.js
     this.programmes = [];
-    this.agents = [];
     this.strategies = [];
     this.meos = [];
-    // Bureaux correspondant à la table SSIR_agents
+
+    // Liste des agents - Source fiable (synchronisée avec DEFAULT_RESPONSABLES de constants.js)
+    this.defaultAgents = [
+      'Alex', 'Timothée', 'Isabelle', 'Chloé', 'Paul', 'Théo',
+      'Gaël', 'Thomas', 'Elie', 'Landry', 'Presta', 'Yvon',
+      'Clarisse', 'Hervé', 'Didier'
+    ];
+    this.agents = this.defaultAgents.map(nom => ({ id: nom, nom: nom, bureau: '', fullName: nom }));
+
+    // Bureaux - Source fiable (synchronisée avec DEFAULT_BUREAUX de constants.js)
     this.bureaux = ['Réseaux', 'BDD', 'Exploit', 'Nexsis-RRF', 'Chef SSIR', 'Chef GSSI', 'Chef SIG'];
     this.jalons = [];
     this.selectedStrategies = [];
@@ -247,49 +255,18 @@ class SharedTaskModal {
   }
 
   /**
-   * Charge les agents depuis ConfigManager (personnes définies dans config.html)
+   * Charge les agents - Utilise la liste par défaut (constants.js)
+   * ConfigManager/localStorage peuvent enrichir les données mais pas les remplacer
    */
   async loadAgents() {
-    try {
-      // Essayer de charger depuis ConfigManager (localStorage)
-      const configManager = window._configManagerInstance;
-      if (configManager && typeof configManager.getPersonnes === 'function') {
-        const personnes = configManager.getPersonnes();
-        this.agents = personnes.map(p => ({
-          id: p.id,
-          nom: p.nom,
-          bureau: p.bureau || '',
-          fullName: p.nom // Dans ConfigManager, nom est déjà le nom complet
-        }));
-        console.log('[SharedTaskModal] Loaded', this.agents.length, 'agents from ConfigManager');
-      } else {
-        // Fallback: essayer de charger depuis localStorage directement
-        const stored = localStorage.getItem('kanban_config');
-        if (stored) {
-          const config = JSON.parse(stored);
-          if (config.personnes && Array.isArray(config.personnes)) {
-            this.agents = config.personnes.map(p => ({
-              id: p.id,
-              nom: p.nom,
-              bureau: p.bureau || '',
-              fullName: p.nom
-            }));
-            console.log('[SharedTaskModal] Loaded', this.agents.length, 'agents from localStorage');
-          }
-        }
-      }
+    // Utiliser la liste par défaut définie dans le constructeur (synchronisée avec constants.js)
+    // Ne PAS écraser avec ConfigManager/localStorage qui peut contenir des données incorrectes
+    console.log('[SharedTaskModal] Using default agents list:', this.agents.length, 'agents');
 
-      // Trier par bureau puis par nom
-      this.agents.sort((a, b) => {
-        if (a.bureau !== b.bureau) return (a.bureau || '').localeCompare(b.bureau || '');
-        return (a.fullName || '').localeCompare(b.fullName || '');
-      });
+    // Trier par nom
+    this.agents.sort((a, b) => (a.nom || '').localeCompare(b.nom || '', 'fr'));
 
-      this.populateAgentSelect();
-    } catch (error) {
-      console.warn('[SharedTaskModal] Failed to load agents:', error.message);
-      this.agents = [];
-    }
+    this.populateAgentSelect();
   }
 
   /**
@@ -700,6 +677,12 @@ class SharedTaskModal {
       btnDelete.addEventListener('click', () => this.handleDelete());
     }
 
+    // Bouton Dupliquer
+    const btnDuplicate = document.getElementById('stm-btn-duplicate');
+    if (btnDuplicate) {
+      btnDuplicate.addEventListener('click', () => this.handleDuplicate());
+    }
+
     // Bouton Ajouter liaison
     const btnAddLink = document.getElementById('stm-btn-add-link');
     if (btnAddLink) {
@@ -787,10 +770,14 @@ class SharedTaskModal {
     this.currentTask = task;
     this.populateForm(task);
 
-    // Afficher le bouton supprimer pour les tâches existantes
+    // Afficher les boutons Supprimer et Dupliquer pour les tâches existantes
     const btnDelete = document.getElementById('stm-btn-delete');
     if (btnDelete && this.options.onDelete) {
-      btnDelete.style.display = 'block';
+      btnDelete.style.display = 'inline-block';
+    }
+    const btnDuplicate = document.getElementById('stm-btn-duplicate');
+    if (btnDuplicate) {
+      btnDuplicate.style.display = 'inline-block';
     }
 
     // Mettre à jour le titre
@@ -819,10 +806,14 @@ class SharedTaskModal {
       this.setFieldValue('stm-statut', defaults.statut);
     }
 
-    // Cacher le bouton supprimer
+    // Cacher les boutons Supprimer et Dupliquer pour nouvelle tâche
     const btnDelete = document.getElementById('stm-btn-delete');
     if (btnDelete) {
       btnDelete.style.display = 'none';
+    }
+    const btnDuplicate = document.getElementById('stm-btn-duplicate');
+    if (btnDuplicate) {
+      btnDuplicate.style.display = 'none';
     }
 
     // Mettre à jour le titre
@@ -1197,6 +1188,36 @@ class SharedTaskModal {
     } catch (error) {
       console.error('[SharedTaskModal] Delete error:', error);
       this.showError('Erreur lors de la suppression');
+    }
+  }
+
+  /**
+   * Handler pour la duplication
+   */
+  async handleDuplicate() {
+    if (!this.currentTask) return;
+
+    try {
+      // Collecter les données actuelles du formulaire
+      const taskData = this.getFormData();
+
+      // Modifier pour la duplication
+      taskData.titre = `Copie de ${taskData.titre}`;
+      taskData.statut = 'Backlog'; // Remettre en backlog
+      delete taskData.id; // Supprimer l'ID pour créer une nouvelle tâche
+
+      // Créer la nouvelle tâche
+      if (this.options.onSave) {
+        await this.options.onSave(taskData, true); // true = isNew
+      } else if (this.options.gristManager) {
+        await this.options.gristManager.createRecord(taskData);
+      }
+
+      this.close();
+      console.log('[SharedTaskModal] Task duplicated successfully');
+    } catch (error) {
+      console.error('[SharedTaskModal] Duplicate error:', error);
+      this.showError('Erreur lors de la duplication');
     }
   }
 
