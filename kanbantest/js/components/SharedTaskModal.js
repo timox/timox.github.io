@@ -433,6 +433,14 @@ class SharedTaskModal {
       this.setFieldValue('stm-meo-nom', selectedOption.dataset.meoNom || '');
       this.setFieldValue('stm-strategie', selectedOption.dataset.strategieId || '');
 
+      // Synchroniser avec le navigateur de stratégies
+      const strategieId = selectedOption.dataset.strategieId;
+      if (strategieId) {
+        this.setSelectedStrategies([parseInt(strategieId, 10)]);
+      } else {
+        this.setSelectedStrategies([]);
+      }
+
       // Afficher les infos déduites
       const progDisplay = document.getElementById('stm-programme-display');
       const stratDisplay = document.getElementById('stm-strategie-display');
@@ -448,6 +456,7 @@ class SharedTaskModal {
       this.setFieldValue('stm-meo-code', '');
       this.setFieldValue('stm-meo-nom', '');
       this.setFieldValue('stm-strategie', '');
+      this.setSelectedStrategies([]);
       infoDiv.style.display = 'none';
     }
   }
