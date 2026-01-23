@@ -14,16 +14,16 @@ export class ConfigManager {
     // Clés de stockage
     this.STORAGE_KEY = 'kanban_config';
 
-    // Configuration par défaut
+    // Configuration par defaut
     this.defaultConfig = {
       personnes: [],
-      bureaux: ['Infrastructure', 'Sécurité', 'Support', 'Développement'],
+      bureaux: ['Infrastructure', 'Securite', 'Support', 'Developpement'],
       services: [],
       groupements: [],
       strategies: [],
-      projets: [],
+      templates: [],
       priorites: ['Critique', 'Haute', 'Moyenne', 'Basse'],
-      urgences: ['Immédiate', 'J+7', 'J+30', 'J+90'],
+      urgences: ['Immediate', 'J+7', 'J+30', 'J+90'],
       impacts: ['Critique', 'Important', 'Moyen', 'Faible']
     };
 
@@ -127,11 +127,11 @@ export class ConfigManager {
 
   /**
    * Ajoute une personne
-   * @param {Object} personne - {nom, bureau, service}
+   * @param {Object} personne - {nom, bureau, service, groupement}
    */
   addPersonne(personne) {
     if (!personne.nom || !personne.nom.trim()) {
-      throw new Error('Le nom est obligatoire');
+      throw new Error('Le prenom est obligatoire');
     }
 
     const newPersonne = {
@@ -139,6 +139,7 @@ export class ConfigManager {
       nom: personne.nom.trim(),
       bureau: personne.bureau || '',
       service: personne.service || '',
+      groupement: personne.groupement || '',
       createdAt: new Date().toISOString()
     };
 
@@ -147,6 +148,35 @@ export class ConfigManager {
 
     this.logger.debug('Personne added:', newPersonne.nom);
     return newPersonne;
+  }
+
+  /**
+   * Met a jour une personne
+   * @param {number} id - ID de la personne
+   * @param {Object} data - {nom, bureau, service, groupement}
+   */
+  updatePersonne(id, data) {
+    const index = this.config.personnes.findIndex(p => p.id === id);
+    if (index === -1) {
+      throw new Error('Personne non trouvee');
+    }
+
+    if (data.nom) {
+      this.config.personnes[index].nom = data.nom.trim();
+    }
+    if (data.bureau !== undefined) {
+      this.config.personnes[index].bureau = data.bureau;
+    }
+    if (data.service !== undefined) {
+      this.config.personnes[index].service = data.service;
+    }
+    if (data.groupement !== undefined) {
+      this.config.personnes[index].groupement = data.groupement;
+    }
+
+    this.saveConfig();
+    this.logger.debug('Personne updated:', id);
+    return this.config.personnes[index];
   }
 
   /**
@@ -310,41 +340,100 @@ export class ConfigManager {
     return false;
   }
 
-  // === PROJETS ===
+  /**
+   * Met a jour une strategie
+   * @param {number} id - ID de la strategie
+   * @param {Object} data - {code, objectif, sousObjectif}
+   */
+  updateStrategie(id, data) {
+    const index = this.config.strategies.findIndex(s => s.id === id);
+    if (index === -1) {
+      throw new Error('Strategie non trouvee');
+    }
 
-  getProjets() {
-    return this.config.projets || [];
+    if (data.code) {
+      this.config.strategies[index].code = data.code.trim();
+    }
+    if (data.objectif) {
+      this.config.strategies[index].objectif = data.objectif.trim();
+    }
+    if (data.sousObjectif !== undefined) {
+      this.config.strategies[index].sousObjectif = data.sousObjectif ? data.sousObjectif.trim() : '';
+    }
+
+    this.saveConfig();
+    this.logger.debug('Strategie updated:', id);
+    return this.config.strategies[index];
   }
 
-  addProjet(nom) {
-    if (!nom || !nom.trim()) {
-      throw new Error('Le nom du projet est obligatoire');
+  // === TEMPLATES ===
+
+  getTemplates() {
+    return this.config.templates || [];
+  }
+
+  addTemplate(template) {
+    if (!template.nom || !template.nom.trim()) {
+      throw new Error('Le nom du template est obligatoire');
     }
 
-    const trimmed = nom.trim();
-    if (this.config.projets.includes(trimmed)) {
-      throw new Error('Ce projet existe déjà');
-    }
+    const newTemplate = {
+      id: Date.now(),
+      nom: template.nom.trim(),
+      description: template.description ? template.description.trim() : '',
+      taches: template.taches || [],
+      createdAt: new Date().toISOString()
+    };
 
-    this.config.projets.push(trimmed);
+    if (!this.config.templates) {
+      this.config.templates = [];
+    }
+    this.config.templates.push(newTemplate);
     this.saveConfig();
 
-    this.logger.debug('Projet added:', trimmed);
-    return trimmed;
+    this.logger.debug('Template added:', newTemplate.nom);
+    return newTemplate;
   }
 
-  deleteProjet(nom) {
-    const index = this.config.projets.indexOf(nom);
+  updateTemplate(id, data) {
+    if (!this.config.templates) {
+      this.config.templates = [];
+    }
+    const index = this.config.templates.findIndex(t => t.id === id);
+    if (index === -1) {
+      throw new Error('Template non trouve');
+    }
+
+    if (data.nom) {
+      this.config.templates[index].nom = data.nom.trim();
+    }
+    if (data.description !== undefined) {
+      this.config.templates[index].description = data.description ? data.description.trim() : '';
+    }
+    if (data.taches !== undefined) {
+      this.config.templates[index].taches = data.taches;
+    }
+
+    this.saveConfig();
+    this.logger.debug('Template updated:', id);
+    return this.config.templates[index];
+  }
+
+  deleteTemplate(id) {
+    if (!this.config.templates) {
+      this.config.templates = [];
+    }
+    const index = this.config.templates.findIndex(t => t.id === id);
     if (index !== -1) {
-      this.config.projets.splice(index, 1);
+      const deleted = this.config.templates.splice(index, 1)[0];
       this.saveConfig();
-      this.logger.debug('Projet deleted:', nom);
+      this.logger.debug('Template deleted:', deleted.nom);
       return true;
     }
     return false;
   }
 
-  // === PRIORITÉS, URGENCES, IMPACTS (lecture seule) ===
+  // === PRIORITES, URGENCES, IMPACTS (lecture seule) ===
 
   getPriorites() {
     return this.config.priorites || [];
@@ -402,7 +491,7 @@ export class ConfigManager {
       services: this.config.services.length,
       groupements: this.config.groupements.length,
       strategies: this.config.strategies.length,
-      projets: this.config.projets.length
+      templates: (this.config.templates || []).length
     };
   }
 
