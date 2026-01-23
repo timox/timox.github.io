@@ -77,7 +77,19 @@ class SharedTaskModal {
 
       this.bsModal = new bootstrap.Modal(this.modal, {
         backdrop: 'static',
-        keyboard: true
+        keyboard: true,
+        focus: true
+      });
+
+      // Fix: Forcer le focus sur le champ titre après l'ouverture de la modale
+      this.modal.addEventListener('shown.bs.modal', () => {
+        const titreInput = document.getElementById('stm-titre');
+        if (titreInput) {
+          setTimeout(() => {
+            titreInput.focus();
+            titreInput.select();
+          }, 100);
+        }
       });
 
       this.setupEventListeners();
@@ -507,32 +519,40 @@ class SharedTaskModal {
   }
 
   /**
-   * Peuple les checkboxes de bureaux
+   * Peuple les boutons de bureaux (toggle buttons)
    */
   populateBureauCheckboxes() {
     const container = document.getElementById('stm-bureau-checkboxes');
     if (!container) return;
 
     container.innerHTML = '';
+    container.className = 'toggle-button-group';
+
     this.bureaux.forEach(bureau => {
-      const div = document.createElement('div');
-      div.className = 'form-check form-check-inline';
-      div.innerHTML = `
-        <input class="form-check-input" type="checkbox" id="stm-bureau-${bureau}" value="${bureau}">
-        <label class="form-check-label small" for="stm-bureau-${bureau}">${bureau}</label>
-      `;
-      container.appendChild(div);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'toggle-btn toggle-btn-bureau';
+      btn.dataset.value = bureau;
+      btn.innerHTML = `<i class="bi bi-building me-1"></i>${bureau}`;
+
+      btn.addEventListener('click', () => {
+        btn.classList.toggle('active');
+        this.updateAffectationSummary();
+      });
+
+      container.appendChild(btn);
     });
   }
 
   /**
-   * Peuple les checkboxes de responsables (qui)
+   * Peuple les boutons de responsables (toggle buttons)
    */
   populateQuiCheckboxes() {
     const container = document.getElementById('stm-qui-checkboxes');
     if (!container) return;
 
     container.innerHTML = '';
+    container.className = 'toggle-button-group';
 
     // Grouper par bureau
     const bureaux = [...new Set(this.agents.map(a => a.bureau || 'Autre'))];
@@ -541,56 +561,107 @@ class SharedTaskModal {
       const agentsBureau = this.agents.filter(a => (a.bureau || 'Autre') === bureau);
       if (agentsBureau.length === 0) return;
 
+      // Ajouter un groupe avec le nom du bureau
       const groupDiv = document.createElement('div');
-      groupDiv.className = 'mb-2';
-      groupDiv.innerHTML = `<small class="text-muted fw-bold">${bureau}</small>`;
+      groupDiv.className = 'toggle-button-bureau-group';
+
+      const groupLabel = document.createElement('div');
+      groupLabel.className = 'toggle-group-label';
+      groupLabel.innerHTML = `<i class="bi bi-building-fill me-1"></i>${bureau}`;
+      groupDiv.appendChild(groupLabel);
+
+      const buttonsWrapper = document.createElement('div');
+      buttonsWrapper.className = 'toggle-buttons-wrapper';
 
       agentsBureau.forEach(agent => {
-        const div = document.createElement('div');
-        div.className = 'form-check';
-        div.innerHTML = `
-          <input class="form-check-input" type="checkbox" id="stm-qui-${agent.id}" value="${agent.nom}">
-          <label class="form-check-label small" for="stm-qui-${agent.id}">${agent.nom}</label>
-        `;
-        groupDiv.appendChild(div);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'toggle-btn toggle-btn-person';
+        btn.dataset.value = agent.nom;
+        btn.dataset.bureau = agent.bureau || '';
+        btn.innerHTML = `<i class="bi bi-person me-1"></i>${agent.nom}`;
+
+        btn.addEventListener('click', () => {
+          btn.classList.toggle('active');
+          this.updateAffectationSummary();
+        });
+
+        buttonsWrapper.appendChild(btn);
       });
 
+      groupDiv.appendChild(buttonsWrapper);
       container.appendChild(groupDiv);
     });
   }
 
   /**
-   * Récupère les valeurs des checkboxes bureaux
+   * Récupère les valeurs des boutons bureaux sélectionnés
    */
   getSelectedBureaux() {
-    const checkboxes = document.querySelectorAll('#stm-bureau-checkboxes input:checked');
-    return Array.from(checkboxes).map(cb => cb.value);
+    const buttons = document.querySelectorAll('#stm-bureau-checkboxes .toggle-btn.active');
+    return Array.from(buttons).map(btn => btn.dataset.value);
   }
 
   /**
-   * Récupère les valeurs des checkboxes responsables
+   * Récupère les valeurs des boutons responsables sélectionnés
    */
   getSelectedQui() {
-    const checkboxes = document.querySelectorAll('#stm-qui-checkboxes input:checked');
-    return Array.from(checkboxes).map(cb => cb.value);
+    const buttons = document.querySelectorAll('#stm-qui-checkboxes .toggle-btn.active');
+    return Array.from(buttons).map(btn => btn.dataset.value);
   }
 
   /**
    * Définit les bureaux sélectionnés
    */
   setSelectedBureaux(bureaux) {
-    document.querySelectorAll('#stm-bureau-checkboxes input').forEach(cb => {
-      cb.checked = bureaux.includes(cb.value);
+    document.querySelectorAll('#stm-bureau-checkboxes .toggle-btn').forEach(btn => {
+      btn.classList.toggle('active', bureaux.includes(btn.dataset.value));
     });
+    this.updateAffectationSummary();
   }
 
   /**
    * Définit les responsables sélectionnés
    */
   setSelectedQui(noms) {
-    document.querySelectorAll('#stm-qui-checkboxes input').forEach(cb => {
-      cb.checked = noms.includes(cb.value);
+    document.querySelectorAll('#stm-qui-checkboxes .toggle-btn').forEach(btn => {
+      btn.classList.toggle('active', noms.includes(btn.dataset.value));
     });
+    this.updateAffectationSummary();
+  }
+
+  /**
+   * Met à jour le récapitulatif d'affectation
+   */
+  updateAffectationSummary() {
+    const summary = document.getElementById('stm-affectation-summary');
+    if (!summary) return;
+
+    const selectedQui = this.getSelectedQui();
+    const selectedBureaux = this.getSelectedBureaux();
+
+    if (selectedQui.length === 0 && selectedBureaux.length === 0) {
+      summary.innerHTML = `
+        <div class="summary-card">
+          <i class="bi bi-info-circle text-muted me-2"></i>
+          <span class="text-muted small">Sélectionnez des responsables et/ou bureaux pour les afficher ici</span>
+        </div>
+      `;
+      return;
+    }
+
+    let html = '<div class="summary-badges">';
+
+    selectedQui.forEach(nom => {
+      html += `<span class="summary-badge responsable"><i class="bi bi-person-fill"></i>${nom}</span>`;
+    });
+
+    selectedBureaux.forEach(bureau => {
+      html += `<span class="summary-badge bureau"><i class="bi bi-building-fill"></i>${bureau}</span>`;
+    });
+
+    html += '</div>';
+    summary.innerHTML = html;
   }
 
   /**
@@ -1909,46 +1980,51 @@ class SharedTaskModal {
     updateCounter();
   }
 
-  // === History Sidebar ===
+  // === History Tab ===
 
   /**
-   * Initialise le sidebar d'historique
+   * Initialise l'onglet historique
    */
   initHistorySidebar() {
-    const btnHistory = document.getElementById('stm-btn-history');
-    const sidebar = document.getElementById('stm-history-sidebar');
-    const btnClose = document.getElementById('stm-close-history');
-
-    if (!btnHistory || !sidebar) return;
-
-    btnHistory.addEventListener('click', () => {
-      const isVisible = sidebar.style.display !== 'none';
-      sidebar.style.display = isVisible ? 'none' : 'flex';
-      if (!isVisible) {
+    // Listener pour charger l'historique quand l'onglet est sélectionné
+    const tabHistory = document.getElementById('tab-history');
+    if (tabHistory) {
+      tabHistory.addEventListener('shown.bs.tab', () => {
         this.loadTaskHistory();
-      }
-    });
+      });
+    }
 
-    if (btnClose) {
-      btnClose.addEventListener('click', () => {
-        sidebar.style.display = 'none';
+    // Bouton actualiser
+    const btnRefresh = document.getElementById('stm-btn-refresh-history');
+    if (btnRefresh) {
+      btnRefresh.addEventListener('click', () => {
+        this.loadTaskHistory();
       });
     }
   }
 
   /**
-   * Charge l'historique de la tâche
+   * Charge l'historique de la tâche dans l'onglet
    */
   async loadTaskHistory() {
-    const container = document.getElementById('stm-history-content');
-    if (!container || !this.currentTask) return;
+    const timeline = document.getElementById('stm-history-timeline');
+    const loadingEl = document.getElementById('stm-history-loading');
+    const emptyEl = document.getElementById('stm-history-empty');
 
-    container.innerHTML = `
-      <div class="text-center text-muted py-4">
-        <div class="spinner-border spinner-border-sm"></div>
-        <p class="mt-2 mb-0">Chargement...</p>
-      </div>
-    `;
+    if (!timeline || !this.currentTask) {
+      if (emptyEl) {
+        emptyEl.style.display = 'block';
+        emptyEl.querySelector('p').textContent = 'Ouvrez une tâche pour voir son historique';
+      }
+      return;
+    }
+
+    // Afficher le chargement
+    if (loadingEl) loadingEl.style.display = 'block';
+    if (emptyEl) emptyEl.style.display = 'none';
+
+    // Supprimer les anciennes entrées
+    timeline.querySelectorAll('.history-entry-item').forEach(el => el.remove());
 
     try {
       // Essayer de charger depuis Grist
@@ -1957,56 +2033,156 @@ class SharedTaskModal {
           filters: { tache_id: [this.currentTask.id] }
         });
 
+        if (loadingEl) loadingEl.style.display = 'none';
+
         if (history.id?.length > 0) {
-          let html = '<div class="history-timeline">';
           const count = history.id.length;
 
+          // Calculer les statistiques
+          let modifications = 0;
+          let comments = 0;
+          let statusChanges = 0;
+          let lastUpdate = null;
+
+          for (let i = 0; i < count; i++) {
+            const action = (history.action?.[i] || '').toLowerCase();
+            const timestamp = history.timestamp?.[i];
+
+            if (action.includes('commentaire') || action.includes('comment')) {
+              comments++;
+            } else if (action.includes('statut') || action.includes('status')) {
+              statusChanges++;
+            }
+            modifications++;
+
+            if (timestamp && (!lastUpdate || timestamp > lastUpdate)) {
+              lastUpdate = timestamp;
+            }
+          }
+
+          // Mettre à jour les stats
+          this.updateHistoryStats(modifications, comments, statusChanges, lastUpdate);
+
+          // Créer les entrées (du plus récent au plus ancien)
           for (let i = count - 1; i >= 0; i--) {
             const timestamp = history.timestamp?.[i];
             const action = history.action?.[i] || '';
             const user = history.user?.[i] || 'Système';
             const details = history.details?.[i] || '';
 
-            const dateStr = timestamp ? new Date(timestamp * 1000).toLocaleString('fr-FR') : '-';
-
-            html += `
-              <div class="history-entry py-2 border-bottom">
-                <div class="d-flex justify-content-between align-items-start mb-1">
-                  <span class="badge bg-info">${action}</span>
-                  <small class="text-muted">${dateStr}</small>
-                </div>
-                <div class="small text-muted">${user}</div>
-                ${details ? `<div class="small mt-1">${details}</div>` : ''}
-              </div>
-            `;
+            const entry = this.createHistoryEntry(timestamp, action, user, details);
+            timeline.appendChild(entry);
           }
-
-          html += '</div>';
-          container.innerHTML = html;
         } else {
-          container.innerHTML = `
-            <div class="text-center text-muted py-4">
-              <i class="bi bi-clock-history fs-3"></i>
-              <p class="mt-2 mb-0">Aucun historique disponible</p>
-            </div>
-          `;
+          if (emptyEl) emptyEl.style.display = 'block';
+          this.updateHistoryStats(0, 0, 0, null);
         }
       } else {
-        container.innerHTML = `
-          <div class="text-center text-muted py-4">
-            <i class="bi bi-clock-history fs-3"></i>
-            <p class="mt-2 mb-0">Historique non disponible</p>
-          </div>
-        `;
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (emptyEl) {
+          emptyEl.style.display = 'block';
+          emptyEl.querySelector('p').textContent = 'Historique non disponible';
+        }
+        this.updateHistoryStats(0, 0, 0, null);
       }
     } catch (error) {
       console.warn('[SharedTaskModal] Failed to load history:', error);
-      container.innerHTML = `
-        <div class="text-center text-muted py-4">
-          <i class="bi bi-exclamation-circle fs-3"></i>
-          <p class="mt-2 mb-0">Erreur de chargement</p>
+      if (loadingEl) loadingEl.style.display = 'none';
+      if (emptyEl) {
+        emptyEl.style.display = 'block';
+        emptyEl.querySelector('i').className = 'bi bi-exclamation-circle';
+        emptyEl.querySelector('p').textContent = 'Erreur de chargement de l\'historique';
+      }
+      this.updateHistoryStats(0, 0, 0, null);
+    }
+  }
+
+  /**
+   * Crée une entrée d'historique
+   */
+  createHistoryEntry(timestamp, action, user, details) {
+    const entry = document.createElement('div');
+    entry.className = 'history-entry-item';
+
+    const dateStr = timestamp ? new Date(timestamp * 1000).toLocaleString('fr-FR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }) : '-';
+
+    // Déterminer l'icône et la couleur selon l'action
+    let iconClass = 'bi-pencil';
+    let badgeClass = 'bg-secondary';
+    const actionLower = action.toLowerCase();
+
+    if (actionLower.includes('créé') || actionLower.includes('creation')) {
+      iconClass = 'bi-plus-circle';
+      badgeClass = 'bg-success';
+    } else if (actionLower.includes('statut') || actionLower.includes('status')) {
+      iconClass = 'bi-arrow-repeat';
+      badgeClass = 'bg-primary';
+    } else if (actionLower.includes('commentaire') || actionLower.includes('comment')) {
+      iconClass = 'bi-chat-dots';
+      badgeClass = 'bg-info';
+    } else if (actionLower.includes('affectation') || actionLower.includes('assigné')) {
+      iconClass = 'bi-person-check';
+      badgeClass = 'bg-purple';
+    } else if (actionLower.includes('supprim')) {
+      iconClass = 'bi-trash';
+      badgeClass = 'bg-danger';
+    }
+
+    entry.innerHTML = `
+      <div class="history-entry-icon">
+        <i class="bi ${iconClass}"></i>
+      </div>
+      <div class="history-entry-content">
+        <div class="history-entry-header">
+          <span class="badge ${badgeClass}">${action}</span>
+          <span class="history-entry-time">${dateStr}</span>
         </div>
-      `;
+        <div class="history-entry-user">
+          <i class="bi bi-person-circle me-1"></i>${user}
+        </div>
+        ${details ? `<div class="history-entry-details">${details}</div>` : ''}
+      </div>
+    `;
+
+    return entry;
+  }
+
+  /**
+   * Met à jour les statistiques d'historique
+   */
+  updateHistoryStats(modifications, comments, statusChanges, lastUpdate) {
+    const statModifications = document.getElementById('stm-stat-modifications');
+    const statComments = document.getElementById('stm-stat-comments');
+    const statStatusChanges = document.getElementById('stm-stat-status-changes');
+    const statLastUpdate = document.getElementById('stm-stat-last-update');
+
+    if (statModifications) statModifications.textContent = modifications;
+    if (statComments) statComments.textContent = comments;
+    if (statStatusChanges) statStatusChanges.textContent = statusChanges;
+    if (statLastUpdate) {
+      if (lastUpdate) {
+        const date = new Date(lastUpdate * 1000);
+        const now = new Date();
+        const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 0) {
+          statLastUpdate.textContent = 'Aujourd\'hui';
+        } else if (diffDays === 1) {
+          statLastUpdate.textContent = 'Hier';
+        } else if (diffDays < 7) {
+          statLastUpdate.textContent = `Il y a ${diffDays}j`;
+        } else {
+          statLastUpdate.textContent = date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+        }
+      } else {
+        statLastUpdate.textContent = '-';
+      }
     }
   }
 
