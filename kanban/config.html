@@ -154,9 +154,6 @@
         <div class="card shadow-sm mb-3">
           <div class="card-body">
             <div class="d-flex gap-2 justify-content-end">
-              <button type="button" class="btn btn-outline-info btn-sm" id="btn-extract-schema">
-                <i class="bi bi-diagram-2 me-1"></i>Extraire Schema Grist
-              </button>
               <button type="button" class="btn btn-outline-primary btn-sm" id="btn-export-config">
                 <i class="bi bi-download me-1"></i>Exporter configuration
               </button>
@@ -171,57 +168,6 @@
         </div>
       </div>
       <input type="file" id="file-import" accept=".json" style="display: none;">
-
-      <!-- Modal Schema Grist -->
-      <div class="modal fade" id="schema-modal" tabindex="-1">
-        <div class="modal-dialog modal-xl modal-dialog-scrollable">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title"><i class="bi bi-diagram-2 me-2"></i>Structure des Tables Grist</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-              <div id="schema-loading" class="text-center py-4">
-                <div class="spinner-border text-primary" role="status">
-                  <span class="visually-hidden">Chargement...</span>
-                </div>
-                <p class="mt-2">Extraction de la structure des tables...</p>
-              </div>
-              <div id="schema-content" style="display: none;">
-                <div class="mb-3">
-                  <button class="btn btn-sm btn-outline-secondary me-2" id="btn-copy-schema">
-                    <i class="bi bi-clipboard me-1"></i>Copier JSON
-                  </button>
-                  <button class="btn btn-sm btn-outline-primary" id="btn-download-schema">
-                    <i class="bi bi-download me-1"></i>Telecharger schema.json
-                  </button>
-                </div>
-                <ul class="nav nav-tabs" id="schema-tabs" role="tablist">
-                  <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="tab-visual" data-bs-toggle="tab" data-bs-target="#schema-visual" type="button">Visuel</button>
-                  </li>
-                  <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="tab-json" data-bs-toggle="tab" data-bs-target="#schema-json" type="button">JSON</button>
-                  </li>
-                  <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="tab-markdown" data-bs-toggle="tab" data-bs-target="#schema-markdown" type="button">Markdown</button>
-                  </li>
-                </ul>
-                <div class="tab-content mt-3">
-                  <div class="tab-pane fade show active" id="schema-visual" role="tabpanel"></div>
-                  <div class="tab-pane fade" id="schema-json" role="tabpanel">
-                    <pre class="bg-dark text-light p-3 rounded" style="max-height: 500px; overflow: auto;"><code id="schema-json-code"></code></pre>
-                  </div>
-                  <div class="tab-pane fade" id="schema-markdown" role="tabpanel">
-                    <pre class="bg-light p-3 rounded" style="max-height: 500px; overflow: auto;"><code id="schema-markdown-code"></code></pre>
-                  </div>
-                </div>
-              </div>
-              <div id="schema-error" class="alert alert-danger" style="display: none;"></div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <!-- Navigation par onglets -->
       <div class="container-fluid">
