@@ -463,7 +463,7 @@ export class EventCentralizer {
       if (!isNaN(taskId) && viewManager.kanban.modalManager) {
         const task = viewManager.kanban.currentRecords?.find(r => r.id === taskId);
         if (task) {
-          viewManager.kanban.modalManager.openTaskModal(task);
+          viewManager.kanban.modalManager.open(task);
         }
       }
     }, 'viewMode');
@@ -685,7 +685,7 @@ export class EventCentralizer {
     if (modalManager) {
       if ((e.key === 'n' || e.key === 'N') && !e.ctrlKey && !e.altKey) {
         e.preventDefault();
-        modalManager.openTaskModal();
+        modalManager.openNew();
       }
     }
     
