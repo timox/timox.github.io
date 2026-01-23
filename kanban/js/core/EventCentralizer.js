@@ -83,20 +83,23 @@ export class EventCentralizer {
       viewManager.setViewMode(mode);
     }, 'viewMode');
     
-    // === JALONS ===
-    safeOn('#btn-add-jalon', 'click', (e) => {
+    // === JALONS (mode inline simplifié) ===
+
+    // Ajout de jalon via formulaire inline
+    safeOn('#btn-add-jalon-inline', 'click', (e) => {
       e.preventDefault();
       e.stopPropagation();
 
       const jalonManager = this.managers.get('jalon');
-      if (!jalonManager || typeof jalonManager.openJalonModal !== 'function') {
+      if (!jalonManager || typeof jalonManager.addJalonInline !== 'function') {
         return;
       }
 
-      jalonManager.logger?.debug?.('Bouton ajouter un jalon cliqué via EventCentralizer');
-      jalonManager.openJalonModal();
+      jalonManager.logger?.debug?.('Bouton ajouter un jalon inline cliqué');
+      jalonManager.addJalonInline();
     }, 'jalon');
 
+    // Suppression de jalon
     safeOn('.btn-delete-jalon', 'click', (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -110,7 +113,7 @@ export class EventCentralizer {
         return;
       }
 
-      if (confirm('Êtes-vous sûr de vouloir supprimer ce jalon ?')) {
+      if (confirm('Supprimer ce jalon ?')) {
         try {
           jalonManager.deleteJalon(jalonId);
         } catch (error) {
@@ -119,60 +122,7 @@ export class EventCentralizer {
       }
     }, 'jalon');
 
-    safeOn('.btn-edit-jalon', 'click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      const jalonManager = this.managers.get('jalon');
-      if (!jalonManager || typeof jalonManager.openJalonModal !== 'function') {
-        return;
-      }
-
-      const button = e.currentTarget;
-
-      try {
-        // Rechercher l'ID de jalon de manière robuste
-        let jalonId = button.dataset.jalonId;
-
-        if (!jalonId) {
-          const jalonElement = button.closest('[data-jalon-id]');
-          if (jalonElement) {
-            jalonId = jalonElement.dataset.jalonId;
-          }
-        }
-
-        if (!jalonId) {
-          jalonManager.logger?.error?.('Impossible de trouver l\'ID du jalon à éditer');
-          return;
-        }
-
-        jalonManager.logger?.debug?.('Édition du jalon ID:', jalonId);
-
-        const jalon = jalonManager.jalons.find(j => j.id === jalonId);
-        if (jalon) {
-          jalonManager.openJalonModal(jalon);
-        } else {
-          jalonManager.logger?.error?.('Jalon non trouvé pour édition. ID:', jalonId);
-        }
-      } catch (error) {
-        jalonManager.logger?.error?.('Erreur lors de l\'édition du jalon:', error);
-      }
-    }, 'jalon');
-
-    safeOn('.jalon-type-card', 'click', (e) => {
-      const jalonManager = this.managers.get('jalon');
-      if (!jalonManager || typeof jalonManager.selectJalonType !== 'function') {
-        return;
-      }
-
-      const card = e.currentTarget;
-      const type = card.dataset.type;
-      if (type) {
-        jalonManager.selectJalonType(type);
-      }
-    }, 'jalon');
-
-    // Délégation pour changement de statut des jalons (éléments dynamiques)
+    // Changement de statut des jalons
     safeOn('.jalon-status-select', 'change', (e) => {
       const jalonManager = this.managers.get('jalon');
       if (!jalonManager || typeof jalonManager.updateJalonStatus !== 'function') {
@@ -185,15 +135,6 @@ export class EventCentralizer {
       if (jalonId) {
         jalonManager.updateJalonStatus(jalonId, newStatus);
       }
-    }, 'jalon');
-
-    safeOn('#btn-save-jalon', 'click', (e) => {
-      const jalonManager = this.managers.get('jalon');
-      if (!jalonManager || typeof jalonManager.saveJalon !== 'function') {
-        return;
-      }
-
-      jalonManager.saveJalon();
     }, 'jalon');
 
     // === FILTRES ===
