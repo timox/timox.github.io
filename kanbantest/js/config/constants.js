@@ -153,11 +153,13 @@ export const OPTIONAL_COLUMNS = [
   // Colonnes de prod actives
   'type_tache_id', 'priorite', 'historique_statuts', 'datenow',
   'str_statut', 'str_urgence', 'str_qui', 'str_bureau', 'str_impact',
-  'date_creation', 'date_modif', 'Créé par',
-  // Colonnes temps et liaisons (Dec 2025)
-  'temps_estime_heures', 'temps_reel_heures', 'tache_liens',
+  'date_creation', 'date_modif', 'cree_par',
+  // Colonnes temps (Dec 2025)
+  'temps_estime_heures', 'temps_reel_heures',
   // Colonnes V3 (Kanban) - legacy
-  'previsibilite', 'previsibilité', 'type_tache', 'est_dette_technique',
+  'previsibilite', 'type_tache', 'est_dette_technique',
+  // Colonnes supplémentaires du schéma Grist
+  'UUID', 'avancement', 'responsable',
   // Colonnes V3 (Taxonomie)
   'nature_activite', 'genre_action', 'etape_cycle'
 ];
