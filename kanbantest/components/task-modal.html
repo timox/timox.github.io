@@ -261,10 +261,28 @@
                       <i class="bi bi-flag me-2"></i>Jalons
                       <span class="badge bg-secondary ms-2" id="stm-jalons-count">0</span>
                     </h6>
-                    <button type="button" class="btn btn-sm btn-outline-primary" id="stm-btn-add-jalon">
-                      <i class="bi bi-plus-lg me-1"></i>Ajouter
-                    </button>
                   </div>
+
+                  <!-- Formulaire inline pour ajouter un jalon -->
+                  <div class="jalon-add-form mb-3">
+                    <div class="row g-2 align-items-end">
+                      <div class="col">
+                        <label class="form-label small text-muted mb-1">Titre du jalon</label>
+                        <input type="text" class="form-control form-control-sm" id="stm-jalon-titre" placeholder="Ex: Livraison v1, Recette, MEP...">
+                      </div>
+                      <div class="col-auto" style="width: 160px;">
+                        <label class="form-label small text-muted mb-1">Date</label>
+                        <input type="date" class="form-control form-control-sm" id="stm-jalon-date">
+                      </div>
+                      <div class="col-auto">
+                        <button type="button" class="btn btn-sm btn-primary" id="stm-btn-add-jalon" title="Ajouter le jalon">
+                          <i class="bi bi-plus-lg"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Liste des jalons -->
                   <div class="jalons-list" id="stm-jalons-timeline">
                     <div class="empty-state" id="stm-jalons-empty">
                       <i class="bi bi-calendar-x"></i>
