@@ -4,6 +4,7 @@
 import { GristManager } from './managers/GristManager.js';
 import { initTaskLinksManager, getTaskLinksManager } from './managers/TaskLinksManager.js';
 import { initConfigManager } from './managers/ConfigManager.js';
+import { getUserActionManager } from './utils/UserActionManager.js';
 import {
   TASK_TYPES,
   TASK_TYPE_CATEGORIES,
@@ -212,6 +213,11 @@ class TachesApp {
    */
   async saveTask(taskData) {
     try {
+      // Récupérer les anciennes données pour l'historique
+      const oldData = taskData.id
+        ? this.tasks.find(t => t.id === taskData.id)
+        : null;
+
       // Mise à jour des temps dans le gestionnaire local
       if (taskData.id && this.taskLinksManager) {
         if (taskData.temps_estime !== undefined) {
@@ -223,7 +229,27 @@ class TachesApp {
       }
 
       // Sauvegarder dans Grist
-      await this.gristManager.saveRecord(taskData);
+      const result = await this.gristManager.saveRecord(taskData);
+      const savedTaskId = taskData.id || result?.id;
+
+      // Enregistrer dans l'historique via UserActionManager
+      try {
+        const userActionManager = getUserActionManager();
+        if (userActionManager && savedTaskId) {
+          if (oldData) {
+            // Mise à jour - enregistrer les modifications
+            await userActionManager.updateTaskAction(savedTaskId, oldData, taskData, 'Tâche modifiée');
+            console.log('TachesApp: Historique mis à jour pour tâche', savedTaskId);
+          } else {
+            // Création - enregistrer la création
+            await userActionManager.createTaskAction(savedTaskId, taskData);
+            console.log('TachesApp: Création enregistrée pour tâche', savedTaskId);
+          }
+        }
+      } catch (historyError) {
+        console.warn('TachesApp: Erreur enregistrement historique:', historyError);
+        // Ne pas bloquer la sauvegarde si l'historique échoue
+      }
 
       // Rafraîchir les données
       this.tasks = this.gristManager.currentRecords || [];
