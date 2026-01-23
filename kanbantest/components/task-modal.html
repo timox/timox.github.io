@@ -53,9 +53,21 @@
                 </button>
               </li>
               <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-jalons" data-bs-toggle="tab" data-bs-target="#panel-jalons" type="button" role="tab">
+                  <i class="bi bi-flag me-1"></i>Jalons
+                  <span class="tab-indicator" id="indicator-jalons"></span>
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
                 <button class="nav-link" id="tab-organization" data-bs-toggle="tab" data-bs-target="#panel-organization" type="button" role="tab">
                   <i class="bi bi-diagram-3 me-1"></i>Organisation
                   <span class="tab-indicator" id="indicator-organization"></span>
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-liens" data-bs-toggle="tab" data-bs-target="#panel-liens" type="button" role="tab">
+                  <i class="bi bi-link-45deg me-1"></i>Liens
+                  <span class="tab-indicator" id="indicator-liens"></span>
                 </button>
               </li>
               <li class="nav-item" role="presentation">
@@ -254,49 +266,61 @@
                   <div class="duration-comparison mt-3" id="stm-duree-ecart"></div>
                 </div>
 
-                <!-- Jalons -->
-                <div class="milestones-section">
-                  <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="section-title mb-0">
-                      <i class="bi bi-flag me-2"></i>Jalons
-                      <span class="badge bg-secondary ms-2" id="stm-jalons-count">0</span>
-                    </h6>
-                  </div>
-
-                  <!-- Formulaire inline pour ajouter un jalon -->
-                  <div class="jalon-add-form mb-3">
-                    <div class="row g-2 align-items-end">
-                      <div class="col">
-                        <label class="form-label small text-muted mb-1">Titre du jalon</label>
-                        <input type="text" class="form-control form-control-sm" id="stm-jalon-titre" placeholder="Ex: Livraison v1, Recette, MEP...">
-                      </div>
-                      <div class="col-auto" style="width: 160px;">
-                        <label class="form-label small text-muted mb-1">Date</label>
-                        <input type="date" class="form-control form-control-sm" id="stm-jalon-date">
-                      </div>
-                      <div class="col-auto">
-                        <button type="button" class="btn btn-sm btn-primary" id="stm-btn-add-jalon" title="Ajouter le jalon">
-                          <i class="bi bi-plus-lg"></i>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Liste des jalons -->
-                  <div class="jalons-list" id="stm-jalons-timeline">
-                    <div class="empty-state" id="stm-jalons-empty">
-                      <i class="bi bi-calendar-x"></i>
-                      <p>Aucun jalon défini</p>
-                    </div>
-                  </div>
-                  <input type="hidden" id="stm-jalons" value="[]">
-                </div>
 
               </div>
             </div>
 
             <!-- ═══════════════════════════════════════════════════════════ -->
-            <!-- ONGLET 3: ORGANISATION - MEO, Stratégie -->
+            <!-- ONGLET 3: JALONS - Points de contrôle de la tâche -->
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <div class="tab-pane fade" id="panel-jalons" role="tabpanel" aria-labelledby="tab-jalons">
+              <div class="task-panel-content">
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h6 class="section-title mb-0">
+                    <i class="bi bi-flag me-2"></i>Jalons de la tâche
+                    <span class="badge bg-secondary ms-2" id="stm-jalons-count">0</span>
+                  </h6>
+                </div>
+
+                <p class="form-text small text-muted mb-3">
+                  Les jalons permettent de suivre les étapes clés de la tâche (livrables intermédiaires, validations, etc.)
+                </p>
+
+                <!-- Formulaire inline pour ajouter un jalon -->
+                <div class="jalon-add-form mb-4">
+                  <div class="row g-2 align-items-end">
+                    <div class="col">
+                      <label class="form-label small text-muted mb-1">Titre du jalon</label>
+                      <input type="text" class="form-control" id="stm-jalon-titre" placeholder="Ex: Livraison v1, Recette, MEP...">
+                    </div>
+                    <div class="col-auto" style="width: 180px;">
+                      <label class="form-label small text-muted mb-1">Date cible</label>
+                      <input type="date" class="form-control" id="stm-jalon-date">
+                    </div>
+                    <div class="col-auto">
+                      <button type="button" class="btn btn-primary" id="stm-btn-add-jalon" title="Ajouter le jalon">
+                        <i class="bi bi-plus-lg me-1"></i>Ajouter
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Liste des jalons -->
+                <div class="jalons-list" id="stm-jalons-timeline">
+                  <div class="empty-state" id="stm-jalons-empty">
+                    <i class="bi bi-flag"></i>
+                    <p>Aucun jalon défini</p>
+                    <small class="text-muted">Ajoutez des jalons pour suivre l'avancement de la tâche</small>
+                  </div>
+                </div>
+                <input type="hidden" id="stm-jalons" value="[]">
+
+              </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <!-- ONGLET 4: ORGANISATION - MEO, Stratégie -->
             <!-- ═══════════════════════════════════════════════════════════ -->
             <div class="tab-pane fade" id="panel-organization" role="tabpanel" aria-labelledby="tab-organization">
               <div class="task-panel-content">
@@ -384,71 +408,84 @@
                   <input type="hidden" id="stm-strategie-ids" value="">
                 </div>
 
-                <!-- Liens entre tâches -->
-                <div class="links-section">
-                  <h6 class="section-title">
-                    <i class="bi bi-diagram-2 me-2"></i>Liens avec d'autres tâches
-                    <span class="badge bg-secondary ms-2" id="stm-liens-count">0</span>
-                  </h6>
-
-                  <div id="stm-liens-list" class="task-links-container mb-3">
-                    <div class="task-link-group" id="stm-links-bloque" style="display: none;">
-                      <div class="task-link-header text-danger"><i class="bi bi-exclamation-octagon me-1"></i>Bloque</div>
-                      <div class="task-link-items" data-type="bloque"></div>
-                    </div>
-                    <div class="task-link-group" id="stm-links-bloque-par" style="display: none;">
-                      <div class="task-link-header text-warning"><i class="bi bi-hourglass-split me-1"></i>Bloqué par</div>
-                      <div class="task-link-items" data-type="bloque_par"></div>
-                    </div>
-                    <div class="task-link-group" id="stm-links-lie" style="display: none;">
-                      <div class="task-link-header text-info"><i class="bi bi-link me-1"></i>Lié à</div>
-                      <div class="task-link-items" data-type="lie"></div>
-                    </div>
-                    <div class="task-link-group" id="stm-links-parent" style="display: none;">
-                      <div class="task-link-header text-success"><i class="bi bi-diagram-3 me-1"></i>Parent de</div>
-                      <div class="task-link-items" data-type="parent"></div>
-                    </div>
-                    <div class="task-link-group" id="stm-links-enfant" style="display: none;">
-                      <div class="task-link-header text-primary"><i class="bi bi-arrow-return-right me-1"></i>Sous-tâche de</div>
-                      <div class="task-link-items" data-type="enfant"></div>
-                    </div>
-                    <div id="stm-no-links" class="empty-state small">
-                      <i class="bi bi-link-45deg"></i>
-                      <p>Aucun lien défini</p>
-                    </div>
-                  </div>
-
-                  <div class="task-link-add">
-                    <div class="row g-2 align-items-end">
-                      <div class="col-auto">
-                        <select class="form-select form-select-sm" id="stm-link-type">
-                          <option value="lie">Lié à</option>
-                          <option value="bloque">Bloque</option>
-                          <option value="bloque_par">Bloqué par</option>
-                          <option value="parent">Parent de</option>
-                          <option value="enfant">Sous-tâche de</option>
-                        </select>
-                      </div>
-                      <div class="col">
-                        <select class="form-select form-select-sm" id="stm-link-task">
-                          <option value="">-- Sélectionner --</option>
-                        </select>
-                      </div>
-                      <div class="col-auto">
-                        <button type="button" class="btn btn-sm btn-primary" id="stm-btn-add-link">
-                          <i class="bi bi-plus-lg"></i>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <input type="hidden" id="stm-liens-data" value="[]">
-                </div>
 
               </div>
             </div>
 
             <!-- ═══════════════════════════════════════════════════════════ -->
-            <!-- ONGLET 4: AFFECTATION - Équipes, Responsables, Bureaux -->
+            <!-- ONGLET 5: LIENS - Relations entre tâches -->
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <div class="tab-pane fade" id="panel-liens" role="tabpanel" aria-labelledby="tab-liens">
+              <div class="task-panel-content">
+
+                <h6 class="section-title mb-3">
+                  <i class="bi bi-diagram-2 me-2"></i>Liens avec d'autres tâches
+                  <span class="badge bg-secondary ms-2" id="stm-liens-count">0</span>
+                </h6>
+
+                <p class="form-text small text-muted mb-3">
+                  Définissez les dépendances et relations entre cette tâche et d'autres tâches du projet.
+                </p>
+
+                <div id="stm-liens-list" class="task-links-container mb-4">
+                  <div class="task-link-group" id="stm-links-bloque" style="display: none;">
+                    <div class="task-link-header text-danger"><i class="bi bi-exclamation-octagon me-1"></i>Bloque</div>
+                    <div class="task-link-items" data-type="bloque"></div>
+                  </div>
+                  <div class="task-link-group" id="stm-links-bloque-par" style="display: none;">
+                    <div class="task-link-header text-warning"><i class="bi bi-hourglass-split me-1"></i>Bloqué par</div>
+                    <div class="task-link-items" data-type="bloque_par"></div>
+                  </div>
+                  <div class="task-link-group" id="stm-links-lie" style="display: none;">
+                    <div class="task-link-header text-info"><i class="bi bi-link me-1"></i>Lié à</div>
+                    <div class="task-link-items" data-type="lie"></div>
+                  </div>
+                  <div class="task-link-group" id="stm-links-parent" style="display: none;">
+                    <div class="task-link-header text-success"><i class="bi bi-diagram-3 me-1"></i>Parent de</div>
+                    <div class="task-link-items" data-type="parent"></div>
+                  </div>
+                  <div class="task-link-group" id="stm-links-enfant" style="display: none;">
+                    <div class="task-link-header text-primary"><i class="bi bi-arrow-return-right me-1"></i>Sous-tâche de</div>
+                    <div class="task-link-items" data-type="enfant"></div>
+                  </div>
+                  <div id="stm-no-links" class="empty-state">
+                    <i class="bi bi-link-45deg"></i>
+                    <p>Aucun lien défini</p>
+                    <small class="text-muted">Ajoutez des liens pour établir des relations entre tâches</small>
+                  </div>
+                </div>
+
+                <div class="task-link-add bg-light p-3 rounded">
+                  <label class="form-label small fw-semibold mb-2">Ajouter un lien</label>
+                  <div class="row g-2 align-items-end">
+                    <div class="col-auto">
+                      <select class="form-select" id="stm-link-type">
+                        <option value="lie">Lié à</option>
+                        <option value="bloque">Bloque</option>
+                        <option value="bloque_par">Bloqué par</option>
+                        <option value="parent">Parent de</option>
+                        <option value="enfant">Sous-tâche de</option>
+                      </select>
+                    </div>
+                    <div class="col">
+                      <select class="form-select" id="stm-link-task">
+                        <option value="">-- Sélectionner une tâche --</option>
+                      </select>
+                    </div>
+                    <div class="col-auto">
+                      <button type="button" class="btn btn-primary" id="stm-btn-add-link">
+                        <i class="bi bi-plus-lg me-1"></i>Ajouter
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <input type="hidden" id="stm-liens-data" value="[]">
+
+              </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <!-- ONGLET 6: AFFECTATION - Équipes, Responsables, Bureaux -->
             <!-- ═══════════════════════════════════════════════════════════ -->
             <div class="tab-pane fade" id="panel-affectation" role="tabpanel" aria-labelledby="tab-affectation">
               <div class="task-panel-content">
@@ -565,22 +602,6 @@
                   <div class="references-preview mt-2" id="stm-references-preview"></div>
                 </div>
 
-                <!-- Temps (legacy) -->
-                <div class="time-section mb-4" id="stm-temps-section" style="display: none;">
-                  <h6 class="section-title">
-                    <i class="bi bi-clock me-2"></i>Temps passé (legacy)
-                  </h6>
-                  <div class="row g-3">
-                    <div class="col-md-6">
-                      <label class="form-label small">Temps estimé (h)</label>
-                      <input type="number" class="form-control" id="stm-temps-estime" min="0" step="0.5">
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label small">Temps réel (h)</label>
-                      <input type="number" class="form-control" id="stm-temps-reel" min="0" step="0.5">
-                    </div>
-                  </div>
-                </div>
 
               </div>
             </div>

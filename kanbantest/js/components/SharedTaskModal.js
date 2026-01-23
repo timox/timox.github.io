@@ -552,7 +552,7 @@ class SharedTaskModal {
   }
 
   /**
-   * Peuple les boutons de responsables (toggle buttons)
+   * Peuple les boutons de responsables (toggle buttons) - liste simple sans groupement
    */
   populateQuiCheckboxes() {
     const container = document.getElementById('stm-qui-checkboxes');
@@ -561,43 +561,25 @@ class SharedTaskModal {
     container.innerHTML = '';
     container.className = 'toggle-button-group';
 
-    // Grouper par bureau
-    const bureaux = [...new Set(this.agents.map(a => a.bureau || 'Autre'))];
+    // Trier les agents par nom
+    const sortedAgents = [...this.agents].sort((a, b) =>
+      (a.nom || '').localeCompare(b.nom || '')
+    );
 
-    bureaux.forEach(bureau => {
-      const agentsBureau = this.agents.filter(a => (a.bureau || 'Autre') === bureau);
-      if (agentsBureau.length === 0) return;
+    // Afficher tous les agents sans groupement
+    sortedAgents.forEach(agent => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'toggle-btn toggle-btn-person';
+      btn.dataset.value = agent.nom;
+      btn.innerHTML = `<i class="bi bi-person me-1"></i>${agent.nom}`;
 
-      // Ajouter un groupe avec le nom du bureau
-      const groupDiv = document.createElement('div');
-      groupDiv.className = 'toggle-button-bureau-group';
-
-      const groupLabel = document.createElement('div');
-      groupLabel.className = 'toggle-group-label';
-      groupLabel.innerHTML = `<i class="bi bi-building-fill me-1"></i>${bureau}`;
-      groupDiv.appendChild(groupLabel);
-
-      const buttonsWrapper = document.createElement('div');
-      buttonsWrapper.className = 'toggle-buttons-wrapper';
-
-      agentsBureau.forEach(agent => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'toggle-btn toggle-btn-person';
-        btn.dataset.value = agent.nom;
-        btn.dataset.bureau = agent.bureau || '';
-        btn.innerHTML = `<i class="bi bi-person me-1"></i>${agent.nom}`;
-
-        btn.addEventListener('click', () => {
-          btn.classList.toggle('active');
-          this.updateAffectationSummary();
-        });
-
-        buttonsWrapper.appendChild(btn);
+      btn.addEventListener('click', () => {
+        btn.classList.toggle('active');
+        this.updateAffectationSummary();
       });
 
-      groupDiv.appendChild(buttonsWrapper);
-      container.appendChild(groupDiv);
+      container.appendChild(btn);
     });
   }
 
@@ -2093,6 +2075,7 @@ class SharedTaskModal {
 
   /**
    * Charge l'historique de la tâche dans l'onglet
+   * Parse le champ notes (format JSON: { content: "...", history: [...] })
    */
   async loadTaskHistory() {
     const timeline = document.getElementById('stm-history-timeline');
@@ -2102,7 +2085,8 @@ class SharedTaskModal {
     if (!timeline || !this.currentTask) {
       if (emptyEl) {
         emptyEl.style.display = 'block';
-        emptyEl.querySelector('p').textContent = 'Ouvrez une tâche pour voir son historique';
+        const pEl = emptyEl.querySelector('p');
+        if (pEl) pEl.textContent = 'Ouvrez une tâche pour voir son historique';
       }
       return;
     }
@@ -2115,62 +2099,33 @@ class SharedTaskModal {
     timeline.querySelectorAll('.history-entry-item').forEach(el => el.remove());
 
     try {
-      // Essayer de charger depuis Grist
-      if (typeof grist !== 'undefined' && this.currentTask.id) {
-        const history = await grist.docApi.fetchTable('Ssir_taches_history', {
-          filters: { tache_id: [this.currentTask.id] }
+      // Parser l'historique depuis le champ notes (JSON)
+      const historyEntries = this.parseNotesHistory(this.currentTask);
+
+      if (loadingEl) loadingEl.style.display = 'none';
+
+      if (historyEntries.length > 0) {
+        // Calculer les statistiques
+        let modifications = historyEntries.length;
+        let comments = historyEntries.filter(e => e.action === 'comment').length;
+        let statusChanges = historyEntries.filter(e => e.action === 'status_change').length;
+        let lastUpdate = historyEntries[0]?.timestamp || null;
+
+        // Mettre à jour les stats
+        this.updateHistoryStats(modifications, comments, statusChanges, lastUpdate);
+
+        // Créer les entrées (triées du plus récent au plus ancien)
+        historyEntries.forEach(entry => {
+          const entryEl = this.createHistoryEntry(
+            entry.timestamp,
+            this.getActionLabel(entry.action),
+            entry.user,
+            entry.details || entry.newValue || ''
+          );
+          timeline.appendChild(entryEl);
         });
-
-        if (loadingEl) loadingEl.style.display = 'none';
-
-        if (history.id?.length > 0) {
-          const count = history.id.length;
-
-          // Calculer les statistiques
-          let modifications = 0;
-          let comments = 0;
-          let statusChanges = 0;
-          let lastUpdate = null;
-
-          for (let i = 0; i < count; i++) {
-            const action = (history.action?.[i] || '').toLowerCase();
-            const timestamp = history.timestamp?.[i];
-
-            if (action.includes('commentaire') || action.includes('comment')) {
-              comments++;
-            } else if (action.includes('statut') || action.includes('status')) {
-              statusChanges++;
-            }
-            modifications++;
-
-            if (timestamp && (!lastUpdate || timestamp > lastUpdate)) {
-              lastUpdate = timestamp;
-            }
-          }
-
-          // Mettre à jour les stats
-          this.updateHistoryStats(modifications, comments, statusChanges, lastUpdate);
-
-          // Créer les entrées (du plus récent au plus ancien)
-          for (let i = count - 1; i >= 0; i--) {
-            const timestamp = history.timestamp?.[i];
-            const action = history.action?.[i] || '';
-            const user = history.user?.[i] || 'Système';
-            const details = history.details?.[i] || '';
-
-            const entry = this.createHistoryEntry(timestamp, action, user, details);
-            timeline.appendChild(entry);
-          }
-        } else {
-          if (emptyEl) emptyEl.style.display = 'block';
-          this.updateHistoryStats(0, 0, 0, null);
-        }
       } else {
-        if (loadingEl) loadingEl.style.display = 'none';
-        if (emptyEl) {
-          emptyEl.style.display = 'block';
-          emptyEl.querySelector('p').textContent = 'Historique non disponible';
-        }
+        if (emptyEl) emptyEl.style.display = 'block';
         this.updateHistoryStats(0, 0, 0, null);
       }
     } catch (error) {
@@ -2178,11 +2133,79 @@ class SharedTaskModal {
       if (loadingEl) loadingEl.style.display = 'none';
       if (emptyEl) {
         emptyEl.style.display = 'block';
-        emptyEl.querySelector('i').className = 'bi bi-exclamation-circle';
-        emptyEl.querySelector('p').textContent = 'Erreur de chargement de l\'historique';
+        const iEl = emptyEl.querySelector('i');
+        const pEl = emptyEl.querySelector('p');
+        if (iEl) iEl.className = 'bi bi-exclamation-circle';
+        if (pEl) pEl.textContent = 'Erreur de chargement de l\'historique';
       }
       this.updateHistoryStats(0, 0, 0, null);
     }
+  }
+
+  /**
+   * Parse l'historique depuis le champ notes (JSON)
+   * Format: { content: "...", history: [{ timestamp, user, action, field, oldValue, newValue, details }] }
+   */
+  parseNotesHistory(task) {
+    const entries = [];
+
+    if (!task.notes) {
+      return entries;
+    }
+
+    try {
+      const notesData = typeof task.notes === 'string'
+        ? JSON.parse(task.notes)
+        : task.notes;
+
+      if (notesData && notesData.history && Array.isArray(notesData.history)) {
+        notesData.history.forEach(entry => {
+          // Normaliser le timestamp
+          let timestamp = entry.timestamp;
+          if (typeof timestamp === 'string') {
+            timestamp = new Date(timestamp).getTime();
+          }
+          // Convertir en secondes si en millisecondes
+          if (timestamp > 1e12) {
+            timestamp = Math.floor(timestamp / 1000);
+          }
+
+          entries.push({
+            timestamp: timestamp,
+            user: entry.user || 'Utilisateur',
+            action: entry.action || 'update',
+            field: entry.field || '',
+            oldValue: entry.oldValue || '',
+            newValue: entry.newValue || '',
+            details: entry.details || '',
+            status: entry.status || ''
+          });
+        });
+      }
+    } catch (error) {
+      console.warn('[SharedTaskModal] Error parsing notes JSON:', error);
+    }
+
+    // Trier par date décroissante (plus récent en premier)
+    entries.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+    return entries;
+  }
+
+  /**
+   * Convertit un code d'action en libellé lisible
+   */
+  getActionLabel(action) {
+    const labels = {
+      'comment': 'Commentaire',
+      'status_change': 'Changement de statut',
+      'update': 'Modification',
+      'field_change': 'Modification',
+      'jalons_update': 'Jalons modifiés',
+      'strategies_update': 'Stratégies modifiées',
+      'create': 'Création'
+    };
+    return labels[action] || action || 'Modification';
   }
 
   /**
