@@ -26,9 +26,10 @@ export const STATUS_ACCENTS = {
 };
 
 // === DONNÉES DE BASE ===
+// Bureaux correspondant à la table SSIR_agents
 export const DEFAULT_BUREAUX = [
-  'Exploit', 'Réseau', 'BDD', 'Chef SSIR', 'SIG',
-  'NEXSIS-RRF', 'COMSIC', 'RSSI', 'DPO', 'CGSSI'
+  'Réseaux', 'BDD', 'Exploit', 'Nexsis-RRF',
+  'Chef SSIR', 'Chef GSSI', 'Chef SIG'
 ];
 
 export const DEFAULT_RESPONSABLES = [
@@ -40,20 +41,21 @@ export const DEFAULT_RESPONSABLES = [
 // === MAPPING AGENT → BUREAU (déduit depuis la table SSIR_AGENTS) ===
 // Permet de déterminer automatiquement le bureau à partir du prénom
 export const AGENT_BUREAU_MAP = {
-  // Nexsis-RRF (sous Yvon, chef de groupement)
+  // Nexsis-RRF
   'Didier': 'Nexsis-RRF',
+  'didier': 'Nexsis-RRF',
   'Hervé': 'Nexsis-RRF',
 
-  // Bureau Réseaux (responsable: Alex)
+  // Bureau Réseaux
   'Alex': 'Réseaux',
   'Thomas': 'Réseaux',
 
-  // Bureau BDD (responsable: Isabelle)
+  // Bureau BDD
   'Isabelle': 'BDD',
   'Chloe': 'BDD',
   'Chloé': 'BDD',
 
-  // Bureau Exploit (responsable: Théo)
+  // Bureau Exploit
   'Théo': 'Exploit',
   'Theo': 'Exploit',
   'Gaël': 'Exploit',
@@ -61,19 +63,20 @@ export const AGENT_BUREAU_MAP = {
   'Paul': 'Exploit',
   'Landry': 'Exploit',
 
-  // SIG (chef de service: Clarisse)
-  'Clarisse': 'SIG',
+  // Chef SIG
+  'Clarisse': 'Chef SIG',
 
-  // Autres
-  'Virginie': 'Secrétariat',
+  // Chef SSIR
   'Timothée': 'Chef SSIR',
   'Timothee': 'Chef SSIR',
-  'Yvon': 'Direction'
+
+  // Chef GSSI
+  'Yvon': 'Chef GSSI'
 };
 
-// Hiérarchie organisationnelle GSSI
+// Hiérarchie organisationnelle GSSI (correspondant à la table SSIR_agents)
 export const ORGANISATION_HIERARCHY = {
-  'Direction': {
+  'Chef GSSI': {
     responsable: 'Yvon',
     niveau: 0,
     parent: null
@@ -81,13 +84,13 @@ export const ORGANISATION_HIERARCHY = {
   'Nexsis-RRF': {
     responsable: null,
     niveau: 1,
-    parent: 'Direction',
+    parent: 'Chef GSSI',
     agents: ['Didier', 'Hervé']
   },
   'Chef SSIR': {
     responsable: 'Timothée',
     niveau: 1,
-    parent: 'Direction'
+    parent: 'Chef GSSI'
   },
   'Réseaux': {
     responsable: 'Alex',
@@ -99,7 +102,7 @@ export const ORGANISATION_HIERARCHY = {
     responsable: 'Isabelle',
     niveau: 2,
     parent: 'Chef SSIR',
-    agents: ['Chloe', 'Chloé']
+    agents: ['Chloe']
   },
   'Exploit': {
     responsable: 'Théo',
@@ -107,15 +110,10 @@ export const ORGANISATION_HIERARCHY = {
     parent: 'Chef SSIR',
     agents: ['Gaël', 'Paul', 'Landry']
   },
-  'SIG': {
+  'Chef SIG': {
     responsable: 'Clarisse',
     niveau: 1,
-    parent: 'Direction'
-  },
-  'Secrétariat': {
-    responsable: 'Virginie',
-    niveau: 1,
-    parent: 'Direction'
+    parent: 'Chef GSSI'
   }
 };
 
