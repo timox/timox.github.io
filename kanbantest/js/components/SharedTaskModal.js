@@ -552,7 +552,7 @@ class SharedTaskModal {
   }
 
   /**
-   * Peuple les boutons de responsables (toggle buttons)
+   * Peuple les boutons de responsables (toggle buttons) - liste simple sans groupement
    */
   populateQuiCheckboxes() {
     const container = document.getElementById('stm-qui-checkboxes');
@@ -561,43 +561,25 @@ class SharedTaskModal {
     container.innerHTML = '';
     container.className = 'toggle-button-group';
 
-    // Grouper par bureau
-    const bureaux = [...new Set(this.agents.map(a => a.bureau || 'Autre'))];
+    // Trier les agents par nom
+    const sortedAgents = [...this.agents].sort((a, b) =>
+      (a.nom || '').localeCompare(b.nom || '')
+    );
 
-    bureaux.forEach(bureau => {
-      const agentsBureau = this.agents.filter(a => (a.bureau || 'Autre') === bureau);
-      if (agentsBureau.length === 0) return;
+    // Afficher tous les agents sans groupement
+    sortedAgents.forEach(agent => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'toggle-btn toggle-btn-person';
+      btn.dataset.value = agent.nom;
+      btn.innerHTML = `<i class="bi bi-person me-1"></i>${agent.nom}`;
 
-      // Ajouter un groupe avec le nom du bureau
-      const groupDiv = document.createElement('div');
-      groupDiv.className = 'toggle-button-bureau-group';
-
-      const groupLabel = document.createElement('div');
-      groupLabel.className = 'toggle-group-label';
-      groupLabel.innerHTML = `<i class="bi bi-building-fill me-1"></i>${bureau}`;
-      groupDiv.appendChild(groupLabel);
-
-      const buttonsWrapper = document.createElement('div');
-      buttonsWrapper.className = 'toggle-buttons-wrapper';
-
-      agentsBureau.forEach(agent => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'toggle-btn toggle-btn-person';
-        btn.dataset.value = agent.nom;
-        btn.dataset.bureau = agent.bureau || '';
-        btn.innerHTML = `<i class="bi bi-person me-1"></i>${agent.nom}`;
-
-        btn.addEventListener('click', () => {
-          btn.classList.toggle('active');
-          this.updateAffectationSummary();
-        });
-
-        buttonsWrapper.appendChild(btn);
+      btn.addEventListener('click', () => {
+        btn.classList.toggle('active');
+        this.updateAffectationSummary();
       });
 
-      groupDiv.appendChild(buttonsWrapper);
-      container.appendChild(groupDiv);
+      container.appendChild(btn);
     });
   }
 
@@ -2093,6 +2075,7 @@ class SharedTaskModal {
 
   /**
    * Charge l'historique de la tâche dans l'onglet
+   * Génère un historique basé sur les données disponibles de la tâche
    */
   async loadTaskHistory() {
     const timeline = document.getElementById('stm-history-timeline');
@@ -2102,7 +2085,8 @@ class SharedTaskModal {
     if (!timeline || !this.currentTask) {
       if (emptyEl) {
         emptyEl.style.display = 'block';
-        emptyEl.querySelector('p').textContent = 'Ouvrez une tâche pour voir son historique';
+        const pEl = emptyEl.querySelector('p');
+        if (pEl) pEl.textContent = 'Ouvrez une tâche pour voir son historique';
       }
       return;
     }
@@ -2115,74 +2099,163 @@ class SharedTaskModal {
     timeline.querySelectorAll('.history-entry-item').forEach(el => el.remove());
 
     try {
-      // Essayer de charger depuis Grist
-      if (typeof grist !== 'undefined' && this.currentTask.id) {
-        const history = await grist.docApi.fetchTable('Ssir_taches_history', {
-          filters: { tache_id: [this.currentTask.id] }
+      // Générer l'historique à partir des données de la tâche
+      const historyEntries = this.generateTaskHistory(this.currentTask);
+
+      if (loadingEl) loadingEl.style.display = 'none';
+
+      if (historyEntries.length > 0) {
+        // Calculer les statistiques
+        let modifications = historyEntries.length;
+        let comments = 0;
+        let statusChanges = historyEntries.filter(e => e.action.toLowerCase().includes('statut')).length;
+        let lastUpdate = historyEntries[0]?.timestamp || null;
+
+        // Mettre à jour les stats
+        this.updateHistoryStats(modifications, comments, statusChanges, lastUpdate);
+
+        // Créer les entrées (déjà triées du plus récent au plus ancien)
+        historyEntries.forEach(entry => {
+          const entryEl = this.createHistoryEntry(entry.timestamp, entry.action, entry.user, entry.details);
+          timeline.appendChild(entryEl);
         });
-
-        if (loadingEl) loadingEl.style.display = 'none';
-
-        if (history.id?.length > 0) {
-          const count = history.id.length;
-
-          // Calculer les statistiques
-          let modifications = 0;
-          let comments = 0;
-          let statusChanges = 0;
-          let lastUpdate = null;
-
-          for (let i = 0; i < count; i++) {
-            const action = (history.action?.[i] || '').toLowerCase();
-            const timestamp = history.timestamp?.[i];
-
-            if (action.includes('commentaire') || action.includes('comment')) {
-              comments++;
-            } else if (action.includes('statut') || action.includes('status')) {
-              statusChanges++;
-            }
-            modifications++;
-
-            if (timestamp && (!lastUpdate || timestamp > lastUpdate)) {
-              lastUpdate = timestamp;
-            }
-          }
-
-          // Mettre à jour les stats
-          this.updateHistoryStats(modifications, comments, statusChanges, lastUpdate);
-
-          // Créer les entrées (du plus récent au plus ancien)
-          for (let i = count - 1; i >= 0; i--) {
-            const timestamp = history.timestamp?.[i];
-            const action = history.action?.[i] || '';
-            const user = history.user?.[i] || 'Système';
-            const details = history.details?.[i] || '';
-
-            const entry = this.createHistoryEntry(timestamp, action, user, details);
-            timeline.appendChild(entry);
-          }
-        } else {
-          if (emptyEl) emptyEl.style.display = 'block';
-          this.updateHistoryStats(0, 0, 0, null);
-        }
       } else {
-        if (loadingEl) loadingEl.style.display = 'none';
-        if (emptyEl) {
-          emptyEl.style.display = 'block';
-          emptyEl.querySelector('p').textContent = 'Historique non disponible';
-        }
+        if (emptyEl) emptyEl.style.display = 'block';
         this.updateHistoryStats(0, 0, 0, null);
+      }
+
+      // Essayer de charger un historique complémentaire depuis Grist si disponible
+      if (typeof grist !== 'undefined' && this.currentTask.id) {
+        try {
+          const history = await grist.docApi.fetchTable('Ssir_taches_history', {
+            filters: { tache_id: [this.currentTask.id] }
+          });
+
+          if (history.id?.length > 0) {
+            // Ajouter les entrées de la table d'historique
+            for (let i = history.id.length - 1; i >= 0; i--) {
+              const timestamp = history.timestamp?.[i];
+              const action = history.action?.[i] || '';
+              const user = history.user?.[i] || 'Système';
+              const details = history.details?.[i] || '';
+
+              const entryEl = this.createHistoryEntry(timestamp, action, user, details);
+              timeline.appendChild(entryEl);
+            }
+          }
+        } catch (e) {
+          // Table d'historique non disponible, pas grave - on utilise l'historique généré
+          console.log('[SharedTaskModal] Table Ssir_taches_history non disponible');
+        }
       }
     } catch (error) {
       console.warn('[SharedTaskModal] Failed to load history:', error);
       if (loadingEl) loadingEl.style.display = 'none';
       if (emptyEl) {
         emptyEl.style.display = 'block';
-        emptyEl.querySelector('i').className = 'bi bi-exclamation-circle';
-        emptyEl.querySelector('p').textContent = 'Erreur de chargement de l\'historique';
+        const iEl = emptyEl.querySelector('i');
+        const pEl = emptyEl.querySelector('p');
+        if (iEl) iEl.className = 'bi bi-exclamation-circle';
+        if (pEl) pEl.textContent = 'Erreur de chargement de l\'historique';
       }
       this.updateHistoryStats(0, 0, 0, null);
     }
+  }
+
+  /**
+   * Génère un historique basé sur les données disponibles de la tâche
+   */
+  generateTaskHistory(task) {
+    const entries = [];
+    const now = Math.floor(Date.now() / 1000);
+
+    // Date de création (si disponible via date_debut ou autre)
+    if (task.date_creation || task.created_at) {
+      const timestamp = task.date_creation || task.created_at;
+      entries.push({
+        timestamp: timestamp,
+        action: 'Création',
+        user: task.createur || 'Système',
+        details: `Tâche "${task.titre}" créée`
+      });
+    }
+
+    // Statut actuel
+    if (task.statut) {
+      entries.push({
+        timestamp: task.date_modification || task.updated_at || now,
+        action: 'Statut actuel',
+        user: 'Système',
+        details: `Statut : ${task.statut}`
+      });
+    }
+
+    // Affectation
+    if (task.qui) {
+      entries.push({
+        timestamp: task.date_modification || task.updated_at || now,
+        action: 'Affectation',
+        user: 'Système',
+        details: `Responsable(s) : ${task.qui}`
+      });
+    }
+
+    // Avancement
+    if (task.avancement && task.avancement > 0) {
+      entries.push({
+        timestamp: task.date_modification || task.updated_at || now,
+        action: 'Avancement',
+        user: 'Système',
+        details: `Progression : ${task.avancement}%`
+      });
+    }
+
+    // Jalons
+    if (task.jalons && task.jalons.length > 0) {
+      const doneJalons = task.jalons.filter(j => j.statut === 'done').length;
+      entries.push({
+        timestamp: task.date_modification || task.updated_at || now,
+        action: 'Jalons',
+        user: 'Système',
+        details: `${doneJalons}/${task.jalons.length} jalon(s) complété(s)`
+      });
+    }
+
+    // Date d'échéance
+    if (task.date_echeance) {
+      const dateEcheance = new Date(task.date_echeance * 1000).toLocaleDateString('fr-FR');
+      entries.push({
+        timestamp: task.date_modification || task.updated_at || now,
+        action: 'Échéance définie',
+        user: 'Système',
+        details: `Date butoir : ${dateEcheance}`
+      });
+    }
+
+    // Rattachement MEO
+    if (task.mise_en_oeuvre_code) {
+      entries.push({
+        timestamp: task.date_modification || task.updated_at || now,
+        action: 'Rattachement',
+        user: 'Système',
+        details: `MEO : ${task.mise_en_oeuvre_code} - ${task.mise_en_oeuvre_nom || ''}`
+      });
+    }
+
+    // Si pas d'entrée et pas de date de création, ajouter une entrée générique
+    if (entries.length === 0) {
+      entries.push({
+        timestamp: now,
+        action: 'Information',
+        user: 'Système',
+        details: 'Historique détaillé non disponible pour cette tâche'
+      });
+    }
+
+    // Trier par date décroissante
+    entries.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+    return entries;
   }
 
   /**
