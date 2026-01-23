@@ -1416,6 +1416,11 @@ export class ModalManager {
   }
 
   collectFormData() {
+    // ✅ Synchroniser les checkboxes vers les selects cachés AVANT de collecter les données
+    // Cela garantit que les valeurs des checkboxes sont bien reflétées dans les selects
+    this.syncCheckboxToSelect('popup-bureau-checkboxes', 'popup-bureau');
+    this.syncCheckboxToSelect('popup-qui-checkboxes', 'popup-qui');
+
     const data = {
       titre: getFieldValue('popup-titre').trim(),
       statut: getFieldValue('popup-statut-text'),
@@ -1448,6 +1453,7 @@ export class ModalManager {
     }
 
     this.logger.debug(`Collecting form data: ${data.titre || 'untitled'} (${data.statut})`);
+    this.logger.debug(`Bureaux collectés: ${JSON.stringify(data.bureau)}, Agents collectés: ${JSON.stringify(data.qui)}`);
 
     // CHAMP DESCRIPTION SUPPRIMÉ - Tous les commentaires sont maintenant dans notes.history
     // Le champ de saisie popup-description sert uniquement pour les nouveaux commentaires

@@ -140,8 +140,13 @@ export function setSelectedOptions(selectId, valuesWithL) {
 export function getSelectedOptionsAsGristFormat(selectId) {
   const select = document.getElementById(selectId);
   if (!select) return ['L'];
-  
-  const selectedValues = Array.from(select.selectedOptions).map(option => option.value);
+
+  // Filtrer le marqueur 'L' et les valeurs vides pour éviter les doublons
+  const selectedValues = Array.from(select.selectedOptions)
+    .map(option => option.value)
+    .filter(value => value && value.trim() !== '' && value !== 'L');
+
+  // Toujours retourner avec le marqueur 'L' en premier
   return ['L', ...selectedValues];
 }
 
