@@ -11,6 +11,9 @@
 
   <!-- CSS -->
   <link rel="stylesheet" href="css/kanban-base.css">
+  <link rel="stylesheet" href="css/kanban-modal.css">
+  <!-- Flatpickr pour les dates -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
   <style>
     :root {
@@ -171,15 +174,32 @@
       cursor: pointer;
       transition: all 0.2s;
       font-size: 0.9rem;
+      position: relative;
     }
 
     .task-item:hover {
       background: #f8fafc;
+      border-color: #6366f1;
+    }
+
+    .task-item:hover::after {
+      content: 'Double-clic pour éditer';
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.7rem;
+      color: #6366f1;
+      opacity: 0.7;
     }
 
     .task-item.selected {
       background: #eff6ff;
       border-color: #3b82f6;
+    }
+
+    .task-item.selected:hover::after {
+      display: none;
     }
 
     .task-item .task-title {
@@ -386,6 +406,9 @@
         </div>
       </div>
       <div class="action-bar">
+        <button class="btn btn-sm btn-success" id="btn-add-task" disabled title="Ajouter une tâche à cette MEO">
+          <i class="bi bi-plus-lg me-1"></i>Nouvelle tâche
+        </button>
         <button class="btn btn-sm btn-outline-primary" id="btn-select-all-tasks" disabled>
           <i class="bi bi-check-all me-1"></i>Tout sélectionner
         </button>
@@ -481,12 +504,18 @@
   <!-- Toast Container -->
   <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toast-container"></div>
 
+  <!-- Conteneur pour la modale tâche (chargée dynamiquement) -->
+  <div id="shared-modal-container"></div>
+
   <!-- Grist API -->
   <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
 
   <!-- jQuery & Bootstrap -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Flatpickr pour les dates -->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/fr.js"></script>
 
   <!-- App JS -->
   <script type="module" src="js/missions-app.js"></script>
