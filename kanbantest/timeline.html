@@ -10,6 +10,9 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
 
+  <!-- vis-timeline CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/vis-timeline@7.7.3/styles/vis-timeline-graph2d.min.css" rel="stylesheet">
+
   <!-- CSS personnalisé pour la modale partagée -->
   <link rel="stylesheet" href="css/kanban-modal.css">
 
@@ -135,129 +138,103 @@
       background: #f3f4f6;
     }
 
-    /* Main container */
-    .gantt-container {
-      display: flex;
+    /* Timeline wrapper */
+    .timeline-wrapper {
       height: calc(100vh - 65px);
-      overflow: hidden;
-    }
-
-    /* Left panel - Task list */
-    .gantt-left {
-      width: var(--left-panel-width);
-      min-width: var(--left-panel-width);
-      border-right: 2px solid var(--gantt-border);
+      position: relative;
       background: white;
-      display: flex;
-      flex-direction: column;
     }
 
-    .gantt-left-header {
-      background: var(--gantt-header-bg);
-      border-bottom: 1px solid var(--gantt-border);
-      padding: 10px 12px;
-      font-weight: 600;
-      color: #374151;
-      height: 40px;
+    #timeline-container {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* vis-timeline customization */
+    .vis-timeline {
+      border: none;
+      font-family: inherit;
+    }
+
+    .vis-item {
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: white;
+      border: none;
+    }
+
+    .vis-item.vis-selected {
+      box-shadow: 0 0 0 2px #3b82f6;
+    }
+
+    .vis-item .vis-item-content {
+      padding: 4px 8px;
+    }
+
+    .vis-label .timeline-group-content {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      padding: 8px 12px;
     }
 
-    .gantt-left-body {
-      flex: 1;
-      overflow-y: auto;
-      overflow-x: hidden;
+    .vis-label .group-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      margin-right: 8px;
     }
 
-    .task-row {
-      display: flex;
-      align-items: center;
-      height: var(--row-height);
-      border-bottom: 1px solid var(--gantt-border);
-      padding: 0 8px;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-
-    .task-row:hover {
-      background: var(--gantt-row-hover);
-    }
-
-    .task-drag-handle {
-      color: #9ca3af;
-      cursor: grab;
-      padding: 4px;
-      margin-right: 4px;
-    }
-
-    .task-color-bar {
-      width: 4px;
-      height: 36px;
-      border-radius: 2px;
-      margin-right: 10px;
-      flex-shrink: 0;
-    }
-
-    .task-info {
-      flex: 1;
-      min-width: 0;
-      padding-right: 8px;
-    }
-
-    .task-name {
-      font-size: 0.9rem;
+    .vis-label .group-label {
       font-weight: 500;
       color: #374151;
+    }
+
+    .timeline-item-content {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .timeline-item-content .item-title {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    .task-dates {
+    .timeline-item-content .item-progress {
       font-size: 0.75rem;
-      color: #9ca3af;
-      margin-top: 2px;
+      opacity: 0.9;
     }
 
-    .task-progress {
-      font-size: 0.8rem;
-      font-weight: 500;
-      color: #6b7280;
-      min-width: 40px;
-      text-align: right;
-    }
-
-    /* Right panel - Timeline */
-    .gantt-right {
-      flex: 1;
-      overflow: hidden;
+    /* Loading overlay */
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.9);
       display: flex;
-      flex-direction: column;
-      background: white;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
     }
 
-    .gantt-right-header {
-      background: var(--gantt-header-bg);
-      border-bottom: 1px solid var(--gantt-border);
+    .loading-spinner {
+      width: 40px;
       height: 40px;
-      overflow: hidden;
-      position: relative;
+      border: 3px solid #e5e7eb;
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
     }
 
-    .gantt-right-body {
-      flex: 1;
-      overflow: auto;
-      position: relative;
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
 
-    .timeline-header {
-      display: flex;
-      height: 40px;
-      position: relative;
-    }
-
-    .timeline-day {
+    /* Context menu - kept */
+    .timeline-day-obsolete {
       flex-shrink: 0;
       text-align: center;
       border-right: 1px solid var(--gantt-border);
@@ -513,31 +490,12 @@
     </div>
   </div>
 
-  <!-- Main Gantt container -->
-  <div class="gantt-container">
-    <!-- Left panel - Task list -->
-    <div class="gantt-left">
-      <div class="gantt-left-header">
-        <span>Tâches</span>
-        <span class="badge bg-primary" id="task-count">0</span>
-      </div>
-      <div class="gantt-left-body" id="task-list">
-        <!-- Tasks will be rendered here -->
-      </div>
+  <!-- Main Timeline container (vis-timeline) -->
+  <div class="timeline-wrapper">
+    <div class="loading-overlay" id="loading">
+      <div class="loading-spinner"></div>
     </div>
-
-    <!-- Right panel - Timeline -->
-    <div class="gantt-right">
-      <div class="gantt-right-header" id="timeline-header">
-        <!-- Day headers will be rendered here -->
-      </div>
-      <div class="gantt-right-body" id="timeline-body">
-        <div class="loading-overlay" id="loading">
-          <div class="loading-spinner"></div>
-        </div>
-        <!-- Timeline rows will be rendered here -->
-      </div>
-    </div>
+    <div id="timeline-container"></div>
   </div>
 
   <!-- Context Menu -->
@@ -560,6 +518,8 @@
   <!-- Scripts -->
   <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- vis-timeline JS -->
+  <script src="https://cdn.jsdelivr.net/npm/vis-timeline@7.7.3/standalone/umd/vis-timeline-graph2d.min.js"></script>
 
   <!-- Composant modale partagée -->
   <script src="js/components/SharedTaskModal.js"></script>
