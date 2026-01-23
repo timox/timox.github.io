@@ -100,7 +100,7 @@ function setupEventListeners() {
   });
 
   // Bouton ajouter MEO
-  $('#btn-add-meo').on('click', openMeoModal);
+  $('#btn-add-meo').on('click', () => openMeoModal(false));
 
   // Bouton sauvegarder MEO
   $('#btn-save-meo').on('click', saveMeo);
@@ -488,7 +488,7 @@ function renderMeoList() {
       </div>
     `);
     // Event listener pour le bouton dans l'empty state
-    $('#btn-add-meo-empty').on('click', openMeoModal);
+    $('#btn-add-meo-empty').on('click', () => openMeoModal(false));
     return;
   }
 
