@@ -1520,20 +1520,39 @@ class SharedTaskModal {
   }
 
   /**
-   * Ajoute un nouveau jalon
+   * Ajoute un nouveau jalon depuis les champs inline
    */
   addJalon() {
-    const titre = prompt('Titre du jalon:');
-    if (!titre) return;
+    const titreInput = document.getElementById('stm-jalon-titre');
+    const dateInput = document.getElementById('stm-jalon-date');
 
-    const date = prompt('Date (JJ/MM/AAAA):');
+    if (!titreInput) return;
+
+    const titre = titreInput.value.trim();
+    if (!titre) {
+      titreInput.classList.add('is-invalid');
+      titreInput.focus();
+      return;
+    }
+
+    // Formater la date si présente
+    let dateFormatted = '';
+    if (dateInput && dateInput.value) {
+      const date = new Date(dateInput.value);
+      dateFormatted = date.toLocaleDateString('fr-FR');
+    }
 
     this.jalons.push({
       id: Date.now(),
       titre: titre,
-      date: date || '',
+      date: dateFormatted,
       statut: 'pending'
     });
+
+    // Réinitialiser les champs
+    titreInput.value = '';
+    titreInput.classList.remove('is-invalid');
+    if (dateInput) dateInput.value = '';
 
     this.renderJalons();
   }
