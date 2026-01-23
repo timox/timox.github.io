@@ -54,7 +54,7 @@ export const OPTIONAL_COLUMNS = [
   // Colonnes de prod actives
   'type_tache_id', 'priorite', 'historique_statuts', 'datenow',
   'str_statut', 'str_urgence', 'str_qui', 'str_bureau', 'str_impact',
-  'date_creation', 'date_modif', 'Créé par'
+  'date_creation', 'date_modif', 'cree_par'
 ];
 
 // === CONSTANTES DE L'INTERFACE ===
