@@ -1732,9 +1732,9 @@ export class HistoryManager {
     
     // PRIORITÉ 3: Autres champs dans currentTaskHistory
     if (!taskId && this.currentTaskHistory) {
-      taskId = this.currentTaskHistory.id_task || this.currentTaskHistory.taskId;
+      taskId = this.currentTaskHistory.taskId;
       if (taskId) {
-        source = 'currentTaskHistory.id_task/taskId';
+        source = 'currentTaskHistory.taskId';
         this.logger.warn('⚠️ Utilisation champ alternatif dans currentTaskHistory');
       }
     }
