@@ -611,20 +611,29 @@ export class GristManager {
       gristData.qui = Array.isArray(recordData.qui) ? recordData.qui : ['L'];
     }
     
-    // 🔧 CORRECTION: Traiter strategie_id selon le schema Grist (Reference)
-    if (recordData.strategie_id) {
-      // Si c'est déjà au format Grist ["L", ID], conserver tel quel
-      if (Array.isArray(recordData.strategie_id) && recordData.strategie_id.length === 2 && recordData.strategie_id[0] === 'L') {
+    // 🔧 CORRECTION: Traiter strategie_id selon le schema Grist (ReferenceList)
+    if (recordData.strategie_id !== undefined) {
+      // Si c'est déjà au format Grist ["L", id1, id2, ...], conserver tel quel
+      if (Array.isArray(recordData.strategie_id) && recordData.strategie_id.length >= 1 && recordData.strategie_id[0] === 'L') {
         gristData.strategie_id = recordData.strategie_id;
-      } 
-      // Si c'est un ID simple, convertir au format Grist
-      else if (typeof recordData.strategie_id === 'number' || typeof recordData.strategie_id === 'string') {
+      }
+      // Si c'est un ID simple, convertir au format Grist ReferenceList
+      else if (typeof recordData.strategie_id === 'number') {
+        gristData.strategie_id = ['L', recordData.strategie_id];
+      }
+      // Si c'est une string numérique, convertir
+      else if (typeof recordData.strategie_id === 'string' && /^\d+$/.test(recordData.strategie_id)) {
         gristData.strategie_id = ['L', parseInt(recordData.strategie_id, 10)];
       }
-      // Si c'est null/undefined, laisser null
+      // Si c'est null ou liste vide, mettre une ReferenceList vide
       else {
-        gristData.strategie_id = null;
+        gristData.strategie_id = ['L'];
       }
+    }
+
+    // Traiter strategie_ids (tableau d'IDs) pour mise à jour de strategie_id
+    if (recordData.strategie_ids && Array.isArray(recordData.strategie_ids) && recordData.strategie_ids.length > 0) {
+      gristData.strategie_id = ['L', ...recordData.strategie_ids];
     }
     
     // Traiter les dates
