@@ -16,6 +16,54 @@
  *   modal.open(task);       // Ouvrir pour éditer
  *   modal.openNew();        // Ouvrir pour créer
  */
+
+/**
+ * Extrait le premier ID depuis une référence Grist (Reference ou ReferenceList)
+ * @param {any} value - Valeur au format Grist ["L", id, ...] ou nombre direct
+ * @returns {number|null} Le premier ID extrait ou null
+ */
+function extractGristRefId(value) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  // Format Grist ReferenceList ["L", id1, id2, ...] ou Reference ["L", id]
+  if (Array.isArray(value) && value.length >= 2 && value[0] === 'L') {
+    return value[1];
+  }
+  // Nombre direct
+  if (typeof value === 'number') {
+    return value;
+  }
+  // String numérique
+  if (typeof value === 'string' && /^\d+$/.test(value)) {
+    return parseInt(value, 10);
+  }
+  return null;
+}
+
+/**
+ * Extrait tous les IDs depuis une référence multiple Grist (ReferenceList)
+ * @param {any} value - Valeur au format Grist ["L", id1, id2, ...] ou nombre direct
+ * @returns {number[]} Tableau des IDs extraits
+ */
+function extractGristRefIds(value) {
+  if (value === null || value === undefined) {
+    return [];
+  }
+  // Format Grist ReferenceList ["L", id1, id2, ...]
+  if (Array.isArray(value) && value.length >= 1 && value[0] === 'L') {
+    return value.slice(1).filter(id => typeof id === 'number');
+  }
+  // Nombre direct
+  if (typeof value === 'number') {
+    return [value];
+  }
+  // String numérique
+  if (typeof value === 'string' && /^\d+$/.test(value)) {
+    return [parseInt(value, 10)];
+  }
+  return [];
+}
 class SharedTaskModal {
   constructor(options = {}) {
     this.options = {
@@ -306,7 +354,8 @@ class SharedTaskModal {
       const count = data.id?.length || 0;
       for (let i = 0; i < count; i++) {
         const meoCode = data.mise_en_oeuvre_code?.[i];
-        const strategieId = data.strategie_id?.[i];
+        // Extraire l'ID depuis le format Grist ["L", id] si nécessaire
+        const strategieId = extractGristRefId(data.strategie_id?.[i]);
 
         if (meoCode && strategieId && !meoMap.has(meoCode)) {
           meoMap.set(meoCode, {
@@ -862,8 +911,11 @@ class SharedTaskModal {
     // Rattachement hiérarchique via MEO
     this.setFieldValue('stm-meo-code', task.mise_en_oeuvre_code || '');
     this.setFieldValue('stm-meo-nom', task.mise_en_oeuvre_nom || '');
-    this.setFieldValue('stm-strategie', task.strategie_id || '');
-    this.setFieldValue('stm-programme', task.programme_id || '');
+    // Extraire l'ID depuis le format Grist ["L", id] si nécessaire
+    const strategieId = extractGristRefId(task.strategie_id);
+    this.setFieldValue('stm-strategie', strategieId || '');
+    const programmeId = extractGristRefId(task.programme_id);
+    this.setFieldValue('stm-programme', programmeId || '');
 
     // Sélectionner la MEO dans le dropdown
     const meoSelect = document.getElementById('stm-meo');
@@ -944,12 +996,14 @@ class SharedTaskModal {
     this.populateLinkTaskSelect();
     this.renderTaskLinks();
 
-    // Stratégies multiples
-    if (task.strategie_ids) {
+    // Stratégies multiples - strategie_id est une ReferenceList ["L", id1, id2, ...]
+    const strategieIds = extractGristRefIds(task.strategie_id);
+    if (strategieIds.length > 0) {
+      this.setSelectedStrategies(strategieIds);
+    } else if (task.strategie_ids) {
+      // Fallback sur strategie_ids si présent
       const ids = Array.isArray(task.strategie_ids) ? task.strategie_ids : task.strategie_ids.split(',').map(Number);
       this.setSelectedStrategies(ids);
-    } else if (task.strategie_id) {
-      this.setSelectedStrategies([task.strategie_id]);
     } else {
       this.setSelectedStrategies([]);
     }
@@ -1069,17 +1123,21 @@ class SharedTaskModal {
     data.mise_en_oeuvre_code = this.getFieldValue('stm-meo-code');
     data.mise_en_oeuvre_nom = this.getFieldValue('stm-meo-nom');
 
-    const strategieIdStr = this.getFieldValue('stm-strategie');
-    if (strategieIdStr) {
-      data.strategie_id = parseInt(strategieIdStr, 10);
-      data.est_classifiee = true;
-    }
-
-    // Stratégies multiples
+    // Stratégies multiples (ReferenceList dans Grist)
     if (this.selectedStrategies.length > 0) {
+      // Envoyer le tableau d'IDs pour que GristManager crée la ReferenceList
       data.strategie_ids = this.selectedStrategies.map(s => s.id);
-      data.strategie_id = this.selectedStrategies[0].id; // Première pour compatibilité
       data.est_classifiee = true;
+    } else {
+      // Si aucune stratégie sélectionnée, vérifier le champ caché (fallback)
+      const strategieIdStr = this.getFieldValue('stm-strategie');
+      if (strategieIdStr) {
+        data.strategie_ids = [parseInt(strategieIdStr, 10)];
+        data.est_classifiee = true;
+      } else {
+        // Liste vide - GristManager convertira en ["L"]
+        data.strategie_id = null;
+      }
     }
 
     const programmeIdStr = this.getFieldValue('stm-programme');

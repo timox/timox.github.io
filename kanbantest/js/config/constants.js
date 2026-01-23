@@ -143,13 +143,13 @@ export const TABLE_ID = "Ssir_principale_task";
 
 // === COLONNES REQUISES ET OPTIONNELLES ===
 export const REQUIRED_COLUMNS = [
-  'id', 'id_task', 'titre', 'description', 'statut', 'bureau', 'qui', 'urgence', 'impact',
+  'id', 'titre', 'description', 'statut', 'bureau', 'qui', 'urgence', 'impact',
   'projet', 'strategie_id', 'notes', 'date_derniere_maj', 'statut_precedent'
-  // Note: reference et jalons sont maintenant dans OPTIONAL_COLUMNS (comme en prod)
+  // Note: reference, jalons et id_task sont maintenant dans OPTIONAL_COLUMNS
 ];
 
 export const OPTIONAL_COLUMNS = [
-  'date_debut', 'date_echeance', 'jalons', 'reference',
+  'id_task', 'date_debut', 'date_echeance', 'jalons', 'reference',
   // Colonnes de prod actives
   'type_tache_id', 'priorite', 'historique_statuts', 'datenow',
   'str_statut', 'str_urgence', 'str_qui', 'str_bureau', 'str_impact',
