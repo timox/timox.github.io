@@ -253,6 +253,13 @@
       border-radius: 3px;
     }
 
+    .legend-color.legend-border {
+      background: #f3f4f6;
+      border: 3px solid;
+      width: 14px;
+      height: 14px;
+    }
+
     /* === GRAPH SEARCH HIGHLIGHT === */
     .graph-search-highlight {
       box-shadow: 0 0 0 3px var(--highlight-color, #ff6b6b);
@@ -430,9 +437,15 @@
           <button class="btn btn-outline-primary btn-sm" id="btn-toggle-physics" title="Activer/désactiver physique">
             <i class="bi bi-snow3"></i>
           </button>
-          <button class="btn btn-outline-primary btn-sm" id="btn-group-missions" title="Grouper par mission">
-            <i class="bi bi-collection"></i>
-          </button>
+          <div class="input-group input-group-sm" style="width: auto;">
+            <span class="input-group-text"><i class="bi bi-collection"></i></span>
+            <select class="form-select form-select-sm" id="graph-groupby" title="Regrouper les tâches">
+              <option value="none">Sans regroupement</option>
+              <option value="statut">Par statut</option>
+              <option value="mission">Par mission</option>
+              <option value="meo">Par mise en œuvre</option>
+            </select>
+          </div>
           <div class="btn-group">
             <button class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" id="btn-add-link">
               <i class="bi bi-plus-lg me-1"></i>
@@ -460,28 +473,64 @@
         </div>
       </div>
 
-      <!-- Légende -->
+      <!-- Légende liaisons -->
       <div class="px-3 py-2 border-bottom">
-        <div class="legend-container">
-          <div class="legend-item">
-            <div class="legend-color" style="background: #ef4444;"></div>
-            <span>Dépend de</span>
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <small class="text-muted fw-bold">Liaisons:</small>
+          <div class="legend-container flex-grow-1">
+            <div class="legend-item">
+              <div class="legend-color" style="background: #ef4444;"></div>
+              <span>Dépend de</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: #f97316;"></div>
+              <span>Bloque</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: #3b82f6;"></div>
+              <span>Liée à</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: #8b5cf6;"></div>
+              <span>Sous-tâche</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: #64748b;"></div>
+              <span>Duplique</span>
+            </div>
           </div>
-          <div class="legend-item">
-            <div class="legend-color" style="background: #f97316;"></div>
-            <span>Bloque</span>
-          </div>
-          <div class="legend-item">
-            <div class="legend-color" style="background: #3b82f6;"></div>
-            <span>Liée à</span>
-          </div>
-          <div class="legend-item">
-            <div class="legend-color" style="background: #8b5cf6;"></div>
-            <span>Sous-tâche</span>
-          </div>
-          <div class="legend-item">
-            <div class="legend-color" style="background: #64748b;"></div>
-            <span>Duplique</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <small class="text-muted fw-bold">Statuts (bordure):</small>
+          <div class="legend-container flex-grow-1">
+            <div class="legend-item">
+              <div class="legend-color legend-border" style="border-color: #6c757d;"></div>
+              <span>📋 Backlog</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color legend-border" style="border-color: #0ea5e9;"></div>
+              <span>📅 À faire</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color legend-border" style="border-color: #f97316;"></div>
+              <span>⚡ En cours</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color legend-border" style="border-color: #eab308;"></div>
+              <span>⏸ En attente</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color legend-border" style="border-color: #ef4444;"></div>
+              <span>🚫 Bloqué</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color legend-border" style="border-color: #8b5cf6;"></div>
+              <span>✔ Validation</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color legend-border" style="border-color: #22c55e;"></div>
+              <span>✅ Terminé</span>
+            </div>
           </div>
         </div>
       </div>

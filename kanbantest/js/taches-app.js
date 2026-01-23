@@ -9,9 +9,11 @@ import {
   TASK_TYPE_CATEGORIES,
   TASK_LINK_TYPES,
   STATUTS,
+  STATUS_ACCENTS,
   getAllTaskTypes,
   getTaskType,
-  getLinkType
+  getLinkType,
+  getStatusAccent
 } from './config/constants.js';
 import { formatQuiDisplay } from '../utils/badges.js';
 
@@ -372,7 +374,7 @@ class TachesApp {
     // Graphe
     $('#btn-zoom-fit').on('click', () => this.network?.fit());
     $('#btn-toggle-physics').on('click', () => this.togglePhysics());
-    $('#btn-group-missions').on('click', () => this.toggleMissionClusters());
+    $('#graph-groupby').on('change', (e) => this.changeGraphGrouping(e.target.value));
 
     // Recherche dans le graphe avec surbrillance
     $('#graph-search').on('input', () => this.highlightGraphNodes());
@@ -603,38 +605,66 @@ class TachesApp {
     this.nodes = new vis.DataSet();
     this.edges = new vis.DataSet();
 
-    // Ajouter les nœuds (tâches)
+    // Mapping icônes unicode pour les statuts (compatible vis.js)
+    const STATUS_ICONS = {
+      'Backlog': '📋',
+      'À faire': '📅',
+      'En cours': '⚡',
+      'En attente': '⏸',
+      'En pause': '⏹',
+      'Bloqué': '🚫',
+      'Validation': '✔',
+      'Terminé': '✅'
+    };
+
+    // Ajouter les nœuds (tâches) avec indicateur de statut
     for (const task of this.tasks) {
       const type = getTaskType(task.type_tache_id);
-      const color = type ? type.couleur : '#6b7280';
+      const typeColor = type ? type.couleur : '#6b7280';
+      const statusColor = getStatusAccent(task.statut);
+      const statusIcon = STATUS_ICONS[task.statut] || '•';
+      const label = `${statusIcon} ${this.truncate(task.titre || 'Sans titre', 28)}`;
 
       this.nodes.add({
         id: task.id,
-        label: this.truncate(task.titre || 'Sans titre', 30),
+        label: label,
+        title: `${task.titre || 'Sans titre'}\n${task.statut || 'Aucun statut'}\n${type ? type.nom : 'Type inconnu'}`,
+        group: task.statut || 'default',
         color: {
-          background: color,
-          border: this.adjustColor(color, -20),
+          background: typeColor,
+          border: statusColor,
           highlight: {
-            background: this.adjustColor(color, 20),
-            border: this.adjustColor(color, -40)
+            background: this.adjustColor(typeColor, 20),
+            border: this.adjustColor(statusColor, -20)
           }
         },
         font: { color: '#ffffff', size: 12 },
         shape: 'box',
         margin: 10,
-        borderWidth: 2
+        borderWidth: 4
       });
     }
 
     // Ajouter les arêtes (liaisons)
     this.refreshEdges();
 
+    // Définir les groupes par statut avec leurs couleurs
+    const groups = {};
+    for (const [status, color] of Object.entries(STATUS_ACCENTS)) {
+      groups[status] = {
+        borderWidth: 4,
+        color: { border: color }
+      };
+    }
+
     // Options du graphe
     const options = {
+      groups: groups,
       nodes: {
         shape: 'box',
         margin: { top: 10, bottom: 10, left: 10, right: 10 },
-        font: { size: 12, color: '#ffffff' }
+        font: { size: 12, color: '#ffffff' },
+        borderWidth: 4
       },
       edges: {
         arrows: { to: { enabled: true, scaleFactor: 0.8 } },
@@ -643,13 +673,13 @@ class TachesApp {
       },
       physics: {
         enabled: true,
-        stabilization: { iterations: 100, fit: true },
+        stabilization: { iterations: 150, fit: true },
         barnesHut: {
-          gravitationalConstant: -3000,
-          centralGravity: 0.5,
-          springLength: 120,
-          springConstant: 0.08,
-          avoidOverlap: 0.5
+          gravitationalConstant: -4000,
+          centralGravity: 0.3,
+          springLength: 150,
+          springConstant: 0.06,
+          avoidOverlap: 0.8
         },
         maxVelocity: 50,
         minVelocity: 0.1
@@ -657,7 +687,7 @@ class TachesApp {
       interaction: {
         hover: true,
         selectConnectedEdges: true,
-        tooltipDelay: 0,
+        tooltipDelay: 200,
         hideNodesOnDrag: false,
         dragNodes: true,
         dragView: true,
@@ -722,9 +752,18 @@ class TachesApp {
       }
     });
 
-    // Ajuster la vue après stabilisation
+    // Ajuster la vue et figer les positions après stabilisation
     this.network.once('stabilizationIterationsDone', () => {
       this.network.fit();
+
+      // Désactiver automatiquement la physique pour figer les positions
+      this.network.setOptions({ physics: { enabled: false } });
+      this.physicsEnabled = false;
+
+      // Mettre à jour l'apparence du bouton
+      const $btn = $('#btn-toggle-physics');
+      $btn.html('<i class="bi bi-wind"></i>');
+      $btn.attr('title', 'Activer la physique');
     });
   }
 
@@ -771,21 +810,37 @@ class TachesApp {
       }
     }
 
+    // Mapping icônes unicode pour les statuts
+    const STATUS_ICONS = {
+      'Backlog': '📋',
+      'À faire': '📅',
+      'En cours': '⚡',
+      'En attente': '⏸',
+      'En pause': '⏹',
+      'Bloqué': '🚫',
+      'Validation': '✔',
+      'Terminé': '✅'
+    };
+
     // Ajouter ou mettre à jour les nœuds
     for (const task of this.tasks) {
       const type = getTaskType(task.type_tache_id);
-      const color = type ? type.couleur : '#6b7280';
+      const typeColor = type ? type.couleur : '#6b7280';
+      const statusColor = getStatusAccent(task.statut);
+      const statusIcon = STATUS_ICONS[task.statut] || '•';
+      const label = `${statusIcon} ${this.truncate(task.titre || 'Sans titre', 28)}`;
 
       const nodeData = {
         id: task.id,
-        label: this.truncate(task.titre || 'Sans titre', 30),
-        title: `#${task.id} - ${task.titre}\nStatut: ${task.statut || 'N/A'}\nType: ${type?.nom || 'Non défini'}`,
+        label: label,
+        title: `${task.titre || 'Sans titre'}\n${task.statut || 'Aucun statut'}\n${type ? type.nom : 'Type inconnu'}`,
+        group: task.statut || 'default',
         color: {
-          background: color,
-          border: this.adjustColor(color, -20),
+          background: typeColor,
+          border: statusColor,
           highlight: {
-            background: this.adjustColor(color, 20),
-            border: this.adjustColor(color, -40)
+            background: this.adjustColor(typeColor, 20),
+            border: this.adjustColor(statusColor, -20)
           }
         }
       };
@@ -798,7 +853,7 @@ class TachesApp {
           font: { color: '#ffffff', size: 12 },
           shape: 'box',
           margin: 10,
-          borderWidth: 2
+          borderWidth: 4
         });
       }
     }
@@ -940,24 +995,143 @@ class TachesApp {
   }
 
   /**
-   * Active/désactive le clustering par mission
+   * Change le mode de regroupement du graphe
+   * @param {string} groupBy - Type de regroupement: 'none', 'statut', 'mission', 'meo'
    */
-  toggleMissionClusters() {
+  changeGraphGrouping(groupBy) {
     if (!this.network) return;
 
-    this.missionClustersEnabled = !this.missionClustersEnabled;
-    const $btn = $('#btn-group-missions');
+    // D'abord ouvrir tous les clusters existants
+    this.openAllClusters();
 
-    if (this.missionClustersEnabled) {
-      // Créer les clusters par mission
-      this.createMissionClusters();
-      $btn.removeClass('btn-outline-primary').addClass('btn-primary');
-      this.showToast('Groupement par mission activé', 'info');
-    } else {
-      // Ouvrir tous les clusters
-      this.openAllClusters();
-      $btn.removeClass('btn-primary').addClass('btn-outline-primary');
-      this.showToast('Groupement par mission désactivé', 'info');
+    // Appliquer le nouveau regroupement
+    switch (groupBy) {
+      case 'statut':
+        this.createStatusClusters();
+        this.showToast('Groupement par statut activé', 'info');
+        break;
+      case 'mission':
+        this.createMissionClusters();
+        this.showToast('Groupement par mission activé', 'info');
+        break;
+      case 'meo':
+        this.createMeoClusters();
+        this.showToast('Groupement par mise en œuvre activé', 'info');
+        break;
+      default:
+        this.showToast('Regroupement désactivé', 'info');
+    }
+
+    // Ajuster la vue
+    setTimeout(() => this.network.fit(), 100);
+  }
+
+  /**
+   * Crée les clusters par statut
+   */
+  createStatusClusters() {
+    if (!this.network) return;
+
+    // Regrouper par statut
+    const statusGroups = {};
+    for (const task of this.tasks) {
+      const status = task.statut || 'Non défini';
+      if (!statusGroups[status]) {
+        statusGroups[status] = [];
+      }
+      statusGroups[status].push(task.id);
+    }
+
+    // Créer un cluster pour chaque statut avec au moins 2 tâches
+    for (const [status, taskIds] of Object.entries(statusGroups)) {
+      if (taskIds.length < 2) continue;
+
+      const statusColor = getStatusAccent(status);
+      const STATUS_ICONS = {
+        'Backlog': '📋',
+        'À faire': '📅',
+        'En cours': '⚡',
+        'En attente': '⏸',
+        'En pause': '⏹',
+        'Bloqué': '🚫',
+        'Validation': '✔',
+        'Terminé': '✅'
+      };
+      const icon = STATUS_ICONS[status] || '•';
+
+      const clusterOptions = {
+        joinCondition: (nodeOptions) => {
+          const task = this.tasks.find(t => t.id === nodeOptions.id);
+          return task && (task.statut || 'Non défini') === status;
+        },
+        clusterNodeProperties: {
+          id: `cluster_status_${status}`,
+          label: `${icon} ${status}\n(${taskIds.length} tâches)`,
+          shape: 'box',
+          color: {
+            background: statusColor,
+            border: this.adjustColor(statusColor, -30)
+          },
+          font: { color: '#ffffff', size: 14, bold: true },
+          margin: 15,
+          borderWidth: 4
+        }
+      };
+
+      this.network.cluster(clusterOptions);
+    }
+  }
+
+  /**
+   * Crée les clusters par mise en œuvre (MEO)
+   */
+  createMeoClusters() {
+    if (!this.network) return;
+
+    // Regrouper par MEO
+    const meoGroups = {};
+    for (const task of this.tasks) {
+      const meo = task.meo || task.mise_en_oeuvre || 'Sans MEO';
+      if (!meoGroups[meo]) {
+        meoGroups[meo] = [];
+      }
+      meoGroups[meo].push(task.id);
+    }
+
+    // Couleurs pour les MEO
+    const meoColors = [
+      '#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444',
+      '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'
+    ];
+    let colorIndex = 0;
+
+    // Créer un cluster pour chaque MEO avec au moins 2 tâches
+    for (const [meo, taskIds] of Object.entries(meoGroups)) {
+      if (taskIds.length < 2) continue;
+
+      const clusterColor = meoColors[colorIndex % meoColors.length];
+      colorIndex++;
+
+      const clusterOptions = {
+        joinCondition: (nodeOptions) => {
+          const task = this.tasks.find(t => t.id === nodeOptions.id);
+          return task && (task.meo || task.mise_en_oeuvre || 'Sans MEO') === meo;
+        },
+        clusterNodeProperties: {
+          id: `cluster_meo_${meo}`,
+          label: `🎯 ${this.truncate(meo, 25)}\n(${taskIds.length} tâches)`,
+          shape: 'box',
+          color: {
+            background: clusterColor,
+            border: this.adjustColor(clusterColor, -30)
+          },
+          font: { color: '#ffffff', size: 14, bold: true },
+          margin: 15,
+          borderWidth: 4
+        }
+      };
+
+      this.network.cluster(clusterOptions);
     }
   }
 
