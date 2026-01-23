@@ -25,6 +25,9 @@ class GanttTimeline {
     this.sortBy = 'priority';
     this.selectedTaskId = null;
 
+    // Modale partagée (instance unique)
+    this.sharedTaskModal = null;
+
     // Références DOM
     this.taskListEl = document.getElementById('task-list');
     this.timelineHeaderEl = document.getElementById('timeline-header');
@@ -47,6 +50,9 @@ class GanttTimeline {
     // Charger les données
     await this.loadData();
 
+    // Initialiser la modale partagée (instance unique)
+    await this.initSharedTaskModal();
+
     // Configurer les événements
     this.setupEventListeners();
 
@@ -57,6 +63,36 @@ class GanttTimeline {
     this.loadingEl.style.display = 'none';
 
     console.log('[GanttTimeline] Prêt');
+  }
+
+  /**
+   * Initialise SharedTaskModal (instance unique)
+   */
+  async initSharedTaskModal() {
+    if (typeof SharedTaskModal === 'undefined') {
+      console.warn('[GanttTimeline] SharedTaskModal non disponible');
+      return;
+    }
+
+    this.sharedTaskModal = new SharedTaskModal({
+      showTimes: true,
+      showLinks: false,
+      showJalons: true,
+      showHistory: true,
+      onSave: async (data) => {
+        await this.saveTask(data);
+        await this.loadData();
+        this.render();
+      },
+      onDelete: async (id) => {
+        await this.deleteTask(id);
+        await this.loadData();
+        this.render();
+      }
+    });
+
+    await this.sharedTaskModal.init();
+    console.log('[GanttTimeline] SharedTaskModal initialisé');
   }
 
   /**
@@ -582,23 +618,11 @@ class GanttTimeline {
     const task = this.tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    // Utiliser SharedTaskModal si disponible
-    if (typeof SharedTaskModal !== 'undefined') {
-      const modal = new SharedTaskModal({
-        onSave: async (data) => {
-          await this.saveTask(data);
-          await this.loadData();
-          this.render();
-        },
-        onDelete: async (id) => {
-          await this.deleteTask(id);
-          await this.loadData();
-          this.render();
-        }
-      });
-      modal.init().then(() => modal.open(task));
+    // Utiliser l'instance partagée de SharedTaskModal
+    if (this.sharedTaskModal) {
+      this.sharedTaskModal.open(task);
     } else {
-      console.log('[GanttTimeline] Tâche sélectionnée:', task);
+      console.warn('[GanttTimeline] SharedTaskModal non initialisé');
       alert(`Tâche: ${task.titre}\nStatut: ${task.statut}\nAvancement: ${task.avancement}%`);
     }
   }

@@ -7,7 +7,7 @@ import { getEventCentralizer } from './EventCentralizer.js';
 
 // Importation des managers
 import { DatePickerManager } from '../managers/DatePickerManager.js';
-import { ModalManager } from '../managers/ModalManager.js';
+// ModalManager supprimé - utilisation de SharedTaskModal (chargé globalement)
 import { HistoryManager } from '../managers/HistoryManager.js';
 import { FilterManager } from '../managers/FilterManager.js';
 import { ViewManager } from '../managers/ViewManager.js';
@@ -134,8 +134,8 @@ export class KanbanManager {
     // 2. Gestionnaire de dates
     this.datePickerManager = new DatePickerManager(this);
 
-    // 3. Gestionnaire de modals
-    this.modalManager = new ModalManager(this);
+    // 3. Gestionnaire de modals - Utilise SharedTaskModal (chargé globalement)
+    await this.initSharedTaskModal();
 
     // 4. Gestionnaire d'historique
     this.historyManager = new HistoryManager(this);
@@ -156,6 +156,49 @@ export class KanbanManager {
     this.timelineManager = new TimelineManager(this);
 
     console.log('KanbanManager: Gestionnaires initialisés');
+  }
+
+  /**
+   * Initialise SharedTaskModal (composant modale partagé)
+   */
+  async initSharedTaskModal() {
+    if (typeof SharedTaskModal === 'undefined') {
+      console.warn('KanbanManager: SharedTaskModal non disponible');
+      this.modalManager = null;
+      return;
+    }
+
+    this.modalManager = new SharedTaskModal({
+      showTimes: true,
+      showLinks: false,
+      showJalons: true,
+      showHistory: true,
+      gristManager: this.gristManager,
+      onSave: async (taskData, isNew = false) => {
+        await this.handleTaskSave(taskData, isNew);
+      },
+      onDelete: async (taskId) => {
+        await this.deleteTaskById(taskId);
+      }
+    });
+
+    await this.modalManager.init();
+    console.log('KanbanManager: SharedTaskModal initialisé');
+  }
+
+  /**
+   * Gère la sauvegarde d'une tâche depuis la modale
+   * @param {object} taskData - Données de la tâche
+   * @param {boolean} isNew - True si nouvelle tâche (duplication)
+   */
+  async handleTaskSave(taskData, isNew = false) {
+    try {
+      const taskId = isNew ? null : taskData.id;
+      await this.saveTaskData(taskData, taskId);
+    } catch (error) {
+      console.error('KanbanManager: Erreur sauvegarde tâche:', error);
+      throw error;
+    }
   }
   
   /**
@@ -186,17 +229,12 @@ export class KanbanManager {
     try {
       const strategyRecords = await this.gristManager.fetchTable('Ssir_strategie2');
       this.strategyData = this.mapStrategyRecords(strategyRecords);
-      this.strategiesData = this.strategyData; // Alias pour ModalManager
-      if (this.modalManager && this.strategyData.length > 0) {
-        this.modalManager.handleStrategyDataLoaded(this.strategyData);
-      }
+      this.strategiesData = this.strategyData; // Alias pour compatibilité
+      // SharedTaskModal charge ses propres données via loadReferenceData()
     } catch (error) {
       console.error('KanbanManager: Erreur lors du chargement des stratégies depuis Grist:', error);
       this.strategyData = [];
       this.strategiesData = [];
-      if (this.modalManager) {
-        this.modalManager.handleStrategyDataLoaded([]);
-      }
       throw new Error(`Chargement des stratégies impossible: ${error?.message || 'erreur inconnue'}`);
     }
   }
@@ -321,13 +359,9 @@ export class KanbanManager {
    * Peuple les options des formulaires
    */
   populateFormOptions() {
-    if (this.modalManager) {
-      // Le ModalManager se charge de peupler les options
-      this.modalManager.populateFormOptions?.(this.gristOptions);
-    }
-
+    // SharedTaskModal charge ses propres données de référence
+    // Seul le FilterManager a besoin d'être alimenté
     if (this.filterManager) {
-      // Le FilterManager se charge des options de filtres
       this.filterManager.populateFilterOptions?.(this.gristOptions);
     }
   }
@@ -495,7 +529,7 @@ export class KanbanManager {
    */
   createNewTask() {
     if (this.modalManager) {
-      this.modalManager.openTaskModal();
+      this.modalManager.openNew();
     } else {
       displayError('Gestionnaire de modals non disponible');
     }
@@ -507,7 +541,11 @@ export class KanbanManager {
    */
   openPopup(task = null) {
     if (this.modalManager) {
-      this.modalManager.openTaskModal(task);
+      if (task) {
+        this.modalManager.open(task);
+      } else {
+        this.modalManager.openNew();
+      }
     } else {
       displayError('Gestionnaire de modals non disponible');
     }
@@ -528,7 +566,7 @@ export class KanbanManager {
    */
   closeAllModals() {
     if (this.modalManager) {
-      this.modalManager.closeAllModals();
+      this.modalManager.close();
     }
   }
   
@@ -1102,7 +1140,10 @@ export class KanbanManager {
     }
     
     if (this.modalManager) {
-      this.modalManager.destroy();
+      // SharedTaskModal: fermer et nettoyer
+      if (typeof this.modalManager.close === 'function') {
+        this.modalManager.close();
+      }
       this.modalManager = null;
     }
     

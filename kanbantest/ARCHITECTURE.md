@@ -10,31 +10,33 @@ Cette documentation technique évite les erreurs de factorisation en documentant
 ### Architecture Générale
 ```
 js/
-├── kanban-app.js              # ⚠️ POINT D'ENTRÉE LEGACY - Ne pas supprimer
+├── app-initializer.js         # Point d'entrée pour index.html
+├── taches-app.js              # Point d'entrée pour taches.html
+├── missions-app.js            # Point d'entrée pour missions.html
+├── timeline-app.js            # Point d'entrée pour timeline.html
 ├── core/
-│   └── KanbanManager.js       # Orchestrateur moderne (peu utilisé)
+│   ├── KanbanManager.js       # Orchestrateur principal (index.html)
+│   └── EventCentralizer.js    # Centralisation des événements
+├── components/
+│   └── SharedTaskModal.js     # 🔧 Modale d'édition UNIQUE (partagée)
 ├── managers/                  # 🔧 Gestionnaires spécialisés
 │   ├── FilterManager.js       # Filtres et recherche
 │   ├── DashboardManager.js    # Dashboard V3 (statistiques & alertes)
 │   ├── TimelineManager.js     # Timeline V3 (planification)
-│   ├── ModalManager.js        # Modales et formulaires
 │   ├── HistoryManager.js      # Historique et commentaires
 │   ├── DatePickerManager.js   # Sélection de dates
-│   ├── ViewModeManager.js     # Modes d'affichage
-│   └── GristManager.js        # Interface Grist
-├── renderers/                 # 🎨 Rendu visuel
-│   ├── CardRenderer.js        # Cartes de tâches
-│   └── BoardRenderer.js       # Colonnes et layout
+│   ├── ViewManager.js         # Modes d'affichage et rendu
+│   ├── JalonManager.js        # Gestion des jalons
+│   └── GristManager.js        # Interface Grist (CRUD)
 ├── utils/                     # 🛠️ Utilitaires
 │   ├── UserActionManager.js   # Actions utilisateur & historique JSON
-│   ├── NotesJsonMigrator.js   # Migration notes  
+│   ├── NotesJsonMigrator.js   # Migration notes
 │   ├── LoggerManager.js       # Système de logs avec niveaux
 │   ├── dom.js                 # Manipulation DOM
 │   ├── dates.js               # Gestion dates
 │   └── badges.js              # Génération badges
 └── config/
-    ├── constants.js           # Constantes globales
-    └── strategyData.js        # Données stratégiques
+    └── constants.js           # Constantes globales (agents, bureaux, statuts)
 ```
 
 ---
@@ -100,7 +102,7 @@ js/
 ## ⚠️ ZONES CRITIQUES - NE PAS CASSER
 
 ### 1. 🚨 Enregistrements Temporaires (Anti-Doublons) - ✅ DOUBLE FILTRAGE
-**Fichiers**: `kanban-app.js:1467-1475`, `kanban-app.js:1552-1555` et `UserActionManager.js:32-42`
+**Fichiers**: `GristManager.js` et `UserActionManager.js`
 
 ```javascript
 // CRITIQUE 1: Filtrage dans handleGristUpdate (onRecords)
@@ -144,30 +146,27 @@ import { GristManager } from '../managers/GristManager.js';
 **Règle d'Or**: Les managers ne s'importent JAMAIS entre eux directement.
 
 ### 3. 🚨 Références d'Objets Critiques
-**Fichier**: `ModalManager.js:863`
+**Fichier**: `SharedTaskModal.js`
 
 ```javascript
 // ❌ ERREUR fréquente:
 this.gristOptions.projet = updatedProjects;
 // ✅ CORRECT:
-this.kanban.gristOptions.projet = updatedProjects;
+this.options.gristManager.gristOptions.projet = updatedProjects;
 ```
 
-**Règle**: Toujours passer par `this.kanban.` pour accéder aux propriétés partagées.
+**Règle**: Toujours passer par les références correctes pour accéder aux propriétés partagées.
 
 ### 4. 🚨 Gestion du Champ Description (Commentaires) - ✅ NOUVEAU
-**Fichier**: `ModalManager.js:376-379`
+**Fichier**: `SharedTaskModal.js`
 
 ```javascript
 // ❌ ANCIEN CODE (causait confusion):
-const latestDescription = tache.description ? 
-  this.kanban.getLatestDescription(tache.description) : '';
-setFieldValue('popup-description', latestDescription);
+// Remplir le champ description avec les anciens commentaires
 
-// ✅ NOUVEAU CODE (2025-01-13):
+// ✅ NOUVEAU CODE:
 // Description - TOUJOURS VIDE pour saisie de nouveaux commentaires
 // Les anciens commentaires sont visibles dans l'historique, pas dans la zone de saisie
-setFieldValue('popup-description', '');
 ```
 
 **Règles CRITIQUES**:
@@ -182,13 +181,15 @@ setFieldValue('popup-description', '');
 
 ### Chaîne d'Initialisation (ORDRE OBLIGATOIRE)
 ```
-1. kanban-app.js (KanbanManager legacy)
+1. app-initializer.js / *-app.js (point d'entrée)
    ↓
-2. Managers (FilterManager, ModalManager, etc.)
-   ↓  
-3. Renderers (CardRenderer, BoardRenderer)
+2. KanbanManager.js / GristManager.js (données)
    ↓
-4. Utils (UserActionManager, dom, dates, badges)
+3. SharedTaskModal.js (modale partagée)
+   ↓
+4. Managers (FilterManager, ViewManager, etc.)
+   ↓
+5. Utils (UserActionManager, dom, dates, badges)
 ```
 
 ### Modèle stratégique (nomenclature)
@@ -197,14 +198,15 @@ setFieldValue('popup-description', '');
 
 ### Références Inter-Modules
 ```
-KanbanManager (legacy) ←→ FilterManager
-                      ←→ ModalManager
-                      ←→ HistoryManager
-                      ←→ GristManager
+KanbanManager ←→ FilterManager
+              ←→ SharedTaskModal (via modalManager)
+              ←→ HistoryManager
+              ←→ GristManager
+              ←→ ViewManager
 
-ModalManager → UserActionManager (pour historique)
+SharedTaskModal → GristManager (pour CRUD)
 HistoryManager → UserActionManager (pour utilisateur)
-BoardRenderer → CardRenderer (pour rendu)
+ViewManager → CardRenderer (pour rendu)
 ```
 
 ---
@@ -220,12 +222,12 @@ if (this.filters.bureau && this.filters.bureau.trim() !== '') {
 }
 ```
 
-### 2. Sauvegarde des Tâches  
-**Fichier**: `ModalManager.js:447-568`
+### 2. Sauvegarde des Tâches
+**Fichier**: `SharedTaskModal.js` et `GristManager.js`
 ```javascript
 // CRITIQUE: Validation des types avant envoi Grist
-if (!this.isNewTask && (!this.currentTaskId || this.currentTaskId === null)) {
-  console.error('ERREUR CRITIQUE: Tentative UpdateRecord avec currentTaskId null!');
+if (!isNewTask && (!taskId || taskId === null)) {
+  console.error('ERREUR CRITIQUE: Tentative UpdateRecord avec taskId null!');
   return; // ⚠️ Protection obligatoire
 }
 ```
@@ -501,16 +503,17 @@ window.kanbanManager.getApplicationState(); // Vérifier l'init
 ## 📊 Métriques de Santé du Code
 
 ### Fichiers par Taille/Complexité:
-- `kanban-app.js`: ~1700 lignes (LEGACY, ne pas refactorer)
-- `ModalManager.js`: ~1100 lignes (stable)
+- `KanbanManager.js`: ~1200 lignes (orchestrateur principal)
+- `SharedTaskModal.js`: ~800 lignes (modale partagée)
 - `HistoryManager.js`: ~1000 lignes (critique pour commentaires)
+- `GristManager.js`: ~600 lignes (CRUD Grist)
 - `FilterManager.js`: ~580 lignes (stable)
 
 ### Points Chauds (modifications fréquentes):
-1. `ModalManager.js` - Formulaires
-2. `HistoryManager.js` - Commentaires  
+1. `SharedTaskModal.js` - Formulaires
+2. `HistoryManager.js` - Commentaires
 3. `FilterManager.js` - Filtres
-4. `kanban-app.js` - Intégrations
+4. `KanbanManager.js` - Orchestration
 
 ---
 
@@ -546,16 +549,12 @@ window.kanbanManager.getApplicationState(); // Vérifier l'init
 → Vérifier les accolades fermantes en trop après modification de code
 → Ligne type: `} }` (double accolade fermante)
 
-### 🚨 Problème: Double création de tâches (AUDIT COMPLET FAIT)
-→ **CAUSES MULTIPLES IDENTIFIÉES**:
-  - Écouteurs dupliqués sur boutons (kanban-app.js + ModalManager.js)
-  - Raccourci 'N' dupliqué (kanban-app.js + ModalManager.js)  
-  - Fichier legacy `js/tmp` avec code conflictuel
-→ **SOLUTIONS APPLIQUÉES**:
-  - Supprimé écouteurs redondants dans kanban-app.js
-  - Désactivé fichier `js/tmp` → `js/tmp.disabled`
-  - Créé checklist de vérification `VERIFICATION_ANTI_DUPLICATION.md`
-→ **RÈGLE ABSOLUE**: Un seul gestionnaire par action, dans ModalManager.js
+### 🚨 Problème: Double création de tâches (RÉSOLU)
+→ **SOLUTION APPLIQUÉE (2026-01)**:
+  - Migration vers `SharedTaskModal.js` comme modale UNIQUE
+  - Suppression des fichiers legacy (`kanban-app.js`, `ModalManager.js`)
+  - Une seule instance de modale par page (pattern singleton)
+→ **RÈGLE ABSOLUE**: `SharedTaskModal` est le seul gestionnaire de modales
 
 ---
 
@@ -737,17 +736,13 @@ Stratégie
 - **Solution**: Suppression accolade supplémentaire
 - **Impact**: Application se charge sans erreur de syntaxe
 
-#### 3. **Correction Double Création de Tâches (AUDIT COMPLET)** ✅
+#### 3. **Correction Double Création de Tâches (RÉSOLU DÉFINITIVEMENT)** ✅
 - **Problème**: Chaque clic créait 2+ tâches identiques (25+ versions!)
-- **Causes multiples**: 
-  - Écouteurs dupliqués sur boutons (kanban-app.js + ModalManager.js)
-  - Raccourci 'N' dupliqué (kanban-app.js + ModalManager.js)
-  - Fichier legacy `js/tmp` avec code conflictuel
-- **Solutions**: 
-  - Suppression tous écouteurs redondants
-  - Désactivation `js/tmp` → `js/tmp.disabled`  
-  - Checklist vérification `VERIFICATION_ANTI_DUPLICATION.md`
-- **Impact**: UNE SEULE tâche créée par action
+- **Solution finale (2026-01)**:
+  - Migration vers `SharedTaskModal.js` comme modale UNIQUE
+  - Suppression des fichiers legacy (`kanban-app.js`, `ModalManager.js`)
+  - Pattern singleton: une seule instance de modale par page
+- **Impact**: UNE SEULE tâche créée par action, architecture propre
 
 ### 🎯 **Améliorations**
 - **Logs colorés** dans la console pour lecture facile
@@ -763,12 +758,12 @@ Stratégie
 
 #### 1. **Filtrage Double Anti-Doublons** ✅
 - **Ajout**: Filtrage des `___TEMP_USER_RECORD___` dans `filterRecords()` (rendu)
-- **Localisation**: `kanban-app.js:1552-1555`
+- **Localisation**: `GristManager.js` et `FilterManager.js`
 - **Impact**: Élimine les doublons visuels dans l'interface
 
-#### 2. **Champ Description Toujours Vide** ✅  
-- **Modification**: `populateTaskForm()` dans `ModalManager.js`
-- **Changement**: `setFieldValue('popup-description', '')` systématique
+#### 2. **Champ Description Toujours Vide** ✅
+- **Modification**: `SharedTaskModal.js`
+- **Changement**: Zone de saisie vide pour nouveaux commentaires
 - **Impact**: Zone de saisie propre pour nouveaux commentaires
 
 #### 3. **Interface d'Édition de Commentaires** ✅
