@@ -944,15 +944,13 @@ export class ModalManager {
       this.resetTaskForm();
     }
 
-    // CORRECTIF: Vérifier id ET id_task pour déterminer si c'est une nouvelle tâche
-    // Certaines tâches peuvent avoir id_task mais pas id (ou vice versa)
-    const resolvedTaskId = task?.id ?? task?.id_task ?? null;
-    this.isNewTask = !task || !resolvedTaskId;
+    // Déterminer si c'est une nouvelle tâche (pas d'id = nouvelle tâche)
+    this.isNewTask = !task || !task.id;
     this.currentTask = task;
-    this.currentTaskId = resolvedTaskId;
+    this.currentTaskId = task?.id || null;
 
     // Log de debug pour diagnostiquer les problèmes de mise à jour
-    this.logger.debug(`openTaskModal: task=${task ? 'present' : 'null'}, task.id=${task?.id}, task.id_task=${task?.id_task}, resolvedTaskId=${resolvedTaskId}, isNewTask=${this.isNewTask}`);
+    this.logger.debug(`openTaskModal: task=${task ? 'present' : 'null'}, task.id=${task?.id}, isNewTask=${this.isNewTask}`);
 
     this.logger.debug(`Opening task modal: ${this.isNewTask ? 'new task' : 'edit task ' + this.currentTaskId}`);
 
@@ -1050,36 +1048,22 @@ export class ModalManager {
    * Peuple le formulaire avec les données d'une tâche
    * @param {object} task - Données de la tâche
    */
-  // === REMPLISSAGE DU FORMULAIRE CORRIGÉ ===
+  // === REMPLISSAGE DU FORMULAIRE ===
   populateTaskForm(tache, isNewTask) {
     const task = tache ? { ...tache } : {};
-    const resolvedId = task.id ?? task.id_task ?? null;
 
-    this.logger.debug(`populateTaskForm: tache.id=${tache?.id}, tache.id_task=${tache?.id_task}, resolvedId=${resolvedId}, this.isNewTask=${this.isNewTask}`);
-
-    // Si on a un ID résolu mais pas de task.id, ajouter l'id à task pour cohérence
-    if (resolvedId !== null && typeof task.id === 'undefined') {
-      task.id = resolvedId;
-    }
+    this.logger.debug(`populateTaskForm: tache.id=${tache?.id}, this.isNewTask=${this.isNewTask}`);
 
     // Utiliser le paramètre isNewTask s'il est fourni explicitement
     if (isNewTask !== undefined) {
       this.isNewTask = isNewTask;
     }
 
-    // CORRECTIF: Ne pas écraser currentTaskId si déjà défini correctement
-    // Utiliser resolvedId seulement si cohérent avec l'état actuel
-    if (!this.isNewTask) {
-      // Mode édition : s'assurer qu'on a un ID valide
-      if (resolvedId !== null) {
-        this.currentTaskId = resolvedId;
-        this.currentTask = task;
-      } else {
-        // Pas d'ID résolu mais pas en mode nouvelle tâche - incohérence
-        this.logger.warn(`populateTaskForm: Incohérence - isNewTask=false mais resolvedId=null`);
-      }
-    } else {
-      // Nouvelle tâche - pas d'ID
+    // Définir currentTaskId et currentTask selon le mode
+    if (!this.isNewTask && task.id) {
+      this.currentTaskId = task.id;
+      this.currentTask = task;
+    } else if (this.isNewTask) {
       this.currentTaskId = null;
       this.currentTask = null;
     }
@@ -1209,13 +1193,12 @@ export class ModalManager {
       
       // Validation critique - vérifier que l'ID est bien défini pour une mise à jour
       if (!this.isNewTask && (!this.currentTaskId || this.currentTaskId === null)) {
-        // Tentative de récupération depuis currentTask (id ou id_task)
-        const recoveredId = this.currentTask?.id ?? this.currentTask?.id_task ?? null;
-        if (recoveredId) {
-          this.currentTaskId = recoveredId;
-          this.logger.warn(`saveTask: ID récupéré depuis currentTask: ${recoveredId}`);
+        // Tentative de récupération depuis currentTask
+        if (this.currentTask?.id) {
+          this.currentTaskId = this.currentTask.id;
+          this.logger.warn(`saveTask: ID récupéré depuis currentTask: ${this.currentTaskId}`);
         } else {
-          this.logger.error(`saveTask: ID manquant - isNewTask=${this.isNewTask}, currentTaskId=${this.currentTaskId}, currentTask.id=${this.currentTask?.id}, currentTask.id_task=${this.currentTask?.id_task}`);
+          this.logger.error(`saveTask: ID manquant - isNewTask=${this.isNewTask}, currentTaskId=${this.currentTaskId}, currentTask.id=${this.currentTask?.id}`);
           displayError('Erreur: ID de tâche manquant pour la mise à jour');
           return;
         }

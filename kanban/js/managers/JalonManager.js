@@ -309,8 +309,8 @@ export class JalonManager {
    */
   loadJalonsFromTask(taskData) {
     try {
-      // Extraire l'ID de la tâche
-      const taskId = taskData?.id || taskData?.id_task;
+      // Extraire l'ID de la tâche (utiliser uniquement id)
+      const taskId = taskData?.id;
 
       // Si pas de taskData ou pas d'ID, réinitialiser
       if (!taskData || !taskId) {
