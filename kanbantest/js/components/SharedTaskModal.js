@@ -40,7 +40,8 @@ class SharedTaskModal {
     this.agents = [];
     this.strategies = [];
     this.meos = [];
-    this.bureaux = ['Exploit', 'Réseau', 'BDD', 'Chef SSIR', 'SIG', 'NEXSIS-RRF', 'COMSIC', 'RSSI', 'DPO'];
+    // Bureaux correspondant à la table SSIR_agents
+    this.bureaux = ['Réseaux', 'BDD', 'Exploit', 'Nexsis-RRF', 'Chef SSIR', 'Chef GSSI', 'Chef SIG'];
     this.jalons = [];
     this.selectedStrategies = [];
     this.taskLinks = [];
