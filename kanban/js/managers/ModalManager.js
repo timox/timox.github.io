@@ -1419,17 +1419,36 @@ export class ModalManager {
       strategie_id: this.collectStrategyData(), // Collecte spécialisée stratégies
       jalons: this.kanban.jalonManager ? this.kanban.jalonManager.getJalonsForSave() : null
     };
-    
+
+    // Préserver les champs mission/MEO de la tâche courante (non modifiables dans le formulaire)
+    if (this.currentTask && !this.isNewTask) {
+      const missionFields = [
+        'mission_code', 'mission_nom', 'mission_responsable', 'mission_bureau',
+        'mission_priorite', 'mission_date_debut', 'mission_date_fin',
+        'sous_action_code', 'sous_action_nom', 'categorie',
+        'sous_action_charge_estimee', 'sous_action_charge_reelle',
+        'est_classifiee'
+      ];
+
+      missionFields.forEach(field => {
+        if (this.currentTask[field] !== undefined && this.currentTask[field] !== null) {
+          data[field] = this.currentTask[field];
+        }
+      });
+
+      this.logger.debug(`Champs mission préservés: ${missionFields.filter(f => data[f]).join(', ')}`);
+    }
+
     this.logger.debug(`Collecting form data: ${data.titre || 'untitled'} (${data.statut})`);
-    
+
     // CHAMP DESCRIPTION SUPPRIMÉ - Tous les commentaires sont maintenant dans notes.history
     // Le champ de saisie popup-description sert uniquement pour les nouveaux commentaires
-    
+
     // Date d'échéance
     if (this.kanban.datePickerManager) {
       data.date_echeance = this.kanban.datePickerManager.getDateForGrist();
     }
-    
+
     return data;
   }
   
