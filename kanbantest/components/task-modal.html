@@ -70,6 +70,12 @@
                   <span class="tab-indicator" id="indicator-advanced"></span>
                 </button>
               </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tab-history" data-bs-toggle="tab" data-bs-target="#panel-history" type="button" role="tab">
+                  <i class="bi bi-clock-history me-1"></i>Historique
+                  <span class="tab-indicator" id="indicator-history"></span>
+                </button>
+              </li>
             </ul>
           </nav>
 
@@ -561,23 +567,98 @@
               </div>
             </div>
 
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <!-- ONGLET 6: HISTORIQUE - Journal des modifications -->
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <div class="tab-pane fade" id="panel-history" role="tabpanel" aria-labelledby="tab-history">
+              <div class="task-panel-content">
+
+                <!-- En-tête historique -->
+                <div class="history-header mb-4">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="section-title mb-0">
+                      <i class="bi bi-clock-history me-2 text-info"></i>Journal des modifications
+                    </h6>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="stm-btn-refresh-history">
+                      <i class="bi bi-arrow-clockwise me-1"></i>Actualiser
+                    </button>
+                  </div>
+                  <p class="form-text small text-muted mb-0 mt-1">
+                    Toutes les modifications apportées à cette tâche sont enregistrées automatiquement
+                  </p>
+                </div>
+
+                <!-- Statistiques résumées -->
+                <div class="history-stats-cards mb-4" id="stm-history-stats">
+                  <div class="row g-3">
+                    <div class="col-md-3 col-6">
+                      <div class="history-stat-card">
+                        <div class="stat-icon bg-primary-subtle text-primary">
+                          <i class="bi bi-pencil-square"></i>
+                        </div>
+                        <div class="stat-info">
+                          <span class="stat-number" id="stm-stat-modifications">0</span>
+                          <span class="stat-label">Modifications</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                      <div class="history-stat-card">
+                        <div class="stat-icon bg-info-subtle text-info">
+                          <i class="bi bi-chat-dots"></i>
+                        </div>
+                        <div class="stat-info">
+                          <span class="stat-number" id="stm-stat-comments">0</span>
+                          <span class="stat-label">Commentaires</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                      <div class="history-stat-card">
+                        <div class="stat-icon bg-success-subtle text-success">
+                          <i class="bi bi-arrow-repeat"></i>
+                        </div>
+                        <div class="stat-info">
+                          <span class="stat-number" id="stm-stat-status-changes">0</span>
+                          <span class="stat-label">Changements statut</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                      <div class="history-stat-card">
+                        <div class="stat-icon bg-warning-subtle text-warning">
+                          <i class="bi bi-calendar3"></i>
+                        </div>
+                        <div class="stat-info">
+                          <span class="stat-number" id="stm-stat-last-update">-</span>
+                          <span class="stat-label">Dernière MAJ</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Liste des entrées d'historique -->
+                <div class="history-timeline-section">
+                  <div class="history-timeline" id="stm-history-timeline">
+                    <div class="text-center text-muted py-5" id="stm-history-loading">
+                      <div class="spinner-border spinner-border-sm text-primary mb-2"></div>
+                      <p class="mb-0 small">Chargement de l'historique...</p>
+                    </div>
+                    <div class="empty-state" id="stm-history-empty" style="display: none;">
+                      <i class="bi bi-clock-history"></i>
+                      <p>Aucun historique disponible pour cette tâche</p>
+                      <small class="text-muted">L'historique sera enregistré dès la première modification</small>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
           </div><!-- /tab-content -->
         </form>
       </div><!-- /modal-body -->
-
-      <!-- Panneau latéral Historique (toggle) -->
-      <div class="task-history-sidebar" id="stm-history-sidebar" style="display: none;">
-        <div class="history-sidebar-header">
-          <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Historique</h6>
-          <button type="button" class="btn-close" id="stm-close-history"></button>
-        </div>
-        <div class="history-sidebar-content" id="stm-history-content">
-          <div class="text-center text-muted py-4">
-            <i class="bi bi-clock-history fs-3"></i>
-            <p class="mt-2 mb-0">Chargement...</p>
-          </div>
-        </div>
-      </div>
 
       <!-- FOOTER sticky avec actions -->
       <div class="modal-footer task-modal-footer">
@@ -590,9 +671,7 @@
           </button>
         </div>
         <div class="footer-center">
-          <button type="button" class="btn btn-outline-secondary" id="stm-btn-history">
-            <i class="bi bi-clock-history me-1"></i>Historique
-          </button>
+          <!-- L'historique est maintenant dans un onglet dédié -->
         </div>
         <div class="footer-right">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
