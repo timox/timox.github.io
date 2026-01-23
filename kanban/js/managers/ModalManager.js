@@ -944,13 +944,9 @@ export class ModalManager {
       this.resetTaskForm();
     }
 
-    // Déterminer si c'est une nouvelle tâche (pas d'id = nouvelle tâche)
     this.isNewTask = !task || !task.id;
     this.currentTask = task;
     this.currentTaskId = task?.id || null;
-
-    // Log de debug pour diagnostiquer les problèmes de mise à jour
-    this.logger.debug(`openTaskModal: task=${task ? 'present' : 'null'}, task.id=${task?.id}, isNewTask=${this.isNewTask}`);
 
     this.logger.debug(`Opening task modal: ${this.isNewTask ? 'new task' : 'edit task ' + this.currentTaskId}`);
 
@@ -1048,25 +1044,24 @@ export class ModalManager {
    * Peuple le formulaire avec les données d'une tâche
    * @param {object} task - Données de la tâche
    */
-  // === REMPLISSAGE DU FORMULAIRE ===
+  // === REMPLISSAGE DU FORMULAIRE CORRIGÉ ===
   populateTaskForm(tache, isNewTask) {
+    this.logger.debug(`Populating task form: ${isNewTask ? 'new task' : 'edit mode'}`);
+
     const task = tache ? { ...tache } : {};
+    const resolvedId = task.id ?? task.id_task ?? null;
 
-    this.logger.debug(`populateTaskForm: tache.id=${tache?.id}, this.isNewTask=${this.isNewTask}`);
+    if (!this.isNewTask && resolvedId !== null && typeof task.id === 'undefined') {
+      task.id = resolvedId;
+    }
 
-    // Utiliser le paramètre isNewTask s'il est fourni explicitement
+    // Utiliser le paramètre isNewTask s'il est fourni
     if (isNewTask !== undefined) {
       this.isNewTask = isNewTask;
     }
 
-    // Définir currentTaskId et currentTask selon le mode
-    if (!this.isNewTask && task.id) {
-      this.currentTaskId = task.id;
-      this.currentTask = task;
-    } else if (this.isNewTask) {
-      this.currentTaskId = null;
-      this.currentTask = null;
-    }
+    this.currentTaskId = this.isNewTask ? null : resolvedId;
+    this.currentTask = this.isNewTask ? null : task;
 
     // Champs de base
     setFieldValue('popup-titre', task.titre || '');
@@ -1191,21 +1186,16 @@ export class ModalManager {
         this.logger.info(`Saving task: ${this.isNewTask ? 'CREATE' : 'UPDATE'} ${this.currentTaskId || 'new'}`);
       }
       
-      // Validation critique - vérifier que l'ID est bien défini pour une mise à jour
+      // Validation critique
       if (!this.isNewTask && (!this.currentTaskId || this.currentTaskId === null)) {
         // Tentative de récupération depuis currentTask
-        if (this.currentTask?.id) {
+        if (this.currentTask && this.currentTask.id) {
           this.currentTaskId = this.currentTask.id;
-          this.logger.warn(`saveTask: ID récupéré depuis currentTask: ${this.currentTaskId}`);
         } else {
-          this.logger.error(`saveTask: ID manquant - isNewTask=${this.isNewTask}, currentTaskId=${this.currentTaskId}, currentTask.id=${this.currentTask?.id}`);
           displayError('Erreur: ID de tâche manquant pour la mise à jour');
           return;
         }
       }
-
-      // Log de debug avant sauvegarde
-      this.logger.debug(`saveTask: isNewTask=${this.isNewTask}, currentTaskId=${this.currentTaskId}`);
       
       if (this.isNewTask) {
         // Création

@@ -44,10 +44,9 @@ export const TABLE_ID = "Ssir_principale_task";
 
 // === COLONNES REQUISES ET OPTIONNELLES ===
 export const REQUIRED_COLUMNS = [
-  'id', 'titre', 'description', 'statut', 'bureau', 'qui', 'urgence', 'impact',
+  'id', 'id_task', 'titre', 'description', 'statut', 'bureau', 'qui', 'urgence', 'impact',
   'projet', 'strategie_id', 'notes', 'date_derniere_maj', 'statut_precedent'
   // Note: reference et jalons sont maintenant dans OPTIONAL_COLUMNS (comme en prod)
-  // Note: id_task supprimé - utiliser uniquement id (rowId natif Grist)
 ];
 
 export const OPTIONAL_COLUMNS = [

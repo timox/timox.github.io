@@ -293,6 +293,15 @@ export class GristManager {
         const parsedId = parseInt(record.id, 10);
         if (!Number.isNaN(parsedId) && parsedId > 0) {
           record.id = parsedId;
+
+          // Assurer un id_task numérique cohérent si disponible
+          if (record.id_task === null || record.id_task === undefined) {
+            record.id_task = parsedId;
+          } else if (typeof record.id_task === 'string') {
+            const parsedTaskId = parseInt(record.id_task, 10);
+            record.id_task = Number.isNaN(parsedTaskId) ? record.id_task : parsedTaskId;
+          }
+
           records.push(record);
         } else {
           this.logger.warn(`Record invalide - id: ${record.id}`);
