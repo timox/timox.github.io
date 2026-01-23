@@ -54,7 +54,15 @@ export const OPTIONAL_COLUMNS = [
   // Colonnes de prod actives
   'type_tache_id', 'priorite', 'historique_statuts', 'datenow',
   'str_statut', 'str_urgence', 'str_qui', 'str_bureau', 'str_impact',
-  'date_creation', 'date_modif', 'Créé par'
+  'date_creation', 'date_modif', 'Créé par',
+  // Champs missions et MEO
+  'mission_code', 'mission_nom', 'mission_responsable', 'mission_bureau',
+  'mission_priorite', 'mission_date_debut', 'mission_date_fin',
+  // Champs sous-actions
+  'sous_action_code', 'sous_action_nom', 'categorie',
+  'sous_action_charge_estimee', 'sous_action_charge_reelle',
+  // Meta
+  'est_classifiee'
 ];
 
 // === CONSTANTES DE L'INTERFACE ===

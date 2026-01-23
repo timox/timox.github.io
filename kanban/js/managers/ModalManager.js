@@ -105,6 +105,13 @@ export class ModalManager {
       this.deleteTask();
     }, 'modal');
 
+    safeOn('#btn-duplicate-task', 'click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.logger.debug('Duplicate button clicked');
+      this.duplicateTask();
+    }, 'modal');
+
     safeOn('#btn-toggle-history-panel', 'click', (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -966,8 +973,9 @@ export class ModalManager {
     // Fin du chargement - activer la validation
     this.isPopulating = false;
     
-    // Afficher/masquer le bouton supprimer
+    // Afficher/masquer les boutons supprimer et dupliquer
     toggleVisibility('btn-delete-task', !this.isNewTask, 'inline-block');
+    toggleVisibility('btn-duplicate-task', !this.isNewTask, 'inline-block');
 
     // Ouvrir la modal
     this.taskModal.show();
@@ -1419,17 +1427,36 @@ export class ModalManager {
       strategie_id: this.collectStrategyData(), // Collecte spécialisée stratégies
       jalons: this.kanban.jalonManager ? this.kanban.jalonManager.getJalonsForSave() : null
     };
-    
+
+    // Préserver les champs mission/MEO de la tâche courante (non modifiables dans le formulaire)
+    if (this.currentTask && !this.isNewTask) {
+      const missionFields = [
+        'mission_code', 'mission_nom', 'mission_responsable', 'mission_bureau',
+        'mission_priorite', 'mission_date_debut', 'mission_date_fin',
+        'sous_action_code', 'sous_action_nom', 'categorie',
+        'sous_action_charge_estimee', 'sous_action_charge_reelle',
+        'est_classifiee'
+      ];
+
+      missionFields.forEach(field => {
+        if (this.currentTask[field] !== undefined && this.currentTask[field] !== null) {
+          data[field] = this.currentTask[field];
+        }
+      });
+
+      this.logger.debug(`Champs mission préservés: ${missionFields.filter(f => data[f]).join(', ')}`);
+    }
+
     this.logger.debug(`Collecting form data: ${data.titre || 'untitled'} (${data.statut})`);
-    
+
     // CHAMP DESCRIPTION SUPPRIMÉ - Tous les commentaires sont maintenant dans notes.history
     // Le champ de saisie popup-description sert uniquement pour les nouveaux commentaires
-    
+
     // Date d'échéance
     if (this.kanban.datePickerManager) {
       data.date_echeance = this.kanban.datePickerManager.getDateForGrist();
     }
-    
+
     return data;
   }
   
@@ -1698,6 +1725,85 @@ export class ModalManager {
       displayError(`Erreur lors de la suppression: ${error.message}`);
     }
   }
+
+  /**
+   * Duplique la tâche actuelle
+   * Crée une copie de la tâche avec le statut "À faire" et un titre modifié
+   * Préserve le lien mission/MEO
+   */
+  async duplicateTask() {
+    if (!this.currentTaskId || this.isNewTask) {
+      displayError('Aucune tâche à dupliquer');
+      return;
+    }
+
+    try {
+      // Collecter les données actuelles du formulaire
+      const taskData = this.collectFormData();
+
+      // Modifier les données pour la copie
+      const duplicateData = { ...taskData };
+
+      // Modifier le titre pour indiquer la copie
+      const originalTitle = duplicateData.titre || 'Sans titre';
+      duplicateData.titre = `Copie de ${originalTitle}`;
+
+      // Remettre le statut à "À faire" pour la nouvelle tâche
+      duplicateData.statut = 'À faire';
+
+      // Ne pas copier les dates de début (la tâche est nouvelle)
+      duplicateData.date_debut = null;
+
+      // Conserver le lien mission/MEO de la tâche originale
+      // (déjà inclus via collectFormData qui préserve ces champs)
+
+      // Préparer les données pour Grist
+      const gristData = this.prepareTaskDataForGrist(duplicateData);
+
+      // Créer la nouvelle tâche
+      const action = ['AddRecord', TABLE_ID, null, gristData];
+      const result = await grist.docApi.applyUserActions([action]);
+
+      // Enregistrer l'action utilisateur pour la création
+      const userActionManager = getUserActionManager();
+      if (userActionManager && result && result.retValues && result.retValues[0]) {
+        const newTaskId = result.retValues[0];
+        await userActionManager.createTaskAction(newTaskId, gristData);
+
+        // Ajouter une entrée d'historique pour la duplication
+        await userActionManager.addHistoryEntry(
+          newTaskId,
+          'creation',
+          `Tâche dupliquée depuis la tâche #${this.currentTaskId}`,
+          '',
+          originalTitle,
+          'À faire'
+        );
+      }
+
+      displaySuccess(`Tâche dupliquée avec succès`);
+
+      // Signaler la mise à jour locale
+      if (this.kanban.signalLocalUpdate) {
+        this.kanban.signalLocalUpdate();
+      }
+
+      // Fermer la modal actuelle
+      this.closeAllModals();
+
+      // Rafraîchir le kanban
+      setTimeout(() => {
+        if (this.kanban && this.kanban.refreshKanban) {
+          this.kanban.refreshKanban();
+        }
+      }, 100);
+
+    } catch (error) {
+      this.logger.error('Task duplication failed:', error.message);
+      displayError(`Erreur lors de la duplication: ${error.message}`);
+    }
+  }
+
 // === MÉTHODE DE DIAGNOSTIC ===
   diagnoseModals() {
     this.logger.debug('Running modal diagnostics');
@@ -2719,6 +2825,7 @@ export class ModalManager {
     // Masquer les boutons d'action en mode lecture seule
     toggleVisibility('btn-save-task', !readOnly);
     toggleVisibility('btn-delete-task', !readOnly && !this.isNewTask);
+    toggleVisibility('btn-duplicate-task', !readOnly && !this.isNewTask);
     toggleVisibility('btn-ajout-projet', !readOnly);
     
     if (this.kanban.datePickerManager) {
