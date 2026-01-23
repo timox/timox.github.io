@@ -16,6 +16,7 @@ let selectedMeo = null;
 let selectedTaskIds = new Set();
 let taskViewMode = 'meo'; // 'meo' ou 'orphan'
 let editingMeoCode = null; // Pour le mode édition
+let sharedTaskModal = null; // Instance du modal de tâche partagé
 
 /**
  * Initialise l'application
@@ -44,6 +45,9 @@ async function initApp() {
 
     // Attendre que Grist soit prêt
     await waitForGrist();
+
+    // Charger le SharedTaskModal
+    await loadSharedTaskModal();
 
     // Configurer les écouteurs
     setupEventListeners();
@@ -75,6 +79,176 @@ async function waitForGrist() {
 }
 
 /**
+ * Charge le script SharedTaskModal et initialise la modale
+ */
+async function loadSharedTaskModal() {
+  try {
+    // Charger le script SharedTaskModal dynamiquement
+    await new Promise((resolve, reject) => {
+      if (window.SharedTaskModal) {
+        resolve();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'js/components/SharedTaskModal.js';
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+
+    // Créer l'instance du modal
+    sharedTaskModal = new window.SharedTaskModal({
+      containerId: 'shared-modal-container',
+      onSave: handleTaskSave,
+      onDelete: handleTaskDelete,
+      showLinks: true,
+      showTimes: true,
+      showJalons: true,
+      gristManager: gristManager
+    });
+
+    await sharedTaskModal.init();
+    logger.debug('SharedTaskModal initialized');
+  } catch (error) {
+    logger.error('Failed to load SharedTaskModal:', error);
+  }
+}
+
+/**
+ * Gère la sauvegarde d'une tâche depuis le modal
+ */
+async function handleTaskSave(taskData) {
+  try {
+    const isNew = !taskData.id;
+
+    if (isNew) {
+      // Création d'une nouvelle tâche
+      const result = await window.grist.docApi.applyUserActions([
+        ['AddRecord', 'Ssir_principale_task', null, taskData]
+      ]);
+      logger.debug('Task created:', result);
+      showToast('Tâche créée', 'success');
+    } else {
+      // Mise à jour d'une tâche existante
+      const { id, ...updateData } = taskData;
+      await window.grist.docApi.applyUserActions([
+        ['UpdateRecord', 'Ssir_principale_task', id, updateData]
+      ]);
+      logger.debug('Task updated:', id);
+      showToast('Tâche modifiée', 'success');
+    }
+
+    // Recharger les données
+    await reloadTasks();
+    renderMeoList();
+    renderTasksList();
+    updateCounts();
+    renderMissionsList();
+
+    return true;
+  } catch (error) {
+    logger.error('Failed to save task:', error);
+    showToast('Erreur lors de la sauvegarde', 'danger');
+    return false;
+  }
+}
+
+/**
+ * Gère la suppression d'une tâche depuis le modal
+ */
+async function handleTaskDelete(taskId) {
+  try {
+    await window.grist.docApi.applyUserActions([
+      ['RemoveRecord', 'Ssir_principale_task', taskId]
+    ]);
+    logger.debug('Task deleted:', taskId);
+    showToast('Tâche supprimée', 'success');
+
+    // Recharger les données
+    await reloadTasks();
+    renderMeoList();
+    renderTasksList();
+    updateCounts();
+    renderMissionsList();
+
+    return true;
+  } catch (error) {
+    logger.error('Failed to delete task:', error);
+    showToast('Erreur lors de la suppression', 'danger');
+    return false;
+  }
+}
+
+/**
+ * Ouvre le modal pour créer une nouvelle tâche rattachée à la MEO sélectionnée
+ */
+function openNewTaskModal() {
+  if (!selectedMission || !selectedMeo) {
+    showToast('Sélectionnez une mise en œuvre', 'warning');
+    return;
+  }
+
+  if (!sharedTaskModal) {
+    showToast('Modal non disponible', 'danger');
+    return;
+  }
+
+  // Ouvrir le modal en mode création
+  sharedTaskModal.openNew({ statut: 'À faire' });
+
+  // Pré-remplir les champs MEO après ouverture
+  setTimeout(() => {
+    // Sélectionner la MEO dans le dropdown
+    const meoSelect = document.getElementById('stm-meo');
+    if (meoSelect) {
+      meoSelect.value = selectedMeo.code;
+      // Déclencher le changement pour mettre à jour les champs dérivés
+      meoSelect.dispatchEvent(new Event('change'));
+    }
+
+    // Remplir les champs cachés
+    const meoCodeField = document.getElementById('stm-meo-code');
+    const meoNomField = document.getElementById('stm-meo-nom');
+    const strategieField = document.getElementById('stm-strategie');
+
+    if (meoCodeField) meoCodeField.value = selectedMeo.code;
+    if (meoNomField) meoNomField.value = selectedMeo.nom;
+    if (strategieField) strategieField.value = selectedMission.id;
+
+    // Afficher les infos de hiérarchie
+    const hierarchyInfo = document.getElementById('stm-hierarchy-info');
+    if (hierarchyInfo) {
+      hierarchyInfo.style.display = 'block';
+      const programmeDisplay = document.getElementById('stm-programme-display');
+      const strategieDisplay = document.getElementById('stm-strategie-display');
+      const missionDisplay = document.getElementById('stm-mission-display');
+
+      if (programmeDisplay) programmeDisplay.textContent = selectedMission.objectif || '-';
+      if (strategieDisplay) strategieDisplay.textContent = selectedMission.sous_objectif || '-';
+      if (missionDisplay) missionDisplay.textContent = selectedMission.axe_strategique || '-';
+    }
+  }, 100);
+}
+
+/**
+ * Ouvre le modal pour modifier une tâche existante
+ */
+function openEditTaskModal(taskId) {
+  const task = tasks.find(t => t.id === taskId);
+  if (!task) {
+    showToast('Tâche non trouvée', 'warning');
+    return;
+  }
+
+  if (!sharedTaskModal) {
+    showToast('Modal non disponible', 'danger');
+    return;
+  }
+
+  sharedTaskModal.open(task);
+}
+
+/**
  * Configure les écouteurs d'événements
  */
 function setupEventListeners() {
@@ -93,11 +267,22 @@ function setupEventListeners() {
     selectMeo(meoCode);
   });
 
-  // Click sur tâche
-  $('#tasks-list').on('click', '.task-item', function() {
+  // Click sur tâche (sélection)
+  $('#tasks-list').on('click', '.task-item', function(e) {
+    // Ne pas sélectionner si on clique sur la checkbox
+    if ($(e.target).hasClass('task-checkbox')) return;
     const taskId = $(this).data('task-id');
     toggleTaskSelection(taskId, $(this));
   });
+
+  // Double-click sur tâche (édition)
+  $('#tasks-list').on('dblclick', '.task-item', function() {
+    const taskId = $(this).data('task-id');
+    openEditTaskModal(taskId);
+  });
+
+  // Bouton ajouter tâche
+  $('#btn-add-task').on('click', openNewTaskModal);
 
   // Bouton ajouter MEO
   $('#btn-add-meo').on('click', () => openMeoModal(false));
@@ -724,12 +909,17 @@ function updateTasksActionButtons() {
   const hasVisibleTasks = $('#tasks-list .task-item').length > 0;
   $('#btn-select-all-tasks').prop('disabled', !hasVisibleTasks);
 
+  // Bouton ajouter tâche (actif uniquement si MEO sélectionnée et pas en mode orphan)
+  $('#btn-add-task').prop('disabled', !selectedMeo || taskViewMode === 'orphan');
+
   if (taskViewMode === 'orphan') {
     // Pour affecter, il faut des tâches sélectionnées ET une MEO sélectionnée
     $('#btn-attach-tasks').prop('disabled', count === 0 || !selectedMeo);
+    $('#btn-add-task').hide();
   } else {
     // Pour détacher, il suffit d'avoir des tâches sélectionnées
     $('#btn-detach-tasks').prop('disabled', count === 0);
+    $('#btn-add-task').show();
   }
 }
 
@@ -771,10 +961,10 @@ function openMeoModal(editMode = false) {
   } else {
     $('#modal-meo-title').text('Nouvelle mise en œuvre');
     $('#meo-code').prop('readonly', false);
-    // Générer un code par défaut
-    const meos = getMeosForMission(selectedMission.id);
-    const nextNum = meos.length + 1;
-    $('#meo-code').val(`MEO-${String(nextNum).padStart(3, '0')}`);
+    // Générer un code unique basé sur l'ID mission et timestamp
+    const timestamp = Date.now().toString(36).toUpperCase().slice(-4);
+    const missionPrefix = String(selectedMission.id).padStart(2, '0');
+    $('#meo-code').val(`M${missionPrefix}-${timestamp}`);
   }
 
   const modalEl = document.getElementById('modal-meo');
