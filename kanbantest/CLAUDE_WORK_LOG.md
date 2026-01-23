@@ -2,6 +2,63 @@
 
 ---
 
+## 2026-01-23 - Migration vers SharedTaskModal : Architecture Unifiée
+
+### Contexte
+- La modale d'édition des tâches était différente selon les pages (index.html, taches.html, missions.html, timeline.html)
+- Deux systèmes parallèles existaient : `ModalManager.js` (ES6 module) et `SharedTaskModal.js` (script global)
+- Code dupliqué et incohérences architecturales
+
+### Corrections Effectuées
+
+#### 1. Migration de index.html vers SharedTaskModal
+**Problème** : `KanbanManager.js` utilisait `ModalManager.js` tandis que les autres pages utilisaient `SharedTaskModal.js`
+
+**Solution** :
+- Ajout de `<script src="js/components/SharedTaskModal.js">` dans index.html
+- Modification de `KanbanManager.js` pour utiliser `SharedTaskModal` au lieu de `ModalManager`
+- Ajout de la méthode `initSharedTaskModal()` avec pattern singleton
+
+**Fichiers modifiés** :
+- `kanbantest/index.html`
+- `kanbantest/js/core/KanbanManager.js`
+
+#### 2. Centralisation de la modale dans timeline-app.js
+**Problème** : `timeline-app.js` créait une nouvelle instance de `SharedTaskModal` à chaque ouverture de tâche
+
+**Solution** :
+- Ajout de `this.sharedTaskModal = null` dans le constructeur
+- Ajout de `initSharedTaskModal()` appelée une seule fois dans `init()`
+- Modification de `openTaskModal()` pour réutiliser l'instance partagée
+
+**Fichier modifié** :
+- `kanbantest/js/timeline-app.js`
+
+#### 3. Suppression des fichiers legacy
+**Fichiers supprimés** (5428 lignes de code mort) :
+- `kanbantest/js/kanban-app.js` (~1900 lignes) - Non utilisé par aucun HTML
+- `kanbantest/js/managers/ModalManager.js` (~3000 lignes) - Remplacé par SharedTaskModal
+
+#### 4. Mise à jour de la documentation
+- `ARCHITECTURE.md` mis à jour pour refléter la nouvelle architecture
+- Références à `ModalManager.js` et `kanban-app.js` supprimées
+
+### Architecture Finale
+
+| Page | Fichier App | Modale |
+|------|-------------|--------|
+| index.html | KanbanManager.js | SharedTaskModal (via `this.modalManager`) |
+| taches.html | taches-app.js | SharedTaskModal (via `this.sharedTaskModal`) |
+| missions.html | missions-app.js | SharedTaskModal (variable module) |
+| timeline.html | timeline-app.js | SharedTaskModal (via `this.sharedTaskModal`) |
+
+### Commits
+- `ac2450b` - refactor: migrer index.html vers SharedTaskModal (suppression ModalManager)
+- `52a74a6` - refactor: centraliser SharedTaskModal dans timeline-app.js
+- `c6a26f5` - chore: supprimer les fichiers legacy ModalManager et kanban-app
+
+---
+
 ## 2026-01-21 - Migration V3 : Classification et Nettoyage des Données
 
 ### Contexte
