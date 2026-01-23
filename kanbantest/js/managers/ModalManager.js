@@ -115,6 +115,13 @@ export class ModalManager {
       this.deleteTask();
     }, 'modal');
 
+    safeOn('#stm-btn-duplicate', 'click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.logger.debug('Duplicate button clicked');
+      this.duplicateTask();
+    }, 'modal');
+
     safeOn('#stm-btn-history', 'click', (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -977,8 +984,9 @@ export class ModalManager {
     // Fin du chargement - activer la validation
     this.isPopulating = false;
     
-    // Afficher/masquer le bouton supprimer
+    // Afficher/masquer les boutons supprimer et dupliquer (seulement en mode modification)
     toggleVisibility('stm-btn-delete', !this.isNewTask, 'inline-block');
+    toggleVisibility('stm-btn-duplicate', !this.isNewTask, 'inline-block');
 
     // Ouvrir la modal
     this.taskModal.show();
@@ -1726,6 +1734,84 @@ export class ModalManager {
       displayError(`Erreur lors de la suppression: ${error.message}`);
     }
   }
+
+  /**
+   * Duplique la tâche actuelle
+   * Crée une copie de la tâche avec le statut "À faire" et un titre modifié
+   */
+  async duplicateTask() {
+    if (!this.currentTaskId || this.isNewTask) {
+      displayError('Aucune tâche à dupliquer');
+      return;
+    }
+
+    try {
+      // Collecter les données actuelles du formulaire
+      const taskData = this.collectFormData();
+
+      // Modifier les données pour la copie
+      const duplicateData = { ...taskData };
+
+      // Modifier le titre pour indiquer la copie
+      const originalTitle = duplicateData.titre || 'Sans titre';
+      duplicateData.titre = `Copie de ${originalTitle}`;
+
+      // Remettre le statut à "À faire" pour la nouvelle tâche
+      duplicateData.statut = 'À faire';
+
+      // Remettre l'avancement à 0
+      duplicateData.avancement = 0;
+
+      // Ne pas copier les dates de début (la tâche est nouvelle)
+      duplicateData.date_debut = null;
+
+      // Préparer les données pour Grist
+      const gristData = this.prepareTaskDataForGrist(duplicateData);
+
+      // Créer la nouvelle tâche
+      const action = ['AddRecord', TABLE_ID, null, gristData];
+      const result = await grist.docApi.applyUserActions([action]);
+
+      // Enregistrer l'action utilisateur pour la création
+      const userActionManager = getUserActionManager();
+      if (userActionManager && result && result.retValues && result.retValues[0]) {
+        const newTaskId = result.retValues[0];
+        await userActionManager.createTaskAction(newTaskId, gristData);
+
+        // Ajouter une entrée d'historique pour la duplication
+        await userActionManager.addHistoryEntry(
+          newTaskId,
+          'creation',
+          `Tâche dupliquée depuis la tâche #${this.currentTaskId}`,
+          '',
+          originalTitle,
+          'À faire'
+        );
+      }
+
+      displaySuccess(`Tâche dupliquée avec succès`);
+
+      // Signaler la mise à jour locale
+      if (this.kanban.signalLocalUpdate) {
+        this.kanban.signalLocalUpdate();
+      }
+
+      // Fermer la modal actuelle
+      this.closeAllModals();
+
+      // Rafraîchir le kanban
+      setTimeout(() => {
+        if (this.kanban && this.kanban.refreshKanban) {
+          this.kanban.refreshKanban();
+        }
+      }, 100);
+
+    } catch (error) {
+      this.logger.error('Task duplication failed:', error.message);
+      displayError(`Erreur lors de la duplication: ${error.message}`);
+    }
+  }
+
 // === MÉTHODE DE DIAGNOSTIC ===
   diagnoseModals() {
     this.logger.debug('Running modal diagnostics');
@@ -2850,6 +2936,7 @@ export class ModalManager {
     // Masquer les boutons d'action en mode lecture seule
     toggleVisibility('stm-btn-save', !readOnly);
     toggleVisibility('stm-btn-delete', !readOnly && !this.isNewTask);
+    toggleVisibility('stm-btn-duplicate', !readOnly && !this.isNewTask);
     toggleVisibility('btn-ajout-projet', !readOnly);
     
     if (this.kanban.datePickerManager) {
