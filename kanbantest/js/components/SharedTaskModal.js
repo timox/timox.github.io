@@ -2075,7 +2075,7 @@ class SharedTaskModal {
 
   /**
    * Charge l'historique de la tâche dans l'onglet
-   * Génère un historique basé sur les données disponibles de la tâche
+   * Parse le champ notes (format JSON: { content: "...", history: [...] })
    */
   async loadTaskHistory() {
     const timeline = document.getElementById('stm-history-timeline');
@@ -2099,54 +2099,34 @@ class SharedTaskModal {
     timeline.querySelectorAll('.history-entry-item').forEach(el => el.remove());
 
     try {
-      // Générer l'historique à partir des données de la tâche
-      const historyEntries = this.generateTaskHistory(this.currentTask);
+      // Parser l'historique depuis le champ notes (JSON)
+      const historyEntries = this.parseNotesHistory(this.currentTask);
 
       if (loadingEl) loadingEl.style.display = 'none';
 
       if (historyEntries.length > 0) {
         // Calculer les statistiques
         let modifications = historyEntries.length;
-        let comments = 0;
-        let statusChanges = historyEntries.filter(e => e.action.toLowerCase().includes('statut')).length;
+        let comments = historyEntries.filter(e => e.action === 'comment').length;
+        let statusChanges = historyEntries.filter(e => e.action === 'status_change').length;
         let lastUpdate = historyEntries[0]?.timestamp || null;
 
         // Mettre à jour les stats
         this.updateHistoryStats(modifications, comments, statusChanges, lastUpdate);
 
-        // Créer les entrées (déjà triées du plus récent au plus ancien)
+        // Créer les entrées (triées du plus récent au plus ancien)
         historyEntries.forEach(entry => {
-          const entryEl = this.createHistoryEntry(entry.timestamp, entry.action, entry.user, entry.details);
+          const entryEl = this.createHistoryEntry(
+            entry.timestamp,
+            this.getActionLabel(entry.action),
+            entry.user,
+            entry.details || entry.newValue || ''
+          );
           timeline.appendChild(entryEl);
         });
       } else {
         if (emptyEl) emptyEl.style.display = 'block';
         this.updateHistoryStats(0, 0, 0, null);
-      }
-
-      // Essayer de charger un historique complémentaire depuis Grist si disponible
-      if (typeof grist !== 'undefined' && this.currentTask.id) {
-        try {
-          const history = await grist.docApi.fetchTable('Ssir_taches_history', {
-            filters: { tache_id: [this.currentTask.id] }
-          });
-
-          if (history.id?.length > 0) {
-            // Ajouter les entrées de la table d'historique
-            for (let i = history.id.length - 1; i >= 0; i--) {
-              const timestamp = history.timestamp?.[i];
-              const action = history.action?.[i] || '';
-              const user = history.user?.[i] || 'Système';
-              const details = history.details?.[i] || '';
-
-              const entryEl = this.createHistoryEntry(timestamp, action, user, details);
-              timeline.appendChild(entryEl);
-            }
-          }
-        } catch (e) {
-          // Table d'historique non disponible, pas grave - on utilise l'historique généré
-          console.log('[SharedTaskModal] Table Ssir_taches_history non disponible');
-        }
       }
     } catch (error) {
       console.warn('[SharedTaskModal] Failed to load history:', error);
@@ -2163,99 +2143,69 @@ class SharedTaskModal {
   }
 
   /**
-   * Génère un historique basé sur les données disponibles de la tâche
+   * Parse l'historique depuis le champ notes (JSON)
+   * Format: { content: "...", history: [{ timestamp, user, action, field, oldValue, newValue, details }] }
    */
-  generateTaskHistory(task) {
+  parseNotesHistory(task) {
     const entries = [];
-    const now = Math.floor(Date.now() / 1000);
 
-    // Date de création (si disponible via date_debut ou autre)
-    if (task.date_creation || task.created_at) {
-      const timestamp = task.date_creation || task.created_at;
-      entries.push({
-        timestamp: timestamp,
-        action: 'Création',
-        user: task.createur || 'Système',
-        details: `Tâche "${task.titre}" créée`
-      });
+    if (!task.notes) {
+      return entries;
     }
 
-    // Statut actuel
-    if (task.statut) {
-      entries.push({
-        timestamp: task.date_modification || task.updated_at || now,
-        action: 'Statut actuel',
-        user: 'Système',
-        details: `Statut : ${task.statut}`
-      });
+    try {
+      const notesData = typeof task.notes === 'string'
+        ? JSON.parse(task.notes)
+        : task.notes;
+
+      if (notesData && notesData.history && Array.isArray(notesData.history)) {
+        notesData.history.forEach(entry => {
+          // Normaliser le timestamp
+          let timestamp = entry.timestamp;
+          if (typeof timestamp === 'string') {
+            timestamp = new Date(timestamp).getTime();
+          }
+          // Convertir en secondes si en millisecondes
+          if (timestamp > 1e12) {
+            timestamp = Math.floor(timestamp / 1000);
+          }
+
+          entries.push({
+            timestamp: timestamp,
+            user: entry.user || 'Utilisateur',
+            action: entry.action || 'update',
+            field: entry.field || '',
+            oldValue: entry.oldValue || '',
+            newValue: entry.newValue || '',
+            details: entry.details || '',
+            status: entry.status || ''
+          });
+        });
+      }
+    } catch (error) {
+      console.warn('[SharedTaskModal] Error parsing notes JSON:', error);
     }
 
-    // Affectation
-    if (task.qui) {
-      entries.push({
-        timestamp: task.date_modification || task.updated_at || now,
-        action: 'Affectation',
-        user: 'Système',
-        details: `Responsable(s) : ${task.qui}`
-      });
-    }
-
-    // Avancement
-    if (task.avancement && task.avancement > 0) {
-      entries.push({
-        timestamp: task.date_modification || task.updated_at || now,
-        action: 'Avancement',
-        user: 'Système',
-        details: `Progression : ${task.avancement}%`
-      });
-    }
-
-    // Jalons
-    if (task.jalons && task.jalons.length > 0) {
-      const doneJalons = task.jalons.filter(j => j.statut === 'done').length;
-      entries.push({
-        timestamp: task.date_modification || task.updated_at || now,
-        action: 'Jalons',
-        user: 'Système',
-        details: `${doneJalons}/${task.jalons.length} jalon(s) complété(s)`
-      });
-    }
-
-    // Date d'échéance
-    if (task.date_echeance) {
-      const dateEcheance = new Date(task.date_echeance * 1000).toLocaleDateString('fr-FR');
-      entries.push({
-        timestamp: task.date_modification || task.updated_at || now,
-        action: 'Échéance définie',
-        user: 'Système',
-        details: `Date butoir : ${dateEcheance}`
-      });
-    }
-
-    // Rattachement MEO
-    if (task.mise_en_oeuvre_code) {
-      entries.push({
-        timestamp: task.date_modification || task.updated_at || now,
-        action: 'Rattachement',
-        user: 'Système',
-        details: `MEO : ${task.mise_en_oeuvre_code} - ${task.mise_en_oeuvre_nom || ''}`
-      });
-    }
-
-    // Si pas d'entrée et pas de date de création, ajouter une entrée générique
-    if (entries.length === 0) {
-      entries.push({
-        timestamp: now,
-        action: 'Information',
-        user: 'Système',
-        details: 'Historique détaillé non disponible pour cette tâche'
-      });
-    }
-
-    // Trier par date décroissante
+    // Trier par date décroissante (plus récent en premier)
     entries.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
     return entries;
+  }
+
+  /**
+   * Convertit un code d'action en libellé lisible
+   */
+  getActionLabel(action) {
+    const labels = {
+      'comment': 'Commentaire',
+      'status_change': 'Changement de statut',
+      'update': 'Modification',
+      'field_change': 'Modification',
+      'jalons_update': 'Jalons modifiés',
+      'strategies_update': 'Stratégies modifiées',
+      'create': 'Création'
+    };
+    return labels[action] || action || 'Modification';
   }
 
   /**
