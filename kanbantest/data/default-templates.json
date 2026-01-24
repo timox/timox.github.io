@@ -1,0 +1,97 @@
+{
+  "templates": [
+    {
+      "nom": "Deploiement serveur Linux",
+      "description": "Template complet pour le deploiement d'un nouveau serveur Linux en production",
+      "taches": [
+        { "titre": "Analyser les besoins et dimensionnement", "nature": "PRJ", "genre": "ANA", "etape": "ETP.VIS", "priorite": "Haute", "charge": 0.5, "description": "CPU, RAM, stockage, reseau" },
+        { "titre": "Preparer la VM et installer l'OS", "nature": "PRJ", "genre": "INS", "etape": "ETP.REA", "priorite": "Haute", "charge": 1, "description": "Creation VM, installation OS de base" },
+        { "titre": "Configurer le reseau et firewall", "nature": "PRJ", "genre": "CFG", "etape": "ETP.REA", "priorite": "Haute", "charge": 0.5, "description": "IP, DNS, regles iptables/firewalld" },
+        { "titre": "Durcir le serveur (CIS Benchmark)", "nature": "PRJ", "genre": "SEC", "etape": "ETP.REA", "priorite": "Haute", "charge": 1, "description": "Application des recommandations CIS" },
+        { "titre": "Installer les agents monitoring/backup", "nature": "PRJ", "genre": "INS", "etape": "ETP.REA", "priorite": "Moyenne", "charge": 0.5, "description": "Zabbix, Veeam, etc." },
+        { "titre": "Rediger la fiche serveur", "nature": "PRJ", "genre": "DOC", "etape": "ETP.DEP", "priorite": "Moyenne", "charge": 0.5, "description": "Documentation CMDB" },
+        { "titre": "Valider avec le demandeur", "nature": "PRJ", "genre": "VAL", "etape": "ETP.DEP", "priorite": "Moyenne", "charge": 0.5, "description": "PV de recette" }
+      ]
+    },
+    {
+      "nom": "Incident reseau - Perte connectivite",
+      "description": "Procedure de resolution d'un incident de perte de connectivite reseau",
+      "taches": [
+        { "titre": "Qualifier l'incident et perimetre impacte", "nature": "INC", "genre": "ANA", "etape": "ETP.EXP", "priorite": "Critique", "charge": 0.25, "description": "Nombre d'utilisateurs, services impactes" },
+        { "titre": "Diagnostiquer la cause (switch, VLAN, cable)", "nature": "INC", "genre": "ANA", "etape": "ETP.EXP", "priorite": "Critique", "charge": 0.5, "description": "Tests ping, traceroute, verification physique" },
+        { "titre": "Appliquer le correctif", "nature": "INC", "genre": "COR", "etape": "ETP.EXP", "priorite": "Critique", "charge": 0.5, "description": "Remplacement, reconfiguration" },
+        { "titre": "Verifier le retour a la normale", "nature": "INC", "genre": "TST", "etape": "ETP.EXP", "priorite": "Haute", "charge": 0.25, "description": "Tests de connectivite avec utilisateurs" },
+        { "titre": "Documenter l'incident dans la CMDB", "nature": "INC", "genre": "DOC", "etape": "ETP.AME", "priorite": "Moyenne", "charge": 0.25, "description": "Historique et cause racine" }
+      ]
+    },
+    {
+      "nom": "MCO - Mise a jour Windows Server",
+      "description": "Procedure de maintenance pour application des mises a jour Windows Server",
+      "taches": [
+        { "titre": "Verifier les KB disponibles et prerequis", "nature": "MCO", "genre": "VEI", "etape": "ETP.PLN", "priorite": "Moyenne", "charge": 0.25, "description": "Analyse WSUS/SCCM" },
+        { "titre": "Planifier le creneau de maintenance", "nature": "MCO", "genre": "SUI", "etape": "ETP.PLN", "priorite": "Moyenne", "charge": 0.25, "description": "Communication aux utilisateurs" },
+        { "titre": "Creer un snapshot/point de restauration", "nature": "MCO", "genre": "CFG", "etape": "ETP.REA", "priorite": "Haute", "charge": 0.25, "description": "Sauvegarde avant intervention" },
+        { "titre": "Appliquer les mises a jour", "nature": "MCO", "genre": "INS", "etape": "ETP.REA", "priorite": "Haute", "charge": 1, "description": "Installation et redemarrage" },
+        { "titre": "Tester les services critiques post-redemarrage", "nature": "MCO", "genre": "TST", "etape": "ETP.DEP", "priorite": "Haute", "charge": 0.5, "description": "AD, DNS, DHCP, applications metier" },
+        { "titre": "Mettre a jour l'inventaire GLPI", "nature": "MCO", "genre": "INV", "etape": "ETP.AME", "priorite": "Basse", "charge": 0.25, "description": "Version OS, KB installees" }
+      ]
+    },
+    {
+      "nom": "Support - Creation compte utilisateur",
+      "description": "Procedure standard de creation d'un compte utilisateur AD avec boite mail",
+      "taches": [
+        { "titre": "Verifier la demande et les droits requis", "nature": "SUP", "genre": "VER", "etape": "ETP.EXP", "priorite": "Moyenne", "charge": 0.1, "description": "Validation hierarchique" },
+        { "titre": "Creer le compte AD et boite mail", "nature": "SUP", "genre": "CFG", "etape": "ETP.EXP", "priorite": "Moyenne", "charge": 0.25, "description": "Respect nomenclature" },
+        { "titre": "Configurer les groupes de securite", "nature": "SUP", "genre": "CFG", "etape": "ETP.EXP", "priorite": "Moyenne", "charge": 0.1, "description": "Selon profil metier" },
+        { "titre": "Informer l'utilisateur et transmettre les acces", "nature": "SUP", "genre": "FOR", "etape": "ETP.EXP", "priorite": "Moyenne", "charge": 0.1, "description": "Mail de bienvenue" }
+      ]
+    },
+    {
+      "nom": "Projet - Migration Active Directory",
+      "description": "Template pour un projet de migration ou restructuration AD",
+      "taches": [
+        { "titre": "Auditer l'AD actuel (GPO, OU, groupes)", "nature": "PRJ", "genre": "VER", "etape": "ETP.ANA", "priorite": "Haute", "charge": 2, "description": "Etat des lieux complet" },
+        { "titre": "Cartographier les dependances applicatives", "nature": "PRJ", "genre": "INV", "etape": "ETP.ANA", "priorite": "Haute", "charge": 1, "description": "Applications liees a l'AD" },
+        { "titre": "Concevoir la nouvelle arborescence OU", "nature": "PRJ", "genre": "CON", "etape": "ETP.CON", "priorite": "Haute", "charge": 1, "description": "Design cible" },
+        { "titre": "Rediger le plan de migration", "nature": "PRJ", "genre": "DOC", "etape": "ETP.PLN", "priorite": "Haute", "charge": 1, "description": "Planning et jalons" },
+        { "titre": "Preparer l'environnement de test", "nature": "PRJ", "genre": "CFG", "etape": "ETP.REA", "priorite": "Moyenne", "charge": 1, "description": "Lab de test" },
+        { "titre": "Migrer un lot pilote d'utilisateurs", "nature": "PRJ", "genre": "INS", "etape": "ETP.REA", "priorite": "Haute", "charge": 1, "description": "Groupe pilote" },
+        { "titre": "Valider avec les correspondants metier", "nature": "PRJ", "genre": "VAL", "etape": "ETP.DEP", "priorite": "Haute", "charge": 0.5, "description": "Recette fonctionnelle" },
+        { "titre": "Former l'equipe exploitation au nouveau modele", "nature": "PRJ", "genre": "FOR", "etape": "ETP.DEP", "priorite": "Moyenne", "charge": 1, "description": "Transfert de competences" },
+        { "titre": "Documenter les procedures d'exploitation", "nature": "PRJ", "genre": "DOC", "etape": "ETP.EXP", "priorite": "Moyenne", "charge": 1, "description": "Guides operationnels" }
+      ]
+    },
+    {
+      "nom": "Overhead - Reunion hebdo equipe",
+      "description": "Organisation et suivi de la reunion hebdomadaire d'equipe",
+      "taches": [
+        { "titre": "Preparer l'ordre du jour", "nature": "OVH", "genre": "DOC", "etape": "ETP.PLN", "priorite": "Moyenne", "charge": 0.25, "description": "Points a aborder" },
+        { "titre": "Animer la reunion d'equipe", "nature": "OVH", "genre": "REU", "etape": "ETP.EXP", "priorite": "Moyenne", "charge": 0.5, "description": "1h hebdo" },
+        { "titre": "Rediger le compte-rendu", "nature": "OVH", "genre": "DOC", "etape": "ETP.AME", "priorite": "Basse", "charge": 0.25, "description": "Decisions et actions" }
+      ]
+    },
+    {
+      "nom": "MCO - Rotation sauvegardes mensuelles",
+      "description": "Procedure mensuelle de verification et rotation des sauvegardes",
+      "taches": [
+        { "titre": "Verifier les rapports de backup du mois", "nature": "MCO", "genre": "VEI", "etape": "ETP.EXP", "priorite": "Haute", "charge": 0.5, "description": "Succes/echecs" },
+        { "titre": "Identifier les echecs et relancer si necessaire", "nature": "MCO", "genre": "COR", "etape": "ETP.EXP", "priorite": "Haute", "charge": 0.5, "description": "Reprise des backups KO" },
+        { "titre": "Externaliser les bandes/supports mensuels", "nature": "MCO", "genre": "CFG", "etape": "ETP.EXP", "priorite": "Moyenne", "charge": 0.25, "description": "Coffre ou site distant" },
+        { "titre": "Mettre a jour le registre de rotation", "nature": "MCO", "genre": "INV", "etape": "ETP.AME", "priorite": "Basse", "charge": 0.1, "description": "Tracabilite" },
+        { "titre": "Tester une restauration aleatoire", "nature": "MCO", "genre": "TST", "etape": "ETP.AME", "priorite": "Haute", "charge": 1, "description": "Test de restore" }
+      ]
+    },
+    {
+      "nom": "Incident securite - Malware detecte",
+      "description": "Procedure de reponse a incident securite suite a detection de malware",
+      "taches": [
+        { "titre": "Isoler le poste du reseau", "nature": "INC", "genre": "SEC", "etape": "ETP.EXP", "priorite": "Critique", "charge": 0.1, "description": "Deconnexion immediate" },
+        { "titre": "Analyser les logs et vecteur d'infection", "nature": "INC", "genre": "ANA", "etape": "ETP.EXP", "priorite": "Critique", "charge": 1, "description": "EDR, proxy, mail" },
+        { "titre": "Scanner et nettoyer le poste", "nature": "INC", "genre": "COR", "etape": "ETP.EXP", "priorite": "Critique", "charge": 1, "description": "AV, reinstallation si necessaire" },
+        { "titre": "Verifier la propagation laterale", "nature": "INC", "genre": "VER", "etape": "ETP.EXP", "priorite": "Critique", "charge": 0.5, "description": "Scan reseau" },
+        { "titre": "Renforcer les regles EDR/Firewall", "nature": "INC", "genre": "SEC", "etape": "ETP.AME", "priorite": "Haute", "charge": 0.5, "description": "IOC, signatures" },
+        { "titre": "Rediger le rapport d'incident securite", "nature": "INC", "genre": "DOC", "etape": "ETP.AME", "priorite": "Haute", "charge": 1, "description": "Timeline, impact, remediation" }
+      ]
+    }
+  ]
+}

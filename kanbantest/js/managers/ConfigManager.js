@@ -433,6 +433,61 @@ export class ConfigManager {
     return false;
   }
 
+  /**
+   * Importe des templates depuis un tableau ou un objet JSON
+   * @param {Array|Object} data - Templates a importer (tableau ou {templates: [...]})
+   * @param {boolean} replace - Si true, remplace tous les templates existants
+   * @returns {number} Nombre de templates importes
+   */
+  importTemplates(data, replace = false) {
+    let templates = Array.isArray(data) ? data : (data.templates || []);
+
+    if (!Array.isArray(templates) || templates.length === 0) {
+      throw new Error('Aucun template valide a importer');
+    }
+
+    if (replace) {
+      this.config.templates = [];
+    }
+
+    if (!this.config.templates) {
+      this.config.templates = [];
+    }
+
+    let count = 0;
+    const now = Date.now();
+
+    templates.forEach((template, index) => {
+      if (!template.nom || !template.nom.trim()) {
+        this.logger.warn('Template ignore (pas de nom):', template);
+        return;
+      }
+
+      const newTemplate = {
+        id: now + index,
+        nom: template.nom.trim(),
+        description: template.description ? template.description.trim() : '',
+        taches: (template.taches || []).map(t => ({
+          titre: t.titre || '',
+          nature: t.nature || '',
+          genre: t.genre || '',
+          etape: t.etape || '',
+          priorite: t.priorite || 'Moyenne',
+          charge: parseFloat(t.charge) || 0,
+          description: t.description || ''
+        })),
+        createdAt: new Date().toISOString()
+      };
+
+      this.config.templates.push(newTemplate);
+      count++;
+    });
+
+    this.saveConfig();
+    this.logger.info(`${count} templates importes`);
+    return count;
+  }
+
   // === PRIORITES, URGENCES, IMPACTS (lecture seule) ===
 
   getPriorites() {

@@ -3,6 +3,7 @@
 
 import { initConfigManager, getConfigManager } from './managers/ConfigManager.js';
 import { GristManager } from './managers/GristManager.js';
+import { NATURE_ACTIVITE, GENRE_ACTION, ETAPE_CYCLE } from './config/constants.js';
 
 /**
  * Application de configuration
@@ -130,6 +131,7 @@ class ConfigApp {
 
     // === TEMPLATES ===
     $('#btn-add-template').on('click', () => this.openEditTemplateModal(null));
+    $('#btn-load-example-templates').on('click', () => this.handleLoadExampleTemplates());
 
     $(document).on('click', '.btn-edit-template', (e) => {
       const id = parseInt($(e.currentTarget).data('id'));
@@ -552,8 +554,29 @@ class ConfigApp {
     const index = $('#template-taches-container .template-tache-item').length;
     $template.attr('data-index', index);
 
+    // Peupler le select Nature (WHY)
+    const $natureSelect = $template.find('.tache-nature');
+    Object.values(NATURE_ACTIVITE).forEach(nature => {
+      $natureSelect.append(`<option value="${nature.code}">${nature.nom}</option>`);
+    });
+
+    // Peupler le select Genre (HOW)
+    const $genreSelect = $template.find('.tache-genre');
+    Object.values(GENRE_ACTION).forEach(genre => {
+      $genreSelect.append(`<option value="${genre.code}">${genre.nom}</option>`);
+    });
+
+    // Peupler le select Etape (WHERE)
+    const $etapeSelect = $template.find('.tache-etape');
+    Object.values(ETAPE_CYCLE).sort((a, b) => a.ordre - b.ordre).forEach(etape => {
+      $etapeSelect.append(`<option value="${etape.code}">${etape.nom}</option>`);
+    });
+
     if (tache) {
       $template.find('.tache-titre').val(tache.titre || '');
+      $template.find('.tache-nature').val(tache.nature || '');
+      $template.find('.tache-genre').val(tache.genre || '');
+      $template.find('.tache-etape').val(tache.etape || '');
       $template.find('.tache-priorite').val(tache.priorite || 'Moyenne');
       $template.find('.tache-charge').val(tache.charge || '');
       $template.find('.tache-description').val(tache.description || '');
@@ -580,6 +603,9 @@ class ConfigApp {
       if (titre) {
         taches.push({
           titre,
+          nature: $el.find('.tache-nature').val() || '',
+          genre: $el.find('.tache-genre').val() || '',
+          etape: $el.find('.tache-etape').val() || '',
           priorite: $el.find('.tache-priorite').val() || 'Moyenne',
           charge: parseFloat($el.find('.tache-charge').val()) || 0,
           description: $el.find('.tache-description').val().trim()
@@ -617,6 +643,33 @@ class ConfigApp {
     }
   }
 
+  async handleLoadExampleTemplates() {
+    const existingCount = this.configManager.getTemplates().length;
+    let confirmMsg = 'Charger les templates exemples SI (exploitation) ?';
+    if (existingCount > 0) {
+      confirmMsg += `\n\nVous avez deja ${existingCount} template(s). Les exemples seront ajoutes a la suite.`;
+    }
+
+    if (!confirm(confirmMsg)) return;
+
+    try {
+      const response = await fetch('data/default-templates.json');
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const count = this.configManager.importTemplates(data, false);
+
+      this.renderTemplates();
+      this.updateStats();
+      this.showSuccess(`${count} templates charges avec succes`);
+    } catch (error) {
+      console.error('Erreur chargement templates:', error);
+      this.showError('Erreur lors du chargement des templates exemples');
+    }
+  }
+
   renderTemplates() {
     const templates = this.configManager.getTemplates();
     const $list = $('#list-templates');
@@ -648,10 +701,13 @@ class ConfigApp {
           ${(t.taches || []).length > 0 ? `
             <div class="small">
               ${(t.taches || []).map(tache => `
-                <div class="d-flex align-items-center py-1 border-bottom">
+                <div class="d-flex flex-wrap align-items-center py-1 border-bottom gap-1">
                   <i class="bi bi-check2-square me-2 text-muted"></i>
-                  <span>${this.escapeHtml(tache.titre)}</span>
-                  <span class="badge bg-light text-dark ms-2">${this.escapeHtml(tache.priorite)}</span>
+                  <span class="fw-medium">${this.escapeHtml(tache.titre)}</span>
+                  ${tache.nature ? `<span class="badge" style="background-color: ${NATURE_ACTIVITE[tache.nature]?.couleur || '#6c757d'}; font-size: 0.7em;">${NATURE_ACTIVITE[tache.nature]?.nom || tache.nature}</span>` : ''}
+                  ${tache.genre ? `<span class="badge" style="background-color: ${GENRE_ACTION[tache.genre]?.couleur || '#6c757d'}; font-size: 0.7em;">${GENRE_ACTION[tache.genre]?.nom || tache.genre}</span>` : ''}
+                  ${tache.etape ? `<span class="badge" style="background-color: ${ETAPE_CYCLE[tache.etape.replace('ETP.', '')]?.couleur || '#6c757d'}; font-size: 0.7em;">${ETAPE_CYCLE[tache.etape.replace('ETP.', '')]?.nom || tache.etape}</span>` : ''}
+                  <span class="badge bg-light text-dark">${this.escapeHtml(tache.priorite)}</span>
                   ${tache.charge ? `<span class="ms-auto text-muted">${tache.charge}j</span>` : ''}
                 </div>
               `).join('')}
