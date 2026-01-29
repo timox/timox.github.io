@@ -17,7 +17,7 @@ import { createModuleLogger } from '../utils/LoggerManager.js';
 export class ViewManager {
   constructor(kanbanManager) {
     this.kanban = kanbanManager;
-    this.currentMode = VIEW_MODES.DETAILED;
+    this.currentMode = VIEW_MODES.COMPACT;
     this.focusColumn = null;
     this.logger = createModuleLogger('ViewManager');
     this.wrapper = null;
@@ -39,7 +39,7 @@ export class ViewManager {
     this.collapsedColumns = new Set();
     this.collapsedStack = null; // Référence à la pile des colonnes repliées
 
-    // Aligner immédiatement l'affichage sur le mode courant (détaillé par défaut)
+    // Aligner immédiatement l'affichage sur le mode courant (compact par défaut)
     this.initializeViewMode();
 
     this.logger.info('Gestionnaire de modes de vue initialisé');
