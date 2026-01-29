@@ -961,8 +961,17 @@ class SharedTaskModal {
     this.setFieldValue('stm-references', task.reference || '');
     this.updateReferencesPreview();
 
-    // Jalons
-    this.jalons = task.jalons ? JSON.parse(JSON.stringify(task.jalons)) : [];
+    // Jalons - gérer le cas où c'est une chaîne JSON ou un tableau
+    let jalonsData = task.jalons;
+    if (typeof jalonsData === 'string' && jalonsData.trim()) {
+      try {
+        jalonsData = JSON.parse(jalonsData);
+      } catch (e) {
+        console.warn('[SharedTaskModal] Erreur parsing jalons:', e);
+        jalonsData = [];
+      }
+    }
+    this.jalons = Array.isArray(jalonsData) ? [...jalonsData] : [];
     this.renderJalons();
 
     // Avancement
@@ -991,8 +1000,17 @@ class SharedTaskModal {
     this.setFieldValue('stm-duree-reelle-unite', 'h');
     this.updateDureeEcart();
 
-    // Liens entre tâches
-    this.taskLinks = task.liens ? JSON.parse(JSON.stringify(task.liens)) : [];
+    // Liens entre tâches - gérer le cas où c'est une chaîne JSON ou un tableau
+    let liensData = task.liens;
+    if (typeof liensData === 'string' && liensData.trim()) {
+      try {
+        liensData = JSON.parse(liensData);
+      } catch (e) {
+        console.warn('[SharedTaskModal] Erreur parsing liens:', e);
+        liensData = [];
+      }
+    }
+    this.taskLinks = Array.isArray(liensData) ? [...liensData] : [];
     this.populateLinkTaskSelect();
     this.renderTaskLinks();
 
