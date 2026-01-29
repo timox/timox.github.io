@@ -606,6 +606,13 @@ class GanttTimeline {
       const taskId = record.id;
       delete record.id;
 
+      // Convertir strategie_ids en strategie_id (format Grist ReferenceList)
+      if (record.strategie_ids && Array.isArray(record.strategie_ids) && record.strategie_ids.length > 0) {
+        record.strategie_id = ['L', ...record.strategie_ids];
+      }
+      // Supprimer strategie_ids qui n'est pas une colonne Grist
+      delete record.strategie_ids;
+
       // Convertir les jalons et liens en JSON string si nécessaire
       if (record.jalons && typeof record.jalons !== 'string') {
         record.jalons = JSON.stringify(record.jalons);

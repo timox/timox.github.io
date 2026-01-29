@@ -121,6 +121,13 @@ async function handleTaskSave(taskData) {
   try {
     const isNew = !taskData.id;
 
+    // Convertir strategie_ids en strategie_id (format Grist ReferenceList)
+    if (taskData.strategie_ids && Array.isArray(taskData.strategie_ids) && taskData.strategie_ids.length > 0) {
+      taskData.strategie_id = ['L', ...taskData.strategie_ids];
+    }
+    // Supprimer strategie_ids qui n'est pas une colonne Grist
+    delete taskData.strategie_ids;
+
     if (isNew) {
       // Création d'une nouvelle tâche
       const result = await window.grist.docApi.applyUserActions([
