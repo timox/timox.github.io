@@ -143,7 +143,7 @@ class ConfigApp {
       this.handleDeleteTemplate(id);
     });
 
-    $('#btn-add-template-tache').on('click', () => this.addTemplateTacheRow());
+    $(document).on('click', '#btn-add-template-tache', () => this.addTemplateTacheRow());
 
     $(document).on('click', '.btn-remove-tache', (e) => {
       $(e.currentTarget).closest('.template-tache-item').remove();
