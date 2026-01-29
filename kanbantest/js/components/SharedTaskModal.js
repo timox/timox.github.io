@@ -153,6 +153,11 @@ class SharedTaskModal {
         if (!this.datePicker && (window.flatpickr || typeof flatpickr !== 'undefined')) {
           this.initDatePicker();
         }
+
+        // Charger l'historique une fois la modale visible
+        if (this.currentTask) {
+          this.loadTaskHistory();
+        }
       });
 
       this.setupEventListeners();
