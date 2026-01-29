@@ -1042,6 +1042,9 @@ class SharedTaskModal {
       const len = (task.description || '').length;
       descCounter.textContent = `${len} caractère${len > 1 ? 's' : ''}`;
     }
+
+    // Charger l'historique automatiquement
+    this.loadTaskHistory();
   }
 
   /**
