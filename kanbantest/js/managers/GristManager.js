@@ -591,7 +591,7 @@ export class GristManager {
 
     simpleFields.forEach(field => {
       if (recordData.hasOwnProperty(field)) {
-        gristData[field] = recordData[field] || null;
+        gristData[field] = recordData[field] ?? null;
       }
     });
     
@@ -659,13 +659,13 @@ export class GristManager {
       gristData.tache_liens = typeof recordData.tache_liens === 'string' ? recordData.tache_liens : JSON.stringify(recordData.tache_liens);
     }
 
-    // Traiter les dates
-    if (recordData.date_echeance) {
-      gristData.date_echeance = normalizeDate(recordData.date_echeance);
+    // Traiter les dates (Grist Date = timestamp en secondes)
+    if (recordData.hasOwnProperty('date_echeance')) {
+      gristData.date_echeance = this._toGristTimestamp(recordData.date_echeance);
     }
 
-    if (recordData.date_debut) {
-      gristData.date_debut = normalizeDate(recordData.date_debut);
+    if (recordData.hasOwnProperty('date_debut')) {
+      gristData.date_debut = this._toGristTimestamp(recordData.date_debut);
     }
     
     // Ajouter les métadonnées si les colonnes existent
@@ -706,13 +706,43 @@ export class GristManager {
   }
   
   /**
+   * Convertit une valeur date en timestamp secondes pour Grist
+   * @param {number|string|Date|null} dateValue - Valeur date (timestamp secondes, ms, string YYYY-MM-DD, Date, ou null)
+   * @returns {number|null} Timestamp en secondes ou null
+   */
+  _toGristTimestamp(dateValue) {
+    if (dateValue === null || dateValue === undefined) return null;
+
+    // Déjà un timestamp numérique
+    if (typeof dateValue === 'number') {
+      if (dateValue === 0) return null;
+      // Si en millisecondes (> 1e12), convertir en secondes
+      return dateValue > 1e12 ? Math.floor(dateValue / 1000) : dateValue;
+    }
+
+    // Objet Date
+    if (dateValue instanceof Date) {
+      return isNaN(dateValue.getTime()) ? null : Math.floor(dateValue.getTime() / 1000);
+    }
+
+    // String (YYYY-MM-DD ou ISO)
+    if (typeof dateValue === 'string') {
+      if (!dateValue.trim()) return null;
+      const d = new Date(dateValue);
+      return isNaN(d.getTime()) ? null : Math.floor(d.getTime() / 1000);
+    }
+
+    return null;
+  }
+
+  /**
    * Vérifie si une date est valide
    * @param {string} dateString - Date à vérifier
    * @returns {boolean} True si valide
    */
   isValidDate(dateString) {
     if (!dateString) return true; // null/undefined sont acceptables
-    
+
     const normalizedDate = normalizeDate(dateString);
     return normalizedDate !== null;
   }

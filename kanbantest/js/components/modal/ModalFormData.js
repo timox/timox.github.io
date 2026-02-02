@@ -133,8 +133,8 @@ export class ModalFormData {
     this.setFieldValue('stm-duree-reelle-unite', 'h');
     this.modal.visualsModule.updateDureeEcart();
 
-    // Liens entre taches - sous-module
-    this.modal.taskLinksModule.setData(task.liens);
+    // Liens entre taches - sous-module (colonne Grist = tache_liens)
+    this.modal.taskLinksModule.setData(task.tache_liens);
     this.modal.taskLinksModule.populateSelect();
 
     // Strategies multiples - strategie_id est une ReferenceList ["L", id1, id2, ...]
@@ -263,7 +263,7 @@ export class ModalFormData {
     data.mise_en_oeuvre_nom = this.getFieldValue('stm-meo-nom');
 
     // Strategies multiples (ReferenceList dans Grist)
-    if (this.modal.selectedStrategies.length > 0) {
+    if (this.modal.selectedStrategies && this.modal.selectedStrategies.length > 0) {
       // Envoyer le tableau d'IDs pour que GristManager cree la ReferenceList
       data.strategie_ids = this.modal.selectedStrategies.map(s => s.id);
       data.est_classifiee = true;
@@ -276,6 +276,7 @@ export class ModalFormData {
       } else {
         // Liste vide - GristManager convertira en ["L"]
         data.strategie_id = null;
+        data.est_classifiee = false;
       }
     }
 
@@ -284,17 +285,16 @@ export class ModalFormData {
       data.programme_id = parseInt(programmeIdStr, 10);
     }
 
-    // Echeance (sous-module)
+    // Echeance (sous-module) - toujours envoyer pour permettre le vidage
     const echeanceDate = this.modal.datePickerModule.getDate();
     if (echeanceDate && !isNaN(echeanceDate.getTime())) {
       data.date_echeance = Math.floor(echeanceDate.getTime() / 1000);
+    } else {
+      data.date_echeance = null;
     }
 
-    // Jalons (sous-module)
-    const jalons = this.modal.jalonModule.getData();
-    if (jalons.length > 0) {
-      data.jalons = jalons;
-    }
+    // Jalons (sous-module) - toujours envoyer pour permettre le vidage
+    data.jalons = this.modal.jalonModule.getData();
 
     // Temps
     if (this.modal.options.showTimes) {
@@ -308,10 +308,12 @@ export class ModalFormData {
     const avancement = parseInt(this.getFieldValue('stm-avancement')) || 0;
     data.avancement = avancement;
 
-    // Date de debut
+    // Date de debut - toujours envoyer pour permettre le vidage
     const dateDebut = this.getFieldValue('stm-date-debut');
     if (dateDebut) {
       data.date_debut = Math.floor(new Date(dateDebut).getTime() / 1000);
+    } else {
+      data.date_debut = null;
     }
 
     // Durees (en heures pour Grist)
@@ -324,11 +326,8 @@ export class ModalFormData {
       data.temps_reel_heures = dureeReelle;
     }
 
-    // Liens entre taches (sous-module)
-    const liens = this.modal.taskLinksModule.getData();
-    if (liens.length > 0) {
-      data.liens = liens;
-    }
+    // Liens entre taches (sous-module) - toujours envoyer pour permettre le vidage
+    data.liens = this.modal.taskLinksModule.getData();
 
     return data;
   }
