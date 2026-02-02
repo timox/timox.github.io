@@ -81,7 +81,10 @@ class SharedTaskModal {
     this.bsModal = null;
     this.currentTask = null;
     this.isLoaded = false;
-    this.datePicker = null;
+    // Sous-modules (Phase 2)
+    this.jalonModule = new ModalJalons(this);
+    this.datePickerModule = new ModalDatePicker(this);
+    this.taskLinksModule = new ModalTaskLinks(this);
 
     // Données de référence - SYNCHRONISÉ AVEC constants.js
     this.programmes = [];
@@ -98,10 +101,7 @@ class SharedTaskModal {
 
     // Bureaux - Source fiable (synchronisée avec DEFAULT_BUREAUX de constants.js)
     this.bureaux = ['Réseaux', 'BDD', 'Exploit', 'Nexsis-RRF', 'Chef SSIR', 'Chef GSSI', 'Chef SIG'];
-    this.jalons = [];
     this.selectedStrategies = [];
-    this.taskLinks = [];
-    this.allTasks = []; // Pour le sélecteur de liens
   }
 
   /**
@@ -150,8 +150,8 @@ class SharedTaskModal {
         }
 
         // Réinitialiser le date picker si flatpickr est maintenant disponible
-        if (!this.datePicker && (window.flatpickr || typeof flatpickr !== 'undefined')) {
-          this.initDatePicker();
+        if (!this.datePickerModule.instance && (window.flatpickr || typeof flatpickr !== 'undefined')) {
+          this.datePickerModule.init();
         }
 
         // Charger l'historique une fois la modale visible
@@ -272,11 +272,11 @@ class SharedTaskModal {
       // Initialiser le strategy browser
       this.initStrategyBrowser();
 
-      // Initialiser le date picker
-      this.initDatePicker();
+      // Initialiser le date picker (sous-module)
+      this.datePickerModule.init();
 
-      // Charger les tâches pour les liens
-      await this.loadAllTasks();
+      // Charger les tâches pour les liens (sous-module)
+      await this.taskLinksModule.loadAllTasks();
 
       console.log('[SharedTaskModal] Reference data loaded');
     } catch (error) {
@@ -772,8 +772,8 @@ class SharedTaskModal {
       dateDebut.addEventListener('change', () => this.updateTimelineVisual());
     }
 
-    // Initialiser les jalons
-    this.initJalons();
+    // Initialiser les jalons (sous-module)
+    this.jalonModule.init();
 
     // Initialiser l'avancement
     this.initAvancement();
@@ -781,8 +781,8 @@ class SharedTaskModal {
     // Initialiser les durées
     this.initDuree();
 
-    // Initialiser les liens entre tâches
-    this.initTaskLinks();
+    // Initialiser les liens entre tâches (sous-module)
+    this.taskLinksModule.init();
 
     // Initialiser les boutons de priorité
     this.initPriorityButtons();
@@ -806,7 +806,7 @@ class SharedTaskModal {
     if (this.modal) {
       this.modal.addEventListener('hidden.bs.modal', () => {
         this.currentTask = null;
-        this.jalons = [];
+        this.jalonModule.clear();
         this.selectedStrategies = [];
       });
     }
@@ -945,39 +945,25 @@ class SharedTaskModal {
       : [];
     this.setSelectedQui(qui);
 
-    // Échéance (conversion timestamp si nécessaire)
+    // Échéance (conversion timestamp si nécessaire) - sous-module
     if (task.date_echeance) {
       const date = typeof task.date_echeance === 'number'
         ? new Date(task.date_echeance * 1000)
         : new Date(task.date_echeance);
       if (!isNaN(date.getTime())) {
-        if (this.datePicker) {
-          this.datePicker.setDate(date);
-        } else {
-          this.setFieldValue('stm-echeance', date.toISOString().split('T')[0]);
-        }
-        this.updateDateStatus(date);
+        this.datePickerModule.setDate(date);
+        this.datePickerModule.updateStatus(date);
       }
     } else {
-      this.updateDateStatus(null);
+      this.datePickerModule.updateStatus(null);
     }
 
     // Références
     this.setFieldValue('stm-references', task.reference || '');
     this.updateReferencesPreview();
 
-    // Jalons - gérer le cas où c'est une chaîne JSON ou un tableau
-    let jalonsData = task.jalons;
-    if (typeof jalonsData === 'string' && jalonsData.trim()) {
-      try {
-        jalonsData = JSON.parse(jalonsData);
-      } catch (e) {
-        console.warn('[SharedTaskModal] Erreur parsing jalons:', e);
-        jalonsData = [];
-      }
-    }
-    this.jalons = Array.isArray(jalonsData) ? [...jalonsData] : [];
-    this.renderJalons();
+    // Jalons - sous-module
+    this.jalonModule.setData(task.jalons);
 
     // Avancement
     const avancement = task.avancement || 0;
@@ -1005,19 +991,9 @@ class SharedTaskModal {
     this.setFieldValue('stm-duree-reelle-unite', 'h');
     this.updateDureeEcart();
 
-    // Liens entre tâches - gérer le cas où c'est une chaîne JSON ou un tableau
-    let liensData = task.liens;
-    if (typeof liensData === 'string' && liensData.trim()) {
-      try {
-        liensData = JSON.parse(liensData);
-      } catch (e) {
-        console.warn('[SharedTaskModal] Erreur parsing liens:', e);
-        liensData = [];
-      }
-    }
-    this.taskLinks = Array.isArray(liensData) ? [...liensData] : [];
-    this.populateLinkTaskSelect();
-    this.renderTaskLinks();
+    // Liens entre tâches - sous-module
+    this.taskLinksModule.setData(task.liens);
+    this.taskLinksModule.populateSelect();
 
     // Stratégies multiples - strategie_id est une ReferenceList ["L", id1, id2, ...]
     const strategieIds = extractGristRefIds(task.strategie_id);
@@ -1069,15 +1045,11 @@ class SharedTaskModal {
     // Vider les stratégies
     this.setSelectedStrategies([]);
 
-    // Vider les jalons
-    this.jalons = [];
-    this.renderJalons();
+    // Vider les jalons (sous-module)
+    this.jalonModule.clear();
 
-    // Vider la date
-    if (this.datePicker) {
-      this.datePicker.clear();
-    }
-    this.updateDateStatus(null);
+    // Vider la date (sous-module)
+    this.datePickerModule.clear();
 
     // Vider les références
     this.setFieldValue('stm-references', '');
@@ -1101,9 +1073,8 @@ class SharedTaskModal {
     const ecartDiv = document.getElementById('stm-duree-ecart');
     if (ecartDiv) ecartDiv.textContent = '';
 
-    // Vider les liens
-    this.taskLinks = [];
-    this.renderTaskLinks();
+    // Vider les liens (sous-module)
+    this.taskLinksModule.clear();
 
     // Reset priority buttons
     this.setPriorityButtonValue('stm-urgence-buttons', '');
@@ -1171,26 +1142,16 @@ class SharedTaskModal {
       data.programme_id = parseInt(programmeIdStr, 10);
     }
 
-    // Échéance
-    let echeanceDate = null;
-    if (this.datePicker) {
-      const dates = this.datePicker.selectedDates;
-      if (dates.length > 0) {
-        echeanceDate = dates[0];
-      }
-    } else {
-      const echeance = this.getFieldValue('stm-echeance');
-      if (echeance) {
-        echeanceDate = new Date(echeance);
-      }
-    }
+    // Échéance (sous-module)
+    const echeanceDate = this.datePickerModule.getDate();
     if (echeanceDate && !isNaN(echeanceDate.getTime())) {
       data.date_echeance = Math.floor(echeanceDate.getTime() / 1000);
     }
 
-    // Jalons
-    if (this.jalons.length > 0) {
-      data.jalons = this.jalons;
+    // Jalons (sous-module)
+    const jalons = this.jalonModule.getData();
+    if (jalons.length > 0) {
+      data.jalons = jalons;
     }
 
     // Temps
@@ -1221,9 +1182,10 @@ class SharedTaskModal {
       data.temps_reel_heures = dureeReelle;
     }
 
-    // Liens entre tâches
-    if (this.taskLinks.length > 0) {
-      data.liens = this.taskLinks;
+    // Liens entre tâches (sous-module)
+    const liens = this.taskLinksModule.getData();
+    if (liens.length > 0) {
+      data.liens = liens;
     }
 
     return data;
@@ -1432,267 +1394,6 @@ class SharedTaskModal {
     this.updateStrategyTags();
   }
 
-  // === Date Picker ===
-
-  /**
-   * Initialise le date picker avec bouton clear
-   */
-  initDatePicker() {
-    const input = document.getElementById('stm-echeance');
-    const btnPick = document.getElementById('stm-btn-pick-date');
-    const btnClear = document.getElementById('stm-btn-clear-date');
-
-    if (!input) {
-      console.warn('[SharedTaskModal] Date input not found');
-      return;
-    }
-
-    // Vérifier flatpickr globalement (window.flatpickr)
-    const fp = window.flatpickr || (typeof flatpickr !== 'undefined' ? flatpickr : null);
-
-    if (fp) {
-      try {
-        // Détruire l'instance précédente si elle existe
-        if (this.datePicker) {
-          this.datePicker.destroy();
-        }
-
-        this.datePicker = fp(input, {
-          dateFormat: 'd/m/Y',
-          locale: 'fr',
-          allowInput: true,
-          clickOpens: true,
-          onChange: (dates) => {
-            this.updateDateStatus(dates[0]);
-            this.updateTimelineVisual();
-            this.updateCompletionRing();
-          }
-        });
-        console.log('[SharedTaskModal] Flatpickr initialized');
-      } catch (error) {
-        console.warn('[SharedTaskModal] Flatpickr init error:', error);
-        this.initDatePickerFallback(input);
-      }
-    } else {
-      console.warn('[SharedTaskModal] Flatpickr not available, using fallback');
-      this.initDatePickerFallback(input);
-    }
-
-    // Bouton pour ouvrir le picker
-    if (btnPick) {
-      // Supprimer les anciens listeners en clonant le bouton
-      const newBtnPick = btnPick.cloneNode(true);
-      btnPick.parentNode.replaceChild(newBtnPick, btnPick);
-
-      newBtnPick.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        if (this.datePicker && typeof this.datePicker.open === 'function') {
-          this.datePicker.open();
-        } else {
-          // Fallback: utiliser input date natif
-          const dateInput = document.getElementById('stm-echeance');
-          if (dateInput) {
-            if (dateInput.type === 'date') {
-              try {
-                dateInput.showPicker?.();
-              } catch (err) {
-                dateInput.focus();
-                dateInput.click();
-              }
-            } else {
-              // Convertir temporairement en input date
-              const currentValue = dateInput.value;
-              dateInput.type = 'date';
-              dateInput.removeAttribute('readonly');
-              try {
-                dateInput.showPicker?.();
-              } catch (err) {
-                dateInput.focus();
-              }
-            }
-          }
-        }
-      });
-    }
-
-    // Bouton pour effacer la date
-    if (btnClear) {
-      // Supprimer les anciens listeners en clonant le bouton
-      const newBtnClear = btnClear.cloneNode(true);
-      btnClear.parentNode.replaceChild(newBtnClear, btnClear);
-
-      newBtnClear.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (this.datePicker && typeof this.datePicker.clear === 'function') {
-          this.datePicker.clear();
-        } else {
-          const dateInput = document.getElementById('stm-echeance');
-          if (dateInput) dateInput.value = '';
-        }
-        this.updateDateStatus(null);
-      });
-    }
-  }
-
-  /**
-   * Fallback pour le date picker sans flatpickr
-   */
-  initDatePickerFallback(input) {
-    input.type = 'date';
-    input.removeAttribute('readonly');
-    input.style.cursor = 'pointer';
-    input.addEventListener('change', () => {
-      this.updateDateStatus(input.value ? new Date(input.value) : null);
-      this.updateTimelineVisual();
-      this.updateCompletionRing();
-    });
-    // Permettre l'ouverture au clic
-    input.addEventListener('click', () => {
-      try {
-        input.showPicker?.();
-      } catch (e) {
-        // Ignorer si showPicker n'est pas supporté
-      }
-    });
-  }
-
-  /**
-   * Met à jour le statut de la date
-   */
-  updateDateStatus(date) {
-    const btnClear = document.getElementById('stm-btn-clear-date');
-    const statusSpan = document.getElementById('stm-date-status');
-
-    if (date) {
-      if (btnClear) btnClear.style.display = 'block';
-      if (statusSpan) {
-        const now = new Date();
-        const diff = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
-        if (diff < 0) {
-          statusSpan.className = 'text-danger small';
-          statusSpan.textContent = `En retard de ${Math.abs(diff)} jour(s)`;
-        } else if (diff === 0) {
-          statusSpan.className = 'text-warning small';
-          statusSpan.textContent = "Échéance aujourd'hui";
-        } else if (diff <= 7) {
-          statusSpan.className = 'text-warning small';
-          statusSpan.textContent = `Dans ${diff} jour(s)`;
-        } else {
-          statusSpan.className = 'text-muted small';
-          statusSpan.textContent = `Dans ${diff} jours`;
-        }
-      }
-    } else {
-      if (btnClear) btnClear.style.display = 'none';
-      if (statusSpan) {
-        statusSpan.className = 'text-muted small';
-        statusSpan.textContent = 'Aucune date définie';
-      }
-    }
-  }
-
-  // === Jalons ===
-
-  /**
-   * Initialise la section jalons
-   */
-  initJalons() {
-    const btnAdd = document.getElementById('stm-btn-add-jalon');
-    if (btnAdd) {
-      btnAdd.addEventListener('click', () => this.addJalon());
-    }
-    this.renderJalons();
-  }
-
-  /**
-   * Ajoute un nouveau jalon depuis les champs inline
-   */
-  addJalon() {
-    const titreInput = document.getElementById('stm-jalon-titre');
-    const dateInput = document.getElementById('stm-jalon-date');
-
-    if (!titreInput) return;
-
-    const titre = titreInput.value.trim();
-    if (!titre) {
-      titreInput.classList.add('is-invalid');
-      titreInput.focus();
-      return;
-    }
-
-    // Formater la date si présente
-    let dateFormatted = '';
-    if (dateInput && dateInput.value) {
-      const date = new Date(dateInput.value);
-      dateFormatted = date.toLocaleDateString('fr-FR');
-    }
-
-    this.jalons.push({
-      id: Date.now(),
-      titre: titre,
-      date: dateFormatted,
-      statut: 'pending'
-    });
-
-    // Réinitialiser les champs
-    titreInput.value = '';
-    titreInput.classList.remove('is-invalid');
-    if (dateInput) dateInput.value = '';
-
-    this.renderJalons();
-  }
-
-  /**
-   * Affiche les jalons
-   */
-  renderJalons() {
-    const container = document.getElementById('stm-jalons-timeline');
-    const emptyDiv = document.getElementById('stm-jalons-empty');
-    const countBadge = document.getElementById('stm-jalons-count');
-
-    if (!container) return;
-
-    if (this.jalons.length === 0) {
-      if (emptyDiv) emptyDiv.style.display = 'block';
-      if (countBadge) countBadge.textContent = '0';
-      container.querySelectorAll('.jalon-item').forEach(el => el.remove());
-      return;
-    }
-
-    if (emptyDiv) emptyDiv.style.display = 'none';
-    if (countBadge) countBadge.textContent = this.jalons.length;
-
-    // Supprimer les anciens jalons
-    container.querySelectorAll('.jalon-item').forEach(el => el.remove());
-
-    // Ajouter les jalons
-    this.jalons.forEach((jalon, idx) => {
-      const div = document.createElement('div');
-      div.className = 'jalon-item d-flex align-items-center gap-2 py-2 border-bottom';
-      div.innerHTML = `
-        <input type="checkbox" class="form-check-input" ${jalon.statut === 'done' ? 'checked' : ''} data-idx="${idx}">
-        <span class="flex-grow-1 ${jalon.statut === 'done' ? 'text-decoration-line-through text-muted' : ''}">${jalon.titre}</span>
-        <small class="text-muted">${jalon.date || '-'}</small>
-        <button type="button" class="btn btn-sm btn-outline-danger" data-idx="${idx}">
-          <i class="bi bi-trash"></i>
-        </button>
-      `;
-      container.appendChild(div);
-
-      // Listeners
-      div.querySelector('input[type="checkbox"]').addEventListener('change', (e) => {
-        this.jalons[idx].statut = e.target.checked ? 'done' : 'pending';
-        this.renderJalons();
-      });
-      div.querySelector('button').addEventListener('click', () => {
-        this.jalons.splice(idx, 1);
-        this.renderJalons();
-      });
-    });
-  }
-
   // === References ===
 
   /**
@@ -1839,188 +1540,6 @@ class SharedTaskModal {
       ecartDiv.className = 'form-text small text-muted';
       ecartDiv.textContent = 'Dans les temps';
     }
-  }
-
-  // === Liens entre tâches ===
-
-  /**
-   * Charge toutes les tâches pour le sélecteur de liens
-   */
-  async loadAllTasks() {
-    try {
-      if (typeof grist === 'undefined') return;
-
-      const data = await grist.docApi.fetchTable('Ssir_principale_task');
-      this.allTasks = [];
-      const count = data.id?.length || 0;
-
-      for (let i = 0; i < count; i++) {
-        this.allTasks.push({
-          id: data.id[i],
-          titre: data.titre?.[i] || `Tâche #${data.id[i]}`,
-          statut: data.statut?.[i] || ''
-        });
-      }
-
-      this.populateLinkTaskSelect();
-    } catch (error) {
-      console.warn('[SharedTaskModal] Failed to load tasks for links:', error.message);
-    }
-  }
-
-  /**
-   * Peuple le sélecteur de tâches pour les liens
-   */
-  populateLinkTaskSelect() {
-    const select = document.getElementById('stm-link-task');
-    if (!select) return;
-
-    select.innerHTML = '<option value="">-- Sélectionner une tâche --</option>';
-
-    // Exclure la tâche courante
-    const currentId = this.currentTask?.id;
-
-    this.allTasks
-      .filter(t => t.id !== currentId)
-      .forEach(task => {
-        const option = document.createElement('option');
-        option.value = task.id;
-        option.textContent = `#${task.id} - ${this.truncate(task.titre, 50)}`;
-        option.dataset.titre = task.titre;
-        option.dataset.statut = task.statut;
-        select.appendChild(option);
-      });
-  }
-
-  /**
-   * Initialise la section des liens
-   */
-  initTaskLinks() {
-    const btnAdd = document.getElementById('stm-btn-add-link');
-    if (btnAdd) {
-      btnAdd.addEventListener('click', () => this.addTaskLink());
-    }
-  }
-
-  /**
-   * Ajoute un lien vers une autre tâche
-   */
-  addTaskLink() {
-    const typeSelect = document.getElementById('stm-link-type');
-    const taskSelect = document.getElementById('stm-link-task');
-
-    if (!typeSelect || !taskSelect || !taskSelect.value) {
-      return;
-    }
-
-    const taskId = parseInt(taskSelect.value);
-    const type = typeSelect.value;
-    const selectedOption = taskSelect.options[taskSelect.selectedIndex];
-
-    // Vérifier si le lien existe déjà
-    if (this.taskLinks.some(l => l.taskId === taskId && l.type === type)) {
-      alert('Ce lien existe déjà');
-      return;
-    }
-
-    this.taskLinks.push({
-      taskId: taskId,
-      type: type,
-      titre: selectedOption.dataset.titre,
-      statut: selectedOption.dataset.statut
-    });
-
-    this.renderTaskLinks();
-    taskSelect.value = '';
-  }
-
-  /**
-   * Supprime un lien
-   */
-  removeTaskLink(taskId, type) {
-    this.taskLinks = this.taskLinks.filter(l => !(l.taskId === taskId && l.type === type));
-    this.renderTaskLinks();
-  }
-
-  /**
-   * Affiche les liens
-   */
-  renderTaskLinks() {
-    const container = document.getElementById('stm-liens-list');
-    const countBadge = document.getElementById('stm-liens-count');
-    const noLinks = document.getElementById('stm-no-links');
-
-    if (!container) return;
-
-    // Grouper par type
-    const types = {
-      bloque: { group: 'stm-links-bloque', items: [] },
-      bloque_par: { group: 'stm-links-bloque-par', items: [] },
-      lie: { group: 'stm-links-lie', items: [] },
-      parent: { group: 'stm-links-parent', items: [] },
-      enfant: { group: 'stm-links-enfant', items: [] }
-    };
-
-    this.taskLinks.forEach(link => {
-      if (types[link.type]) {
-        types[link.type].items.push(link);
-      }
-    });
-
-    // Afficher/cacher les groupes
-    for (const [type, data] of Object.entries(types)) {
-      const groupEl = document.getElementById(data.group);
-      const itemsEl = container.querySelector(`.task-link-items[data-type="${type}"]`);
-
-      if (!groupEl || !itemsEl) continue;
-
-      if (data.items.length === 0) {
-        groupEl.style.display = 'none';
-        itemsEl.innerHTML = '';
-      } else {
-        groupEl.style.display = 'block';
-        itemsEl.innerHTML = data.items.map(link => `
-          <div class="task-link-item d-flex align-items-center gap-2 py-1">
-            <span class="badge bg-light text-dark">#${link.taskId}</span>
-            <span class="flex-grow-1 small">${this.truncate(link.titre, 40)}</span>
-            <span class="badge ${this.getStatusBadgeClass(link.statut)} small">${link.statut || '-'}</span>
-            <button type="button" class="btn btn-sm btn-link text-danger p-0"
-              onclick="window._sharedTaskModalInstance?.removeTaskLink(${link.taskId}, '${type}')">
-              <i class="bi bi-x-lg"></i>
-            </button>
-          </div>
-        `).join('');
-      }
-    }
-
-    // Mettre à jour le compteur
-    if (countBadge) countBadge.textContent = this.taskLinks.length;
-
-    // Afficher/cacher le message "aucun lien"
-    if (noLinks) {
-      noLinks.style.display = this.taskLinks.length === 0 ? 'block' : 'none';
-    }
-
-    // Stocker dans le champ caché
-    const hiddenField = document.getElementById('stm-liens-data');
-    if (hiddenField) {
-      hiddenField.value = JSON.stringify(this.taskLinks);
-    }
-  }
-
-  /**
-   * Retourne la classe CSS pour un badge de statut
-   */
-  getStatusBadgeClass(statut) {
-    const classes = {
-      'Backlog': 'bg-secondary',
-      'À faire': 'bg-info',
-      'En cours': 'bg-primary',
-      'En attente': 'bg-warning text-dark',
-      'Validation': 'bg-purple',
-      'Terminé': 'bg-success'
-    };
-    return classes[statut] || 'bg-secondary';
   }
 
   // === Priority (now using selects - no special logic needed) ===
@@ -2584,6 +2103,22 @@ class SharedTaskModal {
     // Afficher une alerte simple ou un toast
     alert(message);
   }
+
+  // === Getters de compatibilité (Phase 2 — seront supprimés en Phase 10) ===
+
+  get jalons() { return this.jalonModule.jalons; }
+  set jalons(val) { this.jalonModule.jalons = val; }
+
+  get datePicker() { return this.datePickerModule.instance; }
+
+  get taskLinks() { return this.taskLinksModule.links; }
+  set taskLinks(val) { this.taskLinksModule.links = val; }
+
+  get allTasks() { return this.taskLinksModule.allTasks; }
+  set allTasks(val) { this.taskLinksModule.allTasks = val; }
+
+  // Compatibilité pour les appels inline onclick existants
+  removeTaskLink(taskId, type) { this.taskLinksModule.remove(taskId, type); }
 }
 
 // Export pour ES modules
