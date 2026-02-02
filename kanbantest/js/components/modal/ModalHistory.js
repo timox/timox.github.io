@@ -35,7 +35,8 @@ export class ModalHistory {
 
   /**
    * Charge l'historique de la tache dans l'onglet
-   * Parse le champ notes (format JSON: { content: "...", history: [...] })
+   * Delegue au HistoryManager.parseTaskHistory() pour fusionner historique_statuts + notes.history
+   * Fallback sur parsing local si HistoryManager non disponible
    */
   async loadTaskHistory() {
     const timeline = document.getElementById('stm-history-timeline');
@@ -59,29 +60,67 @@ export class ModalHistory {
     timeline.querySelectorAll('.history-entry-item').forEach(el => el.remove());
 
     try {
-      // Parser l'historique depuis le champ notes (JSON)
-      const historyEntries = this.parseNotesHistory(this.modal.currentTask);
+      const task = this.modal.currentTask;
+
+      // Deleguer au HistoryManager (merge historique_statuts + notes.history)
+      const historyManager = window.kanbanManager?.historyManager;
+      let timelineEntries = [];
+      let stats = null;
+
+      if (historyManager) {
+        const historyData = historyManager.parseTaskHistory(task);
+        timelineEntries = historyData.timeline || [];
+        stats = historyData.stats;
+      } else {
+        // Fallback: parsing local (notes.history uniquement)
+        const localEntries = this.parseNotesHistory(task);
+        timelineEntries = localEntries.map(e => ({
+          type: e.action === 'comment' ? 'comment' : 'status_change',
+          timestamp: e.timestamp ? new Date(e.timestamp * 1000) : new Date(),
+          note: e.details || e.newValue || '',
+          content: e.action === 'comment' ? (e.details || e.newValue || '') : '',
+          user: e.user,
+          statut: e.status || ''
+        }));
+      }
 
       if (loadingEl) loadingEl.style.display = 'none';
 
-      if (historyEntries.length > 0) {
-        // Calculer les statistiques
-        let modifications = historyEntries.length;
-        let comments = historyEntries.filter(e => e.action === 'comment').length;
-        let statusChanges = historyEntries.filter(e => e.action === 'status_change').length;
-        let lastUpdate = historyEntries[0]?.timestamp || null;
+      if (timelineEntries.length > 0) {
+        // Stats depuis HistoryManager ou calcul local
+        const modifications = stats ? stats.totalSteps : timelineEntries.length;
+        const comments = stats ? stats.totalComments : timelineEntries.filter(e => e.type === 'comment').length;
+        const statusChanges = stats ? stats.totalSteps : timelineEntries.filter(e => e.type === 'status_change').length;
+        const lastTs = stats?.lastModified
+          ? Math.floor(stats.lastModified.getTime() / 1000)
+          : null;
 
-        // Mettre a jour les stats
-        this.updateHistoryStats(modifications, comments, statusChanges, lastUpdate);
+        this.updateHistoryStats(modifications, comments, statusChanges, lastTs);
 
-        // Creer les entrees (triees du plus recent au plus ancien)
-        historyEntries.forEach(entry => {
-          const entryEl = this.createHistoryEntry(
-            entry.timestamp,
-            this.getActionLabel(entry.action),
-            entry.user,
-            entry.details || entry.newValue || ''
-          );
+        // Creer les entrees
+        timelineEntries.forEach(entry => {
+          let action, user, details, timestamp;
+
+          if (entry.type === 'comment') {
+            action = this.getActionLabel('comment');
+            user = entry.user || 'Utilisateur';
+            details = entry.content || '';
+            timestamp = entry.timestamp instanceof Date
+              ? Math.floor(entry.timestamp.getTime() / 1000)
+              : entry.timestamp;
+          } else {
+            // status_change, field_change, jalons_update, etc.
+            action = entry.statut
+              ? `Statut → ${entry.statut}`
+              : this.getActionLabel('update');
+            user = entry.user || 'Utilisateur';
+            details = entry.note || '';
+            timestamp = entry.timestamp instanceof Date
+              ? Math.floor(entry.timestamp.getTime() / 1000)
+              : entry.timestamp;
+          }
+
+          const entryEl = this.createHistoryEntry(timestamp, action, user, details);
           timeline.appendChild(entryEl);
         });
       } else {

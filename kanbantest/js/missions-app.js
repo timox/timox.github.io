@@ -83,18 +83,11 @@ async function waitForGrist() {
  */
 async function loadSharedTaskModal() {
   try {
-    // Charger le script SharedTaskModal dynamiquement
-    await new Promise((resolve, reject) => {
-      if (window.SharedTaskModal) {
-        resolve();
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = 'js/components/SharedTaskModal.js';
-      script.onload = resolve;
-      script.onerror = reject;
-      document.head.appendChild(script);
-    });
+    // Import dynamique ES module (SharedTaskModal est un module depuis Phase 3)
+    if (!window.SharedTaskModal) {
+      const module = await import('./components/SharedTaskModal.js');
+      window.SharedTaskModal = module.SharedTaskModal;
+    }
 
     // Créer l'instance du modal
     sharedTaskModal = new window.SharedTaskModal({
