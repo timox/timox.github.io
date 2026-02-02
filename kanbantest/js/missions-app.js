@@ -113,28 +113,26 @@ async function loadSharedTaskModal() {
 async function handleTaskSave(taskData) {
   try {
     const isNew = !taskData.id;
+    const taskId = taskData.id;
 
-    // Convertir strategie_ids en strategie_id (format Grist ReferenceList)
-    if (taskData.strategie_ids && Array.isArray(taskData.strategie_ids) && taskData.strategie_ids.length > 0) {
-      taskData.strategie_id = ['L', ...taskData.strategie_ids];
-    }
-    // Supprimer strategie_ids qui n'est pas une colonne Grist
-    delete taskData.strategie_ids;
+    // Utiliser GristManager.prepareDataForGrist pour convertir correctement
+    // les formats (ChoiceList, ReferenceList, dates, liens, jalons...)
+    const gristData = gristManager.prepareDataForGrist(taskData);
+
+    // Supprimer l'id des données à envoyer (pas un champ modifiable)
+    delete gristData.id;
 
     if (isNew) {
-      // Création d'une nouvelle tâche
       const result = await window.grist.docApi.applyUserActions([
-        ['AddRecord', 'Ssir_principale_task', null, taskData]
+        ['AddRecord', 'Ssir_principale_task', null, gristData]
       ]);
       logger.debug('Task created:', result);
       showToast('Tâche créée', 'success');
     } else {
-      // Mise à jour d'une tâche existante
-      const { id, ...updateData } = taskData;
       await window.grist.docApi.applyUserActions([
-        ['UpdateRecord', 'Ssir_principale_task', id, updateData]
+        ['UpdateRecord', 'Ssir_principale_task', taskId, gristData]
       ]);
-      logger.debug('Task updated:', id);
+      logger.debug('Task updated:', taskId);
       showToast('Tâche modifiée', 'success');
     }
 
@@ -148,7 +146,7 @@ async function handleTaskSave(taskData) {
     return true;
   } catch (error) {
     logger.error('Failed to save task:', error);
-    showToast('Erreur lors de la sauvegarde', 'danger');
+    showToast('Erreur lors de la sauvegarde: ' + error.message, 'danger');
     return false;
   }
 }
@@ -189,45 +187,75 @@ function openNewTaskModal() {
   }
 
   if (!sharedTaskModal) {
-    showToast('Modal non disponible', 'danger');
+    showToast('Modal non disponible — rechargez la page', 'danger');
+    logger.error('sharedTaskModal is null');
     return;
   }
 
-  // Ouvrir le modal en mode création
-  sharedTaskModal.openNew({ statut: 'À faire' });
+  if (!sharedTaskModal.isLoaded) {
+    showToast('Modal en cours de chargement, réessayez', 'warning');
+    logger.error('sharedTaskModal.isLoaded is false');
+    return;
+  }
 
-  // Pré-remplir les champs MEO après ouverture
-  setTimeout(() => {
-    // Sélectionner la MEO dans le dropdown
-    const meoSelect = document.getElementById('stm-meo');
-    if (meoSelect) {
-      meoSelect.value = selectedMeo.code;
-      // Déclencher le changement pour mettre à jour les champs dérivés
-      meoSelect.dispatchEvent(new Event('change'));
+  try {
+    // Ouvrir le modal en mode création
+    sharedTaskModal.openNew({ statut: 'À faire' });
+
+    // Pré-remplir les champs MEO une fois la modale affichée
+    const fillMeoFields = () => {
+      try {
+        // Sélectionner la MEO dans le dropdown
+        const meoSelect = document.getElementById('stm-meo');
+        if (meoSelect) {
+          meoSelect.value = selectedMeo.code;
+          // Déclencher le changement pour mettre à jour les champs dérivés
+          meoSelect.dispatchEvent(new Event('change'));
+        }
+
+        // Remplir les champs cachés directement (backup si le dropdown ne trouve pas l'option)
+        const meoCodeField = document.getElementById('stm-meo-code');
+        const meoNomField = document.getElementById('stm-meo-nom');
+        const strategieField = document.getElementById('stm-strategie');
+
+        if (meoCodeField && !meoCodeField.value) meoCodeField.value = selectedMeo.code;
+        if (meoNomField && !meoNomField.value) meoNomField.value = selectedMeo.nom;
+        if (strategieField) strategieField.value = selectedMission.id;
+
+        // Synchroniser la stratégie avec le module
+        if (sharedTaskModal.strategyModule) {
+          sharedTaskModal.strategyModule.setSelectedStrategies([selectedMission.id]);
+        }
+
+        // Afficher les infos de hiérarchie
+        const hierarchyInfo = document.getElementById('stm-hierarchy-info');
+        if (hierarchyInfo) {
+          hierarchyInfo.style.display = 'block';
+          const programmeDisplay = document.getElementById('stm-programme-display');
+          const strategieDisplay = document.getElementById('stm-strategie-display');
+          const missionDisplay = document.getElementById('stm-mission-display');
+
+          if (programmeDisplay) programmeDisplay.textContent = selectedMission.objectif || '-';
+          if (strategieDisplay) strategieDisplay.textContent = selectedMission.sous_objectif || '-';
+          if (missionDisplay) missionDisplay.textContent = selectedMission.axe_strategique || '-';
+        }
+      } catch (err) {
+        logger.error('Erreur pré-remplissage MEO:', err);
+      }
+    };
+
+    // Utiliser l'événement shown.bs.modal pour s'assurer que la modale est rendue
+    const modalEl = document.getElementById('shared-task-modal');
+    if (modalEl) {
+      modalEl.addEventListener('shown.bs.modal', fillMeoFields, { once: true });
+    } else {
+      // Fallback si le modal element n'est pas trouvé
+      setTimeout(fillMeoFields, 200);
     }
-
-    // Remplir les champs cachés
-    const meoCodeField = document.getElementById('stm-meo-code');
-    const meoNomField = document.getElementById('stm-meo-nom');
-    const strategieField = document.getElementById('stm-strategie');
-
-    if (meoCodeField) meoCodeField.value = selectedMeo.code;
-    if (meoNomField) meoNomField.value = selectedMeo.nom;
-    if (strategieField) strategieField.value = selectedMission.id;
-
-    // Afficher les infos de hiérarchie
-    const hierarchyInfo = document.getElementById('stm-hierarchy-info');
-    if (hierarchyInfo) {
-      hierarchyInfo.style.display = 'block';
-      const programmeDisplay = document.getElementById('stm-programme-display');
-      const strategieDisplay = document.getElementById('stm-strategie-display');
-      const missionDisplay = document.getElementById('stm-mission-display');
-
-      if (programmeDisplay) programmeDisplay.textContent = selectedMission.objectif || '-';
-      if (strategieDisplay) strategieDisplay.textContent = selectedMission.sous_objectif || '-';
-      if (missionDisplay) missionDisplay.textContent = selectedMission.axe_strategique || '-';
-    }
-  }, 100);
+  } catch (error) {
+    logger.error('Erreur ouverture modale nouvelle tâche:', error);
+    showToast('Erreur lors de l\'ouverture: ' + error.message, 'danger');
+  }
 }
 
 /**

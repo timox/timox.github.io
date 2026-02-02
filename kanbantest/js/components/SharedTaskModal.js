@@ -353,7 +353,7 @@ export class SharedTaskModal {
   openNew(defaults = {}) {
     if (!this.isLoaded) {
       console.error('[SharedTaskModal] Not initialized. Call init() first.');
-      return;
+      throw new Error('SharedTaskModal non initialisé');
     }
 
     this.currentTask = null;
@@ -380,6 +380,9 @@ export class SharedTaskModal {
       modalTitle.textContent = 'Nouvelle tâche';
     }
 
+    if (!this.bsModal) {
+      throw new Error('Bootstrap modal non initialisé');
+    }
     this.bsModal.show();
   }
 
