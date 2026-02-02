@@ -584,7 +584,9 @@ export class GristManager {
       // Champs hiérarchiques
       'programme_id', 'responsable_id',
       // Meta
-      'est_classifiee'
+      'est_classifiee',
+      // Références / liens externes
+      'reference'
     ];
 
     simpleFields.forEach(field => {
@@ -593,13 +595,25 @@ export class GristManager {
       }
     });
     
-    // Traiter les listes (bureau, qui)
-    if (recordData.bureau) {
-      gristData.bureau = Array.isArray(recordData.bureau) ? recordData.bureau : ['L'];
+    // Traiter les listes (bureau, qui) - accepte string CSV ou array
+    if (recordData.bureau !== undefined && recordData.bureau !== null) {
+      if (Array.isArray(recordData.bureau)) {
+        gristData.bureau = recordData.bureau;
+      } else if (typeof recordData.bureau === 'string' && recordData.bureau.trim()) {
+        gristData.bureau = ['L', ...recordData.bureau.split(',').map(s => s.trim()).filter(Boolean)];
+      } else {
+        gristData.bureau = ['L'];
+      }
     }
-    
-    if (recordData.qui) {
-      gristData.qui = Array.isArray(recordData.qui) ? recordData.qui : ['L'];
+
+    if (recordData.qui !== undefined && recordData.qui !== null) {
+      if (Array.isArray(recordData.qui)) {
+        gristData.qui = recordData.qui;
+      } else if (typeof recordData.qui === 'string' && recordData.qui.trim()) {
+        gristData.qui = ['L', ...recordData.qui.split(',').map(s => s.trim()).filter(Boolean)];
+      } else {
+        gristData.qui = ['L'];
+      }
     }
     
     // 🔧 CORRECTION: Traiter strategie_id selon le schema Grist (ReferenceList)
@@ -627,11 +641,29 @@ export class GristManager {
       gristData.strategie_id = ['L', ...recordData.strategie_ids];
     }
     
+    // Traiter avancement (Int 0-100, ne pas utiliser simpleFields car 0 || null donnerait null)
+    if (recordData.avancement !== undefined) {
+      gristData.avancement = typeof recordData.avancement === 'number' ? recordData.avancement : parseInt(recordData.avancement, 10) || 0;
+    }
+
+    // Traiter jalons (tableau d'objets → JSON string pour colonne Text Grist)
+    if (recordData.jalons !== undefined) {
+      gristData.jalons = Array.isArray(recordData.jalons) ? JSON.stringify(recordData.jalons) : recordData.jalons || '';
+    }
+
+    // Traiter liens entre tâches (data.liens → colonne tache_liens en JSON)
+    if (recordData.liens !== undefined) {
+      gristData.tache_liens = Array.isArray(recordData.liens) ? JSON.stringify(recordData.liens) : recordData.liens || '';
+    }
+    if (recordData.tache_liens !== undefined && !gristData.tache_liens) {
+      gristData.tache_liens = typeof recordData.tache_liens === 'string' ? recordData.tache_liens : JSON.stringify(recordData.tache_liens);
+    }
+
     // Traiter les dates
     if (recordData.date_echeance) {
       gristData.date_echeance = normalizeDate(recordData.date_echeance);
     }
-    
+
     if (recordData.date_debut) {
       gristData.date_debut = normalizeDate(recordData.date_debut);
     }

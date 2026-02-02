@@ -325,9 +325,13 @@ export class FilterManager {
     if (this.elements.filterStatut) this.elements.filterStatut.value = '';
     if (this.elements.showTermine) this.elements.showTermine.checked = true;
     
+    // Re-peupler les selects (nécessaire après changement de mode de vue,
+    // car focus mode supprime l'option "Tous" du filtre statut)
+    this.populateFilterOptions();
+
     // Appliquer les changements
     this.applyFilters();
-    
+
     this.logger.debug('All filters reset');
   }
   

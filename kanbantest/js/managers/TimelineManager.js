@@ -303,7 +303,8 @@ export class TimelineManager {
       const type = startDate && endDate && startDate !== endDate ? 'range' : 'point';
       const previsibiliteClass = this.getPrevisibiliteClass(previsibiliteValue);
       const typeClass = this.getTypeClass(typeValue);
-      const classList = [previsibiliteClass, typeClass];
+      const statusClass = `timeline-status-${(record.statut || 'backlog').toLowerCase().replace(/\s+/g, '-').replace(/[àâ]/g, 'a').replace(/[éèê]/g, 'e')}`;
+      const classList = [previsibiliteClass, typeClass, statusClass];
       if (!strategySummary) classList.push('timeline-dimmed-strategy');
       if (!assignee || assignee === 'Non défini') classList.push('timeline-dimmed-assignee');
 

@@ -1627,8 +1627,8 @@ body {
   opacity: 0.72;
 }
 
-.timeline-imprevisible { border-left: 4px solid #dc3545 !important; }
-.timeline-previsible { border-left: 4px solid #198754 !important; }
+.timeline-imprevisible { border-right: 4px solid #dc3545 !important; }
+.timeline-previsible { border-right: 4px solid #198754 !important; }
 
 /* === TIMELINE BADGES COMPACTS === */
 .tl-item {
@@ -1720,7 +1720,41 @@ body {
   border-radius: 12px;
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-top: 3px solid #94a3b8;
+  border-left: 4px solid #94a3b8;
+}
+
+/* === STATUS-BASED TIMELINE ITEM COLORS === */
+.vis-item.timeline-status-backlog {
+  background: #f8f9fa;
+  border-left-color: #6c757d;
+}
+.vis-item.timeline-status-a-faire {
+  background: #eff9ff;
+  border-left-color: #0ea5e9;
+}
+.vis-item.timeline-status-en-cours {
+  background: #fff7ed;
+  border-left-color: #f97316;
+}
+.vis-item.timeline-status-en-attente {
+  background: #fefce8;
+  border-left-color: #eab308;
+}
+.vis-item.timeline-status-en-pause {
+  background: #f1f5f9;
+  border-left-color: #94a3b8;
+}
+.vis-item.timeline-status-bloque {
+  background: #fef2f2;
+  border-left-color: #ef4444;
+}
+.vis-item.timeline-status-validation {
+  background: #f5f3ff;
+  border-left-color: #8b5cf6;
+}
+.vis-item.timeline-status-termine {
+  background: #f0fdf4;
+  border-left-color: #22c55e;
 }
 
 .vis-item .vis-item-content {
