@@ -132,10 +132,10 @@ const filteredTempRecords = records.filter(r => {
 **Problèmes fréquents**:
 
 ```javascript
-// ❌ ERREUR: Path incorrect
-import { ViewManager } from './managers/ViewManager.js';
-// ✅ CORRECT: 
+// ❌ ERREUR: Fichier supprimé (ViewModeManager.js renommé en ViewManager.js)
 import { ViewModeManager } from './managers/ViewModeManager.js';
+// ✅ CORRECT:
+import { ViewManager } from './managers/ViewManager.js';
 
 // ❌ ERREUR: Import circulaire
 import { GristManager } from './GristManager.js';  // dans core/
@@ -206,8 +206,10 @@ KanbanManager ←→ FilterManager
 
 SharedTaskModal → GristManager (pour CRUD)
 HistoryManager → UserActionManager (pour utilisateur)
-ViewManager → CardRenderer (pour rendu)
+ViewManager (gère rendu directement)
 ```
+
+**Note 2026-01**: ModalManager.js a été supprimé et remplacé par SharedTaskModal.js. Les événements restants sont désormais obsolètes.
 
 ---
 
@@ -305,7 +307,7 @@ notesData = {
 ```
 
 ### 4. Modes de Vue - **LOGIQUE REVISÉE**
-**Fichier**: `ViewModeManager.js`
+**Fichier**: `ViewManager.js`
 
 #### 🆕 **Nouveautés 2025-07-14**: Gestion Intelligente des Colonnes
 ```javascript
@@ -600,8 +602,8 @@ window.kanbanManager.getApplicationState(); // Vérifier l'init
 
 ---
 
-*Dernière mise à jour: 2026-01-21 - Migration V3 + Classification*
-*Version: 1.4 - Migration V3, Classification, Nettoyage Doublons*
+*Dernière mise à jour: 2026-02-02 - Correction documentation architecture post-refactoring*
+*Version: 1.5 - Corrections références ViewManager, SharedTaskModal, suppression fichiers obsolètes*
 
 ---
 
@@ -718,6 +720,8 @@ Stratégie
 ```
 
 ---
+
+> Voir CHANGELOG.md pour l'historique complet des versions.
 
 ## 📈 **Changelog Version 1.2** - 2025-01-13
 

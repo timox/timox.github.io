@@ -11,6 +11,9 @@ debug/*
 **/test-constants.js
 **/GristRestApi.js
 **/*test*.js
+
+# Exception : tests unitaires kanbantest
+!kanbantest/test/unit/*.js
 *api-key*
 *api_key*
 

@@ -1,6 +1,6 @@
 # Architecture du Système de Missions
 
-> **Version**: 1.0 - Décembre 2025
+> **Version**: 1.1 - Février 2026
 > **Status**: En développement
 
 ---
@@ -49,16 +49,21 @@ flowchart TB
     subgraph CORE["⚙️ MANAGERS CORE"]
         KanbanMgr["KanbanManager<br/>(orchestrateur)"]
         GristMgr["GristManager<br/>(connexion données)"]
+        EventCentral["EventCentralizer<br/>(gestion événements)"]
     end
 
     subgraph SPECIALIZED["📦 MANAGERS SPÉCIALISÉS"]
         FilterMgr["FilterManager"]
         ViewMgr["ViewManager"]
-        ModalMgr["ModalManager"]
+        SharedTaskModal["SharedTaskModal"]
         HistoryMgr["HistoryManager"]
         DateMgr["DatePickerManager"]
         JalonMgr["JalonManager"]
         MissionsMgr["MissionsManager"]
+        ConfigMgr["ConfigManager"]
+        DashMgr["DashboardManager"]
+        TimeMgr["TimelineManager"]
+        LinksMgr["TaskLinksManager"]
     end
 
     Index --> AppInit
@@ -80,7 +85,7 @@ flowchart TB
     KanbanMgr --> GristMgr
     KanbanMgr --> FilterMgr
     KanbanMgr --> ViewMgr
-    KanbanMgr --> ModalMgr
+    KanbanMgr --> SharedTaskModal
     KanbanMgr --> HistoryMgr
     KanbanMgr --> DateMgr
     KanbanMgr --> JalonMgr
@@ -109,7 +114,7 @@ erDiagram
         int id PK
         string objectif
         string sous_objectif
-        string action
+        string axe_strategique
         string responsable
         string echeance
         string portee
@@ -170,7 +175,7 @@ erDiagram
         int id PK
         string objectif
         string sous_objectif
-        string action
+        string axe_strategique
         string responsable
         string echeance
         string portee
@@ -293,7 +298,7 @@ flowchart TB
 | `id` | Int (auto) | Identifiant unique |
 | `objectif` | Text | Objectif stratégique |
 | `sous_objectif` | Text | Sous-objectif |
-| `action` | Text | Action à mener |
+| `axe_strategique` | Text | Axe stratégique / Action à mener |
 | `responsable` | Text | Responsable de l'action |
 | `echeance` | Text | Échéance prévue |
 | `portee` | Text | Portée de l'action |
@@ -694,7 +699,7 @@ categorie:
 
 ## Évolutions futures
 
-- [ ] Rattachement de tâches existantes à une mission
+- [x] Rattachement de tâches existantes à une mission (janvier 2026)
 - [ ] Édition des missions existantes
 - [ ] Dashboard avec graphiques de progression
 - [ ] Export vers formats multiples (CSV, Excel)
@@ -702,4 +707,4 @@ categorie:
 
 ---
 
-*Documentation générée le 2025-12-16*
+*Documentation mise à jour le 2026-02-02*

@@ -45,43 +45,69 @@ Application web de gestion de tâches en mode Kanban intégrée avec Grist. Perm
 ### Structure des Dossiers
 ```
 kanban/
-├── index.html              # Page principale
-├── css/                    # Styles CSS
-│   ├── kanban-base.css     # Styles de base + modes de vue
-│   ├── kanban-modal.css    # Styles des modales
-│   └── kanban-responsive.css # Responsive design
-├── js/                     # Code JavaScript modulaire
-│   ├── kanban-app.js       # 🚀 Point d'entrée + orchestration
-│   ├── config/             # 📋 Configuration centralisée
-│   │   ├── constants.js    # Constantes, statuts, icônes
-│   │   └── strategyData.js # Données stratégiques
-│   ├── core/               # 🧠 Logique métier principale
-│   │   ├── KanbanManager.js # Gestionnaire principal (délègue tout)
-│   │   └── GristManager.js  # Interface avec base de données Grist
-│   ├── managers/           # 🎯 Gestionnaires spécialisés (1 responsabilité)
-│   │   ├── ModalManager.js  # Modales (création/édition tâches)
-│   │   ├── FilterManager.js # Filtres et recherche
-│   │   ├── ViewModeManager.js # Modes de vue (source de vérité unique)
-│   │   └── HistoryManager.js # Historique et timeline
-│   ├── utils/              # 🔧 Utilitaires purs (sans état)
-│   │   ├── dom.js          # Manipulation DOM
-│   │   ├── dates.js        # Gestion des dates
-│   │   └── badges.js       # Génération badges visuels
-│   └── renderers/          # 🎨 Rendu des composants UI
-│       ├── CardRenderer.js # Rendu des cartes de tâches
-│       └── boardRenderer.js # Rendu des colonnes Kanban
-└── schema.md               # Schéma des tables Grist
+├── index.html                 # Page principale (Kanban)
+├── taches.html                # Page tâches
+├── missions.html              # Page missions
+├── timeline.html              # Page timeline
+├── history.html               # Page historique
+├── stats.html                 # Page statistiques
+├── config.html                # Page configuration
+├── migration.html             # Page migration
+├── setup.html                 # Page setup
+├── modele.html                # Page modèle
+├── css/                       # Styles CSS
+│   ├── kanban-base.css        # Styles de base + modes de vue
+│   ├── kanban-modal.css       # Styles des modales
+│   ├── kanban-responsive.css  # Responsive design
+│   └── strategy-accordion.css # Styles accordéon stratégie
+├── js/                        # Code JavaScript modulaire
+│   ├── app-initializer.js     # Point d'entrée ES6 pour index.html
+│   ├── taches-app.js          # Point d'entrée pour taches.html
+│   ├── missions-app.js        # Point d'entrée pour missions.html
+│   ├── timeline-app.js        # Point d'entrée pour timeline.html
+│   ├── history-app.js         # Point d'entrée pour history.html
+│   ├── stats-app.js           # Point d'entrée pour stats.html
+│   ├── config-app.js          # Point d'entrée pour config.html
+│   ├── migration-app.js       # Point d'entrée pour migration.html
+│   ├── config/                # Configuration centralisée
+│   │   └── constants.js       # Constantes globales
+│   ├── core/                  # Logique métier principale
+│   │   ├── KanbanManager.js   # Orchestrateur principal (index.html)
+│   │   └── EventCentralizer.js # Centralisation des événements
+│   ├── components/            # Composants partagés
+│   │   └── SharedTaskModal.js # Modale d'édition UNIQUE (partagée)
+│   ├── managers/              # Gestionnaires spécialisés (1 responsabilité)
+│   │   ├── ViewManager.js     # Modes d'affichage et rendu
+│   │   ├── HistoryManager.js  # Historique et commentaires
+│   │   ├── GristManager.js    # Interface Grist (CRUD)
+│   │   ├── FilterManager.js   # Filtres et recherche
+│   │   ├── JalonManager.js    # Gestion des jalons
+│   │   ├── DatePickerManager.js # Sélection de dates
+│   │   ├── MissionsManager.js # Gestion des missions
+│   │   ├── ConfigManager.js   # Configuration
+│   │   ├── DashboardManager.js # Dashboard V3
+│   │   ├── TimelineManager.js # Timeline V3
+│   │   └── TaskLinksManager.js # Liaison inter-tâches
+│   └── utils/                 # Utilitaires purs (sans état)
+│       ├── UserActionManager.js # Actions utilisateur
+│       ├── NotesJsonMigrator.js # Migration notes JSON
+│       ├── LoggerManager.js   # Système de logs
+│       ├── EventManager.js    # Gestion événements
+│       ├── ReferenceManager.js # Gestion références
+│       ├── dom.js             # Manipulation DOM
+│       ├── dates.js           # Gestion dates
+│       └── badges.js          # Génération badges
+└── schema.md                  # Schéma des tables Grist
 ```
 
 ### 🎯 Responsabilités des Classes
 
-#### 🚀 **kanban-app.js** - Point d'entrée et orchestration
-**Rôle** : Chef d'orchestre qui initialise et coordonne tous les managers
+#### 🚀 **app-initializer.js** - Point d'entrée ES6 pour index.html
+**Rôle** : Point d'entrée qui initialise KanbanManager et coordonne les managers
 - ✅ Initialisation de l'application
 - ✅ Création et liaison des managers
 - ✅ Gestion des événements globaux (raccourcis clavier)
 - ✅ Interface avec Grist (onRecords, onOptions)
-- ✅ Rendu des cartes individuelles
 - ❌ **Ne gère PAS** : modes de vue, filtres, modales (délégué aux managers)
 
 #### 🧠 **KanbanManager** - Gestionnaire principal (hub)
@@ -94,21 +120,22 @@ kanban/
 
 #### 🗄️ **GristManager** - Interface base de données
 **Rôle** : Seule interface avec Grist, abstrait toutes les opérations DB
+**Localisation** : `js/managers/GristManager.js`
 - ✅ CRUD des tâches (create, read, update, delete)
 - ✅ Validation format données Grist
 - ✅ Gestion des erreurs de connexion
 - ✅ Conversion formats Grist ↔ Application
 - ❌ **Ne gère PAS** : logique métier, rendu, filtres
 
-#### 🎛️ **ViewModeManager** - SOURCE DE VÉRITÉ pour les vues
-**Rôle** : Gestionnaire unique des modes de vue (Compact/Détaillé/Focus)
+#### 🎛️ **ViewManager** - SOURCE DE VÉRITÉ pour les vues et le rendu
+**Rôle** : Gestionnaire unique des modes de vue, du rendu des cartes et des colonnes
 - ✅ Mode de vue actuel (getCurrentMode)
 - ✅ Colonne en focus (getFocusColumn, setFocusColumn)
 - ✅ Application des classes CSS par mode
 - ✅ Navigation entre colonnes en mode focus
-- ✅ Contrôles de vue (boutons 1,2,3)
+- ✅ Rendu des cartes et des colonnes Kanban
 - ✅ Gestion colonnes vides (repliage automatique)
-- ❌ **Aucune autre classe ne doit gérer les vues !**
+- ❌ **Aucune autre classe ne doit gérer les vues ou le rendu !**
 
 #### 🔍 **FilterManager** - Filtres et recherche
 **Rôle** : Gestion exclusive de tous les filtres et recherche
@@ -119,13 +146,14 @@ kanban/
 - ✅ Application des filtres aux données
 - ❌ **Ne gère PAS** : rendu (retourne juste les données filtrées)
 
-#### 🪟 **ModalManager** - Modales d'édition
-**Rôle** : Gestion exclusive des modales (création/édition tâches)
-- ✅ Affichage/masquage modales
+#### 🪟 **SharedTaskModal** - Modale d'édition unique partagée
+**Rôle** : Modale d'édition unique partagée entre toutes les pages
+**Localisation** : `js/components/SharedTaskModal.js`
+- ✅ Affichage/masquage de la modale
 - ✅ Population des formulaires
-- ✅ Validation des données
 - ✅ Sauvegarde via GristManager
-- ✅ Gestion des champs dynamiques (stratégies, dates)
+- ✅ Gestion des jalons, liens et stratégies
+- ✅ Partagée entre index.html, taches.html, missions.html, etc.
 - ❌ **Ne gère PAS** : rendu des cartes, filtres, vues
 
 #### 📜 **HistoryManager** - Historique et timeline
@@ -136,46 +164,38 @@ kanban/
 - ✅ Interface avec table User_Actions2
 - ❌ **Ne gère PAS** : autres types de modales
 
-#### 🎨 **CardRenderer** - Rendu des cartes
-**Rôle** : Rendu spécialisé des cartes de tâches
-- ✅ Génération HTML des cartes (compact/détaillé)
-- ✅ Application des styles selon le mode
-- ✅ Gestion expand/collapse des cartes
-- ✅ Rendu des badges et indicateurs visuels
-- ❌ **Ne gère PAS** : logique métier, état global
-
-#### 🏗️ **BoardRenderer** - Rendu des colonnes
-**Rôle** : Rendu spécialisé des colonnes Kanban
-- ✅ Génération HTML des colonnes et headers
-- ✅ Application du drag & drop
-- ✅ Gestion des colonnes vides
-- ✅ Adaptation selon le mode de vue
-- ❌ **Ne gère PAS** : logique de filtrage, modes de vue
+#### 🔗 **EventCentralizer** - Centralisation des événements
+**Rôle** : Point unique d'entrée pour les événements utilisateur
+**Localisation** : `js/core/EventCentralizer.js`
+- ✅ Tous les addEventListener via jQuery/safeOn
+- ✅ Délégation vers les managers spécialisés
+- ✅ Gestion centralisée des clics, touches, etc.
+- ❌ **Ne gère PAS** : logique métier, rendu, état global
 
 ### 🚫 **Principe de Séparation des Responsabilités**
 
 #### ✅ **CORRECT** - Chaque manager a UNE responsabilité
 ```javascript
-// ViewModeManager gère TOUT ce qui concerne les vues
-this.viewModeManager.setViewMode('focus');
-this.viewModeManager.getCurrentMode();
-this.viewModeManager.getFocusColumn();
+// ViewManager gère TOUT ce qui concerne les vues et le rendu
+this.viewManager.setViewMode('focus');
+this.viewManager.getCurrentMode();
+this.viewManager.getFocusColumn();
 
-// FilterManager gère TOUT ce qui concerne les filtres  
+// FilterManager gère TOUT ce qui concerne les filtres
 this.filterManager.applyFilters(filters);
 this.filterManager.getFilteredRecords();
 
-// ModalManager gère TOUT ce qui concerne les modales
-this.modalManager.showTaskModal(taskId);
-this.modalManager.saveTask(taskData);
+// SharedTaskModal gère TOUT ce qui concerne la modale d'édition
+SharedTaskModal.show(taskId);
+SharedTaskModal.save(taskData);
 ```
 
 #### ❌ **INCORRECT** - Duplication de responsabilités
 ```javascript
 // ❌ NE PAS FAIRE - Multiple sources de vérité
 this.viewMode = 'focus';                    // Dans KanbanManager
-this.currentMode = 'focus';                 // Dans ViewModeManager  
-kanbanContainer.className = 'kanban-focus'; // Dans kanban-app.js
+this.currentMode = 'focus';                 // Dans ViewManager
+kanbanContainer.className = 'kanban-focus'; // Dans app-initializer.js
 
 // ❌ NE PAS FAIRE - Logique éparpillée
 if (this.mode === 'compact') { /* CSS */ }  // Dans 3 fichiers différents
@@ -183,8 +203,8 @@ if (this.mode === 'compact') { /* CSS */ }  // Dans 3 fichiers différents
 
 #### 📋 **Règles d'Architecture**
 1. **Une classe = Une responsabilité** (Single Responsibility Principle)
-2. **ViewModeManager = Source unique de vérité pour les vues**
-3. **Pas de logique métier dans les renderers**
+2. **ViewManager = Source unique de vérité pour les vues et le rendu**
+3. **Pas de logique métier dans les utils**
 4. **Managers communiquent via le hub KanbanManager**
 5. **Délégation systématique, pas de duplication**
 
@@ -256,11 +276,15 @@ Stratégie → Mission → Sous-action → Tâche
 | Page | URL | Description |
 |------|-----|-------------|
 | Kanban | `index.html` | Tableau Kanban principal |
+| **Tâches** | `taches.html` | Gestion des tâches (vue alternative) |
 | **Missions** | `missions.html` | Gestion des missions et sous-actions |
 | Stats | `stats.html` | Statistiques et graphiques |
 | Config | `config.html` | Configuration (personnes, bureaux) |
 | Timeline | `timeline.html` | Vue timeline |
 | Historique | `history.html` | Historique des modifications |
+| **Migration** | `migration.html` | Outils de migration |
+| **Setup** | `setup.html` | Configuration initiale |
+| **Modèle** | `modele.html` | Page modèle |
 
 ### Colonnes Grist requises (13 nouvelles)
 
@@ -315,7 +339,7 @@ Pour utiliser le système de missions, ajouter ces colonnes à `Ssir_principale_
 - **N**: Nouvelle tâche
 - **F**: Focus sur recherche
 - **1**: Mode Compact
-- **2**: Mode Détaillé  
+- **2**: Mode Détaillé
 - **3**: Mode Focus
 - **R**: Recharger le kanban
 - **Échap**: Fermer les modales
@@ -338,12 +362,10 @@ Pour utiliser le système de missions, ajouter ces colonnes à `Ssir_principale_
 ```javascript
 // Variables globales disponibles
 window.kanbanManager     // Instance principale (hub de coordination)
-window.KanbanApp        // Utilitaires exposés
 
 // 🎯 Accès aux managers spécialisés
-kanbanManager.viewModeManager    // Gestion des vues
-kanbanManager.filterManager      // Gestion des filtres  
-kanbanManager.modalManager       // Gestion des modales
+kanbanManager.viewManager        // Gestion des vues et du rendu
+kanbanManager.filterManager      // Gestion des filtres
 kanbanManager.historyManager     // Gestion de l'historique
 kanbanManager.gristManager       // Interface base de données
 
@@ -352,10 +374,10 @@ kanbanManager.exportState()      // État complet de l'application
 kanbanManager.refreshKanban()    // Recharger via tous les managers
 kanbanManager.diagnoseIssues()   // Diagnostic multi-managers
 
-// 🎛️ Debug des vues (ViewModeManager)
-kanbanManager.viewModeManager.getCurrentMode()    // Mode actuel
-kanbanManager.viewModeManager.getFocusColumn()    // Colonne focus
-kanbanManager.viewModeManager.exportState()       // État des vues
+// 🎛️ Debug des vues (ViewManager)
+kanbanManager.viewManager.getCurrentMode()    // Mode actuel
+kanbanManager.viewManager.getFocusColumn()    // Colonne focus
+kanbanManager.viewManager.exportState()       // État des vues
 
 // 🔍 Debug des filtres (FilterManager)
 kanbanManager.filterManager.getFilters()          // Filtres actuels
@@ -371,23 +393,23 @@ kanbanManager.gristManager.getRecords()           // Données brutes
 ### Erreurs Communes et Résolutions Architecturales
 
 #### "this.populateTaskForm is not a function"
-- **Cause**: ModalManager non initialisé ou méthode appelée depuis mauvaise classe
-- **Solution**: Vérifier `kanbanManager.modalManager` existe et déléguer via KanbanManager
+- **Cause**: SharedTaskModal non initialisée ou méthode appelée depuis mauvaise classe
+- **Solution**: Vérifier que SharedTaskModal est importée et déléguer via KanbanManager
 ```javascript
 // ❌ INCORRECT
 this.populateTaskForm(data);
-// ✅ CORRECT  
-kanbanManager.modalManager.populateTaskForm(data);
+// ✅ CORRECT
+SharedTaskModal.populateTaskForm(data);
 ```
 
 #### "Cannot read property 'getCurrentMode' of undefined"
-- **Cause**: ViewModeManager non initialisé ou référence directe interdite
-- **Solution**: Toujours passer par ViewModeManager pour les vues
+- **Cause**: ViewManager non initialisé ou référence directe interdite
+- **Solution**: Toujours passer par ViewManager pour les vues
 ```javascript
 // ❌ INCORRECT
-if (this.viewMode === 'focus') 
+if (this.viewMode === 'focus')
 // ✅ CORRECT
-if (kanbanManager.viewModeManager.isMode('focus'))
+if (kanbanManager.viewManager.isMode('focus'))
 ```
 
 #### "Filtres ne s'appliquent pas"
@@ -402,20 +424,20 @@ const filtered = kanbanManager.filterManager.getFilteredRecords();
 
 #### "Colonnes vides n'apparaissent pas correctement"
 - **Cause**: CSS géré dans plusieurs endroits
-- **Solution**: ViewModeManager gère les classes, CSS suit via data-empty
+- **Solution**: ViewManager gère les classes, CSS suit via data-empty
 ```javascript
-// ✅ ViewModeManager applique les classes automatiquement
+// ✅ ViewManager applique les classes automatiquement
 board.setAttribute('data-empty', isEmpty ? 'true' : 'false');
 ```
 
 #### "Modal ne se ferme pas"
 - **Cause**: Conflit entre managers ou événements multiples
-- **Solution**: ModalManager seul responsable des modales
+- **Solution**: SharedTaskModal seule responsable de la modale
 ```javascript
 // ❌ INCORRECT - Gestion directe
 $('#popup-tache').modal('hide');
-// ✅ CORRECT - Via ModalManager
-kanbanManager.modalManager.hideTaskModal();
+// ✅ CORRECT - Via SharedTaskModal
+SharedTaskModal.hide();
 ```
 
 #### "Grist sandbox error: list indices must be integers"
@@ -455,20 +477,23 @@ console.log(kanbanManager.currentRecords);
 ## 🚦 Statut du Projet
 
 ### Version Actuelle
-- **Version**: 2.0.0
-- **Dernière mise à jour**: Juillet 2025
+- **Version**: 3.0.0
+- **Dernière mise à jour**: Janvier 2026
 - **Statut**: Test
 
-### Fonctionnalités Récentes (Juillet 2025)
+### Fonctionnalités Récentes (Janvier 2026)
+- ✅ **Refactoring complet** : kanban-app.js remplacé par app-initializer.js + apps par page
+- ✅ **SharedTaskModal** : modale d'édition unique partagée entre toutes les pages
+- ✅ **ViewManager** : fusion de ViewModeManager, CardRenderer et BoardRenderer
+- ✅ **EventCentralizer** : centralisation de tous les événements utilisateur
+- ✅ **GristManager** déplacé de core/ vers managers/
+- ✅ **Pages multiples** : taches, missions, timeline, history, stats, config, migration
 - ✅ **Système d'icônes Bootstrap** pour les statuts (remplacement des emojis)
 - ✅ **Mode Focus** amélioré avec colonnes vides repliées automatiquement
 - ✅ **Filtrage des enregistrements temporaires** (___TEMP_USER_RECORD___)
 - ✅ **Largeur dynamique des colonnes** vides (40px en mode compact/détaillé)
 - ✅ **Navigation focus** avec boutons et compteurs de tâches
 - ✅ **CSS responsive** pour colonnes vides avec data-empty
-- ✅ **Suppression bouton Export History** de l'interface
-- ✅ **Correction bugs filtres** entre modes focus et statut
-- ✅ **Auto-sélection première colonne** avec tâches en mode focus
 
 ### Roadmap
 - 🔄 Implémentation complète User_Actions2
@@ -477,7 +502,7 @@ console.log(kanbanManager.currentRecords);
 - 🔄 Notifications temps réel
 - 🔄 Mode mobile optimisé
 
-## 🔧 Problèmes Résolus (Juillet 2025)
+## 🔧 Problèmes Résolus (Janvier 2026)
 
 ### Icons Bootstrap intégrés
 - **Problème**: Les icônes emoji n'étaient pas cohérents entre navigateurs
@@ -487,17 +512,17 @@ console.log(kanbanManager.currentRecords);
 ### Mode Focus optimisé
 - **Problème**: Les colonnes vides prenaient trop de place et masquaient le titre
 - **Solution**: Système data-empty avec CSS pour replier automatiquement à 40px
-- **Fichiers**: `css/kanban-base.css`, `js/kanban-app.js`
+- **Fichiers**: `css/kanban-base.css`, `js/app-initializer.js`
 
 ### Filtrage des enregistrements temporaires
 - **Problème**: Les enregistrements ___TEMP_USER_RECORD___ étaient comptés dans le Backlog
 - **Solution**: Exclusion automatique dans toutes les fonctions de comptage
-- **Fichiers**: `js/managers/ViewModeManager.js`, `js/kanban-app.js`
+- **Fichiers**: `js/managers/ViewManager.js`, `js/app-initializer.js`
 
 ### Navigation focus améliorée
 - **Problème**: Pas de navigation intuitive entre colonnes en mode focus
 - **Solution**: Boutons avec icônes et compteurs pour chaque statut
-- **Fichiers**: `js/managers/ViewModeManager.js`
+- **Fichiers**: `js/managers/ViewManager.js`
 
 ### Conflicts filtres résolus
 - **Problème**: Les filtres de statut interféraient avec le mode focus
@@ -532,4 +557,4 @@ Pour toute question ou problème :
 
 ---
 
-*Dernière mise à jour: Juillet 2025*
+*Dernière mise à jour: Février 2026*

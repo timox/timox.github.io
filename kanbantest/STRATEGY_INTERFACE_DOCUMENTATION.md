@@ -8,7 +8,7 @@ L'interface stratégie du Kanban utilise une approche **guidée en 3 étapes** p
 
 ### Tables Grist impliquées
 
-1. **Table `ssir_principal`** (tâches principales)
+1. **Table `Ssir_principale_task`** (tâches principales)
    - Champ `strategie_id` : Référence vers la table stratégie
    - **Seul champ sauvegardé** pour la stratégie
 
@@ -16,7 +16,7 @@ L'interface stratégie du Kanban utilise une approche **guidée en 3 étapes** p
    - `id` : Identifiant unique de la stratégie
    - `objectif` : Objectif stratégique principal
    - `sous_objectif` : Sous-objectif spécifique
-   - `action` : Action concrète à réaliser
+   - `axe_strategique` : Axe stratégique à réaliser
    - `echeance` : Date d'échéance de la stratégie
    - `responsable` : Responsable de la stratégie
    - `portee` : Portée/impact de la stratégie
@@ -24,13 +24,13 @@ L'interface stratégie du Kanban utilise une approche **guidée en 3 étapes** p
 ### Principe de fonctionnement
 
 ```
-Utilisateur sélectionne : Objectif → Sous-objectif → Action
+Utilisateur sélectionne : Objectif → Sous-objectif → Axe stratégique
                                     ↓
 Application recherche : Combinaison dans SSIR_strategie2
                                     ↓
 Application trouve : strategy.id correspondant
                                     ↓
-Application sauvegarde : Seulement strategie_id dans ssir_principal
+Application sauvegarde : Seulement strategie_id dans Ssir_principale_task
                                     ↓
 Application affiche : Détails automatiques (échéance, responsable, portée)
 ```
@@ -84,7 +84,7 @@ Application affiche : Détails automatiques (échéance, responsable, portée)
 <input type="hidden" id="popup-strategie-id" />
 ```
 
-### Logique JavaScript (ModalManager.js)
+### Logique JavaScript (SharedTaskModal.js)
 
 #### 1. Configuration des écouteurs d'événements
 
@@ -123,13 +123,13 @@ setupStrategySelects() {
 findAndSetStrategyId() {
   const objectif = getFieldValue('popup-strategie-objectif');
   const sousObjectif = getFieldValue('popup-strategie-sous-objectif');
-  const action = getFieldValue('popup-strategie-action');
-  
+  const axeStrategique = getFieldValue('popup-strategie-action');
+
   // Recherche dans les données Grist
-  const strategy = this.kanban.strategyData.find(s => 
-    s.objectif === objectif && 
-    s.sous_objectif === sousObjectif && 
-    s.action === action
+  const strategy = this.kanban.strategyData.find(s =>
+    s.objectif === objectif &&
+    s.sous_objectif === sousObjectif &&
+    s.axe_strategique === axeStrategique
   );
   
   if (strategy) {
@@ -155,7 +155,7 @@ populateStrategyFieldsFromId(strategyId) {
       sousObjectifSelect.dispatchEvent(new Event('change'));
       
       setTimeout(() => {
-        setFieldValue('popup-strategie-action', strategy.action);
+        setFieldValue('popup-strategie-action', strategy.axe_strategique);
         setFieldValue('popup-strategie-id', strategyId);
         this.updateStrategyDetails(strategy);
       }, 100);
@@ -191,7 +191,7 @@ Application → Peuple actions ["Audit Infrastructure", "Sélection Fournisseur"
 Utilisateur → Action "Audit Infrastructure Existante"
     ↓
 Application → Recherche dans SSIR_strategie2 WHERE objectif='Modernisation Infrastructure' 
-             AND sous_objectif='Migration Cloud' AND action='Audit Infrastructure Existante'
+             AND sous_objectif='Migration Cloud' AND axe_strategique='Audit Infrastructure Existante'
     ↓
 Application → Trouve strategy.id = 123
     ↓
@@ -199,7 +199,7 @@ Application → Définit popup-strategie-id = 123
     ↓
 Application → Affiche détails (échéance: "2025-12-31", responsable: "DSI", portée: "Nationale")
     ↓
-Sauvegarde → Envoie à Grist { strategie_id: 123 } dans ssir_principal
+Sauvegarde → Envoie à Grist { strategie_id: 123 } dans Ssir_principale_task
 ```
 
 ### 2. Chargement d'une tâche existante
@@ -209,7 +209,7 @@ Chargement → tache.strategie_id = 123
     ↓
 Application → Recherche dans SSIR_strategie2 WHERE id = 123
     ↓
-Application → Trouve strategy { objectif: "Modernisation", sous_objectif: "Migration Cloud", action: "Audit" }
+Application → Trouve strategy { objectif: "Modernisation", sous_objectif: "Migration Cloud", axe_strategique: "Audit" }
     ↓
 Application → Cascade de sélection :
              1. Sélectionne objectif → Peuple sous-objectifs
@@ -258,7 +258,7 @@ strategieActions = {
 2. **Activation/désactivation** : Les listes se débloquent progressivement
 3. **Recherche automatique** : Trouve le `strategie_id` basé sur la sélection complète
 4. **Affichage des détails** : Échéance, responsable, portée depuis SSIR_strategie2
-5. **Sauvegarde optimisée** : Seul `strategie_id` est sauvegardé dans ssir_principal
+5. **Sauvegarde optimisée** : Seul `strategie_id` est sauvegardé dans Ssir_principale_task
 6. **Chargement depuis tâche** : Reconstitue la sélection guidée depuis `strategie_id`
 7. **Données de fallback** : Fonctionne même sans données Grist
 
@@ -266,7 +266,7 @@ strategieActions = {
 
 1. **Chargement des données Grist** : 
    ```javascript
-   // Dans kanban-app.js ou module principal
+   // Dans app-initializer.js ou module principal
    this.strategyData = await this.loadStrategyData(); // À implémenter
    ```
 

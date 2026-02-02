@@ -75,12 +75,23 @@ Table principale des tâches.
 | `etape_cycle` | Choice | VIS, ANA, CON, PLN, REA, DEP, EXP, AME |
 | `previsibilite` | Choice | Prévisible, Imprévisible |
 
-### Colonnes Missions (Nov 2025)
+### Colonnes MEO et Missions (Nov 2025 - Jan 2026)
 
 | Colonne | Type | Description |
 |---------|------|-------------|
 | `mise_en_oeuvre_code` | Text | Code MEO (ex: MEO-001) |
 | `mise_en_oeuvre_nom` | Text | Nom de la mise en œuvre |
+| `mission_code` | Text | Code mission (ex: MIS-2025-001) |
+| `mission_nom` | Text | Nom de la mission |
+| `mission_responsable` | Text | Responsable de la mission |
+| `mission_bureau` | Choice | Bureau de la mission |
+| `mission_priorite` | Choice | Critique, Haute, Moyenne, Basse |
+| `mission_date_debut` | Date | Date de début de la mission |
+| `mission_date_fin` | Date | Date de fin de la mission |
+| `sous_action_code` | Text | Code sous-action (ex: SA-001) |
+| `sous_action_nom` | Text | Nom de la sous-action |
+| `sous_action_charge_estimee` | Numeric | Charge estimée (jours) |
+| `sous_action_charge_reelle` | Numeric | Charge réelle (jours) |
 | `categorie` | Choice | MCO, Projet, Imprévisible |
 | `est_classifiee` | Bool | Tâche rattachée à une mission? |
 | `avancement` | Int | Pourcentage d'avancement (0-100) |
@@ -151,6 +162,25 @@ Les colonnes de type `ReferenceList` utilisent le format `["L", id1, id2, ...]` 
 Les colonnes de type `ChoiceList` utilisent le même format :
 - `["L"]` = liste vide
 - `["L", "Réseaux", "BDD"]` = plusieurs choix
+
+---
+
+## User_Actions2 (legacy)
+
+Table historique des actions utilisateur (legacy -- conservée pour compatibilité).
+
+| Colonne | Type | Description |
+|---------|------|-------------|
+| `id` | Int | ID Grist (auto-généré) |
+| `action_type` | Text | Type d'action effectuée |
+| `task_id` | Reference | Tâche concernée |
+| `timestamp` | DateTime | Date de l'action |
+| `user` | Text | Utilisateur ayant effectué l'action |
+| `details` | Text | Détails de l'action (JSON) |
+
+> **Note** : Cette table est en cours de dépréciation. L'historique est désormais géré via le champ `notes` (JSON) de `Ssir_principale_task`.
+
+---
 
 ### Colonnes Supprimées
 - `id_task` : Supprimée (redondante avec `id`)

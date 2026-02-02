@@ -6,10 +6,10 @@
 
 | Action | Responsable | ❌ Éviter dans |
 |--------|-------------|----------------|
-| Bouton Sauvegarder | `ModalManager.js` | kanban-app.js |
-| Bouton Supprimer | `ModalManager.js` | kanban-app.js |
-| Raccourci 'N' (nouvelle tâche) | `ModalManager.js` | kanban-app.js |
-| Raccourci Ctrl+S | `ModalManager.js` | autres fichiers |
+| Bouton Sauvegarder | `SharedTaskModal.js` | app-initializer.js, EventCentralizer.js |
+| Bouton Supprimer | `SharedTaskModal.js` | app-initializer.js, EventCentralizer.js |
+| Raccourci 'N' (nouvelle tâche) | `SharedTaskModal.js` | app-initializer.js, EventCentralizer.js |
+| Raccourci Ctrl+S | `SharedTaskModal.js` | autres fichiers |
 
 ### 🔍 **Commandes de Vérification**
 
@@ -32,10 +32,10 @@ find js -name "*.js" -exec grep -l "addEventListener" {} \;
 
 ### ✅ **Résultats Attendus (APRÈS CORRECTION)**
 
-1. **btn-save-task** : Seulement dans `ModalManager.js`
-2. **btn-delete-task** : Seulement dans `ModalManager.js` 
-3. **Raccourci 'N'** : Seulement dans `ModalManager.js`
-4. **Raccourci Ctrl+S** : Seulement dans `ModalManager.js`
+1. **btn-save-task** : Seulement dans `SharedTaskModal.js`
+2. **btn-delete-task** : Seulement dans `SharedTaskModal.js`
+3. **Raccourci 'N'** : Seulement dans `SharedTaskModal.js`
+4. **Raccourci Ctrl+S** : Seulement dans `SharedTaskModal.js`
 
 ### 🚨 **Signaux d'Alarme**
 
