@@ -17,6 +17,7 @@ import {
   getStatusAccent
 } from './config/constants.js';
 import { formatQuiDisplay } from '../utils/badges.js';
+import { SharedTaskModal } from './components/SharedTaskModal.js';
 
 /**
  * Application de gestion des tâches
@@ -85,11 +86,6 @@ class TachesApp {
    * Initialise la modale partagée pour l'édition des tâches
    */
   async initSharedTaskModal() {
-    if (typeof SharedTaskModal === 'undefined') {
-      console.warn('SharedTaskModal not available, using fallback modal');
-      return;
-    }
-
     this.sharedTaskModal = new SharedTaskModal({
       showTimes: true,
       showLinks: true,

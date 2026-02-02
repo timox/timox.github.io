@@ -37,42 +37,77 @@
     <h1>Kanban Unit Tests</h1>
     <div id="results"><div class="loading">Running tests...</div></div>
 
-    <!-- Framework -->
+    <!-- Framework (synchronous, must load first) -->
     <script src="test/unit/test-framework.js"></script>
 
-    <!-- Sub-modules under test -->
-    <script src="js/components/modal/ModalJalons.js"></script>
-    <script src="js/components/modal/ModalDatePicker.js"></script>
-    <script src="js/components/modal/ModalTaskLinks.js"></script>
+    <!-- Module loader: imports ES module classes, loads test suites, runs tests -->
+    <script type="module">
+        // Import ES module sub-modules and register globally for test files
+        import { ModalJalons } from './js/components/modal/ModalJalons.js';
+        import { ModalDatePicker } from './js/components/modal/ModalDatePicker.js';
+        import { ModalTaskLinks } from './js/components/modal/ModalTaskLinks.js';
+        window.ModalJalons = ModalJalons;
+        window.ModalDatePicker = ModalDatePicker;
+        window.ModalTaskLinks = ModalTaskLinks;
 
-    <!-- Test suites -->
-    <script src="test/unit/dom.test.js"></script>
-    <script src="test/unit/dates.test.js"></script>
-    <script src="test/unit/badges.test.js"></script>
-    <script src="test/unit/logger.test.js"></script>
-    <script src="test/unit/notes-migrator.test.js"></script>
-    <script src="test/unit/grist-helpers.test.js"></script>
-    <script src="test/unit/safe-dom.test.js"></script>
-    <script src="test/unit/history-parser.test.js"></script>
-    <script src="test/unit/modal-jalons.test.js"></script>
-    <script src="test/unit/modal-datepicker.test.js"></script>
-    <script src="test/unit/modal-tasklinks.test.js"></script>
+        // Load test suites sequentially (order matters for registration)
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const s = document.createElement('script');
+                s.src = src;
+                s.onload = resolve;
+                s.onerror = () => reject(new Error('Failed to load: ' + src));
+                document.body.appendChild(s);
+            });
+        }
 
-    <!-- Run -->
-    <script>
-        (async function () {
-            try {
-                var results = await TestFramework.runAll();
-                TestFramework.renderResults(results, document.getElementById('results'));
-                var s = results.summary;
-                document.title = (s.failed === 0 ? 'PASS' : 'FAIL') +
-                    ' (' + s.passed + '/' + s.total + ') - Kanban Unit Tests';
-            } catch (err) {
-                document.getElementById('results').innerHTML =
-                    '<div class="test-summary test-summary-fail">Fatal error: ' +
-                    err.message.replace(/</g, '&lt;') + '</div>';
+        const testFiles = [
+            'test/unit/dom.test.js',
+            'test/unit/dates.test.js',
+            'test/unit/badges.test.js',
+            'test/unit/logger.test.js',
+            'test/unit/notes-migrator.test.js',
+            'test/unit/grist-helpers.test.js',
+            'test/unit/safe-dom.test.js',
+            'test/unit/history-parser.test.js',
+            'test/unit/modal-jalons.test.js',
+            'test/unit/modal-datepicker.test.js',
+            'test/unit/modal-tasklinks.test.js',
+            'test/unit/history-validator.test.js',
+            'test/unit/history-exporter.test.js',
+            'test/unit/history-modal-manager.test.js',
+            'test/unit/comment-edit-widget.test.js',
+            'test/unit/comment-grist-sync.test.js',
+            'test/unit/card-renderer.test.js',
+            'test/unit/kanban-renderer.test.js',
+            'test/unit/column-collapse-manager.test.js',
+            'test/unit/modal-reference-data.test.js',
+            'test/unit/modal-selects.test.js',
+            'test/unit/modal-affectation.test.js',
+            'test/unit/modal-strategy.test.js',
+            'test/unit/modal-formdata.test.js',
+            'test/unit/modal-crud.test.js',
+            'test/unit/modal-visuals.test.js',
+            'test/unit/modal-history.test.js',
+            'test/unit/modal-tabindicators.test.js',
+            'test/unit/modal-references.test.js'
+        ];
+
+        try {
+            for (const file of testFiles) {
+                await loadScript(file);
             }
-        })();
+
+            var results = await TestFramework.runAll();
+            TestFramework.renderResults(results, document.getElementById('results'));
+            var s = results.summary;
+            document.title = (s.failed === 0 ? 'PASS' : 'FAIL') +
+                ' (' + s.passed + '/' + s.total + ') - Kanban Unit Tests';
+        } catch (err) {
+            document.getElementById('results').innerHTML =
+                '<div class="test-summary test-summary-fail">Fatal error: ' +
+                err.message.replace(/</g, '&lt;') + '</div>';
+        }
     </script>
 </body>
 </html>

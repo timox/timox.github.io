@@ -2,6 +2,7 @@
 // Utilitaires pour la manipulation du DOM et l'interface utilisateur
 
 import { MESSAGES } from '../config/constants.js';
+import { escapeHTML } from './safe-dom.js';
 
 /**
  * Affiche un message d'erreur dans le container d'erreurs
@@ -15,7 +16,7 @@ export function displayError(message, containerId = 'error-container') {
   if ($container.length) {
     const errorHtml = `
       <div class="alert alert-danger m-3 alert-dismissible fade show">
-        <strong>Erreur Kanban:</strong> ${message}
+        <strong>Erreur Kanban:</strong> ${escapeHTML(message)}
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
     `;
@@ -48,7 +49,7 @@ export function displaySuccess(message, containerId = 'error-container') {
   if ($container.length) {
     const successHtml = `
       <div class="alert alert-success m-3 alert-dismissible fade show">
-        <strong>Succès:</strong> ${message}
+        <strong>Succès:</strong> ${escapeHTML(message)}
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
     `;

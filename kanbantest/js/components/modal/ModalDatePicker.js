@@ -4,7 +4,7 @@
  * Sous-module extrait de SharedTaskModal.js (Phase 2)
  * Charge via <script> avant SharedTaskModal.js
  */
-class ModalDatePicker {
+export class ModalDatePicker {
   constructor(modal) {
     this.modal = modal;
     this.instance = null;

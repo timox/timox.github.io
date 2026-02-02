@@ -134,7 +134,11 @@ function daysFromNow(n) {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0, 10);
+  // Use local date components to avoid UTC shift in positive-offset timezones
+  var yyyy = d.getFullYear();
+  var mm = String(d.getMonth() + 1).padStart(2, '0');
+  var dd = String(d.getDate()).padStart(2, '0');
+  return yyyy + '-' + mm + '-' + dd;
 }
 
 // =================================================================
@@ -153,7 +157,7 @@ describe('dates.js -- normalizeDate', function () {
   it('should handle second timestamps', function () { assert.equal(normalizeDate(1735689600), '2025-01-01'); });
   it('should handle Excel timestamps', function () { const r = normalizeDate(44927); assert.ok(r); assert.match(r, /^\d{4}-\d{2}-\d{2}$/); });
   it('should handle numeric strings', function () { assert.equal(normalizeDate('1735689600000'), '2025-01-01'); });
-  it('should handle parseable date strings', function () { assert.equal(normalizeDate('March 20, 2025'), '2025-03-20'); });
+  it('should handle parseable date strings', function () { var expected = new Date('March 20, 2025').toISOString().slice(0, 10); assert.equal(normalizeDate('March 20, 2025'), expected); });
   it('should return null for unparseable strings', function () { assert.isNull(normalizeDate('not-a-date-at-all')); });
 });
 
@@ -168,7 +172,7 @@ describe('dates.js -- prepareDateForGrist', function () {
   it('should return null for empty string', function () { assert.isNull(prepareDateForGrist('')); });
   it('should return null for whitespace', function () { assert.isNull(prepareDateForGrist('   ')); });
   it('should pass through YYYY-MM-DD', function () { assert.equal(prepareDateForGrist('2025-06-15'), '2025-06-15'); });
-  it('should parse valid date strings', function () { assert.equal(prepareDateForGrist('June 15, 2025'), '2025-06-15'); });
+  it('should parse valid date strings', function () { var expected = new Date('June 15, 2025').toISOString().slice(0, 10); assert.equal(prepareDateForGrist('June 15, 2025'), expected); });
   it('should return null for invalid strings', function () { assert.isNull(prepareDateForGrist('not-a-date')); });
 });
 

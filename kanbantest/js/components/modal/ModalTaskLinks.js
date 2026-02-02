@@ -4,7 +4,7 @@
  * Sous-module extrait de SharedTaskModal.js (Phase 2)
  * Charge via <script> avant SharedTaskModal.js
  */
-class ModalTaskLinks {
+export class ModalTaskLinks {
   constructor(modal) {
     this.modal = modal;
     this.links = [];

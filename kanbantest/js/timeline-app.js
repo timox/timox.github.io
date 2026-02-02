@@ -1,6 +1,8 @@
 // === timeline-app.js ===
 // Application Gantt Timeline utilisant vis-timeline (unifié avec TimelineManager)
 
+import { SharedTaskModal } from './components/SharedTaskModal.js';
+
 const TABLE_ID = 'Ssir_principale_task';
 const STRATEGY_TABLE_ID = 'Ssir_strategie2';
 
@@ -97,11 +99,6 @@ class GanttTimeline {
    * Initialise SharedTaskModal (instance unique)
    */
   async initSharedTaskModal() {
-    if (typeof SharedTaskModal === 'undefined') {
-      console.warn('[GanttTimeline] SharedTaskModal non disponible');
-      return;
-    }
-
     this.sharedTaskModal = new SharedTaskModal({
       showTimes: true,
       showLinks: false,
