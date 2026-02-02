@@ -76,13 +76,44 @@ ModalFormData.prototype.getFormData = function () {
   data.mise_en_oeuvre_code = this.getFieldValue('stm-meo-code');
   data.mise_en_oeuvre_nom = this.getFieldValue('stm-meo-nom');
 
-  if (this.modal.selectedStrategies.length > 0) {
+  if (this.modal.selectedStrategies && this.modal.selectedStrategies.length > 0) {
     data.strategie_ids = this.modal.selectedStrategies.map(function (s) { return s.id; });
     data.est_classifiee = true;
+  } else {
+    var strategieIdStr = this.getFieldValue('stm-strategie');
+    if (strategieIdStr) {
+      data.strategie_ids = [parseInt(strategieIdStr, 10)];
+      data.est_classifiee = true;
+    } else {
+      data.strategie_id = null;
+      data.est_classifiee = false;
+    }
   }
+
+  // Echeance - toujours envoyer pour permettre le vidage
+  var echeanceDate = this.modal.datePickerModule ? this.modal.datePickerModule.getDate() : null;
+  if (echeanceDate && !isNaN(echeanceDate.getTime())) {
+    data.date_echeance = Math.floor(echeanceDate.getTime() / 1000);
+  } else {
+    data.date_echeance = null;
+  }
+
+  // Jalons - toujours envoyer pour permettre le vidage
+  data.jalons = this.modal.jalonModule ? this.modal.jalonModule.getData() : [];
 
   var avancement = parseInt(this.getFieldValue('stm-avancement')) || 0;
   data.avancement = avancement;
+
+  // Date de debut - toujours envoyer pour permettre le vidage
+  var dateDebut = this.getFieldValue('stm-date-debut');
+  if (dateDebut) {
+    data.date_debut = Math.floor(new Date(dateDebut).getTime() / 1000);
+  } else {
+    data.date_debut = null;
+  }
+
+  // Liens - toujours envoyer pour permettre le vidage
+  data.liens = this.modal.taskLinksModule ? this.modal.taskLinksModule.getData() : [];
 
   return data;
 };
@@ -219,19 +250,39 @@ describe('ModalFormData -- clearForm', function () {
   });
 });
 
+// Helper: create a mock modal with all required sub-modules
+function createMockModal(overrides) {
+  var defaults = {
+    affectationModule: {
+      getSelectedBureaux: function () { return []; },
+      getSelectedQui: function () { return []; }
+    },
+    selectedStrategies: [],
+    options: {},
+    datePickerModule: {
+      getDate: function () { return null; }
+    },
+    jalonModule: {
+      getData: function () { return []; }
+    },
+    taskLinksModule: {
+      getData: function () { return []; }
+    }
+  };
+  return Object.assign(defaults, overrides || {});
+}
+
 describe('ModalFormData -- getFormData', function () {
   it('returns object with correct keys', function () {
-    var modal = {
+    var modal = createMockModal({
       affectationModule: {
         getSelectedBureaux: function () { return ['BDD']; },
         getSelectedQui: function () { return ['Alice', 'Bob']; }
       },
-      selectedStrategies: [{ id: 42 }],
-      options: {}
-    };
+      selectedStrategies: [{ id: 42 }]
+    });
 
     var fd = new ModalFormData(modal);
-
     var data = fd.getFormData();
 
     assert.ok(data.hasOwnProperty('titre'));
@@ -253,14 +304,12 @@ describe('ModalFormData -- getFormData', function () {
   });
 
   it('joins selected bureaux and qui as comma-separated strings', function () {
-    var modal = {
+    var modal = createMockModal({
       affectationModule: {
         getSelectedBureaux: function () { return ['BDD', 'Reseaux']; },
         getSelectedQui: function () { return ['Alice', 'Bob']; }
-      },
-      selectedStrategies: [],
-      options: {}
-    };
+      }
+    });
 
     var fd = new ModalFormData(modal);
     var data = fd.getFormData();
@@ -269,14 +318,9 @@ describe('ModalFormData -- getFormData', function () {
   });
 
   it('includes strategie_ids when selectedStrategies is not empty', function () {
-    var modal = {
-      affectationModule: {
-        getSelectedBureaux: function () { return []; },
-        getSelectedQui: function () { return []; }
-      },
-      selectedStrategies: [{ id: 10 }, { id: 20 }],
-      options: {}
-    };
+    var modal = createMockModal({
+      selectedStrategies: [{ id: 10 }, { id: 20 }]
+    });
 
     var fd = new ModalFormData(modal);
     var data = fd.getFormData();
@@ -284,33 +328,99 @@ describe('ModalFormData -- getFormData', function () {
     assert.isTrue(data.est_classifiee);
   });
 
-  it('does not include strategie_ids when selectedStrategies is empty', function () {
-    var modal = {
-      affectationModule: {
-        getSelectedBureaux: function () { return []; },
-        getSelectedQui: function () { return []; }
-      },
-      selectedStrategies: [],
-      options: {}
-    };
+  it('sets est_classifiee to false when no strategies selected', function () {
+    var modal = createMockModal({ selectedStrategies: [] });
 
     var fd = new ModalFormData(modal);
     var data = fd.getFormData();
     assert.isFalse(data.hasOwnProperty('strategie_ids'));
+    assert.isFalse(data.est_classifiee);
+    assert.isNull(data.strategie_id);
   });
 
   it('returns avancement as 0 when field is empty', function () {
-    var modal = {
-      affectationModule: {
-        getSelectedBureaux: function () { return []; },
-        getSelectedQui: function () { return []; }
-      },
-      selectedStrategies: [],
-      options: {}
-    };
+    var modal = createMockModal();
 
     var fd = new ModalFormData(modal);
     var data = fd.getFormData();
     assert.equal(data.avancement, 0);
+  });
+});
+
+describe('ModalFormData -- getFormData always sends clearable fields', function () {
+  it('always includes date_echeance (null when empty)', function () {
+    var modal = createMockModal({
+      datePickerModule: { getDate: function () { return null; } }
+    });
+
+    var fd = new ModalFormData(modal);
+    var data = fd.getFormData();
+    assert.ok(data.hasOwnProperty('date_echeance'));
+    assert.isNull(data.date_echeance);
+  });
+
+  it('sends date_echeance as seconds timestamp when set', function () {
+    var testDate = new Date('2025-06-15T12:00:00Z');
+    var modal = createMockModal({
+      datePickerModule: { getDate: function () { return testDate; } }
+    });
+
+    var fd = new ModalFormData(modal);
+    var data = fd.getFormData();
+    assert.typeOf(data.date_echeance, 'number');
+    assert.equal(data.date_echeance, Math.floor(testDate.getTime() / 1000));
+  });
+
+  it('always includes date_debut (null when empty)', function () {
+    var modal = createMockModal();
+
+    var fd = new ModalFormData(modal);
+    var data = fd.getFormData();
+    assert.ok(data.hasOwnProperty('date_debut'));
+    assert.isNull(data.date_debut);
+  });
+
+  it('always includes jalons (empty array when none)', function () {
+    var modal = createMockModal({
+      jalonModule: { getData: function () { return []; } }
+    });
+
+    var fd = new ModalFormData(modal);
+    var data = fd.getFormData();
+    assert.ok(data.hasOwnProperty('jalons'));
+    assert.deepEqual(data.jalons, []);
+  });
+
+  it('includes jalons data when present', function () {
+    var jalons = [{ titre: 'J1', date: '2025-06-15' }];
+    var modal = createMockModal({
+      jalonModule: { getData: function () { return jalons; } }
+    });
+
+    var fd = new ModalFormData(modal);
+    var data = fd.getFormData();
+    assert.deepEqual(data.jalons, jalons);
+  });
+
+  it('always includes liens (empty array when none)', function () {
+    var modal = createMockModal({
+      taskLinksModule: { getData: function () { return []; } }
+    });
+
+    var fd = new ModalFormData(modal);
+    var data = fd.getFormData();
+    assert.ok(data.hasOwnProperty('liens'));
+    assert.deepEqual(data.liens, []);
+  });
+
+  it('includes liens data when present', function () {
+    var liens = [{ targetId: 42, type: 'depends_on' }];
+    var modal = createMockModal({
+      taskLinksModule: { getData: function () { return liens; } }
+    });
+
+    var fd = new ModalFormData(modal);
+    var data = fd.getFormData();
+    assert.deepEqual(data.liens, liens);
   });
 });
