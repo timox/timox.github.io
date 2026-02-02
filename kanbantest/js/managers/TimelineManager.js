@@ -192,15 +192,17 @@ export class TimelineManager {
   }
 
   handleTimelineSelect(props) {
-    const taskId = props?.items?.[0];
-    if (!taskId) return;
+    const rawId = props?.items?.[0];
+    if (!rawId) return;
+    const taskId = this.getRealTaskId(rawId);
     this.lastSelectedTaskId = taskId;
     this.highlightKanbanCard(taskId);
   }
 
   handleTimelineOpen(props) {
-    const taskId = props?.item;
-    if (!taskId) return;
+    const rawId = props?.item;
+    if (!rawId) return;
+    const taskId = this.getRealTaskId(rawId);
     const record = (this.kanban?.currentRecords || []).find(rec => rec.id === taskId);
     if (record && typeof this.kanban?.openPopup === 'function') {
       this.kanban.openPopup(record);
@@ -208,8 +210,9 @@ export class TimelineManager {
   }
 
   handleTimelineClick(props) {
-    const taskId = props?.item;
-    if (!taskId) return;
+    const rawId = props?.item;
+    if (!rawId) return;
+    const taskId = this.getRealTaskId(rawId);
     const record = (this.kanban?.currentRecords || []).find(rec => rec.id === taskId);
     if (record && typeof this.kanban?.openPopup === 'function') {
       this.kanban.openPopup(record);
@@ -220,8 +223,9 @@ export class TimelineManager {
     const event = props?.event;
     if (!event?.preventDefault) return;
     event.preventDefault();
-    const taskId = props?.item;
-    if (!taskId || !this.contextMenu) return;
+    const rawId = props?.item;
+    if (!rawId || !this.contextMenu) return;
+    const taskId = this.getRealTaskId(rawId);
     const record = (this.kanban?.currentRecords || []).find(rec => rec.id === taskId);
     if (!record) return;
     this.contextMenu.dataset.taskId = String(taskId);
@@ -292,7 +296,8 @@ export class TimelineManager {
 
       if (!startDate) return;
 
-      const group = this.getTimelineGroup(record);
+      // Déterminer les groupes cibles (expansion multi-valeurs pour personne/bureau)
+      const groups = this.getTimelineGroups(record);
       const typeValue = this.getTypeValue(record);
       const previsibiliteValue = this.getPrevisibiliteValue(record);
       const assignee = this.getFirstListValue(record.qui);
@@ -315,33 +320,38 @@ export class TimelineManager {
       const familleValue = this.getFamilleActionValue(record);
       const calculatedPrevisibilite = this.getCalculatedPrevisibilite(record);
 
-      items.push({
-        id: record.id,
-        content: record.titre || `Tâche ${record.id}`,
-        start: new Date(startDate),
-        end: endDate ? new Date(endDate) : null,
-        type,
-        group,
-        className: classList.filter(Boolean).join(' ').trim(),
-        title: this.getItemTitle(record, startDate, endDate),
-        customData: {
-          priorite: record.priorite,
-          type: typeValue,
-          previsibilite: previsibiliteValue || calculatedPrevisibilite,
-          statut: record.statut,
-          statut_color: this.getStatusColor(record.statut),
-          projet: record.projet,
-          assignee,
-          strategy_summary: strategySummary,
-          est_dette: record.est_dette_technique,
-          age: this.getAgeBadge(record.date_debut),
-          temps_estime: tempsEstime,
-          // V3 data
-          nature: natureValue,
-          genre: genreValue,
-          etape: etapeValue,
-          famille: familleValue
-        }
+      // Créer un item par groupe (duplique la tâche si multi-personnes ou multi-bureaux)
+      groups.forEach((group, idx) => {
+        items.push({
+          id: groups.length > 1 ? `${record.id}_g${idx}` : record.id,
+          content: record.titre || `Tâche ${record.id}`,
+          start: new Date(startDate),
+          end: endDate ? new Date(endDate) : null,
+          type,
+          group,
+          className: classList.filter(Boolean).join(' ').trim(),
+          title: this.getItemTitle(record, startDate, endDate),
+          customData: {
+            priorite: record.priorite,
+            type: typeValue,
+            previsibilite: previsibiliteValue || calculatedPrevisibilite,
+            statut: record.statut,
+            statut_color: this.getStatusColor(record.statut),
+            projet: record.projet,
+            assignee: groups.length > 1 ? group : assignee,
+            strategy_summary: strategySummary,
+            est_dette: record.est_dette_technique,
+            age: this.getAgeBadge(record.date_debut),
+            temps_estime: tempsEstime,
+            // V3 data
+            nature: natureValue,
+            genre: genreValue,
+            etape: etapeValue,
+            famille: familleValue,
+            // ID réel pour les actions (drag, click)
+            realTaskId: record.id
+          }
+        });
       });
     });
 
@@ -349,29 +359,43 @@ export class TimelineManager {
   }
 
   getTimelineGroup(record) {
+    return this.getTimelineGroups(record)[0];
+  }
+
+  /**
+   * Retourne TOUS les groupes pour un record.
+   * Pour 'personne' et 'bureau', expanse les listes multi-valeurs
+   * afin qu'une tâche apparaisse dans chaque groupe correspondant.
+   */
+  getTimelineGroups(record) {
     switch (this.timelineGroupement) {
-      case 'personne':
-        return this.getFirstListValue(record.qui);
+      case 'personne': {
+        const people = this.getAllListValues(record.qui);
+        return people.length > 0 ? people : ['Non défini'];
+      }
+      case 'bureau': {
+        const bureaux = this.getAllListValues(record.bureau);
+        if (bureaux.length > 0) return bureaux;
+        // Fallback : déduire depuis l'agent assigné
+        const fromAgent = this.getBureauFromRecord(record);
+        return [fromAgent || 'Non défini'];
+      }
       case 'type':
-        return this.getTypeValue(record) || 'Non défini';
+        return [this.getTypeValue(record) || 'Non défini'];
       case 'previsibilite':
-        return this.getPrevisibiliteValue(record) || 'Non défini';
-      case 'bureau':
-        // Déduire le bureau depuis le prénom de l'agent assigné
-        return this.getBureauFromRecord(record);
+        return [this.getPrevisibiliteValue(record) || 'Non défini'];
       case 'projet':
-        return record.projet || 'Non défini';
-      // === NOUVEAUX AXES V3 ===
+        return [record.projet || 'Non défini'];
       case 'nature':
-        return this.getNatureActiviteValue(record) || 'Non défini';
+        return [this.getNatureActiviteValue(record) || 'Non défini'];
       case 'genre':
-        return this.getGenreActionValue(record) || 'Non défini';
+        return [this.getGenreActionValue(record) || 'Non défini'];
       case 'etape':
-        return this.getEtapeCycleValue(record) || 'Non défini';
+        return [this.getEtapeCycleValue(record) || 'Non défini'];
       case 'famille':
-        return this.getFamilleActionValue(record) || 'Non défini';
+        return [this.getFamilleActionValue(record) || 'Non défini'];
       default:
-        return 'Non défini';
+        return ['Non défini'];
     }
   }
 
@@ -463,6 +487,16 @@ export class TimelineManager {
     return `<div class="tl-item"><span class="tl-title">${item.content}</span><span class="tl-badges">${badges.join('')}</span></div>`;
   }
 
+  /**
+   * Extrait l'ID réel d'une tâche depuis un ID timeline (qui peut être "123_g1" pour les doublons)
+   */
+  getRealTaskId(timelineId) {
+    if (typeof timelineId === 'number') return timelineId;
+    const str = String(timelineId);
+    const match = str.match(/^(\d+)(_g\d+)?$/);
+    return match ? parseInt(match[1], 10) : timelineId;
+  }
+
   async handleTimelineMove(item, callback) {
     try {
       if (!item?.id) {
@@ -470,6 +504,7 @@ export class TimelineManager {
         return;
       }
 
+      const realId = this.getRealTaskId(item.id);
       const updates = {};
       const startValue = item.start instanceof Date ? item.start.getTime() : item.start;
       const endValue = item.end instanceof Date ? item.end.getTime() : item.end;
@@ -494,10 +529,10 @@ export class TimelineManager {
       }
 
       await window.grist.docApi.applyUserActions([
-        ['UpdateRecord', 'Ssir_principale_task', item.id, updates]
+        ['UpdateRecord', 'Ssir_principale_task', realId, updates]
       ]);
 
-      this.updateLocalRecord(item.id, updates);
+      this.updateLocalRecord(realId, updates);
       callback(item);
     } catch (error) {
       this.logger.error('Erreur déplacement timeline:', error);
@@ -552,7 +587,24 @@ export class TimelineManager {
     if (Array.isArray(value) && value.length > 1) {
       return value[1];
     }
+    if (typeof value === 'string' && value.trim()) {
+      return value.split(',')[0].trim();
+    }
     return 'Non défini';
+  }
+
+  /**
+   * Extrait TOUTES les valeurs d'un champ Grist ChoiceList ou CSV string
+   * @returns {Array<string>} Liste de valeurs (sans 'L')
+   */
+  getAllListValues(value) {
+    if (Array.isArray(value) && value.length > 1) {
+      return value.slice(1).filter(v => v && v !== 'L');
+    }
+    if (typeof value === 'string' && value.trim()) {
+      return value.split(',').map(s => s.trim()).filter(Boolean);
+    }
+    return [];
   }
 
   getTypeColor(typeValue) {

@@ -134,7 +134,14 @@ export class FilterManager {
       this.populateSelect(this.elements.filterStatut, statut, 'Tous');
     }
 
-    this.logger.debug('Filter options populated');
+    // Resynchroniser les valeurs DOM avec this.filters
+    // (après rebuild des options, les valeurs sauvegardées/courantes doivent être restaurées)
+    if (this.elements.filterBureau) this.elements.filterBureau.value = this.filters.bureau || '';
+    if (this.elements.filterQui) this.elements.filterQui.value = this.filters.qui || '';
+    if (this.elements.filterStatut) this.elements.filterStatut.value = this.filters.statut || '';
+    if (this.elements.showTermine) this.elements.showTermine.checked = this.showTermine;
+
+    this.logger.debug('Filter options populated, DOM synced with current filters');
   }
   
   /**
