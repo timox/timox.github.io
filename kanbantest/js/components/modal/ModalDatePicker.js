@@ -40,8 +40,8 @@ export class ModalDatePicker {
           clickOpens: true,
           onChange: (dates) => {
             this.updateStatus(dates[0]);
-            this.modal.updateTimelineVisual();
-            this.modal.updateCompletionRing();
+            this.modal.visualsModule.updateTimelineVisual();
+            this.modal.visualsModule.updateCompletionRing();
           }
         });
         console.log('[ModalDatePicker] Flatpickr initialized');
@@ -121,8 +121,8 @@ export class ModalDatePicker {
     input.style.cursor = 'pointer';
     input.addEventListener('change', () => {
       this.updateStatus(input.value ? new Date(input.value) : null);
-      this.modal.updateTimelineVisual();
-      this.modal.updateCompletionRing();
+      this.modal.visualsModule.updateTimelineVisual();
+      this.modal.visualsModule.updateCompletionRing();
     });
     // Permettre l'ouverture au clic
     input.addEventListener('click', () => {
