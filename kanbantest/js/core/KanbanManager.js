@@ -17,6 +17,7 @@ import { TimelineManager } from '../managers/TimelineManager.js';
 
 // Importation du gestionnaire Grist
 import { GristManager } from '../managers/GristManager.js';
+import { getUserActionManager } from '../utils/UserActionManager.js';
 
 /**
  * Orchestrateur principal de l'application Kanban (version all�g�e)
@@ -194,7 +195,26 @@ export class KanbanManager {
   async handleTaskSave(taskData, isNew = false) {
     try {
       const taskId = isNew ? null : taskData.id;
-      await this.saveTaskData(taskData, taskId);
+
+      // Capturer les anciennes données avant sauvegarde (pour l'historique)
+      const oldData = isNew ? null : this.currentRecords?.find(r => r.id === taskId);
+
+      const result = await this.saveTaskData(taskData, taskId);
+      const savedTaskId = taskId || result?.id;
+
+      // Enregistrer dans l'historique via UserActionManager
+      try {
+        const userActionManager = getUserActionManager();
+        if (userActionManager && savedTaskId) {
+          if (oldData) {
+            await userActionManager.updateTaskAction(savedTaskId, oldData, taskData, 'Tâche modifiée');
+          } else {
+            await userActionManager.createTaskAction(savedTaskId, taskData);
+          }
+        }
+      } catch (historyError) {
+        console.warn('KanbanManager: Erreur enregistrement historique:', historyError);
+      }
     } catch (error) {
       console.error('KanbanManager: Erreur sauvegarde tâche:', error);
       throw error;

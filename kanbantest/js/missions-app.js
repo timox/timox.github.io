@@ -4,6 +4,7 @@
 
 import { GristManager } from './managers/GristManager.js';
 import { createModuleLogger } from './utils/LoggerManager.js';
+import { getUserActionManager } from './utils/UserActionManager.js';
 
 const logger = createModuleLogger('MissionsApp');
 
@@ -115,6 +116,9 @@ async function handleTaskSave(taskData) {
     const isNew = !taskData.id;
     const taskId = taskData.id;
 
+    // Capturer les anciennes données avant sauvegarde (pour l'historique)
+    const oldData = isNew ? null : tasks.find(t => t.id === taskId);
+
     // Utiliser GristManager.prepareDataForGrist pour convertir correctement
     // les formats (ChoiceList, ReferenceList, dates, liens, jalons...)
     const gristData = gristManager.prepareDataForGrist(taskData);
@@ -122,11 +126,13 @@ async function handleTaskSave(taskData) {
     // Supprimer l'id des données à envoyer (pas un champ modifiable)
     delete gristData.id;
 
+    let savedTaskId = taskId;
     if (isNew) {
       const result = await window.grist.docApi.applyUserActions([
         ['AddRecord', 'Ssir_principale_task', null, gristData]
       ]);
-      logger.debug('Task created:', result);
+      savedTaskId = result?.retValues?.[0] || null;
+      logger.debug('Task created:', savedTaskId);
       showToast('Tâche créée', 'success');
     } else {
       await window.grist.docApi.applyUserActions([
@@ -134,6 +140,20 @@ async function handleTaskSave(taskData) {
       ]);
       logger.debug('Task updated:', taskId);
       showToast('Tâche modifiée', 'success');
+    }
+
+    // Enregistrer dans l'historique via UserActionManager
+    try {
+      const userActionManager = getUserActionManager();
+      if (userActionManager && savedTaskId) {
+        if (oldData) {
+          await userActionManager.updateTaskAction(savedTaskId, oldData, taskData, 'Tâche modifiée');
+        } else {
+          await userActionManager.createTaskAction(savedTaskId, taskData);
+        }
+      }
+    } catch (historyError) {
+      logger.warn('Erreur enregistrement historique:', historyError);
     }
 
     // Recharger les données
