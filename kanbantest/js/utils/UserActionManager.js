@@ -239,7 +239,8 @@ export class UserActionManager {
       'strategie_sous_objectif': 'Sous-objectif stratégique modifié',
       'strategie_action': 'Action stratégique modifiée',
       'date_debut': 'Date de début modifiée',
-      'date_echeance': 'Date d\'échéance modifiée'
+      'date_echeance': 'Date d\'échéance modifiée',
+      'avancement': 'Avancement modifié'
     };
     
     const changeDescriptions = detailedChanges.map(change => {
@@ -329,7 +330,7 @@ export class UserActionManager {
     const relevantFields = [
       'statut', 'titre', 'description', 'bureau', 'qui', 'urgence', 'impact', 'projet',
       'strategie_objectif', 'strategie_sous_objectif', 'strategie_action',
-      'date_debut', 'date_echeance'
+      'date_debut', 'date_echeance', 'avancement'
     ];
     const changes = [];
     const detailedChanges = [];
