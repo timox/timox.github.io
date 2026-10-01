@@ -2,7 +2,7 @@
 
 Questionnaire de qualification d'un VLAN, avec les réponses de l'agent d'extraction en regard,
 pour le document Grist « Qualification VLAN » (modèle v4 : tables `VLANs`, `Referentiel`,
-`Reponses`, `Classes_risque`).
+`Reponses`, `Profils`, `Reponses_profil`, `Classes_risque`).
 
 ## Installation dans Grist
 
@@ -13,6 +13,9 @@ pour le document Grist « Qualification VLAN » (modèle v4 : tables `VLANs`, `R
 4. Données de la section : **Sélectionner par** = la liste des VLAN.
 
 ## Fonctionnement
+
+- Deux modes : **site** (le VLAN sélectionné) et **profil** (réponses communes à tous les sites du même numéro de VLAN).
+  Sur un site, la valeur retenue est : saisie locale, sinon mesure de l'agent, sinon réponse du profil.
 
 - Critères regroupés par thème, avec l'aide de la doctrine et la réponse de l'agent (valeur + preuve).
 - Saisie Oui / Non / N/A et précision ; enregistrement automatique. La saisie prime sur l'agent.

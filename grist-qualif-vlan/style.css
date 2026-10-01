@@ -101,3 +101,6 @@ textarea:focus, .choix button:focus-visible, .onglet:focus-visible { outline: 2p
 @media (max-width: 560px) {
   .saisie { grid-template-columns: 1fr; }
 }
+.bandeau-profil { font-size: 12.5px; color: var(--discret); margin: 0 0 8px; padding: 6px 8px; border: 1px dashed var(--bord); border-radius: var(--rayon); }
+.lien { border: 0; background: none; color: var(--accent); cursor: pointer; font: inherit; padding: 0 0 0 6px; text-decoration: underline; }
+.agent.profil { border-left: 3px solid var(--accent); }

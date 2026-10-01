@@ -1,38 +1,45 @@
 /* Widget Grist « Qualification VLAN – saisie »
  *
  * À placer sur une page où une liste de la table VLANs pilote la sélection
- * (« Sélectionner par » = la liste). Le widget affiche les critères du VLAN
- * sélectionné, la réponse de l'agent d'extraction et permet de saisir ou corriger.
+ * (« Sélectionner par » = la liste). Deux modes :
+ *  - Site   : critères du VLAN sélectionné (table Reponses), avec la mesure de l'agent
+ *             et la réponse héritée du profil ; la saisie prime sur les deux.
+ *  - Profil : réponses communes à tous les sites du même numéro de VLAN (table Reponses_profil).
  *
- * Tables attendues : VLANs, Referentiel, Reponses, Classes_risque (modèle v4).
- * Accès requis : complet (lecture des réponses, écriture de Valeur_humaine / Precision).
+ * Tables attendues (modèle v4) : VLANs, Referentiel, Reponses ; facultatives : Profils,
+ * Reponses_profil, Classes_risque. Accès requis : complet.
  */
 (function () {
   "use strict";
 
-  const TABLE = "Reponses";
   const VALEURS = ["Oui", "Non", "N/A"];
-  const FILTRES = [
-    ["attente", "À renseigner"],
-    ["ecarts", "Écarts"],
-    ["divergences", "Corrections divergentes"],
-    ["tout", "Tout"],
-  ];
+  const MODES = {
+    site: { table: "Reponses", cle: "VLAN", champ: "Valeur_humaine" },
+    profil: { table: "Reponses_profil", cle: "Profil", champ: "Valeur" },
+  };
+  const FILTRES = {
+    site: [["attente", "À renseigner"], ["ecarts", "Écarts"], ["divergences", "Corrections divergentes"], ["tout", "Tout"]],
+    profil: [["attente", "À renseigner"], ["ecarts", "Écarts"], ["tout", "Tout"]],
+  };
   const DELAI_SAUVEGARDE = 900;
 
   const S = {
+    mode: "site",
     vlan: null,          // enregistrement VLAN sélectionné
-    criteres: [],        // référentiel trié
+    profil: null,        // profil du VLAN sélectionné (Profils)
+    criteres: [],
     critParId: new Map(),
     classes: new Map(),
-    lignes: new Map(),   // id critère -> ligne de réponse
+    profils: new Map(),
+    avecProfils: false,
+    lignes: new Map(),   // id critère -> ligne (Reponses ou Reponses_profil selon le mode)
     onglet: "Tout",
     filtre: "attente",
-    visibles: null,      // ids critères affichés (figés jusqu'au prochain changement d'onglet / filtre)
+    visibles: null,
     sequence: 0,
   };
-  const enAttente = new Map(); // id ligne -> champs à enregistrer
-  const enCours = new Map();   // id ligne -> champs en cours d'envoi
+  const enAttente = new Map(); // "table:id" -> champs à enregistrer
+  const enCours = new Map();
   let minuteur = null;
 
   const app = document.getElementById("app");
@@ -43,6 +50,8 @@
     const d = new Date(typeof s === "number" ? s * 1000 : s);
     return d.toLocaleDateString("fr-FR") + " " + d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
   };
+  const cfg = () => MODES[S.mode];
+  const cibleId = () => (S.mode === "profil" ? (S.profil && S.profil.id) : (S.vlan && S.vlan.id));
 
   /* ---------- Accès aux données ---------- */
   let jeton = null;
@@ -57,40 +66,40 @@
     return r.json();
   }
 
-  async function lireReponses(vlanId) {
-    const filtre = encodeURIComponent(JSON.stringify({ VLAN: [vlanId] }));
-    const j = await rest("/tables/" + TABLE + "/records?filter=" + filtre);
+  async function lire(table, cle, id) {
+    const filtre = encodeURIComponent(JSON.stringify({ [cle]: [id] }));
+    const j = await rest("/tables/" + table + "/records?filter=" + filtre);
     return j.records.map((r) => Object.assign({ id: r.id }, r.fields));
   }
 
-  async function verifierModele() {
-    if (S.modeleOk) return;
+  async function chargerReferentiel() {
+    if (S.criteres.length) return;
     const tables = await grist.docApi.listTables();
-    const manquantes = ["VLANs", "Referentiel", TABLE].filter((t) => !tables.includes(t));
+    const manquantes = ["VLANs", "Referentiel", "Reponses"].filter((t) => !tables.includes(t));
     if (manquantes.length) {
       throw new Error("ce document n'a pas le modèle v4 (table" + (manquantes.length > 1 ? "s " : " ") + manquantes.join(", ") +
         " absente" + (manquantes.length > 1 ? "s" : "") + "). Le widget s'utilise sur un document construit ou migré en v4");
     }
-    S.modeleOk = true;
-  }
-
-  async function chargerReferentiel() {
-    await verifierModele();
-    if (S.criteres.length) return;
+    S.avecProfils = tables.includes("Profils") && tables.includes("Reponses_profil");
     const ref = enLignes(await grist.docApi.fetchTable("Referentiel"));
     ref.sort((a, b) => (a.Ordre || 0) - (b.Ordre || 0) || String(a.Code).localeCompare(b.Code));
     S.criteres = ref;
     S.critParId = new Map(ref.map((c) => [c.id, c]));
-    try {
-      enLignes(await grist.docApi.fetchTable("Classes_risque")).forEach((c) => S.classes.set(c.id, c.Classe));
-    } catch (e) { /* table facultative */ }
+    if (tables.includes("Classes_risque")) enLignes(await grist.docApi.fetchTable("Classes_risque")).forEach((c) => S.classes.set(c.id, c.Classe));
+    if (S.avecProfils) await chargerProfils();
+  }
+
+  async function chargerProfils() {
+    S.profils = new Map(enLignes(await grist.docApi.fetchTable("Profils")).map((p) => [p.id, p]));
   }
 
   /* ---------- Logique ---------- */
-  const valeurRetenue = (l) => l.Valeur_humaine || l.Valeur_agent || null;
+  const saisie = (l) => l[cfg().champ] || null;
+  const valeurRetenue = (l) => (S.mode === "profil" ? l.Valeur : (l.Valeur_humaine || l.Valeur_agent || l.Valeur_profil)) || null;
+  const valeurHeritee = (l) => (S.mode === "profil" ? null : (l.Valeur_agent ? ["agent", l.Valeur_agent] : (l.Valeur_profil ? ["profil", l.Valeur_profil] : null)));
 
   function statut(l, c) {
-    if (c.Type === "Question") return l.Precision ? ["Répondu", "ok"] : ["À renseigner", "attente"];
+    if (c.Type === "Question") return (l.Precision || (S.mode === "site" && l.Precision_profil)) ? ["Répondu", "ok"] : ["À renseigner", "attente"];
     const v = valeurRetenue(l);
     if (!v) return ["À renseigner", "attente"];
     if (v === "Non") return [c.Bloquant ? "Écart bloquant" : "Écart", "ecart"];
@@ -112,25 +121,24 @@
     return t;
   }
 
-  function fusionner(lignes) {
-    S.lignes = new Map();
-    lignes.forEach((l) => {
-      Object.assign(l, enCours.get(l.id) || {}, enAttente.get(l.id) || {});
-      if (l.Critere) S.lignes.set(l.Critere, l);
-    });
-  }
-
-  async function chargerReponses() {
-    const vlanId = S.vlan.id;
-    let lignes = await lireReponses(vlanId);
+  async function chargerLignes() {
+    const { table, cle } = cfg();
+    const id = cibleId();
+    if (!id) { S.lignes = new Map(); return; }
+    let lignes = await lire(table, cle, id);
     const presents = new Set(lignes.map((l) => l.Critere));
     const manquants = S.criteres.filter((c) => !presents.has(c.id));
     if (manquants.length) {
-      await grist.docApi.applyUserActions([["BulkAddRecord", TABLE, manquants.map(() => null),
-        { VLAN: manquants.map(() => vlanId), Critere: manquants.map((c) => c.id) }]]);
-      lignes = await lireReponses(vlanId);
+      await grist.docApi.applyUserActions([["BulkAddRecord", table, manquants.map(() => null),
+        { [cle]: manquants.map(() => id), Critere: manquants.map((c) => c.id) }]]);
+      lignes = await lire(table, cle, id);
     }
-    if (S.vlan && S.vlan.id === vlanId) fusionner(lignes);
+    if (cibleId() !== id || cfg().table !== table) return;
+    S.lignes = new Map();
+    lignes.forEach((l) => {
+      Object.assign(l, enCours.get(table + ":" + l.id) || {}, enAttente.get(table + ":" + l.id) || {});
+      if (l.Critere) S.lignes.set(l.Critere, l);
+    });
   }
 
   /* ---------- Enregistrement ---------- */
@@ -143,7 +151,8 @@
     const l = S.lignes.get(critId);
     if (!l) return;
     Object.assign(l, champs);
-    enAttente.set(l.id, Object.assign(enAttente.get(l.id) || {}, champs));
+    const k = cfg().table + ":" + l.id;
+    enAttente.set(k, Object.assign(enAttente.get(k) || {}, champs));
     majCarte(critId);
     majCompteurs();
     etat("Modifications non enregistrées…");
@@ -155,14 +164,17 @@
     if (!enAttente.size) return;
     const lot = [...enAttente.entries()];
     enAttente.clear();
-    lot.forEach(([id, f]) => enCours.set(id, Object.assign(enCours.get(id) || {}, f)));
+    lot.forEach(([k, f]) => enCours.set(k, Object.assign(enCours.get(k) || {}, f)));
     etat("Enregistrement…");
     try {
-      await grist.docApi.applyUserActions(lot.map(([id, f]) => ["UpdateRecord", TABLE, id, f]));
-      lot.forEach(([id]) => enCours.delete(id));
+      await grist.docApi.applyUserActions(lot.map(([k, f]) => {
+        const [table, id] = k.split(":");
+        return ["UpdateRecord", table, Number(id), f];
+      }));
+      lot.forEach(([k]) => enCours.delete(k));
       etat("Enregistré à " + new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }));
     } catch (e) {
-      lot.forEach(([id, f]) => { enCours.delete(id); enAttente.set(id, Object.assign(f, enAttente.get(id) || {})); });
+      lot.forEach(([k, f]) => { enCours.delete(k); enAttente.set(k, Object.assign(f, enAttente.get(k) || {})); });
       etat("Échec de l'enregistrement : " + (e.message || e) + " — nouvel essai dans 5 s", true);
       clearTimeout(minuteur);
       minuteur = setTimeout(enregistrer, 5000);
@@ -177,8 +189,20 @@
 
   function htmlEntete() {
     const v = S.vlan;
+    const p = S.profil;
+    if (S.mode === "profil") {
+      return `
+        <div class="entete">
+          <h1>Profil ${esc(p.Libelle || p.VLAN_ID)}</h1>
+          <span class="puce">${esc(p.Nb_sites || 0)} site${p.Nb_sites > 1 ? "s" : ""}</span>
+          ${p.Tiers ? `<span class="puce">Tier ${esc(p.Tiers)}</span>` : ""}
+          <span class="etat" id="etat"></span>
+        </div>
+        <p class="bandeau-profil">Réponses communes à tous les sites du VLAN ${esc(p.VLAN_ID)}. Sur un site, une réponse saisie localement ou mesurée par l'agent prime sur le profil.
+          <button type="button" class="lien" data-action="site">← Revenir au site ${esc(v.Sites || "")}</button></p>`;
+    }
     const classe = S.classes.get(v.Classe_risque);
-    const alertes = [v.Controle_tier, v.Controle_CIDR].filter(Boolean);
+    const alertes = [v.Controle_tier, v.Controle_CIDR, v.Heterogeneite].filter(Boolean);
     return `
       <div class="entete">
         <h1>${esc(v.Libelle || ("VLAN " + v.VLAN_ID))}</h1>
@@ -188,6 +212,8 @@
         <span class="etat" id="etat"></span>
       </div>
       <p class="motif" id="motif">${esc(v.Motif || "")}</p>
+      ${p ? `<p class="bandeau-profil">Profil ${esc(p.Libelle)} · ${esc(p.Nb_sites || 0)} site${p.Nb_sites > 1 ? "s" : ""}
+        <button type="button" class="lien" data-action="profil">Modifier les réponses communes du profil →</button></p>` : ""}
       ${alertes.map((a) => `<p class="alerte">⚠ ${esc(a)}</p>`).join("")}`;
   }
 
@@ -199,18 +225,26 @@
           ${onglets.map((t) => `<button class="onglet" role="tab" data-onglet="${esc(t)}" aria-selected="${t === S.onglet}">${esc(t)}<span class="n" data-n="${esc(t)}"></span></button>`).join("")}
         </div>
         <div class="filtres" role="radiogroup" aria-label="Afficher">
-          ${FILTRES.map(([k, lib]) => `<label><input type="radio" name="filtre" value="${k}" ${k === S.filtre ? "checked" : ""}> ${lib}</label>`).join("")}
+          ${FILTRES[S.mode].map(([k, lib]) => `<label><input type="radio" name="filtre" value="${k}" ${k === S.filtre ? "checked" : ""}> ${lib}</label>`).join("")}
         </div>
       </div>`;
   }
 
-  function htmlAgent(l) {
-    if (!l.Valeur_agent && !l.Preuve_agent) return "";
-    const preuve = l.Preuve_agent || "";
-    const court = preuve.length > 220 ? preuve.slice(0, 220) + "…" : preuve;
-    return `<div class="agent">Agent : <span class="val">${esc(l.Valeur_agent || "indéterminé")}</span>
-      ${preuve ? ` — <span class="preuve" data-complet="${esc(preuve)}">${esc(court)}</span>${preuve.length > 220 ? `<button type="button" data-action="plus">voir tout</button>` : ""}` : ""}
-      ${l.Date_agent ? `<span class="preuve"> (collecte du ${esc(dateFr(l.Date_agent).split(" ")[0])})</span>` : ""}</div>`;
+  function htmlSources(l) {
+    if (S.mode === "profil") return "";
+    let h = "";
+    if (l.Valeur_agent || l.Preuve_agent) {
+      const preuve = l.Preuve_agent || "";
+      const court = preuve.length > 220 ? preuve.slice(0, 220) + "…" : preuve;
+      h += `<div class="agent">Agent : <span class="val">${esc(l.Valeur_agent || "indéterminé")}</span>
+        ${preuve ? ` — <span class="preuve" data-complet="${esc(preuve)}">${esc(court)}</span>${preuve.length > 220 ? `<button type="button" data-action="plus">voir tout</button>` : ""}` : ""}
+        ${l.Date_agent ? `<span class="preuve"> (collecte du ${esc(dateFr(l.Date_agent).split(" ")[0])})</span>` : ""}</div>`;
+    }
+    if (l.Valeur_profil || l.Precision_profil) {
+      h += `<div class="agent profil">Profil : <span class="val">${esc(l.Valeur_profil || "—")}</span>
+        ${l.Precision_profil ? ` — <span class="preuve">${esc(l.Precision_profil)}</span>` : ""}</div>`;
+    }
+    return h;
   }
 
   function htmlCarte(c) {
@@ -223,14 +257,16 @@
         <span class="libelle">${esc(c.Libelle)}</span>
         <span class="statut s-${cls}" data-statut>${esc(lib)}</span>
       </div>
-      ${c.Aide ? `<p class="aide">${esc(c.Aide)}</p>` : ""}`;
+      ${c.Aide ? `<p class="aide">${esc(c.Aide)}</p>` : ""}
+      ${S.mode === "profil" && c.Agent ? `<p class="aide">ⓘ Mesuré par l'agent sur chaque site : la réponse du profil ne s'applique que là où l'agent n'a rien relevé.</p>` : ""}`;
     if (c.Type === "Question") {
       return `<section class="carte question s-${cls}" data-crit="${c.id}">${tete}
-        <textarea data-champ="Precision" rows="2" placeholder="Votre réponse">${esc(l.Precision || "")}</textarea>
+        ${S.mode === "site" && l.Precision_profil ? `<div class="agent profil">Profil : <span class="preuve">${esc(l.Precision_profil)}</span></div>` : ""}
+        <textarea data-champ="Precision" rows="2" placeholder="${S.mode === "site" && l.Precision_profil ? "Réponse propre à ce site (sinon celle du profil s'applique)" : "Votre réponse"}">${esc(l.Precision || "")}</textarea>
         <div class="trace" data-trace></div></section>`;
     }
     return `<section class="carte s-${cls}" data-crit="${c.id}">${tete}
-      ${htmlAgent(l)}
+      ${htmlSources(l)}
       <div class="saisie">
         <div>
           <div class="choix" role="group" aria-label="Réponse pour ${esc(c.Code)}">
@@ -259,16 +295,20 @@
     const trace = carte.querySelector("[data-trace]");
     if (trace) trace.textContent = l.Auteur ? `Saisi par ${l.Auteur}${l.Date_saisie ? " le " + dateFr(l.Date_saisie) : ""}` : "";
     if (c.Type === "Question") return;
+    const propre = saisie(l);
+    const herite = valeurHeritee(l);
     carte.querySelectorAll(".choix button").forEach((b) => {
-      b.setAttribute("aria-pressed", String(b.dataset.v === l.Valeur_humaine));
-      b.classList.toggle("agent-val", !l.Valeur_humaine && b.dataset.v === l.Valeur_agent);
-      b.title = b.dataset.v === l.Valeur_agent ? "Valeur relevée par l'agent" : "";
+      b.setAttribute("aria-pressed", String(b.dataset.v === propre));
+      b.classList.toggle("agent-val", !propre && !!herite && b.dataset.v === herite[1]);
+      b.title = herite && b.dataset.v === herite[1] ? (herite[0] === "agent" ? "Valeur relevée par l'agent" : "Valeur du profil") : "";
     });
     const annuler = carte.querySelector("[data-action=annuler]");
-    annuler.hidden = !l.Valeur_humaine;
-    annuler.textContent = l.Valeur_agent ? "Revenir à la valeur de l'agent (" + l.Valeur_agent + ")" : "Effacer ma réponse";
+    annuler.hidden = !propre;
+    annuler.textContent = S.mode === "site" && herite
+      ? (herite[0] === "agent" ? "Revenir à la valeur de l'agent (" : "Revenir à la valeur du profil (") + herite[1] + ")"
+      : "Effacer ma réponse";
     const div = carte.querySelector("[data-divergence]");
-    const diverge = l.Valeur_humaine && l.Valeur_agent && l.Valeur_humaine !== l.Valeur_agent;
+    const diverge = S.mode === "site" && l.Valeur_humaine && l.Valeur_agent && l.Valeur_humaine !== l.Valeur_agent;
     div.hidden = !diverge;
     div.textContent = diverge ? `⚠ L'agent relève « ${l.Valeur_agent} » : justifiez la correction.` : "";
   }
@@ -307,29 +347,44 @@
 
   function rafraichir() {
     const e = document.getElementById("verdict");
-    if (!e) return rendre();
-    e.textContent = S.vlan.Verdict || "";
-    e.className = "puce " + classeVerdict(S.vlan.Verdict);
-    document.getElementById("motif").textContent = S.vlan.Motif || "";
+    if (e) {
+      e.textContent = S.vlan.Verdict || "";
+      e.className = "puce " + classeVerdict(S.vlan.Verdict);
+      document.getElementById("motif").textContent = S.vlan.Motif || "";
+    }
     S.criteres.forEach((c) => majCarte(c.id));
     majCompteurs();
+  }
+
+  async function changerMode(mode) {
+    if (mode === S.mode) return;
+    if (enAttente.size) { clearTimeout(minuteur); await enregistrer(); }
+    S.mode = mode;
+    S.visibles = null;
+    if (!FILTRES[mode].some(([k]) => k === S.filtre)) S.filtre = "attente";
+    app.innerHTML = `<p class="vide">Chargement…</p>`;
+    if (mode === "profil") await chargerProfils();
+    S.profil = S.vlan && S.profils.get(S.vlan.Profil) || null;
+    await chargerLignes();
+    rendre();
   }
 
   /* ---------- Événements ---------- */
   app.addEventListener("click", (ev) => {
     const onglet = ev.target.closest("[data-onglet]");
     if (onglet) { S.onglet = onglet.dataset.onglet; S.visibles = null; rendre(); return; }
+    const action = ev.target.closest("[data-action]");
+    if (action && (action.dataset.action === "profil" || action.dataset.action === "site")) { changerMode(action.dataset.action); return; }
     const carte = ev.target.closest(".carte");
     if (!carte) return;
     const critId = Number(carte.dataset.crit);
     const bouton = ev.target.closest(".choix button");
     if (bouton) {
       const l = S.lignes.get(critId);
-      if (l && l.Valeur_humaine !== bouton.dataset.v) modifier(critId, { Valeur_humaine: bouton.dataset.v }, true);
+      if (l && saisie(l) !== bouton.dataset.v) modifier(critId, { [cfg().champ]: bouton.dataset.v }, true);
       return;
     }
-    const action = ev.target.closest("[data-action]");
-    if (action && action.dataset.action === "annuler") modifier(critId, { Valeur_humaine: null }, true);
+    if (action && action.dataset.action === "annuler") modifier(critId, { [cfg().champ]: null }, true);
     if (action && action.dataset.action === "plus") {
       const p = action.previousElementSibling;
       p.textContent = p.dataset.complet;
@@ -357,8 +412,14 @@
       if (nouveau && enAttente.size) { clearTimeout(minuteur); await enregistrer(); }
       S.vlan = rec || null;
       if (!rec) return rendre();
-      if (nouveau) { S.visibles = null; S.lignes = new Map(); app.innerHTML = `<p class="vide">Chargement de ${esc(rec.Libelle || "")}…</p>`; }
-      await chargerReponses();
+      if (nouveau) {
+        S.mode = "site";
+        S.visibles = null;
+        S.lignes = new Map();
+        app.innerHTML = `<p class="vide">Chargement de ${esc(rec.Libelle || "")}…</p>`;
+      }
+      S.profil = S.avecProfils ? (S.profils.get(rec.Profil) || null) : null;
+      await chargerLignes();
       if (seq !== S.sequence) return;
       nouveau ? rendre() : rafraichir();
     } catch (e) {
