@@ -63,7 +63,19 @@
     return j.records.map((r) => Object.assign({ id: r.id }, r.fields));
   }
 
+  async function verifierModele() {
+    if (S.modeleOk) return;
+    const tables = await grist.docApi.listTables();
+    const manquantes = ["VLANs", "Referentiel", TABLE].filter((t) => !tables.includes(t));
+    if (manquantes.length) {
+      throw new Error("ce document n'a pas le modèle v4 (table" + (manquantes.length > 1 ? "s " : " ") + manquantes.join(", ") +
+        " absente" + (manquantes.length > 1 ? "s" : "") + "). Le widget s'utilise sur un document construit ou migré en v4");
+    }
+    S.modeleOk = true;
+  }
+
   async function chargerReferentiel() {
+    await verifierModele();
     if (S.criteres.length) return;
     const ref = enLignes(await grist.docApi.fetchTable("Referentiel"));
     ref.sort((a, b) => (a.Ordre || 0) - (b.Ordre || 0) || String(a.Code).localeCompare(b.Code));
@@ -350,7 +362,7 @@
       if (seq !== S.sequence) return;
       nouveau ? rendre() : rafraichir();
     } catch (e) {
-      app.innerHTML = `<p class="vide">Erreur : ${esc(e.message || e)}. Vérifiez que le widget a l'accès complet au document et que les tables VLANs, Referentiel et Reponses existent.</p>`;
+      app.innerHTML = `<p class="vide">Le widget ne peut pas s'afficher : ${esc(e.message || e)}.</p>`;
     }
   }
 
