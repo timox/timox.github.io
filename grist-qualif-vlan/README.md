@@ -28,3 +28,14 @@ pour le document Grist « Qualification VLAN » (modèle v4 : tables `VLANs`, `R
 
 Chaque push sur `main` déploie le site via `.github/workflows/pages.yml`
 (Settings > Pages > Source : **GitHub Actions**).
+
+## Vue transversale (un critère, tous les VLAN)
+
+Placé sur une page où une liste de la table **Referentiel** pilote la sélection, le widget
+affiche le critère choisi pour tous les VLAN :
+
+- **Par profil** : une réponse commune par numéro de VLAN (table Reponses_profil) ;
+- **Par site** : chaque VLAN de chaque site (table Reponses), avec la mesure de l'agent et la réponse du profil ;
+- filtres (à renseigner, écarts, corrections divergentes, tout) et recherche par n° de VLAN, nom ou site ;
+- réponse groupée : Oui / Non / N/A pour toutes les lignes affichées encore à renseigner, après confirmation ;
+- un second clic sur une réponse déjà choisie l'efface.

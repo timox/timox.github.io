@@ -104,3 +104,25 @@ textarea:focus, .choix button:focus-visible, .onglet:focus-visible { outline: 2p
 .bandeau-profil { font-size: 12.5px; color: var(--discret); margin: 0 0 8px; padding: 6px 8px; border: 1px dashed var(--bord); border-radius: var(--rayon); }
 .lien { border: 0; background: none; color: var(--accent); cursor: pointer; font: inherit; padding: 0 0 0 6px; text-decoration: underline; }
 .agent.profil { border-left: 3px solid var(--accent); }
+
+/* Vue transversale */
+.discret { color: var(--discret); font-weight: normal; }
+.compteurs { margin: 6px 0 0; font-size: 12px; color: var(--discret); }
+.lot { margin-top: 6px; padding: 6px 8px; background: var(--fond-2); border-radius: var(--rayon); font-size: 12.5px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.btn { border: 1px solid var(--accent); background: var(--fond); color: var(--accent); border-radius: var(--rayon); padding: 3px 10px; cursor: pointer; font: inherit; }
+.btn:hover { background: var(--accent); color: #fff; }
+.filtres input[type="search"] { flex: 1; min-width: 180px; font: inherit; color: var(--texte); background: var(--fond); border: 1px solid var(--bord); border-radius: var(--rayon); padding: 3px 8px; }
+.ligne-t { border: 1px solid var(--bord); border-left: 4px solid var(--bord); border-radius: var(--rayon); padding: 6px 10px; margin-bottom: 6px; }
+.ligne-t.s-attente { border-left-color: #e0b300; }
+.ligne-t.s-ecart { border-left-color: var(--non); }
+.ligne-t.s-ok { border-left-color: var(--oui); }
+.ligne-t.s-na { border-left-color: var(--na); }
+.ligne-t-tete { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; font-size: 13px; }
+.ligne-t-tete .cible { flex: 1; min-width: 180px; }
+.src { font-size: 12px; color: var(--discret); background: var(--fond-2); border-radius: 4px; padding: 0 6px; }
+.src.profil { border-left: 3px solid var(--accent); }
+.ligne-t-saisie { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin-top: 5px; }
+.ligne-t-saisie .choix button { padding: 3px 10px; }
+.ligne-t-saisie input[type="text"] { flex: 1; min-width: 160px; font: inherit; color: var(--texte); background: var(--fond); border: 1px solid var(--bord); border-radius: var(--rayon); padding: 4px 8px; }
+.ligne-t-saisie textarea { flex: 1; min-height: 30px; }
+.entete h1 .code { font-size: 14px; }

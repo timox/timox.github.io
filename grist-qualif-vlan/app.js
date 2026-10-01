@@ -5,6 +5,8 @@
  *  - Site   : critères du VLAN sélectionné (table Reponses), avec la mesure de l'agent
  *             et la réponse héritée du profil ; la saisie prime sur les deux.
  *  - Profil : réponses communes à tous les sites du même numéro de VLAN (table Reponses_profil).
+ * Placé sur une liste du Referentiel, il devient la vue transversale : un critère, tous les VLAN
+ * (par profil ou par site), avec réponse groupée aux lignes affichées encore à renseigner.
  *
  * Tables attendues (modèle v4) : VLANs, Referentiel, Reponses ; facultatives : Profils,
  * Reponses_profil, Classes_risque. Accès requis : complet.
@@ -371,6 +373,7 @@
 
   /* ---------- Événements ---------- */
   app.addEventListener("click", (ev) => {
+    if (T.actif) return;
     const onglet = ev.target.closest("[data-onglet]");
     if (onglet) { S.onglet = onglet.dataset.onglet; S.visibles = null; rendre(); return; }
     const action = ev.target.closest("[data-action]");
@@ -395,15 +398,294 @@
     if (ev.target.name === "filtre") { S.filtre = ev.target.value; S.visibles = null; rendre(); }
   });
   app.addEventListener("input", (ev) => {
+    if (T.actif) return;
     const zone = ev.target.closest("textarea[data-champ]");
     if (!zone) return;
     modifier(Number(zone.closest(".carte").dataset.crit), { Precision: zone.value }, false);
   });
   app.addEventListener("focusout", (ev) => {
-    if (ev.target.matches("textarea[data-champ]") && enAttente.size) { clearTimeout(minuteur); enregistrer(); }
+    if (ev.target.matches("[data-champ]") && enAttente.size) { clearTimeout(minuteur); enregistrer(); }
+  });
+
+  /* ================= Vue transversale : un critère, tous les VLAN ================= */
+  const T = {
+    actif: false,
+    crit: null,
+    niveau: "profil",    // "profil" (un par numéro de VLAN) ou "site" (chaque VLAN de chaque site)
+    lignes: new Map(),   // id ligne -> ligne (avec .cible = VLAN ou profil)
+    ordre: [],
+    filtre: "attente",
+    recherche: "",
+    visibles: null,
+    confirmer: null,
+    sequence: 0,
+  };
+  const TABLE_T = { profil: "Reponses_profil", site: "Reponses" };
+  const CHAMP_T = { profil: "Valeur", site: "Valeur_humaine" };
+  const FILTRES_T = { site: FILTRES.site, profil: FILTRES.profil };
+
+  const tSaisie = (l) => l[CHAMP_T[T.niveau]] || null;
+  function tStatut(l) {
+    const c = T.crit;
+    if (c.Type === "Question") return (l.Precision || (T.niveau === "site" && l.Precision_profil)) ? ["Répondu", "ok"] : ["À renseigner", "attente"];
+    const v = (T.niveau === "profil" ? l.Valeur : (l.Valeur_humaine || l.Valeur_agent || l.Valeur_profil)) || null;
+    if (!v) return ["À renseigner", "attente"];
+    if (v === "Non") return [c.Bloquant ? "Écart bloquant" : "Écart", "ecart"];
+    return v === "Oui" ? ["Conforme", "ok"] : ["N/A", "na"];
+  }
+  function tCorrespond(l) {
+    const cls = tStatut(l)[1];
+    if (T.filtre === "attente" && cls !== "attente") return false;
+    if (T.filtre === "ecarts" && cls !== "ecart") return false;
+    if (T.filtre === "divergences" && !(l.Valeur_humaine && l.Valeur_agent && l.Valeur_humaine !== l.Valeur_agent)) return false;
+    const q = T.recherche.trim().toLowerCase();
+    if (!q) return true;
+    const x = l.cible || {};
+    return [x.VLAN_ID, x.Nom, x.Sites, x.Libelle].some((v) => String(v ?? "").toLowerCase().includes(q));
+  }
+
+  async function lireTout(table, critId) {
+    const filtre = encodeURIComponent(JSON.stringify({ Critere: [critId] }));
+    return (await rest("/tables/" + table + "/records?filter=" + filtre)).records.map((r) => Object.assign({ id: r.id }, r.fields));
+  }
+
+  async function tCharger() {
+    const seq = ++T.sequence;
+    const niveau = T.niveau;
+    const table = TABLE_T[niveau];
+    const cle = niveau === "profil" ? "Profil" : "VLAN";
+    const cibles = niveau === "profil"
+      ? enLignes(await grist.docApi.fetchTable("Profils"))
+      : enLignes(await grist.docApi.fetchTable("VLANs")).map((v) => ({ id: v.id, VLAN_ID: v.VLAN_ID, Nom: v.Nom, Sites: v.Sites, Libelle: v.Libelle }));
+    let lignes = await lireTout(table, T.crit.id);
+    const presents = new Set(lignes.map((l) => l[cle]));
+    const manquants = cibles.filter((x) => !presents.has(x.id));
+    if (manquants.length) {
+      await grist.docApi.applyUserActions([["BulkAddRecord", table, manquants.map(() => null),
+        { [cle]: manquants.map((x) => x.id), Critere: manquants.map(() => T.crit.id) }]]);
+      lignes = await lireTout(table, T.crit.id);
+    }
+    if (seq !== T.sequence) return false;
+    const parId = new Map(cibles.map((x) => [x.id, x]));
+    T.lignes = new Map();
+    lignes.forEach((l) => {
+      l.cible = parId.get(l[cle]);
+      if (!l.cible) return;
+      Object.assign(l, enCours.get(table + ":" + l.id) || {}, enAttente.get(table + ":" + l.id) || {});
+      T.lignes.set(l.id, l);
+    });
+    T.ordre = [...T.lignes.values()].sort((a, b) => (a.cible.VLAN_ID || 0) - (b.cible.VLAN_ID || 0) ||
+      String(a.cible.Sites || "").localeCompare(String(b.cible.Sites || ""))).map((l) => l.id);
+    return true;
+  }
+
+  function tLigneHtml(l) {
+    const c = T.crit;
+    const x = l.cible;
+    const titre = T.niveau === "profil"
+      ? `<strong>VLAN ${esc(x.VLAN_ID)}</strong> ${esc(x.Nom || "")} <span class="discret">· ${esc(x.Nb_sites || 0)} site${x.Nb_sites > 1 ? "s" : ""}</span>`
+      : `<strong>VLAN ${esc(x.VLAN_ID)}</strong> ${esc(x.Nom || "")} <span class="discret">· ${esc(x.Sites || "")}</span>`;
+    let sources = "";
+    if (T.niveau === "site") {
+      if (c.Type !== "Question" && (l.Valeur_agent || l.Preuve_agent)) {
+        sources += `<span class="src" title="${esc(l.Preuve_agent || "")}">Agent : <b>${esc(l.Valeur_agent || "indéterminé")}</b></span>`;
+      }
+      if (l.Valeur_profil || l.Precision_profil) {
+        sources += `<span class="src profil" title="${esc(l.Precision_profil || "")}">Profil : <b>${esc(l.Valeur_profil || (l.Precision_profil ? "réponse" : "—"))}</b></span>`;
+      }
+    }
+    const saisieHtml = c.Type === "Question"
+      ? `<textarea data-champ="Precision" rows="1" placeholder="${T.niveau === "site" && l.Precision_profil ? "Réponse propre à ce site (sinon celle du profil)" : "Votre réponse"}">${esc(l.Precision || "")}</textarea>`
+      : `<div class="choix" role="group" aria-label="Réponse pour le VLAN ${esc(x.VLAN_ID)}">
+           ${VALEURS.map((v) => `<button type="button" data-v="${v}">${v}</button>`).join("")}
+         </div>
+         <input type="text" data-champ="Precision" placeholder="Précision" value="${esc(l.Precision || "")}">`;
+    return `<div class="ligne-t" data-ligne="${l.id}">
+      <div class="ligne-t-tete"><span class="cible">${titre}</span>${sources}<span class="statut" data-statut></span></div>
+      <div class="ligne-t-saisie">${saisieHtml}</div>
+    </div>`;
+  }
+
+  function tMajLigne(id) {
+    const el = app.querySelector(`.ligne-t[data-ligne="${id}"]`);
+    const l = T.lignes.get(id);
+    if (!el || !l) return;
+    const [lib, cls] = tStatut(l);
+    el.className = "ligne-t s-" + cls;
+    const st = el.querySelector("[data-statut]");
+    st.textContent = lib;
+    st.className = "statut s-" + cls;
+    const champ = el.querySelector("[data-champ]");
+    if (champ && document.activeElement !== champ && champ.value !== (l.Precision || "")) champ.value = l.Precision || "";
+    if (T.crit.Type === "Question") return;
+    const propre = tSaisie(l);
+    const herite = T.niveau === "site" ? (l.Valeur_agent || l.Valeur_profil || null) : null;
+    el.querySelectorAll(".choix button").forEach((b) => {
+      b.setAttribute("aria-pressed", String(b.dataset.v === propre));
+      b.classList.toggle("agent-val", !propre && b.dataset.v === herite);
+      b.title = propre === b.dataset.v ? "Cliquer à nouveau pour effacer la réponse" : "";
+    });
+  }
+
+  function tCompteurs() {
+    const n = { attente: 0, ecart: 0 };
+    T.lignes.forEach((l) => { const cls = tStatut(l)[1]; if (n[cls] !== undefined) n[cls]++; });
+    const el = document.getElementById("compteurs-t");
+    if (el) el.textContent = `${T.lignes.size} ligne${T.lignes.size > 1 ? "s" : ""} · ${n.attente} à renseigner · ${n.ecart} écart${n.ecart > 1 ? "s" : ""}`;
+    const lot = document.getElementById("lot-t");
+    if (lot) {
+      const k = tAttenteVisibles().length;
+      lot.hidden = !k || T.crit.Type === "Question";
+      const nb = lot.querySelector("[data-nb]");
+      if (nb) nb.textContent = k;
+    }
+  }
+
+  const tAttenteVisibles = () => (T.visibles ? [...T.visibles] : []).map((id) => T.lignes.get(id)).filter((l) => l && tStatut(l)[1] === "attente");
+
+  function tRendre() {
+    const c = T.crit;
+    if (!T.visibles) T.visibles = new Set(T.ordre.filter((id) => tCorrespond(T.lignes.get(id))));
+    const affiches = T.ordre.filter((id) => T.visibles.has(id));
+    const conf = T.confirmer;
+    app.innerHTML = `
+      <div class="entete">
+        <h1><span class="code">${esc(c.Code)}</span> ${esc(c.Libelle)}</h1>
+        ${c.Bloquant ? `<span class="b" title="Critère bloquant">B</span>` : ""}
+        <span class="puce">${esc(c.Theme || "")}</span>
+        <span class="etat" id="etat"></span>
+      </div>
+      ${c.Aide ? `<p class="aide">${esc(c.Aide)}</p>` : ""}
+      ${c.Agent ? `<p class="aide">ⓘ Critère mesuré par l'agent sur chaque site : ${T.niveau === "profil" ? "la réponse du profil ne s'applique que là où l'agent n'a rien relevé." : "votre réponse corrige la mesure de l'agent."}</p>` : ""}
+      <div class="barre">
+        <div class="onglets" role="tablist" aria-label="Niveau de réponse">
+          <button class="onglet" role="tab" data-niveau="profil" aria-selected="${T.niveau === "profil"}">Par profil (réponse commune à tous les sites)</button>
+          <button class="onglet" role="tab" data-niveau="site" aria-selected="${T.niveau === "site"}">Par site</button>
+          <button class="onglet" type="button" data-action="recharger" title="Relire les données">↻</button>
+        </div>
+        <div class="filtres" role="radiogroup" aria-label="Afficher">
+          ${FILTRES_T[T.niveau].map(([k, lib]) => `<label><input type="radio" name="filtre-t" value="${k}" ${k === T.filtre ? "checked" : ""}> ${lib}</label>`).join("")}
+          <input type="search" id="recherche-t" placeholder="Filtrer : n° de VLAN, nom, site" value="${esc(T.recherche)}">
+        </div>
+        <p class="compteurs" id="compteurs-t"></p>
+        <div class="lot" id="lot-t" hidden>
+          ${conf
+            ? `Répondre « <b>${esc(conf)}</b> » pour les <b data-nb></b> lignes affichées encore à renseigner ?
+               <button type="button" class="btn" data-action="lot-ok">Confirmer</button>
+               <button type="button" class="lien" data-action="lot-annuler">Annuler</button>`
+            : `Répondre pour les <b data-nb></b> lignes affichées encore à renseigner :
+               ${VALEURS.map((v) => `<button type="button" class="btn" data-lot="${v}">${v}</button>`).join("")}`}
+        </div>
+      </div>
+      <div class="liste-t">${affiches.map((id) => tLigneHtml(T.lignes.get(id))).join("") ||
+        `<p class="vide">${T.filtre === "attente" ? "Plus rien à renseigner pour ce critère avec ce filtre." : "Aucune ligne ne correspond."}</p>`}</div>`;
+    affiches.forEach(tMajLigne);
+    tCompteurs();
+  }
+
+  function tModifier(id, champs, immediat) {
+    const l = T.lignes.get(id);
+    if (!l) return;
+    Object.assign(l, champs);
+    const k = TABLE_T[T.niveau] + ":" + id;
+    enAttente.set(k, Object.assign(enAttente.get(k) || {}, champs));
+    tMajLigne(id);
+    tCompteurs();
+    etat("Modifications non enregistrées…");
+    clearTimeout(minuteur);
+    minuteur = setTimeout(enregistrer, immediat ? 0 : DELAI_SAUVEGARDE);
+  }
+
+  async function tRecharger(message) {
+    if (enAttente.size) { clearTimeout(minuteur); await enregistrer(); }
+    app.innerHTML = `<p class="vide">${esc(message || "Chargement…")}</p>`;
+    T.visibles = null;
+    T.confirmer = null;
+    try {
+      if (await tCharger()) tRendre();
+    } catch (e) {
+      app.innerHTML = `<p class="vide">Le widget ne peut pas s'afficher : ${esc(e.message || e)}.</p>`;
+    }
+  }
+
+  function tClic(ev) {
+    const niv = ev.target.closest("[data-niveau]");
+    if (niv) {
+      if (niv.dataset.niveau !== T.niveau) {
+        T.niveau = niv.dataset.niveau;
+        if (!FILTRES_T[T.niveau].some(([k]) => k === T.filtre)) T.filtre = "attente";
+        tRecharger();
+      }
+      return;
+    }
+    const action = ev.target.closest("[data-action]");
+    if (action) {
+      const a = action.dataset.action;
+      if (a === "recharger") { tRecharger(); return; }
+      if (a === "lot-annuler") { T.confirmer = null; tRendre(); return; }
+      if (a === "lot-ok") {
+        const v = T.confirmer;
+        T.confirmer = null;
+        tAttenteVisibles().forEach((l) => tModifier(l.id, { [CHAMP_T[T.niveau]]: v }, true));
+        tRendre();
+        return;
+      }
+    }
+    const lot = ev.target.closest("[data-lot]");
+    if (lot) { T.confirmer = lot.dataset.lot; tRendre(); return; }
+    const bouton = ev.target.closest(".ligne-t .choix button");
+    if (bouton) {
+      const id = Number(bouton.closest(".ligne-t").dataset.ligne);
+      const l = T.lignes.get(id);
+      const champ = CHAMP_T[T.niveau];
+      tModifier(id, { [champ]: tSaisie(l) === bouton.dataset.v ? null : bouton.dataset.v }, true);
+    }
+  }
+
+  async function surCritere(rec) {
+    try {
+      await chargerReferentiel();
+      if (!S.avecProfils) T.niveau = "site";
+      const nouveau = !T.actif || !T.crit || T.crit.id !== rec.id;
+      T.actif = true;
+      T.crit = rec;
+      if (nouveau) { T.recherche = ""; await tRecharger("Chargement des réponses pour " + (rec.Code || "") + "…"); }
+    } catch (e) {
+      app.innerHTML = `<p class="vide">Le widget ne peut pas s'afficher : ${esc(e.message || e)}.</p>`;
+    }
+  }
+
+  app.addEventListener("click", (ev) => { if (T.actif) tClic(ev); }, true);
+  app.addEventListener("change", (ev) => {
+    if (T.actif && ev.target.name === "filtre-t") { T.filtre = ev.target.value; T.visibles = null; T.confirmer = null; tRendre(); }
+  });
+  app.addEventListener("input", (ev) => {
+    if (!T.actif) return;
+    if (ev.target.id === "recherche-t") {
+      T.recherche = ev.target.value;
+      clearTimeout(T.minuteurRecherche);
+      T.minuteurRecherche = setTimeout(() => {
+        T.visibles = null;
+        tRendre();
+        const r = document.getElementById("recherche-t");
+        r.focus();
+        r.setSelectionRange(r.value.length, r.value.length);
+      }, 300);
+      return;
+    }
+    const champ = ev.target.closest(".ligne-t [data-champ]");
+    if (champ) tModifier(Number(champ.closest(".ligne-t").dataset.ligne), { Precision: champ.value }, false);
   });
 
   /* ---------- Grist ---------- */
+  const estCritere = (rec) => rec && "Code" in rec && "Libelle" in rec && "Type" in rec && !("VLAN_ID" in rec) && !("VLAN" in rec);
+
+  async function surEnregistrement(rec) {
+    if (estCritere(rec)) return surCritere(rec);
+    T.actif = false;
+    return surVlan(rec);
+  }
+
   async function surVlan(rec) {
     const seq = ++S.sequence;
     try {
@@ -428,7 +710,7 @@
   }
 
   grist.ready({ requiredAccess: "full", allowSelectBy: false });
-  grist.onRecord((rec) => surVlan(rec));
-  grist.onNewRecord(() => surVlan(null));
+  grist.onRecord((rec) => surEnregistrement(rec));
+  grist.onNewRecord(() => { T.actif = false; surVlan(null); });
   rendre();
 })();
