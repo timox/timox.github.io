@@ -265,7 +265,7 @@
     const parTheme = {};
     let total = 0;
     S.criteres.forEach((c) => {
-      if (statut(S.lignes.get(c.id) || {}, c)[1] === "attente") { parTheme[c.Theme] = (parTheme[c.Theme] || 0) + 1; total++; }
+      if (c.Type !== "Question" && statut(S.lignes.get(c.id) || {}, c)[1] === "attente") { parTheme[c.Theme] = (parTheme[c.Theme] || 0) + 1; total++; }
     });
     app.querySelectorAll("[data-n]").forEach((el) => {
       const n = el.dataset.n === "Tout" ? total : (parTheme[el.dataset.n] || 0);
