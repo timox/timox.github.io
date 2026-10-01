@@ -213,6 +213,7 @@
         <span class="puce ${classeVerdict(v.Verdict)}" id="verdict">${esc(v.Verdict || "")}</span>
         <span class="etat" id="etat"></span>
       </div>
+      ${v.Description ? `<p class="description">${esc(v.Description)}</p>` : ""}
       <p class="motif" id="motif">${esc(v.Motif || "")}</p>
       ${p ? `<p class="bandeau-profil">Profil ${esc(p.Libelle)} · ${esc(p.Nb_sites || 0)} site${p.Nb_sites > 1 ? "s" : ""}
         <button type="button" class="lien" data-action="profil">Modifier les réponses communes du profil →</button></p>` : ""}
@@ -502,6 +503,7 @@
          <input type="text" data-champ="Precision" placeholder="Précision" value="${esc(l.Precision || "")}">`;
     return `<div class="ligne-t" data-ligne="${l.id}">
       <div class="ligne-t-tete"><span class="cible">${titre}</span>${sources}<span class="statut" data-statut></span></div>
+      ${T.niveau === "site" && l.Preuve_agent ? `<div class="preuve-t">${esc(l.Preuve_agent.length > 200 ? l.Preuve_agent.slice(0, 200) + "…" : l.Preuve_agent)}</div>` : ""}
       <div class="ligne-t-saisie">${saisieHtml}</div>
     </div>`;
   }
